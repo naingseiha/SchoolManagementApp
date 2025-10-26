@@ -1,0 +1,82 @@
+// Enum for Role
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+// Enum for Gender
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// Enum for Attendance Status
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+// User model
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  student   Student? @relation(fields: [studentId], references: [id])
+  studentId Int?
+  teacher   Teacher? @relation(fields: [teacherId], references: [id])
+  teacherId Int?
+}
+
+// Student model
+model Student {
+  id          Int       @id @default(autoincrement())
+  name        String
+  gender      Gender
+  user        User      @relation
+  classes     Class[]   @relation("ClassStudents")
+  attendance  Attendance[]
+}
+
+// Teacher model
+model Teacher {
+  id       Int      @id @default(autoincrement())
+  name     String
+  user     User     @relation
+  classes  Class[]
+}
+
+// Class model
+model Class {
+  id          Int       @id @default(autoincrement())
+  name        String
+  students    Student[] @relation("ClassStudents")
+  subjects    Subject[]
+}
+
+// Subject model
+model Subject {
+  id       Int      @id @default(autoincrement())
+  name     String
+  classes  Class[]
+  grades   Grade[]
+}
+
+// Grade model
+model Grade {
+  id       Int       @id @default(autoincrement())
+  score    Float
+  student  Student   @relation
+  subject  Subject   @relation
+}
+
+// Attendance model
+model Attendance {
+  id           Int                @id @default(autoincrement())
+  date         DateTime
+  status       AttendanceStatus
+  student      Student            @relation
+}
