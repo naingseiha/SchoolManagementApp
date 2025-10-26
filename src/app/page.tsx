@@ -98,7 +98,7 @@ export default function Home() {
                   </div>
                   <div>
                     <h1 className="text-4xl md:text-4xl font-light text-white khmer-title tracking-wide">
-                      ផ្ទាំងគ្រប់គ្រង
+                      វិទ្យាល័យហ៊ុនសែនស្វាយធំ
                     </h1>
                   </div>
                 </div>
