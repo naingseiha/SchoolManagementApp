@@ -57,9 +57,9 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6 animate-fadeIn">
+    <div className="p-6 space-y-6">
       {/* Header Section with Gradient */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 shadow-2xl animate-fadeIn">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
 
@@ -84,12 +84,11 @@ export default function DashboardPage() {
           return (
             <div
               key={stat.nameEn}
-              className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer animate-slideUp"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
             >
               {/* Gradient Background on Hover */}
               <div
-                className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
               ></div>
 
               {/* Light Background */}
@@ -101,13 +100,13 @@ export default function DashboardPage() {
                 {/* Icon with Animation */}
                 <div className="flex items-start justify-between mb-4">
                   <div
-                    className={`p-3 rounded-xl bg-white shadow-md group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+                    className={`p-3 rounded-xl bg-white shadow-md group-hover:scale-105 transition-transform duration-300 ease-out`}
                   >
                     <Icon
-                      className={`w-8 h-8 ${stat.iconColor} group-hover:text-white transition-colors duration-500`}
+                      className={`w-8 h-8 ${stat.iconColor} group-hover:text-white transition-colors duration-300`}
                     />
                   </div>
-                  <div className="flex items-center space-x-1 text-green-600 group-hover:text-white transition-colors duration-500">
+                  <div className="flex items-center space-x-1 text-green-600 group-hover:text-white transition-colors duration-300">
                     <TrendingUp className="w-4 h-4" />
                     <span className="text-sm font-semibold">+12%</span>
                   </div>
@@ -115,13 +114,13 @@ export default function DashboardPage() {
 
                 {/* Stats Text */}
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600 group-hover:text-white/90 transition-colors duration-500">
+                  <p className="text-sm font-medium text-gray-600 group-hover:text-white/90 transition-colors duration-300">
                     {stat.name}
                   </p>
-                  <p className="text-xs text-gray-500 group-hover:text-white/75 transition-colors duration-500">
+                  <p className="text-xs text-gray-500 group-hover:text-white/75 transition-colors duration-300">
                     {stat.nameEn}
                   </p>
-                  <p className="text-4xl font-bold text-gray-900 group-hover:text-white transition-colors duration-500 mt-2">
+                  <p className="text-4xl font-bold text-gray-900 group-hover:text-white transition-colors duration-300 mt-2">
                     {stat.value}
                   </p>
                 </div>
@@ -131,7 +130,7 @@ export default function DashboardPage() {
                   {stat.chartData.map((height, i) => (
                     <div
                       key={i}
-                      className="flex-1 bg-gradient-to-t from-gray-300 to-gray-400 group-hover:from-white/50 group-hover:to-white/80 rounded-t transition-all duration-500"
+                      className="flex-1 bg-gradient-to-t from-gray-300 to-gray-400 group-hover:from-white/50 group-hover:to-white/80 rounded-t transition-all duration-300"
                       style={{
                         height: `${
                           (height / Math.max(...stat.chartData)) * 100
@@ -143,7 +142,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Decorative Corner */}
-              <div className="absolute top-0 right-0 w-20 h-20 bg-white/20 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/20 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
           );
         })}
@@ -174,10 +173,10 @@ export default function DashboardPage() {
             </p>
 
             <div className="flex flex-wrap gap-3 pt-4">
-              <button className="px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition-all duration-300 hover:scale-105 shadow-lg">
+              <button className="px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition-all duration-200 hover:scale-105 shadow-lg">
                 ចាប់ផ្តើម Get Started
               </button>
-              <button className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border border-white/30">
+              <button className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-200 border border-white/30">
                 ស្វែងយល់បន្ថែម Learn More
               </button>
             </div>
@@ -187,9 +186,9 @@ export default function DashboardPage() {
         {/* Quick Stats Card */}
         <div className="space-y-4">
           {/* Active Users */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group cursor-pointer">
+          <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-200 group cursor-pointer">
             <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="p-2 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg group-hover:scale-105 transition-transform duration-200">
                 <Activity className="w-6 h-6 text-white" />
               </div>
               <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">
@@ -204,9 +203,9 @@ export default function DashboardPage() {
           </div>
 
           {/* System Status */}
-          <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 group cursor-pointer">
+          <div className="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-200 group cursor-pointer">
             <div className="flex items-center justify-between mb-3">
-              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg group-hover:scale-105 transition-transform duration-200">
                 <Activity className="w-6 h-6 text-white animate-pulse" />
               </div>
             </div>
@@ -259,20 +258,20 @@ export default function DashboardPage() {
             return (
               <div
                 key={index}
-                className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-all duration-300 cursor-pointer group"
+                className="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer group"
               >
                 <div
-                  className={`p-3 ${activity.color} rounded-lg group-hover:scale-110 transition-transform duration-300`}
+                  className={`p-3 ${activity.color} rounded-lg group-hover:scale-105 transition-transform duration-200`}
                 >
                   <ActivityIcon className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                  <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors duration-200">
                     {activity.action}
                   </p>
                   <p className="text-sm text-gray-500">{activity.time}</p>
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <span className="text-indigo-600">→</span>
                 </div>
               </div>

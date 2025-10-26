@@ -105,32 +105,21 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={`
-                group relative flex items-center space-x-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300
+                group relative flex items-center space-x-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 ease-out
                 ${
                   isActive
                     ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-200"
                     : "text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-600"
                 }
-                animate-slideUp
               `}
-              style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Active Indicator */}
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-white"></div>
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-r-full bg-white transition-all duration-200"></div>
               )}
 
               {/* Icon */}
-              <div
-                className={`
-                flex-shrink-0 transition-all duration-300
-                ${
-                  isActive
-                    ? "scale-110"
-                    : "group-hover:scale-110 group-hover:rotate-6"
-                }
-              `}
-              >
+              <div className="flex-shrink-0 transition-transform duration-200 ease-out group-hover:scale-105">
                 <Icon className="h-5 w-5" />
               </div>
 
@@ -138,7 +127,7 @@ export default function Sidebar() {
               <div className="flex-1">
                 <p
                   className={`
-                  font-semibold transition-all duration-300
+                  font-semibold transition-colors duration-200
                   ${
                     isActive
                       ? "text-white"
@@ -150,7 +139,7 @@ export default function Sidebar() {
                 </p>
                 <p
                   className={`
-                  text-xs transition-all duration-300
+                  text-xs transition-colors duration-200
                   ${
                     isActive
                       ? "text-white/90"
@@ -164,14 +153,14 @@ export default function Sidebar() {
 
               {/* Hover Arrow */}
               {!isActive && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <span className="text-indigo-600">→</span>
                 </div>
               )}
 
               {/* Background Glow Effect */}
               {isActive && (
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-400/20 to-purple-400/20 blur-xl"></div>
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-400/20 to-purple-400/20 blur-xl transition-opacity duration-200"></div>
               )}
             </Link>
           );
@@ -180,9 +169,9 @@ export default function Sidebar() {
 
       {/* Footer Section */}
       <div className="border-t border-gray-200 p-4">
-        <div className="rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
+        <div className="rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 p-4 transition-all duration-200">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg transition-transform duration-200 hover:scale-105">
               {currentUser?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="flex-1">
@@ -195,7 +184,7 @@ export default function Sidebar() {
             </div>
           </div>
           <div className="mt-3 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-            <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-pulse"></div>
+            <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"></div>
           </div>
           <p className="mt-2 text-xs text-gray-600 text-center">
             Profile 75% Complete
