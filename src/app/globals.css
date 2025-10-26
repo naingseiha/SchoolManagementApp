@@ -2,11 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
 @layer base {
   body {
     @apply bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
       sans-serif;
+  }
+
+  /* Khmer heading font - Dashboard titles */
+  .khmer-title {
+    font-family: "Khmer OS Muol Light", serif;
+    font-weight: 300;
+  }
+
+  /* Khmer font for Header - Khmer OS Bokor */
+  .khmer-header {
+    font-family: "Khmer OS Bokor", cursive;
+    font-weight: 400;
+    letter-spacing: 1px;
+  }
+
+  /* Khmer font for Sidebar - Metal Chrieng */
+  .khmer-sidebar {
+    font-family: "Khmer OS Metal Chrieng", cursive;
+    font-weight: 400;
+  }
+
+  /* English modern font */
+  .english-modern {
+    font-family: "Poppins", sans-serif;
   }
 }
 
@@ -38,6 +65,14 @@
 
   .animate-scaleIn {
     animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-slideInRight {
+    animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-slideInLeft {
+    animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .animate-bounce-slow {
@@ -153,6 +188,28 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
