@@ -362,3 +362,27 @@ html {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
 }
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+}

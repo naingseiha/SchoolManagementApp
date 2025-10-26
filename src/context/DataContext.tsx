@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Student, Teacher, Class, Subject, Grade } from "@/types";
+import { Student, Teacher, Class, Subject, Grade, Schedule } from "@/types";
 import { storage } from "@/lib/storage";
 import {
   DEFAULT_STUDENTS,
@@ -16,6 +16,7 @@ interface DataContextType {
   classes: Class[];
   subjects: Subject[];
   grades: Grade[];
+  schedules: Schedule[];
   addStudent: (student: Student) => void;
   updateStudent: (student: Student) => void;
   deleteStudent: (id: string) => void;
@@ -30,6 +31,10 @@ interface DataContextType {
   deleteSubject: (id: string) => void;
   updateGrades: (grades: Grade[]) => void;
   getStudentGrades: (studentId: string) => Grade[];
+  addSchedule: (schedule: Schedule) => void;
+  updateSchedule: (schedule: Schedule) => void;
+  deleteSchedule: (id: string) => void;
+  getScheduleByClass: (classId: string) => Schedule | undefined;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -40,6 +45,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
 
   useEffect(() => {
     const loadedStudents = storage.get("students") || DEFAULT_STUDENTS;
@@ -47,12 +53,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const loadedClasses = storage.get("classes") || DEFAULT_CLASSES;
     const loadedSubjects = storage.get("subjects") || DEFAULT_SUBJECTS;
     const loadedGrades = storage.get("grades") || [];
+    const loadedSchedules = storage.get("schedules") || [];
 
     setStudents(loadedStudents);
     setTeachers(loadedTeachers);
     setClasses(loadedClasses);
     setSubjects(loadedSubjects);
     setGrades(loadedGrades);
+    setSchedules(loadedSchedules);
 
     if (!storage.get("students")) storage.set("students", DEFAULT_STUDENTS);
     if (!storage.get("teachers")) storage.set("teachers", DEFAULT_TEACHERS);
@@ -141,6 +149,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return grades.filter((g) => g.studentId === studentId);
   };
 
+  // Schedule Management Functions
+  const addSchedule = (schedule: Schedule) => {
+    const updated = [...schedules, schedule];
+    setSchedules(updated);
+    storage.set("schedules", updated);
+  };
+
+  const updateSchedule = (schedule: Schedule) => {
+    const updated = schedules.map((s) => (s.id === schedule.id ? schedule : s));
+    setSchedules(updated);
+    storage.set("schedules", updated);
+  };
+
+  const deleteSchedule = (id: string) => {
+    const updated = schedules.filter((s) => s.id !== id);
+    setSchedules(updated);
+    storage.set("schedules", updated);
+  };
+
+  const getScheduleByClass = (classId: string): Schedule | undefined => {
+    return schedules.find((s) => s.classId === classId);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -149,6 +180,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         classes,
         subjects,
         grades,
+        schedules,
         addStudent,
         updateStudent,
         deleteStudent,
@@ -163,6 +195,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         deleteSubject,
         updateGrades,
         getStudentGrades,
+        addSchedule,
+        updateSchedule,
+        deleteSchedule,
+        getScheduleByClass,
       }}
     >
       {children}

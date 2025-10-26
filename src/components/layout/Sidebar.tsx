@@ -14,6 +14,7 @@ import {
   School,
   ChevronRight,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -57,6 +58,14 @@ const menuItems = [
     icon: BookOpen,
     roles: ["superadmin"],
     color: "from-orange-500 to-red-500",
+  },
+  {
+    name: "កាលវិភាគ",
+    nameEn: "Schedule",
+    href: "/schedule",
+    icon: Calendar, // Import Calendar from lucide-react
+    roles: ["superadmin", "classteacher"],
+    color: "from-rose-500 to-pink-500",
   },
   {
     name: "បញ្ចូលពិន្ទុ",
