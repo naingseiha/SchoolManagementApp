@@ -1,29 +1,29 @@
 import { Response, NextFunction } from 'express';
+import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../types';
-import prisma from '../config/database';
+
+const prisma = new PrismaClient();
 
 export const getAllTeachers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const teachers = await prisma.teacher.findMany({
       include: {
-        user: {
+        classes: {
           select: {
             id: true,
-            username: true,
-            email: true,
-            role: true,
+            name: true,
+            grade: true,
+            section: true,
           },
         },
-        classes: true,
-        subjects: true,
       },
     });
 
-    res.status(200).json({
+    res.json({
       success: true,
       data: teachers,
     });
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 };
@@ -35,17 +35,12 @@ export const getTeacherById = async (req: AuthRequest, res: Response, next: Next
     const teacher = await prisma.teacher.findUnique({
       where: { id },
       include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            role: true,
+        classes: {
+          include: {
+            students: true,
+            subjects: true,
           },
         },
-        classes: true,
-        subjects: true,
-        grades: true,
       },
     });
 
@@ -56,50 +51,41 @@ export const getTeacherById = async (req: AuthRequest, res: Response, next: Next
       });
     }
 
-    res.status(200).json({
+    res.json({
       success: true,
       data: teacher,
     });
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 };
 
 export const createTeacher = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const {
-      teacherId,
-      khmerName,
-      englishName,
-      gender,
-      dateOfBirth,
-      phoneNumber,
-      email,
-      position,
-      userId,
-    } = req.body;
+    const { firstName, lastName, email, phone, subject, employeeId } = req.body;
+
+    const existingTeacher = await prisma.teacher.findUnique({
+      where: { email },
+    });
+
+    if (existingTeacher) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already exists',
+      });
+    }
 
     const teacher = await prisma.teacher.create({
       data: {
-        teacherId,
-        khmerName,
-        englishName,
-        gender,
-        dateOfBirth: new Date(dateOfBirth),
-        phoneNumber,
+        firstName,
+        lastName,
         email,
-        position,
-        userId,
+        phone,
+        subject,
+        employeeId,
       },
       include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            role: true,
-          },
-        },
+        classes: true,
       },
     });
 
@@ -108,7 +94,7 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
       message: 'Teacher created successfully',
       data: teacher,
     });
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 };
@@ -116,33 +102,29 @@ export const createTeacher = async (req: AuthRequest, res: Response, next: NextF
 export const updateTeacher = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
-
-    if (updateData.dateOfBirth) {
-      updateData.dateOfBirth = new Date(updateData.dateOfBirth);
-    }
+    const { firstName, lastName, email, phone, subject, employeeId } = req.body;
 
     const teacher = await prisma.teacher.update({
       where: { id },
-      data: updateData,
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        subject,
+        employeeId,
+      },
       include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            role: true,
-          },
-        },
+        classes: true,
       },
     });
 
-    res.status(200).json({
+    res.json({
       success: true,
       message: 'Teacher updated successfully',
       data: teacher,
     });
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 };
@@ -155,11 +137,11 @@ export const deleteTeacher = async (req: AuthRequest, res: Response, next: NextF
       where: { id },
     });
 
-    res.status(200).json({
+    res.json({
       success: true,
       message: 'Teacher deleted successfully',
     });
-  } catch (error) {
+  } catch (error: any) {
     next(error);
   }
 };
