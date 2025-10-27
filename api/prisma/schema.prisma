@@ -1,82 +1,146 @@
-// Enum for Role
-enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
+generator client {
+  provider = "prisma-client-js"
 }
 
-// Enum for Gender
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  CLASS_TEACHER
+  SUBJECT_TEACHER
+}
+
 enum Gender {
   MALE
   FEMALE
   OTHER
 }
 
-// Enum for Attendance Status
 enum AttendanceStatus {
   PRESENT
   ABSENT
   LATE
+  EXCUSED
 }
 
-// User model
+// User Model
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   email     String   @unique
   password  String
-  role      Role     @default(STUDENT)
-  student   Student? @relation(fields: [studentId], references: [id])
-  studentId Int?
-  teacher   Teacher? @relation(fields: [teacherId], references: [id])
-  teacherId Int?
+  firstName String
+  lastName  String
+  role      Role     @default(SUBJECT_TEACHER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
 }
 
-// Student model
+// Student Model
 model Student {
-  id          Int       @id @default(autoincrement())
-  name        String
+  id          String      @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String      @unique
+  dateOfBirth DateTime
   gender      Gender
-  user        User      @relation
-  classes     Class[]   @relation("ClassStudents")
+  address     String?
+  phone       String?
+  classId     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  class       Class?      @relation(fields: [classId], references: [id])
+  grades      Grade[]
   attendance  Attendance[]
+
+  @@map("students")
 }
 
-// Teacher model
+// Teacher Model
 model Teacher {
-  id       Int      @id @default(autoincrement())
-  name     String
-  user     User     @relation
-  classes  Class[]
+  id         String   @id @default(uuid())
+  firstName  String
+  lastName   String
+  email      String   @unique
+  phone      String?
+  subject    String?
+  employeeId String?  @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  classes    Class[]
+
+  @@map("teachers")
 }
 
-// Class model
+// Class Model
 model Class {
-  id          Int       @id @default(autoincrement())
-  name        String
-  students    Student[] @relation("ClassStudents")
-  subjects    Subject[]
+  id        String   @id @default(uuid())
+  name      String
+  grade     String
+  section   String?
+  teacherId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher   Teacher?  @relation(fields: [teacherId], references: [id])
+  students  Student[]
+  subjects  Subject[]
+
+  @@map("classes")
 }
 
-// Subject model
+// Subject Model
 model Subject {
-  id       Int      @id @default(autoincrement())
-  name     String
-  classes  Class[]
-  grades   Grade[]
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  classId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  class       Class    @relation(fields: [classId], references: [id])
+  grades      Grade[]
+
+  @@map("subjects")
 }
 
-// Grade model
+// Grade Model
 model Grade {
-  id       Int       @id @default(autoincrement())
-  score    Float
-  student  Student   @relation
-  subject  Subject   @relation
+  id        String   @id @default(uuid())
+  studentId String
+  subjectId String
+  score     Float
+  maxScore  Float
+  remarks   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student   Student  @relation(fields: [studentId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+
+  @@map("grades")
 }
 
-// Attendance model
+// Attendance Model
 model Attendance {
-  id           Int                @id @default(autoincrement())
-  date         DateTime
-  status       AttendanceStatus
-  student      Student            @relation
+  id        String           @id @default(uuid())
+  studentId String
+  date      DateTime
+  status    AttendanceStatus
+  remarks   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  student   Student          @relation(fields: [studentId], references: [id])
+
+  @@map("attendance")
 }
