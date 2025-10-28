@@ -3,77 +3,120 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/auth";
-import { AuthContextType, User } from "@/types/auth";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  currentUser: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  setToken: (token: string | null) => void;
+  setUser: (user: User | null) => void;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Role mapping function - Convert backend roles to frontend roles
-const mapBackendRole = (backendRole: string): string => {
-  const roleMap: { [key: string]: string } = {
-    ADMIN: "superadmin",
-    TEACHER: "teacher",
-    STUDENT: "student",
-    CLASS_TEACHER: "classteacher",
-  };
-  return roleMap[backendRole] || backendRole.toLowerCase();
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Check authentication on mount
+  // Load user from localStorage on mount
   useEffect(() => {
-    checkAuth();
+    const loadUser = () => {
+      try {
+        const token = localStorage.getItem("token");
+        const savedUser = localStorage.getItem("user");
+
+        if (token && savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          setUserState(parsedUser);
+          console.log("✅ User loaded from localStorage:", parsedUser.email);
+        } else {
+          console.log("⏸️ No saved user found");
+        }
+      } catch (error) {
+        console.error("❌ Error loading user:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUser();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const storedToken = authApi.getToken();
-      const storedUser = authApi.getStoredUser();
+  const setToken = (token: string | null) => {
+    if (token) {
+      localStorage.setItem("token", token);
+      console.log("✅ Token saved to localStorage");
+    } else {
+      localStorage.removeItem("token");
+      console.log("🗑️ Token removed from localStorage");
+    }
+  };
 
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(storedUser);
-
-        // Verify token with backend
-        try {
-          const currentUser = await authApi.getCurrentUser();
-          setUser(currentUser);
-        } catch (error) {
-          // Token invalid, clear auth
-          console.error("Token verification failed:", error);
-          logout();
-        }
-      }
-    } catch (error) {
-      console.error("Auth check error:", error);
-    } finally {
-      setIsLoading(false);
+  const setUser = (newUser: User | null) => {
+    if (newUser) {
+      localStorage.setItem("user", JSON.stringify(newUser));
+      setUserState(newUser);
+      console.log("✅ User saved to localStorage:", newUser.email);
+    } else {
+      localStorage.removeItem("user");
+      setUserState(null);
+      console.log("🗑️ User removed from localStorage");
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🔐 Logging in...");
+      console.log("📧 Email:", email);
+
       const response = await authApi.login({ email, password });
 
       if (response.success) {
+        console.log("✅ Login response received:", response);
+
+        // Save token first
         setToken(response.token);
         setUser(response.user);
 
-        // Trigger data reload after successful login
+        console.log("✅ Login successful, token and user saved");
+
+        // Wait a bit for token to be saved to localStorage
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        // Trigger data reload
         if (typeof window !== "undefined") {
+          console.log("🔄 Dispatching auth-change event...");
           window.dispatchEvent(new Event("auth-change"));
         }
 
-        // ✅ Redirect to root (Dashboard)
+        // Small delay before redirect to ensure data loads
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        console.log("🔄 Redirecting to dashboard...");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+        // Redirect to Dashboard
         router.push("/");
       }
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (error: any) {
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("❌ Login error:", error);
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       throw error;
     } finally {
       setIsLoading(false);
@@ -81,42 +124,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    authApi.logout();
-    setUser(null);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🚪 Logging out...");
+
     setToken(null);
+    setUser(null);
+
+    // Dispatch auth-change to clear data
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth-change"));
+    }
+
+    console.log("✅ Logged out successfully");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     router.push("/login");
   };
 
-  // Transform user data for sidebar compatibility
-  const currentUser = user
-    ? {
-        id: user.id,
-        email: user.email,
-        username: user.username || user.email,
-        firstName: user.firstName || user.username?.split(" ")[0] || "",
-        lastName: user.lastName || user.username?.split(" ")[1] || "",
-        name:
-          user.firstName && user.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user.username || user.email,
-        role: mapBackendRole(user.role), // Map backend role to frontend role
-      }
-    : null;
+  const isAuthenticated = !!user;
 
-  const isAuthenticated = !!token && !!user;
-
-  const value: AuthContextType = {
-    user,
-    currentUser, // For backward compatibility with existing components
-    token,
-    isAuthenticated,
-    isLoading,
-    login,
-    logout,
-    checkAuth,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        currentUser: user,
+        isAuthenticated,
+        isLoading,
+        login,
+        logout,
+        setToken,
+        setUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

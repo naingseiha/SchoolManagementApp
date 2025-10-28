@@ -80,16 +80,43 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
-  // Load initial data
-  useEffect(() => {
-    loadInitialData();
-  }, []);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // ✅ FIX: Listen for auth changes
+  // Load initial data only when authenticated
+  useEffect(() => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (token && !isInitialized) {
+      console.log("🔄 Token found, loading initial data...");
+      loadInitialData();
+      setIsInitialized(true);
+    } else if (!token) {
+      console.log("⏸️ No token found, skipping data load");
+      setIsInitialized(false);
+    }
+  }, []); // Run once on mount
+
+  // Listen for auth changes (login/logout)
   useEffect(() => {
     const handleAuthChange = () => {
-      console.log("🔐 Auth changed, reloading data...");
-      loadInitialData();
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+      if (token) {
+        console.log("🔐 Auth changed (logged in), reloading data...");
+        loadInitialData();
+        setIsInitialized(true);
+      } else {
+        console.log("🔐 Auth changed (logged out), clearing data...");
+        setStudents([]);
+        setClasses([]);
+        setTeachers([]);
+        setSubjects([]);
+        setGrades([]);
+        setSchedules([]);
+        setIsInitialized(false);
+      }
     };
 
     if (typeof window !== "undefined") {
@@ -99,35 +126,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadInitialData = async () => {
-    // ✅ FIX: Only load if we have a token (authenticated)
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-    if (!token) {
-      console.log("⏸️ No token found, skipping data load");
-      return;
-    }
-
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("🔄 Loading initial data...");
 
-    // Load students and classes from API
-    await fetchStudents();
-    await fetchClasses();
+    try {
+      // Load students and classes from API in parallel
+      await Promise.all([fetchStudents(), fetchClasses()]);
 
-    // Load other data from localStorage
-    const loadedTeachers = storage.get("teachers") || DEFAULT_TEACHERS;
-    const loadedSubjects = storage.get("subjects") || DEFAULT_SUBJECTS;
-    const loadedGrades = storage.get("grades") || [];
-    const loadedSchedules = storage.get("schedules") || [];
+      // Load other data from localStorage
+      const loadedTeachers = storage.get("teachers") || DEFAULT_TEACHERS;
+      const loadedSubjects = storage.get("subjects") || DEFAULT_SUBJECTS;
+      const loadedGrades = storage.get("grades") || [];
+      const loadedSchedules = storage.get("schedules") || [];
 
-    setTeachers(loadedTeachers);
-    setSubjects(loadedSubjects);
-    setGrades(loadedGrades);
-    setSchedules(loadedSchedules);
+      setTeachers(loadedTeachers);
+      setSubjects(loadedSubjects);
+      setGrades(loadedGrades);
+      setSchedules(loadedSchedules);
 
-    // Initialize localStorage if empty
-    if (!storage.get("teachers")) storage.set("teachers", DEFAULT_TEACHERS);
-    if (!storage.get("subjects")) storage.set("subjects", DEFAULT_SUBJECTS);
+      // Initialize localStorage if empty
+      if (!storage.get("teachers")) storage.set("teachers", DEFAULT_TEACHERS);
+      if (!storage.get("subjects")) storage.set("subjects", DEFAULT_SUBJECTS);
+
+      console.log("✅ Initial data loaded successfully");
+    } catch (error) {
+      console.error("❌ Error loading initial data:", error);
+    } finally {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    }
   };
 
   // ==================== STUDENTS API METHODS ====================

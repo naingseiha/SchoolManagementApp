@@ -2,7 +2,11 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import dotenv from "dotenv";
-import { connectDatabase } from "./config/database";
+import {
+  connectDatabase,
+  startKeepAlive,
+  stopKeepAlive,
+} from "./config/database";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 
 // Import Routes
@@ -154,23 +158,38 @@ app.use(errorHandler);
 // Start Server
 const startServer = async () => {
   try {
-    // Connect to database
+    // Connect to database with retry logic
     await connectDatabase();
     console.log("✅ Database connected successfully");
 
+    // Start keep-alive to prevent auto-suspend (Neon free tier)
+    startKeepAlive();
+
     // Start listening
     app.listen(PORT, () => {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`🌐 API URL: http://localhost:${PORT}`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api`);
-      console.log(`🔒 CORS enabled for:`, allowedOrigins);
+      console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+const shutdown = async () => {
+  console.log("\n🛑 Shutting down gracefully...");
+  stopKeepAlive();
+  process.exit(0);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err: Error) => {
