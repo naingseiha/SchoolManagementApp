@@ -1,19 +1,29 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   getAllSubjects,
   getSubjectById,
   createSubject,
   updateSubject,
   deleteSubject,
-} from '../controllers/subject.controller';
-import { authenticate, authorize } from '../middleware/auth';
+  assignTeachersToSubject,
+  removeTeacherFromSubject,
+} from "../controllers/subject.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.get('/', authenticate, getAllSubjects);
-router.get('/:id', authenticate, getSubjectById);
-router.post('/', authenticate, authorize('ADMIN', 'CLASS_TEACHER'), createSubject);
-router.put('/:id', authenticate, authorize('ADMIN', 'CLASS_TEACHER'), updateSubject);
-router.delete('/:id', authenticate, authorize('ADMIN'), deleteSubject);
+// Apply auth middleware to all routes
+router.use(authMiddleware);
+
+// Subject CRUD routes
+router.get("/", getAllSubjects);
+router.get("/:id", getSubjectById);
+router.post("/", createSubject);
+router.put("/:id", updateSubject);
+router.delete("/:id", deleteSubject);
+
+// Teacher assignment routes
+router.post("/:id/assign-teachers", assignTeachersToSubject);
+router.delete("/:id/teachers/:teacherId", removeTeacherFromSubject);
 
 export default router;

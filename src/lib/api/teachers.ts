@@ -11,6 +11,7 @@ export interface Teacher {
   subject?: string;
   employeeId?: string;
   classes?: any[];
+  subjectAssignments?: any[]; // ✅ KEEP THIS
   createdAt?: string;
   updatedAt?: string;
 }
