@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Student, Teacher, Class, Subject, Grade, Schedule } from "@/types";
 import { storage } from "@/lib/storage";
+import { studentsApi } from "@/lib/api/students";
+import { classesApi } from "@/lib/api/classes";
 import {
   DEFAULT_STUDENTS,
   DEFAULT_TEACHERS,
@@ -11,26 +13,48 @@ import {
 } from "@/lib/constants";
 
 interface DataContextType {
+  // Students (API)
   students: Student[];
+  isLoadingStudents: boolean;
+  studentsError: string | null;
+  fetchStudents: () => Promise<void>;
+  addStudent: (student: Omit<Student, "id">) => Promise<void>;
+  updateStudent: (student: Student) => Promise<void>;
+  deleteStudent: (id: string) => Promise<void>;
+
+  // Teachers (localStorage for now)
   teachers: Teacher[];
-  classes: Class[];
-  subjects: Subject[];
-  grades: Grade[];
-  schedules: Schedule[];
-  addStudent: (student: Student) => void;
-  updateStudent: (student: Student) => void;
-  deleteStudent: (id: string) => void;
   addTeacher: (teacher: Teacher) => void;
   updateTeacher: (teacher: Teacher) => void;
   deleteTeacher: (id: string) => void;
-  addClass: (classData: Class) => void;
-  updateClass: (classData: Class) => void;
-  deleteClass: (id: string) => void;
+
+  // Classes (API)
+  classes: Class[];
+  isLoadingClasses: boolean;
+  classesError: string | null;
+  fetchClasses: () => Promise<void>;
+  addClass: (classData: Omit<Class, "id">) => Promise<void>;
+  updateClass: (classData: Class) => Promise<void>;
+  deleteClass: (id: string) => Promise<void>;
+  assignStudentsToClass: (
+    classId: string,
+    studentIds: string[]
+  ) => Promise<void>;
+  removeStudentFromClass: (classId: string, studentId: string) => Promise<void>;
+
+  // Subjects (localStorage for now)
+  subjects: Subject[];
   addSubject: (subject: Subject) => void;
   updateSubject: (subject: Subject) => void;
   deleteSubject: (id: string) => void;
+
+  // Grades (localStorage for now)
+  grades: Grade[];
   updateGrades: (grades: Grade[]) => void;
   getStudentGrades: (studentId: string) => Grade[];
+
+  // Schedules (localStorage for now)
+  schedules: Schedule[];
   addSchedule: (schedule: Schedule) => void;
   updateSchedule: (schedule: Schedule) => void;
   deleteSchedule: (id: string) => void;
@@ -40,51 +64,299 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
+  // Students State (API-based)
   const [students, setStudents] = useState<Student[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
+
+  // Classes State (API-based)
   const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+  const [classesError, setClassesError] = useState<string | null>(null);
+
+  // Other states (localStorage-based for now)
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
+  // Load initial data
   useEffect(() => {
-    const loadedStudents = storage.get("students") || DEFAULT_STUDENTS;
+    loadInitialData();
+  }, []);
+
+  // ✅ FIX: Listen for auth changes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      console.log("🔐 Auth changed, reloading data...");
+      loadInitialData();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("auth-change", handleAuthChange);
+      return () => window.removeEventListener("auth-change", handleAuthChange);
+    }
+  }, []);
+
+  const loadInitialData = async () => {
+    // ✅ FIX: Only load if we have a token (authenticated)
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (!token) {
+      console.log("⏸️ No token found, skipping data load");
+      return;
+    }
+
+    console.log("🔄 Loading initial data...");
+
+    // Load students and classes from API
+    await fetchStudents();
+    await fetchClasses();
+
+    // Load other data from localStorage
     const loadedTeachers = storage.get("teachers") || DEFAULT_TEACHERS;
-    const loadedClasses = storage.get("classes") || DEFAULT_CLASSES;
     const loadedSubjects = storage.get("subjects") || DEFAULT_SUBJECTS;
     const loadedGrades = storage.get("grades") || [];
     const loadedSchedules = storage.get("schedules") || [];
 
-    setStudents(loadedStudents);
     setTeachers(loadedTeachers);
-    setClasses(loadedClasses);
     setSubjects(loadedSubjects);
     setGrades(loadedGrades);
     setSchedules(loadedSchedules);
 
-    if (!storage.get("students")) storage.set("students", DEFAULT_STUDENTS);
+    // Initialize localStorage if empty
     if (!storage.get("teachers")) storage.set("teachers", DEFAULT_TEACHERS);
-    if (!storage.get("classes")) storage.set("classes", DEFAULT_CLASSES);
     if (!storage.get("subjects")) storage.set("subjects", DEFAULT_SUBJECTS);
-  }, []);
-
-  const addStudent = (student: Student) => {
-    const updated = [...students, student];
-    setStudents(updated);
-    storage.set("students", updated);
   };
 
-  const updateStudent = (student: Student) => {
-    const updated = students.map((s) => (s.id === student.id ? student : s));
-    setStudents(updated);
-    storage.set("students", updated);
+  // ==================== STUDENTS API METHODS ====================
+
+  const fetchStudents = async () => {
+    try {
+      setIsLoadingStudents(true);
+      setStudentsError(null);
+      const data = await studentsApi.getAll();
+      console.log("✅ Loaded students:", data.length);
+      setStudents(data);
+    } catch (error: any) {
+      console.error("Error fetching students:", error);
+      setStudentsError(error.message || "Failed to load students");
+      setStudents([]);
+    } finally {
+      setIsLoadingStudents(false);
+    }
   };
 
-  const deleteStudent = (id: string) => {
-    const updated = students.filter((s) => s.id !== id);
-    setStudents(updated);
-    storage.set("students", updated);
+  const addStudent = async (studentData: Omit<Student, "id">) => {
+    try {
+      setIsLoadingStudents(true);
+      setStudentsError(null);
+
+      console.log("📤 Adding student:", studentData);
+
+      const newStudent = await studentsApi.create({
+        firstName: studentData.firstName || "",
+        lastName: studentData.lastName || "",
+        email: studentData.email,
+        dateOfBirth: studentData.dateOfBirth,
+        gender: studentData.gender,
+        address: studentData.address,
+        phone: studentData.phone,
+        classId: studentData.classId,
+      });
+
+      console.log("✅ Student created:", newStudent);
+
+      // Update local state
+      setStudents((prev) => [...prev, newStudent]);
+
+      // Refresh classes to update student count
+      await fetchClasses();
+    } catch (error: any) {
+      console.error("Error adding student:", error);
+      setStudentsError(error.message || "Failed to add student");
+      throw error;
+    } finally {
+      setIsLoadingStudents(false);
+    }
   };
+
+  const updateStudent = async (student: Student) => {
+    try {
+      setIsLoadingStudents(true);
+      setStudentsError(null);
+
+      const updatedStudent = await studentsApi.update(student.id, {
+        firstName: student.firstName,
+        lastName: student.lastName,
+        email: student.email,
+        dateOfBirth: student.dateOfBirth,
+        gender: student.gender,
+        address: student.address,
+        phone: student.phone,
+        classId: student.classId,
+      });
+
+      // Update local state
+      setStudents((prev) =>
+        prev.map((s) => (s.id === student.id ? updatedStudent : s))
+      );
+
+      // Refresh classes to update student count
+      await fetchClasses();
+    } catch (error: any) {
+      console.error("Error updating student:", error);
+      setStudentsError(error.message || "Failed to update student");
+      throw error;
+    } finally {
+      setIsLoadingStudents(false);
+    }
+  };
+
+  const deleteStudent = async (id: string) => {
+    try {
+      setIsLoadingStudents(true);
+      setStudentsError(null);
+
+      await studentsApi.delete(id);
+
+      // Update local state
+      setStudents((prev) => prev.filter((s) => s.id !== id));
+
+      // Refresh classes to update student count
+      await fetchClasses();
+    } catch (error: any) {
+      console.error("Error deleting student:", error);
+      setStudentsError(error.message || "Failed to delete student");
+      throw error;
+    } finally {
+      setIsLoadingStudents(false);
+    }
+  };
+
+  // ==================== CLASSES API METHODS ====================
+
+  const fetchClasses = async () => {
+    try {
+      setIsLoadingClasses(true);
+      setClassesError(null);
+      const data = await classesApi.getAll();
+      console.log("✅ Loaded classes:", data.length);
+      setClasses(data);
+    } catch (error: any) {
+      console.error("Error fetching classes:", error);
+      setClassesError(error.message || "Failed to load classes");
+      setClasses([]);
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  const addClass = async (classData: Omit<Class, "id">) => {
+    try {
+      setIsLoadingClasses(true);
+      setClassesError(null);
+
+      const newClass = await classesApi.create({
+        name: classData.name,
+        grade: classData.grade,
+        section: classData.section,
+        teacherId: classData.teacherId,
+      });
+
+      setClasses((prev) => [...prev, newClass]);
+    } catch (error: any) {
+      console.error("Error adding class:", error);
+      setClassesError(error.message || "Failed to add class");
+      throw error;
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  const updateClass = async (classData: Class) => {
+    try {
+      setIsLoadingClasses(true);
+      setClassesError(null);
+
+      const updatedClass = await classesApi.update(classData.id, {
+        name: classData.name,
+        grade: classData.grade,
+        section: classData.section,
+        teacherId: classData.teacherId,
+      });
+
+      setClasses((prev) =>
+        prev.map((c) => (c.id === classData.id ? updatedClass : c))
+      );
+    } catch (error: any) {
+      console.error("Error updating class:", error);
+      setClassesError(error.message || "Failed to update class");
+      throw error;
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  const deleteClass = async (id: string) => {
+    try {
+      setIsLoadingClasses(true);
+      setClassesError(null);
+
+      await classesApi.delete(id);
+      setClasses((prev) => prev.filter((c) => c.id !== id));
+    } catch (error: any) {
+      console.error("Error deleting class:", error);
+      setClassesError(error.message || "Failed to delete class");
+      throw error;
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  const assignStudentsToClass = async (
+    classId: string,
+    studentIds: string[]
+  ) => {
+    try {
+      setIsLoadingClasses(true);
+      setClassesError(null);
+
+      await classesApi.assignStudents(classId, studentIds);
+
+      // Refresh both classes and students
+      await fetchClasses();
+      await fetchStudents();
+    } catch (error: any) {
+      console.error("Error assigning students:", error);
+      setClassesError(error.message || "Failed to assign students");
+      throw error;
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  const removeStudentFromClass = async (classId: string, studentId: string) => {
+    try {
+      setIsLoadingClasses(true);
+      setClassesError(null);
+
+      await classesApi.removeStudent(classId, studentId);
+
+      // Refresh both classes and students
+      await fetchClasses();
+      await fetchStudents();
+    } catch (error: any) {
+      console.error("Error removing student:", error);
+      setClassesError(error.message || "Failed to remove student");
+      throw error;
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  };
+
+  // ==================== TEACHERS (localStorage) ====================
 
   const addTeacher = (teacher: Teacher) => {
     const updated = [...teachers, teacher];
@@ -104,23 +376,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     storage.set("teachers", updated);
   };
 
-  const addClass = (classData: Class) => {
-    const updated = [...classes, classData];
-    setClasses(updated);
-    storage.set("classes", updated);
-  };
-
-  const updateClass = (classData: Class) => {
-    const updated = classes.map((c) => (c.id === classData.id ? classData : c));
-    setClasses(updated);
-    storage.set("classes", updated);
-  };
-
-  const deleteClass = (id: string) => {
-    const updated = classes.filter((c) => c.id !== id);
-    setClasses(updated);
-    storage.set("classes", updated);
-  };
+  // ==================== SUBJECTS (localStorage) ====================
 
   const addSubject = (subject: Subject) => {
     const updated = [...subjects, subject];
@@ -140,6 +396,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     storage.set("subjects", updated);
   };
 
+  // ==================== GRADES (localStorage) ====================
+
   const updateGrades = (newGrades: Grade[]) => {
     setGrades(newGrades);
     storage.set("grades", newGrades);
@@ -149,7 +407,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     return grades.filter((g) => g.studentId === studentId);
   };
 
-  // Schedule Management Functions
+  // ==================== SCHEDULES (localStorage) ====================
+
   const addSchedule = (schedule: Schedule) => {
     const updated = [...schedules, schedule];
     setSchedules(updated);
@@ -175,26 +434,45 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   return (
     <DataContext.Provider
       value={{
+        // Students (API)
         students,
-        teachers,
-        classes,
-        subjects,
-        grades,
-        schedules,
+        isLoadingStudents,
+        studentsError,
+        fetchStudents,
         addStudent,
         updateStudent,
         deleteStudent,
+
+        // Teachers (localStorage)
+        teachers,
         addTeacher,
         updateTeacher,
         deleteTeacher,
+
+        // Classes (API)
+        classes,
+        isLoadingClasses,
+        classesError,
+        fetchClasses,
         addClass,
         updateClass,
         deleteClass,
+        assignStudentsToClass,
+        removeStudentFromClass,
+
+        // Subjects (localStorage)
+        subjects,
         addSubject,
         updateSubject,
         deleteSubject,
+
+        // Grades (localStorage)
+        grades,
         updateGrades,
         getStudentGrades,
+
+        // Schedules (localStorage)
+        schedules,
         addSchedule,
         updateSchedule,
         deleteSchedule,

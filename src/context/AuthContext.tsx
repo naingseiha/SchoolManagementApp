@@ -64,21 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(response.token);
         setUser(response.user);
 
-        // Redirect based on role (using backend role)
-        switch (response.user.role) {
-          case "ADMIN":
-            router.push("/students");
-            break;
-          case "TEACHER":
-          case "CLASS_TEACHER":
-            router.push("/grades");
-            break;
-          case "STUDENT":
-            router.push("/schedule");
-            break;
-          default:
-            router.push("/");
+        // Trigger data reload after successful login
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("auth-change"));
         }
+
+        // ✅ Redirect to root (Dashboard)
+        router.push("/");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -100,9 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ? {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        name: `${user.firstName} ${user.lastName}`,
+        username: user.username || user.email,
+        firstName: user.firstName || user.username?.split(" ")[0] || "",
+        lastName: user.lastName || user.username?.split(" ")[1] || "",
+        name:
+          user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user.username || user.email,
         role: mapBackendRole(user.role), // Map backend role to frontend role
       }
     : null;

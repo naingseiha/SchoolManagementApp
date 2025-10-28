@@ -6,18 +6,30 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import { useData } from "@/context/DataContext";
-import { Save, X, User, Calendar, Phone, MapPin, Users } from "lucide-react";
+import {
+  Save,
+  X,
+  User,
+  Calendar,
+  Phone,
+  MapPin,
+  Users,
+  Loader2,
+  GraduationCap,
+} from "lucide-react";
 
 interface StudentFormProps {
   student?: Student;
   onSave: (student: Student) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
 export default function StudentForm({
   student,
   onSave,
   onCancel,
+  isSubmitting = false,
 }: StudentFormProps) {
   const { classes } = useData();
   const [formData, setFormData] = useState<Student>(
@@ -25,6 +37,7 @@ export default function StudentForm({
       id: "",
       firstName: "",
       lastName: "",
+      email: "",
       gender: "male",
       dateOfBirth: "",
       classId: "",
@@ -37,16 +50,54 @@ export default function StudentForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newStudent = {
-      ...formData,
+
+    console.log("📝 Form submitted with:", formData);
+
+    // Validate required fields
+    if (!formData.firstName || formData.firstName.trim() === "") {
+      alert("First name is required / គោត្តនាមត្រូវតែបំពេញ");
+      return;
+    }
+
+    if (!formData.lastName || formData.lastName.trim() === "") {
+      alert("Last name is required / នាមត្រូវតែបំពេញ");
+      return;
+    }
+
+    if (!formData.dateOfBirth) {
+      alert("Date of birth is required / ថ្ងៃខែឆ្នាំកំណើតត្រូវតែបំពេញ");
+      return;
+    }
+
+    const studentData: Student = {
       id: student?.id || `s${Date.now()}`,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email:
+        formData.email ||
+        `${formData.firstName.toLowerCase()}.${formData.lastName.toLowerCase()}@student.com`,
+      gender: formData.gender,
+      dateOfBirth: formData.dateOfBirth,
+      phone: formData.phone?.trim() || undefined,
+      address: formData.address?.trim() || undefined,
+      guardianName: formData.guardianName?.trim() || undefined,
+      guardianPhone: formData.guardianPhone?.trim() || undefined,
+      classId:
+        formData.classId && formData.classId.trim() !== ""
+          ? formData.classId
+          : undefined,
     };
-    onSave(newStudent);
+
+    console.log("✅ Sending student data:", studentData);
+    onSave(studentData);
   };
 
   const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់ • Select Class" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
+    { value: "", label: "គ្មានថ្នាក់ • No Class (Optional)" },
+    ...classes.map((c) => ({
+      value: c.id,
+      label: `${c.name} (${c._count?.students || 0} សិស្ស)`,
+    })),
   ];
 
   const genderOptions = [
@@ -70,20 +121,24 @@ export default function StudentForm({
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              label="គោត្តនាម • Last Name"
-              value={formData.lastName}
-              onChange={(e) =>
-                setFormData({ ...formData, lastName: e.target.value })
-              }
+              label="គោត្តនាម • Last Name *"
+              value={formData.lastName || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                console.log("Last name changed to:", value);
+                setFormData({ ...formData, lastName: value });
+              }}
               placeholder="Enter last name"
               required
             />
             <Input
-              label="នាម • First Name"
-              value={formData.firstName}
-              onChange={(e) =>
-                setFormData({ ...formData, firstName: e.target.value })
-              }
+              label="នាម • First Name *"
+              value={formData.firstName || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                console.log("First name changed to:", value);
+                setFormData({ ...formData, firstName: value });
+              }}
               placeholder="Enter first name"
               required
             />
@@ -91,7 +146,7 @@ export default function StudentForm({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
-              label="ភេទ • Gender"
+              label="ភេទ • Gender *"
               value={formData.gender}
               onChange={(e) =>
                 setFormData({
@@ -100,9 +155,10 @@ export default function StudentForm({
                 })
               }
               options={genderOptions}
+              required
             />
             <Input
-              label="ថ្ងៃខែឆ្នាំកំណើត • Date of Birth"
+              label="ថ្ងៃខែឆ្នាំកំណើត • Date of Birth *"
               type="date"
               value={formData.dateOfBirth}
               onChange={(e) =>
@@ -111,6 +167,16 @@ export default function StudentForm({
               required
             />
           </div>
+
+          <Input
+            label="អ៊ីមែល • Email (Optional)"
+            type="email"
+            value={formData.email || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+            placeholder="student@example.com"
+          />
         </div>
       </div>
 
@@ -118,7 +184,7 @@ export default function StudentForm({
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
-            <Calendar className="w-5 h-5 text-purple-600" />
+            <GraduationCap className="w-5 h-5 text-purple-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900">
             ព័ត៌មានសិក្សា • Academic Information
@@ -126,14 +192,19 @@ export default function StudentForm({
         </div>
 
         <Select
-          label="ថ្នាក់រៀន • Class"
-          value={formData.classId}
+          label="ថ្នាក់រៀន • Class (Optional)"
+          value={formData.classId || ""}
           onChange={(e) =>
             setFormData({ ...formData, classId: e.target.value })
           }
           options={classOptions}
-          required
         />
+
+        <p className="text-xs text-gray-500 mt-2">
+          💡 អ្នកអាចបន្ថែមសិស្សដោយមិនកំណត់ថ្នាក់រៀន ហើយកំណត់ពេលក្រោយបាន
+          <br />
+          You can add students without assigning a class and assign them later.
+        </p>
       </div>
 
       {/* Contact Information Section */}
@@ -150,7 +221,7 @@ export default function StudentForm({
         <div className="space-y-4">
           <Input
             label="លេខទូរស័ព្ទ • Phone"
-            value={formData.phone}
+            value={formData.phone || ""}
             onChange={(e) =>
               setFormData({ ...formData, phone: e.target.value })
             }
@@ -159,7 +230,7 @@ export default function StudentForm({
 
           <Input
             label="អាសយដ្ឋាន • Address"
-            value={formData.address}
+            value={formData.address || ""}
             onChange={(e) =>
               setFormData({ ...formData, address: e.target.value })
             }
@@ -182,7 +253,7 @@ export default function StudentForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="ឈ្មោះអាណាព្យាបាល • Guardian Name"
-            value={formData.guardianName}
+            value={formData.guardianName || ""}
             onChange={(e) =>
               setFormData({ ...formData, guardianName: e.target.value })
             }
@@ -190,7 +261,7 @@ export default function StudentForm({
           />
           <Input
             label="លេខទូរស័ព្ទអាណាព្យាបាល • Guardian Phone"
-            value={formData.guardianPhone}
+            value={formData.guardianPhone || ""}
             onChange={(e) =>
               setFormData({ ...formData, guardianPhone: e.target.value })
             }
@@ -199,15 +270,47 @@ export default function StudentForm({
         </div>
       </div>
 
+      {/* Debug Info (Remove in production) */}
+      <div className="bg-gray-50 p-3 rounded text-xs">
+        <strong>Debug Info:</strong>
+        <pre className="mt-1 text-[10px] overflow-auto">
+          {JSON.stringify(
+            {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              gender: formData.gender,
+              dateOfBirth: formData.dateOfBirth,
+              classId: formData.classId,
+            },
+            null,
+            2
+          )}
+        </pre>
+      </div>
+
       {/* Action Buttons */}
       <div className="flex gap-3 justify-end pt-6 border-t border-gray-200">
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
           <X className="w-5 h-5" />
           <span>បោះបង់ Cancel</span>
         </Button>
-        <Button type="submit">
-          <Save className="w-5 h-5" />
-          <span>រក្សាទុក Save</span>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-5 h-5" />
+              <span>{student ? "រក្សាទុក Update" : "បន្ថែម Add"}</span>
+            </>
+          )}
         </Button>
       </div>
     </form>
