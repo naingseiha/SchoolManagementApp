@@ -75,12 +75,13 @@ model Teacher {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  classes    Class[]
+  classes            Class[]
+  subjectAssignments SubjectTeacher[]
 
   @@map("teachers")
 }
 
-// Class Model
+// Class Model - ✅ FIXED: Removed subjects relation
 model Class {
   id        String   @id @default(uuid())
   name      String
@@ -92,7 +93,6 @@ model Class {
 
   teacher   Teacher?  @relation(fields: [teacherId], references: [id])
   students  Student[]
-  subjects  Subject[]
 
   @@map("classes")
 }
@@ -101,16 +101,38 @@ model Class {
 model Subject {
   id          String   @id @default(uuid())
   name        String
+  nameKh      String?
+  nameEn      String?
   code        String   @unique
   description String?
-  classId     String
+  grade       String
+  track       String?
+  category    String   @default("core")
+  weeklyHours Float    @default(0)
+  annualHours Int      @default(0)
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  class       Class    @relation(fields: [classId], references: [id])
-  grades      Grade[]
+  teacherAssignments SubjectTeacher[]
+  grades             Grade[]
 
   @@map("subjects")
+}
+
+// Subject-Teacher Assignment (Many-to-Many)
+model SubjectTeacher {
+  id         String   @id @default(uuid())
+  subjectId  String
+  teacherId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  subject    Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher    Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, teacherId])
+  @@map("subject_teachers")
 }
 
 // Grade Model
@@ -124,8 +146,8 @@ model Grade {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  student   Student  @relation(fields: [studentId], references: [id])
-  subject   Subject  @relation(fields: [subjectId], references: [id])
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@map("grades")
 }
@@ -140,7 +162,7 @@ model Attendance {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  student   Student          @relation(fields: [studentId], references: [id])
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@map("attendance")
 }
