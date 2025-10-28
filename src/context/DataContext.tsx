@@ -6,7 +6,7 @@ import { storage } from "@/lib/storage";
 import { studentsApi } from "@/lib/api/students";
 import { classesApi } from "@/lib/api/classes";
 import { teachersApi } from "@/lib/api/teachers";
-import { subjectsApi } from "@/lib/api/subjects";
+import { subjectsApi } from "@/lib/api/subjects"; // ✅ KEEP THIS
 import {
   DEFAULT_STUDENTS,
   DEFAULT_TEACHERS,
@@ -41,10 +41,7 @@ interface DataContextType {
   addClass: (classData: Omit<Class, "id">) => Promise<void>;
   updateClass: (classData: Class) => Promise<void>;
   deleteClass: (id: string) => Promise<void>;
-  assignStudentsToClass: (
-    classId: string,
-    studentIds: string[]
-  ) => Promise<void>;
+  assignStudentsToClass: (classId: string, studentIds: string[]) => Promise<void>;
   removeStudentFromClass: (classId: string, studentId: string) => Promise<void>;
 
   // Subjects (API) - ✅ UPDATED
@@ -55,14 +52,8 @@ interface DataContextType {
   addSubject: (subject: Omit<Subject, "id">) => Promise<void>;
   updateSubject: (subject: Subject) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
-  assignTeachersToSubject: (
-    subjectId: string,
-    teacherIds: string[]
-  ) => Promise<void>;
-  removeTeacherFromSubject: (
-    subjectId: string,
-    teacherId: string
-  ) => Promise<void>;
+  assignTeachersToSubject: (subjectId: string, teacherIds: string[]) => Promise<void>;
+  removeTeacherFromSubject: (subjectId: string, teacherId: string) => Promise<void>;
 
   // Grades (localStorage for now)
   grades: Grade[];
@@ -95,7 +86,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [classesError, setClassesError] = useState<string | null>(null);
 
-  // Subjects State (API-based) - ✅ NEW
+  // Subjects State (API-based) - ✅ KEEP THIS
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
@@ -154,12 +145,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     console.log("🔄 Loading initial data...");
 
     try {
-      // Load students, classes, teachers, and subjects from API in parallel
+      // ✅ Load students, classes, teachers, and subjects from API in parallel
       await Promise.all([
         fetchStudents(),
         fetchClasses(),
         fetchTeachers(),
-        fetchSubjects(), // ✅ NEW
+        fetchSubjects(), // ✅ KEEP THIS
       ]);
 
       // Load other data from localStorage
@@ -178,7 +169,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ==================== STUDENTS API METHODS ====================
-  // ... (keep existing student methods) ...
 
   const fetchStudents = async () => {
     try {
@@ -273,7 +263,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ==================== TEACHERS API METHODS ====================
-  // ... (keep existing teacher methods) ...
 
   const fetchTeachers = async () => {
     try {
@@ -361,7 +350,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ==================== CLASSES API METHODS ====================
-  // ... (keep existing class methods) ...
 
   const fetchClasses = async () => {
     try {
@@ -461,7 +449,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const removeStudentFromClass = async (classId: string, studentId: string) => {
+  const removeStudentFromClass = async (
+    classId: string,
+    studentId: string
+  ) => {
     try {
       setIsLoadingClasses(true);
       setClassesError(null);
@@ -478,7 +469,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ==================== SUBJECTS API METHODS - ✅ NEW ====================
+  // ==================== SUBJECTS API METHODS - ✅ KEEP ALL OF THIS ====================
 
   const fetchSubjects = async () => {
     try {
@@ -633,7 +624,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateSchedule = (schedule: Schedule) => {
-    const updated = schedules.map((s) => (s.id === schedule.id ? schedule : s));
+    const updated = schedules.map((s) =>
+      s.id === schedule.id ? schedule : s
+    );
     setSchedules(updated);
     storage.set("schedules", updated);
   };
