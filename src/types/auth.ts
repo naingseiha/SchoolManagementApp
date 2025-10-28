@@ -4,9 +4,10 @@ export type UserRole = "ADMIN" | "TEACHER" | "STUDENT" | "CLASS_TEACHER";
 
 export interface User {
   id: string;
+  username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string; // Optional for backward compatibility
+  lastName?: string; // Optional for backward compatibility
   role: UserRole;
 }
 
@@ -14,8 +15,9 @@ export interface User {
 export interface CurrentUser {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
   name: string; // Full name
   role: string; // Mapped role (lowercase)
 }
@@ -29,7 +31,14 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   token: string;
-  user: User;
+  user: {
+    id: string;
+    email: string;
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    role: UserRole;
+  };
 }
 
 export interface AuthState {
