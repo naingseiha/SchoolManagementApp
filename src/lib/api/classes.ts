@@ -41,88 +41,58 @@ export interface ClassResponse {
 }
 
 export const classesApi = {
-  // Get all classes
   async getAll(): Promise<Class[]> {
     try {
-      const response = await apiClient.get<ClassesResponse>("/classes");
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error fetching classes:", error);
-      throw new Error(error.message || "Failed to fetch classes");
+      // ✅ Response is already the array
+      const classes = await apiClient.get<Class[]>("/classes");
+
+      if (!Array.isArray(classes)) {
+        console.error("❌ Expected array but got:", typeof classes);
+        return [];
+      }
+
+      return classes;
+    } catch (error) {
+      console.error("❌ classesApi.getAll error:", error);
+      return [];
     }
   },
 
-  // Get class by ID with students
-  async getById(id: string): Promise<Class> {
+  async getById(id: string): Promise<Class | null> {
     try {
-      const response = await apiClient.get<ClassResponse>(`/classes/${id}`);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error fetching class:", error);
-      throw new Error(error.message || "Failed to fetch class");
+      const classData = await apiClient.get<Class>(`/classes/${id}`);
+      return classData;
+    } catch (error) {
+      console.error("❌ classesApi.getById error:", error);
+      return null;
     }
   },
 
-  // Create new class
-  async create(data: CreateClassData): Promise<Class> {
-    try {
-      const response = await apiClient.post<ClassResponse>("/classes", data);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error creating class:", error);
-      throw new Error(error.message || "Failed to create class");
-    }
+  async create(classData: Omit<Class, "id">): Promise<Class> {
+    const data = await apiClient.post<Class>("/classes", classData);
+    return data;
   },
 
-  // Update class
-  async update(id: string, data: Partial<CreateClassData>): Promise<Class> {
-    try {
-      const response = await apiClient.put<ClassResponse>(
-        `/classes/${id}`,
-        data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error updating class:", error);
-      throw new Error(error.message || "Failed to update class");
-    }
+  async update(id: string, classData: Partial<Class>): Promise<Class> {
+    const data = await apiClient.put<Class>(`/classes/${id}`, classData);
+    return data;
   },
 
-  // Delete class
   async delete(id: string): Promise<void> {
-    try {
-      await apiClient.delete<{ success: boolean; message: string }>(
-        `/classes/${id}`
-      );
-    } catch (error: any) {
-      console.error("❌ Error deleting class:", error);
-      throw new Error(error.message || "Failed to delete class");
-    }
+    await apiClient.delete(`/classes/${id}`);
   },
 
-  // Assign students to class
   async assignStudents(classId: string, studentIds: string[]): Promise<Class> {
-    try {
-      const response = await apiClient.post<ClassResponse>(
-        `/classes/${classId}/assign-students`,
-        { studentIds }
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error assigning students:", error);
-      throw new Error(error.message || "Failed to assign students");
-    }
+    const data = await apiClient.post<Class>(`/classes/${classId}/students`, {
+      studentIds,
+    });
+    return data;
   },
 
-  // Remove student from class
-  async removeStudent(classId: string, studentId: string): Promise<void> {
-    try {
-      await apiClient.delete<{ success: boolean; message: string }>(
-        `/classes/${classId}/students/${studentId}`
-      );
-    } catch (error: any) {
-      console.error("❌ Error removing student:", error);
-      throw new Error(error.message || "Failed to remove student");
-    }
+  async removeStudent(classId: string, studentId: string): Promise<Class> {
+    const data = await apiClient.delete<Class>(
+      `/classes/${classId}/students/${studentId}`
+    );
+    return data;
   },
 };

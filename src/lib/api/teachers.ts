@@ -37,64 +37,44 @@ export interface TeacherResponse {
 }
 
 export const teachersApi = {
-  // Get all teachers
   async getAll(): Promise<Teacher[]> {
     try {
-      const response = await apiClient.get<TeachersResponse>("/teachers");
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error fetching teachers:", error);
-      throw new Error(error.message || "Failed to fetch teachers");
+      // ✅ Response is already the array
+      const teachers = await apiClient.get<Teacher[]>("/teachers");
+
+      if (!Array.isArray(teachers)) {
+        console.error("❌ Expected array but got:", typeof teachers);
+        return [];
+      }
+
+      return teachers;
+    } catch (error) {
+      console.error("❌ teachersApi.getAll error:", error);
+      return [];
     }
   },
 
-  // Get teacher by ID
-  async getById(id: string): Promise<Teacher> {
+  async getById(id: string): Promise<Teacher | null> {
     try {
-      const response = await apiClient.get<TeacherResponse>(`/teachers/${id}`);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error fetching teacher:", error);
-      throw new Error(error.message || "Failed to fetch teacher");
+      const teacher = await apiClient.get<Teacher>(`/teachers/${id}`);
+      return teacher;
+    } catch (error) {
+      console.error("❌ teachersApi.getById error:", error);
+      return null;
     }
   },
 
-  // Create new teacher
-  async create(data: CreateTeacherData): Promise<Teacher> {
-    try {
-      console.log("📤 Creating teacher:", data);
-      const response = await apiClient.post<TeacherResponse>("/teachers", data);
-      console.log("✅ Teacher created:", response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error creating teacher:", error);
-      throw new Error(error.message || "Failed to create teacher");
-    }
+  async create(teacher: Omit<Teacher, "id">): Promise<Teacher> {
+    const data = await apiClient.post<Teacher>("/teachers", teacher);
+    return data;
   },
 
-  // Update teacher
-  async update(id: string, data: Partial<CreateTeacherData>): Promise<Teacher> {
-    try {
-      const response = await apiClient.put<TeacherResponse>(
-        `/teachers/${id}`,
-        data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error updating teacher:", error);
-      throw new Error(error.message || "Failed to update teacher");
-    }
+  async update(id: string, teacher: Partial<Teacher>): Promise<Teacher> {
+    const data = await apiClient.put<Teacher>(`/teachers/${id}`, teacher);
+    return data;
   },
 
-  // Delete teacher
   async delete(id: string): Promise<void> {
-    try {
-      await apiClient.delete<{ success: boolean; message: string }>(
-        `/teachers/${id}`
-      );
-    } catch (error: any) {
-      console.error("❌ Error deleting teacher:", error);
-      throw new Error(error.message || "Failed to delete teacher");
-    }
+    await apiClient.delete(`/teachers/${id}`);
   },
 };

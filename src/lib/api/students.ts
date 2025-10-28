@@ -118,19 +118,34 @@ export const studentsApi = {
   // Get all students
   async getAll(): Promise<Student[]> {
     try {
-      const response = await apiClient.get<StudentsResponse>("/students");
-      return response.data.map(transformStudent);
+      // ✅ apiClient.get already extracts data, so response IS the array
+      const students = await apiClient.get<Student[]>("/students");
+
+      console.log("📥 Students received:", students);
+      console.log(
+        "  - Type:",
+        Array.isArray(students) ? "Array ✅" : typeof students
+      );
+      console.log("  - Count:", students?.length || 0);
+
+      if (!Array.isArray(students)) {
+        console.error("❌ Expected array but got:", students);
+        return [];
+      }
+
+      return students.map(transformStudent);
     } catch (error: any) {
       console.error("❌ Error fetching students:", error);
-      throw new Error(error.message || "Failed to fetch students");
+      return []; // ✅ Return empty array instead of throwing
     }
   },
 
   // Get student by ID
   async getById(id: string): Promise<Student> {
     try {
-      const response = await apiClient.get<StudentResponse>(`/students/${id}`);
-      return transformStudent(response.data);
+      // ✅ apiClient.get returns the student object directly
+      const student = await apiClient.get<Student>(`/students/${id}`);
+      return transformStudent(student);
     } catch (error: any) {
       console.error("❌ Error fetching student:", error);
       throw new Error(error.message || "Failed to fetch student");
@@ -149,14 +164,12 @@ export const studentsApi = {
       console.log("📦 Sending to backend:", backendData);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      const response = await apiClient.post<StudentResponse>(
-        "/students",
-        backendData
-      );
+      // ✅ apiClient.post returns the student object directly
+      const student = await apiClient.post<Student>("/students", backendData);
 
-      console.log("✅ Response from backend:", response);
+      console.log("✅ Response from backend:", student);
 
-      return transformStudent(response.data);
+      return transformStudent(student);
     } catch (error: any) {
       console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.error("❌ FRONTEND ERROR:", error);
@@ -164,15 +177,17 @@ export const studentsApi = {
       throw new Error(error.message || "Failed to create student");
     }
   },
+
   // Update student
   async update(id: string, data: Partial<CreateStudentData>): Promise<Student> {
     try {
       const backendData = transformToBackend(data as CreateStudentData);
-      const response = await apiClient.put<StudentResponse>(
+      // ✅ apiClient.put returns the student object directly
+      const student = await apiClient.put<Student>(
         `/students/${id}`,
         backendData
       );
-      return transformStudent(response.data);
+      return transformStudent(student);
     } catch (error: any) {
       console.error("❌ Error updating student:", error);
       throw new Error(error.message || "Failed to update student");
@@ -182,9 +197,7 @@ export const studentsApi = {
   // Delete student
   async delete(id: string): Promise<void> {
     try {
-      await apiClient.delete<{ success: boolean; message: string }>(
-        `/students/${id}`
-      );
+      await apiClient.delete(`/students/${id}`);
     } catch (error: any) {
       console.error("❌ Error deleting student:", error);
       throw new Error(error.message || "Failed to delete student");
@@ -198,7 +211,7 @@ export const studentsApi = {
       return allStudents.filter((student) => student.classId === classId);
     } catch (error: any) {
       console.error("❌ Error fetching students by class:", error);
-      throw new Error(error.message || "Failed to fetch students by class");
+      return [];
     }
   },
 };

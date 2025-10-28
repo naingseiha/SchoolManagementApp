@@ -64,101 +64,62 @@ export interface SubjectResponse {
 }
 
 export const subjectsApi = {
-  // Get all subjects
-  async getAll(params?: {
-    grade?: string;
-    track?: string;
-    category?: string;
-    isActive?: boolean;
-  }): Promise<Subject[]> {
+  async getAll(): Promise<Subject[]> {
     try {
-      const queryParams = new URLSearchParams();
-      if (params?.grade) queryParams.append("grade", params.grade);
-      if (params?.track) queryParams.append("track", params.track);
-      if (params?.category) queryParams.append("category", params.category);
-      if (params?.isActive !== undefined)
-        queryParams.append("isActive", String(params.isActive));
+      // ✅ Response is already the array
+      const subjects = await apiClient.get<Subject[]>("/subjects");
 
-      const url = `/subjects${
-        queryParams.toString() ? `?${queryParams.toString()}` : ""
-      }`;
-      const response = await apiClient.get<SubjectsResponse>(url);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error fetching subjects:", error);
-      throw new Error(error.message || "Failed to fetch subjects");
+      if (!Array.isArray(subjects)) {
+        console.error("❌ Expected array but got:", typeof subjects);
+        return [];
+      }
+
+      return subjects;
+    } catch (error) {
+      console.error("❌ subjectsApi.getAll error:", error);
+      return [];
     }
   },
 
-  // Get subject by ID
-  async getById(id: string): Promise<Subject> {
+  async getById(id: string): Promise<Subject | null> {
     try {
-      const response = await apiClient.get<SubjectResponse>(`/subjects/${id}`);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error fetching subject:", error);
-      throw new Error(error.message || "Failed to fetch subject");
+      const subject = await apiClient.get<Subject>(`/subjects/${id}`);
+      return subject;
+    } catch (error) {
+      console.error("❌ subjectsApi.getById error:", error);
+      return null;
     }
   },
 
-  // Create new subject
-  async create(data: CreateSubjectData): Promise<Subject> {
-    try {
-      console.log("📤 Creating subject:", data);
-      const response = await apiClient.post<SubjectResponse>("/subjects", data);
-      console.log("✅ Subject created:", response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error creating subject:", error);
-      throw new Error(error.message || "Failed to create subject");
-    }
+  async create(subject: Omit<Subject, "id">): Promise<Subject> {
+    const data = await apiClient.post<Subject>("/subjects", subject);
+    return data;
   },
 
-  // Update subject
-  async update(id: string, data: Partial<CreateSubjectData>): Promise<Subject> {
-    try {
-      const response = await apiClient.put<SubjectResponse>(
-        `/subjects/${id}`,
-        data
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error("❌ Error updating subject:", error);
-      throw new Error(error.message || "Failed to update subject");
-    }
+  async update(id: string, subject: Partial<Subject>): Promise<Subject> {
+    const data = await apiClient.put<Subject>(`/subjects/${id}`, subject);
+    return data;
   },
 
-  // Delete subject
   async delete(id: string): Promise<void> {
-    try {
-      await apiClient.delete<{ success: boolean; message: string }>(
-        `/subjects/${id}`
-      );
-    } catch (error: any) {
-      console.error("❌ Error deleting subject:", error);
-      throw new Error(error.message || "Failed to delete subject");
-    }
+    await apiClient.delete(`/subjects/${id}`);
   },
 
-  // Assign teachers to subject
-  async assignTeachers(subjectId: string, teacherIds: string[]): Promise<void> {
-    try {
-      await apiClient.post(`/subjects/${subjectId}/assign-teachers`, {
-        teacherIds,
-      });
-    } catch (error: any) {
-      console.error("❌ Error assigning teachers:", error);
-      throw new Error(error.message || "Failed to assign teachers");
-    }
+  async assignTeachers(
+    subjectId: string,
+    teacherIds: string[]
+  ): Promise<Subject> {
+    const data = await apiClient.post<Subject>(
+      `/subjects/${subjectId}/teachers`,
+      { teacherIds }
+    );
+    return data;
   },
 
-  // Remove teacher from subject
-  async removeTeacher(subjectId: string, teacherId: string): Promise<void> {
-    try {
-      await apiClient.delete(`/subjects/${subjectId}/teachers/${teacherId}`);
-    } catch (error: any) {
-      console.error("❌ Error removing teacher:", error);
-      throw new Error(error.message || "Failed to remove teacher");
-    }
+  async removeTeacher(subjectId: string, teacherId: string): Promise<Subject> {
+    const data = await apiClient.delete<Subject>(
+      `/subjects/${subjectId}/teachers/${teacherId}`
+    );
+    return data;
   },
 };

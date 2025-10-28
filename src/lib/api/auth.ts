@@ -1,71 +1,93 @@
-// Authentication API Service
-
 import { apiClient } from "./client";
-import { LoginRequest, LoginResponse, User } from "@/types/auth";
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+// ✅ This matches backend response structure
+interface LoginResponseData {
+  token: string;
+  expiresIn: string;
+  user: User;
+}
 
 export const authApi = {
-  // Login
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>(
-      "/auth/login",
-      credentials
-    );
-
-    // Store token in localStorage
-    if (response.success && response.token) {
-      localStorage.setItem("auth_token", response.token);
-      localStorage.setItem("user", JSON.stringify(response.user));
-    }
-
-    return response;
-  },
-
-  // Logout
-  async logout(): Promise<void> {
+  async login(
+    credentials: LoginCredentials
+  ): Promise<{ token: string; user: User; expiresIn: string }> {
     try {
-      await apiClient.post("/auth/logout");
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Clear local storage regardless of API response
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("user");
-    }
-  },
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📤 Calling login API...");
+      console.log("  - Email:", credentials.email);
+      console.log("  - Remember me:", credentials.rememberMe);
 
-  // Get current user
-  async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<{ success: boolean; data: User }>(
-      "/auth/me"
-    );
-    return response.data;
-  },
+      // ✅ apiClient.post will extract response.data
+      // Backend returns: { success: true, data: { token, user, expiresIn } }
+      // apiClient.post returns: { token, user, expiresIn }
+      const data = await apiClient.post<LoginResponseData>(
+        "/auth/login",
+        credentials
+      );
 
-  // Get stored token
-  getToken(): string | null {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("auth_token");
-    }
-    return null;
-  },
+      console.log("✅ Login API response received:");
+      console.log("  - Token:", data.token ? "Present" : "Missing");
+      console.log("  - Token length:", data.token?.length || 0);
+      console.log("  - User:", data.user?.email);
+      console.log("  - Expires in:", data.expiresIn);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // Get stored user
-  getStoredUser(): User | null {
-    if (typeof window !== "undefined") {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        try {
-          return JSON.parse(userStr);
-        } catch (error) {
-          return null;
-        }
+      if (!data.token) {
+        throw new Error("No token received from server");
       }
+
+      if (!data.user) {
+        throw new Error("No user data received from server");
+      }
+
+      return {
+        token: data.token,
+        user: data.user,
+        expiresIn: data.expiresIn || "7d",
+      };
+    } catch (error: any) {
+      console.error("❌ Login API error:", error);
+      throw error;
     }
-    return null;
   },
 
-  // Check if user is authenticated
-  isAuthenticated(): boolean {
-    return !!this.getToken();
+  async getCurrentUser(): Promise<User> {
+    try {
+      console.log("📤 Getting current user...");
+      const user = await apiClient.get<User>("/auth/me");
+      console.log("✅ Current user:", user.email);
+      return user;
+    } catch (error: any) {
+      console.error("❌ Get current user error:", error);
+      throw error;
+    }
+  },
+
+  async refreshToken(): Promise<string> {
+    try {
+      console.log("🔄 Refreshing token...");
+      const data = await apiClient.post<{ token: string; expiresIn: string }>(
+        "/auth/refresh"
+      );
+      console.log("✅ Token refreshed");
+      return data.token;
+    } catch (error: any) {
+      console.error("❌ Refresh token error:", error);
+      throw error;
+    }
   },
 };

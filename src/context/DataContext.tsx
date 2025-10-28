@@ -6,7 +6,7 @@ import { storage } from "@/lib/storage";
 import { studentsApi } from "@/lib/api/students";
 import { classesApi } from "@/lib/api/classes";
 import { teachersApi } from "@/lib/api/teachers";
-import { subjectsApi } from "@/lib/api/subjects"; // ✅ KEEP THIS
+import { subjectsApi } from "@/lib/api/subjects";
 import {
   DEFAULT_STUDENTS,
   DEFAULT_TEACHERS,
@@ -41,10 +41,13 @@ interface DataContextType {
   addClass: (classData: Omit<Class, "id">) => Promise<void>;
   updateClass: (classData: Class) => Promise<void>;
   deleteClass: (id: string) => Promise<void>;
-  assignStudentsToClass: (classId: string, studentIds: string[]) => Promise<void>;
+  assignStudentsToClass: (
+    classId: string,
+    studentIds: string[]
+  ) => Promise<void>;
   removeStudentFromClass: (classId: string, studentId: string) => Promise<void>;
 
-  // Subjects (API) - ✅ UPDATED
+  // Subjects (API)
   subjects: Subject[];
   isLoadingSubjects: boolean;
   subjectsError: string | null;
@@ -52,8 +55,14 @@ interface DataContextType {
   addSubject: (subject: Omit<Subject, "id">) => Promise<void>;
   updateSubject: (subject: Subject) => Promise<void>;
   deleteSubject: (id: string) => Promise<void>;
-  assignTeachersToSubject: (subjectId: string, teacherIds: string[]) => Promise<void>;
-  removeTeacherFromSubject: (subjectId: string, teacherId: string) => Promise<void>;
+  assignTeachersToSubject: (
+    subjectId: string,
+    teacherIds: string[]
+  ) => Promise<void>;
+  removeTeacherFromSubject: (
+    subjectId: string,
+    teacherId: string
+  ) => Promise<void>;
 
   // Grades (localStorage for now)
   grades: Grade[];
@@ -71,58 +80,53 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  // Students State (API-based)
+  // ✅ Initialize with empty arrays to prevent undefined errors
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
 
-  // Teachers State (API-based)
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
   const [teachersError, setTeachersError] = useState<string | null>(null);
 
-  // Classes State (API-based)
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [classesError, setClassesError] = useState<string | null>(null);
 
-  // Subjects State (API-based) - ✅ KEEP THIS
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
 
-  // Other states (localStorage-based for now)
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load initial data only when authenticated
+  // ✅ Load initial data when component mounts
   useEffect(() => {
+    console.log("🔄 DataContext mounted, checking for token...");
     const token =
       typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    if (token && !isInitialized) {
-      console.log("🔄 Token found, loading initial data...");
+    if (token) {
+      console.log("✅ Token found, loading initial data...");
       loadInitialData();
-      setIsInitialized(true);
-    } else if (!token) {
-      console.log("⏸️ No token found, skipping data load");
-      setIsInitialized(false);
+    } else {
+      console.log("⏸️ No token found, waiting for auth...");
     }
-  }, []);
+  }, []); // Run once on mount
 
-  // Listen for auth changes (login/logout)
+  // ✅ Listen for auth changes
   useEffect(() => {
     const handleAuthChange = () => {
+      console.log("🔐 Auth state changed, reloading data...");
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-      if (token) {
-        console.log("🔐 Auth changed (logged in), reloading data...");
+      if (token && !isInitialized) {
+        console.log("✅ Auth changed (logged in), loading data...");
         loadInitialData();
-        setIsInitialized(true);
-      } else {
+      } else if (!token) {
         console.log("🔐 Auth changed (logged out), clearing data...");
         setStudents([]);
         setTeachers([]);
@@ -144,14 +148,51 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("🔄 Loading initial data...");
 
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+    if (!token) {
+      console.log("⏸️ No token found - skipping data load");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      return;
+    }
+
     try {
-      // ✅ Load students, classes, teachers, and subjects from API in parallel
-      await Promise.all([
-        fetchStudents(),
-        fetchClasses(),
-        fetchTeachers(),
-        fetchSubjects(), // ✅ KEEP THIS
-      ]);
+      console.log("🔑 Token found, loading data from API...");
+
+      // ✅ Load students
+      setIsLoadingStudents(true);
+      const studentsData = await studentsApi.getAll();
+      console.log("📥 Students loaded:", studentsData.length);
+      setStudents(studentsData);
+      setIsLoadingStudents(false);
+
+      // ✅ Load teachers
+      setIsLoadingTeachers(true);
+      const teachersData = await teachersApi.getAll();
+      console.log("📥 Teachers loaded:", teachersData.length);
+      setTeachers(teachersData);
+      setIsLoadingTeachers(false);
+
+      // ✅ Load classes
+      setIsLoadingClasses(true);
+      const classesData = await classesApi.getAll();
+      console.log("📥 Classes loaded:", classesData.length);
+      setClasses(classesData);
+      setIsLoadingClasses(false);
+
+      // ✅ Load subjects
+      setIsLoadingSubjects(true);
+      const subjectsData = await subjectsApi.getAll();
+      console.log("📥 Subjects loaded:", subjectsData.length);
+      setSubjects(subjectsData);
+      setIsLoadingSubjects(false);
+
+      console.log("✅ All API data loaded:");
+      console.log("  - Students:", studentsData.length);
+      console.log("  - Teachers:", teachersData.length);
+      console.log("  - Classes:", classesData.length);
+      console.log("  - Subjects:", subjectsData.length);
 
       // Load other data from localStorage
       const loadedGrades = storage.get("grades") || [];
@@ -160,11 +201,70 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setGrades(loadedGrades);
       setSchedules(loadedSchedules);
 
+      setIsInitialized(true);
       console.log("✅ Initial data loaded successfully");
     } catch (error) {
       console.error("❌ Error loading initial data:", error);
+      setIsLoadingStudents(false);
+      setIsLoadingTeachers(false);
+      setIsLoadingClasses(false);
+      setIsLoadingSubjects(false);
     } finally {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    }
+  };
+
+  // ==================== HELPER FUNCTIONS ====================
+
+  const fetchStudentsData = async (): Promise<Student[]> => {
+    try {
+      const data = await studentsApi.getAll();
+      setStudents(data);
+      return data;
+    } catch (error: any) {
+      console.error("Error fetching students:", error);
+      setStudentsError(error.message);
+      setStudents([]);
+      return [];
+    }
+  };
+
+  const fetchClassesData = async (): Promise<Class[]> => {
+    try {
+      const data = await classesApi.getAll();
+      setClasses(data);
+      return data;
+    } catch (error: any) {
+      console.error("Error fetching classes:", error);
+      setClassesError(error.message);
+      setClasses([]);
+      return [];
+    }
+  };
+
+  const fetchTeachersData = async (): Promise<Teacher[]> => {
+    try {
+      const data = await teachersApi.getAll();
+      setTeachers(data);
+      return data;
+    } catch (error: any) {
+      console.error("Error fetching teachers:", error);
+      setTeachersError(error.message);
+      setTeachers([]);
+      return [];
+    }
+  };
+
+  const fetchSubjectsData = async (): Promise<Subject[]> => {
+    try {
+      const data = await subjectsApi.getAll();
+      setSubjects(data);
+      return data;
+    } catch (error: any) {
+      console.error("Error fetching subjects:", error);
+      setSubjectsError(error.message);
+      setSubjects([]);
+      return [];
     }
   };
 
@@ -174,13 +274,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingStudents(true);
       setStudentsError(null);
-      const data = await studentsApi.getAll();
-      console.log("✅ Loaded students:", data.length);
-      setStudents(data);
-    } catch (error: any) {
-      console.error("Error fetching students:", error);
-      setStudentsError(error.message || "Failed to load students");
-      setStudents([]);
+      await fetchStudentsData();
     } finally {
       setIsLoadingStudents(false);
     }
@@ -190,8 +284,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingStudents(true);
       setStudentsError(null);
-
-      console.log("📤 Adding student:", studentData);
 
       const newStudent = await studentsApi.create({
         firstName: studentData.firstName || "",
@@ -204,11 +296,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         classId: studentData.classId,
       });
 
-      console.log("✅ Student created:", newStudent);
       setStudents((prev) => [...prev, newStudent]);
       await fetchClasses();
     } catch (error: any) {
-      console.error("Error adding student:", error);
       setStudentsError(error.message || "Failed to add student");
       throw error;
     } finally {
@@ -237,7 +327,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       );
       await fetchClasses();
     } catch (error: any) {
-      console.error("Error updating student:", error);
       setStudentsError(error.message || "Failed to update student");
       throw error;
     } finally {
@@ -254,7 +343,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setStudents((prev) => prev.filter((s) => s.id !== id));
       await fetchClasses();
     } catch (error: any) {
-      console.error("Error deleting student:", error);
       setStudentsError(error.message || "Failed to delete student");
       throw error;
     } finally {
@@ -268,13 +356,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingTeachers(true);
       setTeachersError(null);
-      const data = await teachersApi.getAll();
-      console.log("✅ Loaded teachers:", data.length);
-      setTeachers(data);
-    } catch (error: any) {
-      console.error("Error fetching teachers:", error);
-      setTeachersError(error.message || "Failed to load teachers");
-      setTeachers([]);
+      await fetchTeachersData();
     } finally {
       setIsLoadingTeachers(false);
     }
@@ -285,8 +367,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setIsLoadingTeachers(true);
       setTeachersError(null);
 
-      console.log("📤 Adding teacher:", teacherData);
-
       const newTeacher = await teachersApi.create({
         firstName: teacherData.firstName,
         lastName: teacherData.lastName,
@@ -296,10 +376,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         employeeId: teacherData.employeeId,
       });
 
-      console.log("✅ Teacher created:", newTeacher);
       setTeachers((prev) => [...prev, newTeacher]);
     } catch (error: any) {
-      console.error("Error adding teacher:", error);
       setTeachersError(error.message || "Failed to add teacher");
       throw error;
     } finally {
@@ -325,7 +403,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         prev.map((t) => (t.id === teacher.id ? updatedTeacher : t))
       );
     } catch (error: any) {
-      console.error("Error updating teacher:", error);
       setTeachersError(error.message || "Failed to update teacher");
       throw error;
     } finally {
@@ -341,7 +418,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await teachersApi.delete(id);
       setTeachers((prev) => prev.filter((t) => t.id !== id));
     } catch (error: any) {
-      console.error("Error deleting teacher:", error);
       setTeachersError(error.message || "Failed to delete teacher");
       throw error;
     } finally {
@@ -355,13 +431,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingClasses(true);
       setClassesError(null);
-      const data = await classesApi.getAll();
-      console.log("✅ Loaded classes:", data.length);
-      setClasses(data);
-    } catch (error: any) {
-      console.error("Error fetching classes:", error);
-      setClassesError(error.message || "Failed to load classes");
-      setClasses([]);
+      await fetchClassesData();
     } finally {
       setIsLoadingClasses(false);
     }
@@ -381,7 +451,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       setClasses((prev) => [...prev, newClass]);
     } catch (error: any) {
-      console.error("Error adding class:", error);
       setClassesError(error.message || "Failed to add class");
       throw error;
     } finally {
@@ -405,7 +474,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         prev.map((c) => (c.id === classData.id ? updatedClass : c))
       );
     } catch (error: any) {
-      console.error("Error updating class:", error);
       setClassesError(error.message || "Failed to update class");
       throw error;
     } finally {
@@ -421,7 +489,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await classesApi.delete(id);
       setClasses((prev) => prev.filter((c) => c.id !== id));
     } catch (error: any) {
-      console.error("Error deleting class:", error);
       setClassesError(error.message || "Failed to delete class");
       throw error;
     } finally {
@@ -441,7 +508,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await fetchClasses();
       await fetchStudents();
     } catch (error: any) {
-      console.error("Error assigning students:", error);
       setClassesError(error.message || "Failed to assign students");
       throw error;
     } finally {
@@ -449,10 +515,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const removeStudentFromClass = async (
-    classId: string,
-    studentId: string
-  ) => {
+  const removeStudentFromClass = async (classId: string, studentId: string) => {
     try {
       setIsLoadingClasses(true);
       setClassesError(null);
@@ -461,7 +524,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await fetchClasses();
       await fetchStudents();
     } catch (error: any) {
-      console.error("Error removing student:", error);
       setClassesError(error.message || "Failed to remove student");
       throw error;
     } finally {
@@ -469,19 +531,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ==================== SUBJECTS API METHODS - ✅ KEEP ALL OF THIS ====================
+  // ==================== SUBJECTS API METHODS ====================
 
   const fetchSubjects = async () => {
     try {
       setIsLoadingSubjects(true);
       setSubjectsError(null);
-      const data = await subjectsApi.getAll();
-      console.log("✅ Loaded subjects:", data.length);
-      setSubjects(data);
-    } catch (error: any) {
-      console.error("Error fetching subjects:", error);
-      setSubjectsError(error.message || "Failed to load subjects");
-      setSubjects([]);
+      await fetchSubjectsData();
     } finally {
       setIsLoadingSubjects(false);
     }
@@ -491,8 +547,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingSubjects(true);
       setSubjectsError(null);
-
-      console.log("📤 Adding subject:", subjectData);
 
       const newSubject = await subjectsApi.create({
         name: subjectData.name,
@@ -508,10 +562,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         isActive: subjectData.isActive,
       });
 
-      console.log("✅ Subject created:", newSubject);
       setSubjects((prev) => [...prev, newSubject]);
     } catch (error: any) {
-      console.error("Error adding subject:", error);
       setSubjectsError(error.message || "Failed to add subject");
       throw error;
     } finally {
@@ -542,7 +594,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         prev.map((s) => (s.id === subject.id ? updatedSubject : s))
       );
     } catch (error: any) {
-      console.error("Error updating subject:", error);
       setSubjectsError(error.message || "Failed to update subject");
       throw error;
     } finally {
@@ -558,7 +609,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await subjectsApi.delete(id);
       setSubjects((prev) => prev.filter((s) => s.id !== id));
     } catch (error: any) {
-      console.error("Error deleting subject:", error);
       setSubjectsError(error.message || "Failed to delete subject");
       throw error;
     } finally {
@@ -577,7 +627,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await subjectsApi.assignTeachers(subjectId, teacherIds);
       await fetchSubjects();
     } catch (error: any) {
-      console.error("Error assigning teachers:", error);
       setSubjectsError(error.message || "Failed to assign teachers");
       throw error;
     } finally {
@@ -596,7 +645,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       await subjectsApi.removeTeacher(subjectId, teacherId);
       await fetchSubjects();
     } catch (error: any) {
-      console.error("Error removing teacher:", error);
       setSubjectsError(error.message || "Failed to remove teacher");
       throw error;
     } finally {
@@ -624,9 +672,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateSchedule = (schedule: Schedule) => {
-    const updated = schedules.map((s) =>
-      s.id === schedule.id ? schedule : s
-    );
+    const updated = schedules.map((s) => (s.id === schedule.id ? schedule : s));
     setSchedules(updated);
     storage.set("schedules", updated);
   };
@@ -673,7 +719,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         assignStudentsToClass,
         removeStudentFromClass,
 
-        // Subjects (API) - ✅ NEW
+        // Subjects (API)
         subjects,
         isLoadingSubjects,
         subjectsError,

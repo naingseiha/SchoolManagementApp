@@ -8,6 +8,7 @@ import { GraduationCap, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading } = useAuth();
+  const [rememberMe, setRememberMe] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -22,7 +23,9 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(formData.email, formData.password);
+      // ✅ FIX: Destructure from formData
+      const { email, password } = formData;
+      await login({ email, password, rememberMe });
       // Redirect is handled by AuthContext
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
@@ -55,25 +58,27 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="bg-blue-600 p-4 rounded-full">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-full shadow-lg">
               <GraduationCap className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             School Management System
           </h2>
-          <p className="mt-2 text-sm text-gray-600">ប្រព័ន្ធគ្រប់គ្រងសាលា</p>
+          <p className="mt-2 text-lg font-semibold text-gray-700">
+            ប្រព័ន្ធគ្រប់គ្រងសាលា
+          </p>
           <p className="mt-2 text-sm text-gray-500">
             Sign in to access your account
           </p>
         </div>
 
         {/* Login Form */}
-        <div className="mt-8 bg-white py-8 px-4 shadow-xl rounded-lg sm:px-10">
+        <div className="mt-8 bg-white py-8 px-4 shadow-xl rounded-xl sm:px-10 border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 flex items-start">
+              <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 flex items-start animate-shake">
                 <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <span className="text-sm">{error}</span>
               </div>
@@ -83,9 +88,9 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Email Address
+                អ៊ីមែល • Email Address
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -99,7 +104,7 @@ export default function LoginPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition english-modern"
                   placeholder="Enter your email"
                 />
               </div>
@@ -109,9 +114,9 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Password
+                លេខសម្ងាត់ • Password
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -125,7 +130,7 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                   placeholder="Enter your password"
                 />
               </div>
@@ -135,23 +140,25 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
-                  id="remember-me"
-                  name="remember-me"
+                  id="rememberMe"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                 />
                 <label
-                  htmlFor="remember-me"
-                  className="ml-2 block text-sm text-gray-700"
+                  htmlFor="rememberMe"
+                  className="ml-2 text-sm text-gray-700 cursor-pointer select-none"
                 >
-                  Remember me
+                  ចងចាំខ្ញុំ • Remember me
+                  <span className="text-xs text-gray-500 ml-1">(7 days)</span>
                 </label>
               </div>
 
               <div className="text-sm">
                 <a
                   href="#"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
                 >
                   Forgot password?
                 </a>
@@ -163,7 +170,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || isLoading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSubmitting || isLoading ? (
                   <>
@@ -171,7 +178,10 @@ export default function LoginPage() {
                     Signing in...
                   </>
                 ) : (
-                  "Sign in"
+                  <>
+                    <Lock className="h-5 w-5 mr-2" />
+                    Sign in
+                  </>
                 )}
               </button>
             </div>
@@ -184,8 +194,8 @@ export default function LoginPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Quick Login (Demo)
+                <span className="px-2 bg-white text-gray-500 font-medium">
+                  ចូលរហ័ស • Quick Login (Demo)
                 </span>
               </div>
             </div>
@@ -194,24 +204,31 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => fillDemoCredentials("admin")}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                className="group px-3 py-2.5 border-2 border-blue-200 rounded-lg text-xs font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
-                Admin
+                <span className="block">👨‍💼</span>
+                <span className="block mt-1">Admin</span>
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoCredentials("teacher")}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                className="group px-3 py-2.5 border-2 border-green-200 rounded-lg text-xs font-medium text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
-                Teacher
+                <span className="block">👨‍🏫</span>
+                <span className="block mt-1">Teacher</span>
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoCredentials("student")}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition"
+                className="group px-3 py-2.5 border-2 border-purple-200 rounded-lg text-xs font-medium text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
-                Student
+                <span className="block">👨‍🎓</span>
+                <span className="block mt-1">Student</span>
               </button>
+            </div>
+
+            <div className="mt-4 text-xs text-center text-gray-500">
+              <p>Click any role above to auto-fill credentials</p>
             </div>
           </div>
         </div>
@@ -221,10 +238,15 @@ export default function LoginPage() {
           Don't have an account?{" "}
           <a
             href="/register"
-            className="font-medium text-blue-600 hover:text-blue-500"
+            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             Register here
           </a>
+        </p>
+
+        {/* Copyright */}
+        <p className="text-center text-xs text-gray-400">
+          © 2025 School Management System. All rights reserved.
         </p>
       </div>
     </div>
