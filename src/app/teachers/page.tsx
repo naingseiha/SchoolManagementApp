@@ -1,362 +1,406 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
 import TeacherForm from "@/components/forms/TeacherForm";
-import { Teacher } from "@/types";
+import TeacherDetailsModal from "@/components/modals/TeacherDetailsModal";
 import {
+  UserCheck,
   Plus,
+  Search,
   Edit,
   Trash2,
-  Search,
+  Eye,
+  Loader2,
   GraduationCap,
-  UserCheck,
-  Users,
-  Award,
+  Mail,
+  Phone,
+  BookOpen,
+  Hash,
 } from "lucide-react";
+import type { Teacher } from "@/lib/api/teachers";
 
 export default function TeachersPage() {
-  const { isAuthenticated } = useAuth();
-  const { teachers, addTeacher, updateTeacher, deleteTeacher } = useData();
   const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | undefined>();
+  const { isAuthenticated, currentUser } = useAuth();
+  const {
+    teachers,
+    isLoadingTeachers,
+    teachersError,
+    addTeacher,
+    updateTeacher,
+    deleteTeacher,
+  } = useData();
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
 
   if (!isAuthenticated) {
-    router.push("/login");
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600" />
+      </div>
+    );
   }
 
-  // Calculate statistics
-  const stats = useMemo(() => {
-    const classTeachers = teachers.filter((t) => t.isClassTeacher).length;
-    const regularTeachers = teachers.length - classTeachers;
-
-    return {
-      total: teachers.length,
-      classTeachers,
-      regularTeachers,
-      subjects: teachers.reduce((sum, t) => sum + (t.subjects?.length || 0), 0),
-    };
-  }, [teachers]);
-
-  const filteredTeachers = teachers.filter((teacher) =>
-    teacher.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter teachers based on search
+  const filteredTeachers = teachers.filter(
+    (teacher) =>
+      `${teacher.firstName} ${teacher.lastName}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      teacher.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      teacher.employeeId?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSave = (teacher: Teacher) => {
-    if (selectedTeacher) {
-      updateTeacher(teacher);
-    } else {
-      addTeacher(teacher);
-    }
-    setIsModalOpen(false);
+  const handleAddTeacher = () => {
     setSelectedTeacher(undefined);
+    setIsModalOpen(true);
   };
 
-  const handleEdit = (teacher: Teacher) => {
+  const handleEditTeacher = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeleteTeacher = async (teacher: Teacher) => {
     if (
-      confirm(
-        "តើអ្នកប្រាកដថាចង់លុបគ្រូនេះមែនទេ? Are you sure you want to delete this teacher?"
+      !confirm(
+        `តើអ្នកចង់លុបគ្រូ ${teacher.firstName} ${teacher.lastName} មែនទេ?\nAre you sure you want to delete ${teacher.firstName} ${teacher.lastName}?`
       )
     ) {
-      deleteTeacher(id);
+      return;
+    }
+
+    try {
+      await deleteTeacher(teacher.id);
+      alert("គ្រូត្រូវបានលុបដោយជោគជ័យ!\nTeacher deleted successfully!");
+    } catch (error: any) {
+      alert(error.message || "Failed to delete teacher");
     }
   };
 
-  const handleAddNew = () => {
-    setSelectedTeacher(undefined);
-    setIsModalOpen(true);
+  const handleSaveTeacher = async (teacherData: Teacher) => {
+    try {
+      setIsSubmitting(true);
+      if (selectedTeacher) {
+        await updateTeacher(teacherData);
+        alert("គ្រូត្រូវបានកែប្រែដោយជោគជ័យ!\nTeacher updated successfully!");
+      } else {
+        await addTeacher(teacherData);
+        alert("គ្រូត្រូវបានបង្កើតដោយជោគជ័យ!\nTeacher created successfully!");
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      alert(error.message || "Failed to save teacher");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleViewDetails = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setIsDetailsModalOpen(true);
+  };
+
+  // Get statistics
+  const stats = {
+    totalTeachers: teachers.length,
+    withClasses: teachers.filter((t) => t.classes && t.classes.length > 0)
+      .length,
+    withoutClasses: teachers.filter((t) => !t.classes || t.classes.length === 0)
+      .length,
+    subjects: [...new Set(teachers.map((t) => t.subject).filter(Boolean))]
+      .length,
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1">
         <Header />
-        <main className="p-6 space-y-6">
+        <main className="p-6">
           {/* Page Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                គ្រូបង្រៀន Teachers
-              </h1>
-              <p className="text-gray-600 mt-1">
-                គ្រប់គ្រងព័ត៌មានគ្រូបង្រៀន • Manage teacher information
-              </p>
-            </div>
-            <Button onClick={handleAddNew}>
-              <Plus className="w-5 h-5" />
-              <span>បន្ថែមគ្រូបង្រៀន Add Teacher</span>
-            </Button>
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Total Teachers */}
-            <div className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-50"></div>
-
-              <div className="relative p-6 z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-white shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <GraduationCap className="w-8 h-8 text-green-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600 group-hover:text-white/90 transition-colors duration-300">
-                    គ្រូបង្រៀនសរុប
-                  </p>
-                  <p className="text-xs text-gray-500 group-hover:text-white/75 transition-colors duration-300">
-                    Total Teachers
-                  </p>
-                  <p className="text-4xl font-bold text-gray-900 group-hover:text-white transition-colors duration-300 mt-2">
-                    {stats.total}
-                  </p>
-                </div>
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent flex items-center gap-3">
+                  <UserCheck className="w-8 h-8 text-green-600" />
+                  គ្រូបង្រៀន Teachers
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  គ្រប់គ្រងគ្រូបង្រៀន • Manage teacher information
+                </p>
               </div>
-            </div>
-
-            {/* Class Teachers */}
-            <div className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 opacity-50"></div>
-
-              <div className="relative p-6 z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-white shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <UserCheck className="w-8 h-8 text-blue-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600 group-hover:text-white/90 transition-colors duration-300">
-                    គ្រូបង្រៀនថ្នាក់
-                  </p>
-                  <p className="text-xs text-gray-500 group-hover:text-white/75 transition-colors duration-300">
-                    Class Teachers
-                  </p>
-                  <p className="text-4xl font-bold text-gray-900 group-hover:text-white transition-colors duration-300 mt-2">
-                    {stats.classTeachers}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Regular Teachers */}
-            <div className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 opacity-50"></div>
-
-              <div className="relative p-6 z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-white shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <Users className="w-8 h-8 text-purple-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600 group-hover:text-white/90 transition-colors duration-300">
-                    គ្រូបង្រៀនទូទៅ
-                  </p>
-                  <p className="text-xs text-gray-500 group-hover:text-white/75 transition-colors duration-300">
-                    Subject Teachers
-                  </p>
-                  <p className="text-4xl font-bold text-gray-900 group-hover:text-white transition-colors duration-300 mt-2">
-                    {stats.regularTeachers}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Total Subjects */}
-            <div className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 opacity-50"></div>
-
-              <div className="relative p-6 z-10">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 rounded-xl bg-white shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <Award className="w-8 h-8 text-orange-600 group-hover:text-white transition-colors duration-300" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600 group-hover:text-white/90 transition-colors duration-300">
-                    មុខវិជ្ជាបង្រៀន
-                  </p>
-                  <p className="text-xs text-gray-500 group-hover:text-white/75 transition-colors duration-300">
-                    Teaching Subjects
-                  </p>
-                  <p className="text-4xl font-bold text-gray-900 group-hover:text-white transition-colors duration-300 mt-2">
-                    {stats.subjects}
-                  </p>
-                </div>
-              </div>
+              <Button onClick={handleAddTeacher}>
+                <Plus className="w-5 h-5" />
+                <span>បង្កើតគ្រូថ្មី Add Teacher</span>
+              </Button>
             </div>
           </div>
 
-          {/* Search Section */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="mb-6">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          {/* Search and Filters */}
+          <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="ស្វែងរកគ្រូបង្រៀន Search teachers..."
+                  placeholder="ស្វែងរកគ្រូ... Search teachers..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-200 outline-none"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
             </div>
+          </div>
 
-            {/* Teachers Table */}
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      ឈ្មោះ Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      លេខទូរស័ព្ទ Phone
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      អ៊ីមែល Email
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      គ្រូបង្រៀនថ្នាក់ Type
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      សកម្មភាព Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+          {/* Error Message */}
+          {teachersError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+              <p className="font-semibold">Error</p>
+              <p className="text-sm">{teachersError}</p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isLoadingTeachers ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Loader2 className="h-12 w-12 animate-spin text-green-600 mx-auto" />
+                <p className="mt-4 text-gray-600">Loading teachers...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">គ្រូសរុប • Total</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">
+                        {stats.totalTeachers}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <UserCheck className="w-8 h-8 text-green-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        មានថ្នាក់ • With Classes
+                      </p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">
+                        {stats.withClasses}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <GraduationCap className="w-8 h-8 text-blue-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        គ្មានថ្នាក់ • No Classes
+                      </p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">
+                        {stats.withoutClasses}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-orange-100 rounded-lg">
+                      <UserCheck className="w-8 h-8 text-orange-600" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        មុខវិជ្ជា • Subjects
+                      </p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">
+                        {stats.subjects}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-purple-100 rounded-lg">
+                      <BookOpen className="w-8 h-8 text-purple-600" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Teachers Grid */}
+              {filteredTeachers.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                  <UserCheck className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {searchTerm
+                      ? "រកមិនឃើញ No teachers found"
+                      : "មិនទាន់មានគ្រូ No teachers yet"}
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    {searchTerm
+                      ? "សូមស្វែងរកដោយពាក្យគន្លឹះផ្សេង Try a different search term"
+                      : "ចាប់ផ្តើមដោយបង្កើតគ្រូបង្រៀនដំបូង Get started by adding your first teacher"}
+                  </p>
+                  {!searchTerm && (
+                    <Button onClick={handleAddTeacher}>
+                      <Plus className="w-5 h-5" />
+                      <span>បង្កើតគ្រូថ្មី Add Teacher</span>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredTeachers.map((teacher) => (
-                    <tr
+                    <div
                       key={teacher.id}
-                      className="hover:bg-green-50 transition-colors duration-200"
+                      className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-green-200"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
-                            {teacher.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .substring(0, 2)
-                              .toUpperCase()}
-                          </div>
-                          <div className="ml-4">
-                            <div className="font-semibold text-gray-900">
-                              {teacher.name}
+                      {/* Card Header */}
+                      <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg border-2 border-white/30">
+                              {teacher.firstName?.charAt(0)}
+                              {teacher.lastName?.charAt(0)}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {teacher.isClassTeacher
-                                ? "គ្រូបង្រៀនថ្នាក់"
-                                : "គ្រូបង្រៀនមុខវិជ្ជា"}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-lg font-bold text-white truncate english-modern">
+                                {teacher.firstName} {teacher.lastName}
+                              </h3>
+                              <p className="text-sm text-white/80 truncate">
+                                {teacher.subject ||
+                                  "មិនទាន់កំណត់មុខវិជ្ជា No subject"}
+                              </p>
                             </div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">
-                          {teacher.phone || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">
-                          {teacher.email || "N/A"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            teacher.isClassTeacher
-                              ? "bg-green-100 text-green-700"
-                              : "bg-purple-100 text-purple-700"
-                          }`}
-                        >
-                          {teacher.isClassTeacher
-                            ? "គ្រូថ្នាក់ Class Teacher"
-                            : "គ្រូមុខវិជ្ជា Subject Teacher"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleEdit(teacher)}
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="p-4 space-y-3">
+                        {/* Email */}
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="text-gray-600 truncate english-modern">
+                            {teacher.email}
+                          </span>
+                        </div>
+
+                        {/* Phone */}
+                        {teacher.phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-600">
+                              {teacher.phone}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Employee ID */}
+                        {teacher.employeeId && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Hash className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-600">
+                              ID: {teacher.employeeId}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Classes Count */}
+                        <div className="flex items-center gap-2 text-sm">
+                          <GraduationCap className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span className="text-gray-600">
+                            ថ្នាក់ប្រចាំ: {teacher.classes?.length || 0} ថ្នាក់
+                          </span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            onClick={() => handleViewDetails(teacher)}
+                            className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-sm font-medium"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>មើល</span>
+                          </button>
+                          <button
+                            onClick={() => handleEditTeacher(teacher)}
+                            className="flex items-center justify-center gap-1 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-sm font-medium"
                           >
                             <Edit className="w-4 h-4" />
                             <span>កែ</span>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => handleDelete(teacher.id)}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteTeacher(teacher)}
+                            className="flex items-center justify-center gap-1 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-medium"
                           >
                             <Trash2 className="w-4 h-4" />
                             <span>លុប</span>
-                          </Button>
+                          </button>
                         </div>
-                      </td>
-                    </tr>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-
-              {filteredTeachers.length === 0 && (
-                <div className="text-center py-12">
-                  <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg font-medium">
-                    គ្មានគ្រូបង្រៀនទេ
-                  </p>
-                  <p className="text-gray-400 text-sm">No teachers found</p>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Modal */}
-          <Modal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-              setSelectedTeacher(undefined);
-            }}
-            title={
-              selectedTeacher
-                ? "កែប្រែគ្រូបង្រៀន Edit Teacher"
-                : "បន្ថែមគ្រូបង្រៀន Add Teacher"
-            }
-            size="lg"
-          >
-            <TeacherForm
-              teacher={selectedTeacher}
-              onSave={handleSave}
-              onCancel={() => {
-                setIsModalOpen(false);
-                setSelectedTeacher(undefined);
-              }}
-            />
-          </Modal>
+            </>
+          )}
         </main>
       </div>
+
+      {/* Create/Edit Teacher Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={
+          selectedTeacher
+            ? "កែប្រែគ្រូ Edit Teacher"
+            : "បង្កើតគ្រូថ្មី Create Teacher"
+        }
+      >
+        <TeacherForm
+          teacher={selectedTeacher}
+          onSave={handleSaveTeacher}
+          onCancel={() => setIsModalOpen(false)}
+          isSubmitting={isSubmitting}
+        />
+      </Modal>
+
+      {/* Teacher Details Modal */}
+      {selectedTeacher && (
+        <TeacherDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          teacher={selectedTeacher}
+        />
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { Student, Teacher, Class, Subject, Grade, Schedule } from "@/types";
 import { storage } from "@/lib/storage";
 import { studentsApi } from "@/lib/api/students";
 import { classesApi } from "@/lib/api/classes";
+import { teachersApi } from "@/lib/api/teachers";
 import {
   DEFAULT_STUDENTS,
   DEFAULT_TEACHERS,
@@ -22,11 +23,14 @@ interface DataContextType {
   updateStudent: (student: Student) => Promise<void>;
   deleteStudent: (id: string) => Promise<void>;
 
-  // Teachers (localStorage for now)
+  // Teachers (API)
   teachers: Teacher[];
-  addTeacher: (teacher: Teacher) => void;
-  updateTeacher: (teacher: Teacher) => void;
-  deleteTeacher: (id: string) => void;
+  isLoadingTeachers: boolean;
+  teachersError: string | null;
+  fetchTeachers: () => Promise<void>;
+  addTeacher: (teacher: Omit<Teacher, "id">) => Promise<void>;
+  updateTeacher: (teacher: Teacher) => Promise<void>;
+  deleteTeacher: (id: string) => Promise<void>;
 
   // Classes (API)
   classes: Class[];
@@ -69,13 +73,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
 
+  // Teachers State (API-based)
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isLoadingTeachers, setIsLoadingTeachers] = useState(false);
+  const [teachersError, setTeachersError] = useState<string | null>(null);
+
   // Classes State (API-based)
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [classesError, setClassesError] = useState<string | null>(null);
 
   // Other states (localStorage-based for now)
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -110,8 +118,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       } else {
         console.log("🔐 Auth changed (logged out), clearing data...");
         setStudents([]);
-        setClasses([]);
         setTeachers([]);
+        setClasses([]);
         setSubjects([]);
         setGrades([]);
         setSchedules([]);
@@ -130,22 +138,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     console.log("🔄 Loading initial data...");
 
     try {
-      // Load students and classes from API in parallel
-      await Promise.all([fetchStudents(), fetchClasses()]);
+      // Load students, classes, and teachers from API in parallel
+      await Promise.all([fetchStudents(), fetchClasses(), fetchTeachers()]);
 
       // Load other data from localStorage
-      const loadedTeachers = storage.get("teachers") || DEFAULT_TEACHERS;
       const loadedSubjects = storage.get("subjects") || DEFAULT_SUBJECTS;
       const loadedGrades = storage.get("grades") || [];
       const loadedSchedules = storage.get("schedules") || [];
 
-      setTeachers(loadedTeachers);
       setSubjects(loadedSubjects);
       setGrades(loadedGrades);
       setSchedules(loadedSchedules);
 
       // Initialize localStorage if empty
-      if (!storage.get("teachers")) storage.set("teachers", DEFAULT_TEACHERS);
       if (!storage.get("subjects")) storage.set("subjects", DEFAULT_SUBJECTS);
 
       console.log("✅ Initial data loaded successfully");
@@ -258,6 +263,98 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       throw error;
     } finally {
       setIsLoadingStudents(false);
+    }
+  };
+
+  // ==================== TEACHERS API METHODS ====================
+
+  const fetchTeachers = async () => {
+    try {
+      setIsLoadingTeachers(true);
+      setTeachersError(null);
+      const data = await teachersApi.getAll();
+      console.log("✅ Loaded teachers:", data.length);
+      setTeachers(data);
+    } catch (error: any) {
+      console.error("Error fetching teachers:", error);
+      setTeachersError(error.message || "Failed to load teachers");
+      setTeachers([]);
+    } finally {
+      setIsLoadingTeachers(false);
+    }
+  };
+
+  const addTeacher = async (teacherData: Omit<Teacher, "id">) => {
+    try {
+      setIsLoadingTeachers(true);
+      setTeachersError(null);
+
+      console.log("📤 Adding teacher:", teacherData);
+
+      const newTeacher = await teachersApi.create({
+        firstName: teacherData.firstName,
+        lastName: teacherData.lastName,
+        email: teacherData.email,
+        phone: teacherData.phone,
+        subject: teacherData.subject,
+        employeeId: teacherData.employeeId,
+      });
+
+      console.log("✅ Teacher created:", newTeacher);
+
+      // Update local state
+      setTeachers((prev) => [...prev, newTeacher]);
+    } catch (error: any) {
+      console.error("Error adding teacher:", error);
+      setTeachersError(error.message || "Failed to add teacher");
+      throw error;
+    } finally {
+      setIsLoadingTeachers(false);
+    }
+  };
+
+  const updateTeacher = async (teacher: Teacher) => {
+    try {
+      setIsLoadingTeachers(true);
+      setTeachersError(null);
+
+      const updatedTeacher = await teachersApi.update(teacher.id, {
+        firstName: teacher.firstName,
+        lastName: teacher.lastName,
+        email: teacher.email,
+        phone: teacher.phone,
+        subject: teacher.subject,
+        employeeId: teacher.employeeId,
+      });
+
+      // Update local state
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacher.id ? updatedTeacher : t))
+      );
+    } catch (error: any) {
+      console.error("Error updating teacher:", error);
+      setTeachersError(error.message || "Failed to update teacher");
+      throw error;
+    } finally {
+      setIsLoadingTeachers(false);
+    }
+  };
+
+  const deleteTeacher = async (id: string) => {
+    try {
+      setIsLoadingTeachers(true);
+      setTeachersError(null);
+
+      await teachersApi.delete(id);
+
+      // Update local state
+      setTeachers((prev) => prev.filter((t) => t.id !== id));
+    } catch (error: any) {
+      console.error("Error deleting teacher:", error);
+      setTeachersError(error.message || "Failed to delete teacher");
+      throw error;
+    } finally {
+      setIsLoadingTeachers(false);
     }
   };
 
@@ -382,26 +479,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ==================== TEACHERS (localStorage) ====================
-
-  const addTeacher = (teacher: Teacher) => {
-    const updated = [...teachers, teacher];
-    setTeachers(updated);
-    storage.set("teachers", updated);
-  };
-
-  const updateTeacher = (teacher: Teacher) => {
-    const updated = teachers.map((t) => (t.id === teacher.id ? teacher : t));
-    setTeachers(updated);
-    storage.set("teachers", updated);
-  };
-
-  const deleteTeacher = (id: string) => {
-    const updated = teachers.filter((t) => t.id !== id);
-    setTeachers(updated);
-    storage.set("teachers", updated);
-  };
-
   // ==================== SUBJECTS (localStorage) ====================
 
   const addSubject = (subject: Subject) => {
@@ -469,8 +546,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         updateStudent,
         deleteStudent,
 
-        // Teachers (localStorage)
+        // Teachers (API)
         teachers,
+        isLoadingTeachers,
+        teachersError,
+        fetchTeachers,
         addTeacher,
         updateTeacher,
         deleteTeacher,
