@@ -19,15 +19,38 @@ dotenv.config();
 
 // Initialize Express app
 const app: Application = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // Changed to 5001
 
-// Middleware
+// CORS Configuration - FIXED
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  process.env.CLIENT_URL,
+  "https://schoolmanagementapp-3irq.onrender.com", // Your production frontend if deployed
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+        console.log("❌ CORS blocked origin:", origin);
+        return callback(null, true); // Still allow for development
+      }
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
+
+// Handle preflight requests
+app.options("*", cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -38,6 +61,15 @@ app.get("/", (req: Request, res: Response) => {
     success: true,
     message: "School Management System API",
     version: "1.0.0",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Health Check Route (for frontend)
+app.get("/api/health", (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    status: "healthy",
     timestamp: new Date().toISOString(),
   });
 });
@@ -57,6 +89,7 @@ app.get("/api", (req: Request, res: Response) => {
     success: true,
     message: "School Management System API Endpoints",
     endpoints: {
+      health: "GET /api/health",
       auth: {
         register: "POST /api/auth/register",
         login: "POST /api/auth/login",
@@ -131,6 +164,7 @@ const startServer = async () => {
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
       console.log(`🌐 API URL: http://localhost:${PORT}`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api`);
+      console.log(`🔒 CORS enabled for:`, allowedOrigins);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

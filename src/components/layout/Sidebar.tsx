@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -63,7 +63,7 @@ const menuItems = [
     name: "កាលវិភាគ",
     nameEn: "Schedule",
     href: "/schedule",
-    icon: Calendar, // Import Calendar from lucide-react
+    icon: Calendar,
     roles: ["superadmin", "classteacher"],
     color: "from-rose-500 to-pink-500",
   },
@@ -98,9 +98,26 @@ export default function Sidebar() {
   const { currentUser } = useAuth();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const filteredMenuItems = menuItems.filter((item) =>
-    item.roles.includes(currentUser?.role || "")
-  );
+  // Debug: Log user role
+  useEffect(() => {
+    if (currentUser) {
+      console.log("👤 Current User:", currentUser);
+      console.log("🔑 User Role:", currentUser.role);
+    }
+  }, [currentUser]);
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    const hasAccess = item.roles.includes(currentUser?.role || "");
+    console.log(
+      `📋 Menu: ${item.nameEn}, Roles: ${item.roles}, User Role: ${currentUser?.role}, Access: ${hasAccess}`
+    );
+    return hasAccess;
+  });
+
+  // Show message if no menu items
+  if (filteredMenuItems.length === 0) {
+    console.warn("⚠️ No menu items visible for role:", currentUser?.role);
+  }
 
   return (
     <aside className="flex w-64 flex-col border-r border-gray-200/50 bg-white shadow-2xl animate-slideInLeft">
@@ -126,116 +143,125 @@ export default function Sidebar() {
 
       {/* Navigation Menu */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-1.5">
-        {filteredMenuItems.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          const isHovered = hoveredItem === item.href;
+        {filteredMenuItems.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-500">No menu available</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Role: {currentUser?.role || "Unknown"}
+            </p>
+          </div>
+        ) : (
+          filteredMenuItems.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            const isHovered = hoveredItem === item.href;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onMouseEnter={() => setHoveredItem(item.href)}
-              onMouseLeave={() => setHoveredItem(null)}
-              className={`
-                group relative flex items-center space-x-3 rounded-xl px-4 py-3.5 text-sm font-medium 
-                transition-all duration-300 ease-out overflow-hidden
-                ${
-                  isActive
-                    ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
-                    : "text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:scale-102"
-                }
-              `}
-              style={{
-                animationDelay: `${index * 50}ms`,
-              }}
-            >
-              {/* Active Indicator - Left Bar */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-10 w-1.5 rounded-r-full bg-white transition-all duration-300 animate-slideInLeft shadow-lg"></div>
-              )}
-
-              {/* Hover background effect */}
-              {!isActive && isHovered && (
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-5 transition-opacity duration-300`}
-                ></div>
-              )}
-
-              {/* Icon with gradient background */}
-              <div
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onMouseEnter={() => setHoveredItem(item.href)}
+                onMouseLeave={() => setHoveredItem(null)}
                 className={`
-                relative flex-shrink-0 p-2 rounded-lg transition-all duration-300 ease-out
-                ${
-                  isActive
-                    ? "bg-white/20 backdrop-blur-sm shadow-lg scale-110"
-                    : "bg-gray-100 group-hover:bg-white group-hover:shadow-md group-hover:scale-110"
-                }
-              `}
-              >
-                <Icon
-                  className={`h-5 w-5 transition-all duration-300 ${
-                    isActive ? "text-white" : "text-gray-700"
-                  }`}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
-              </div>
-
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <p
-                  className={`
-                  font-semibold transition-all duration-300 khmer-sidebar tracking-wide
+                  group relative flex items-center space-x-3 rounded-xl px-4 py-3.5 text-sm font-medium 
+                  transition-all duration-300 ease-out overflow-hidden
                   ${
                     isActive
-                      ? "text-white"
-                      : "text-gray-900 group-hover:text-indigo-700"
+                      ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
+                      : "text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:scale-102"
+                  }
+                `}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                }}
+              >
+                {/* Active Indicator - Left Bar */}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 h-10 w-1.5 rounded-r-full bg-white transition-all duration-300 animate-slideInLeft shadow-lg"></div>
+                )}
+
+                {/* Hover background effect */}
+                {!isActive && isHovered && (
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-r ${item.color} opacity-5 transition-opacity duration-300`}
+                  ></div>
+                )}
+
+                {/* Icon with gradient background */}
+                <div
+                  className={`
+                  relative flex-shrink-0 p-2 rounded-lg transition-all duration-300 ease-out
+                  ${
+                    isActive
+                      ? "bg-white/20 backdrop-blur-sm shadow-lg scale-110"
+                      : "bg-gray-100 group-hover:bg-white group-hover:shadow-md group-hover:scale-110"
                   }
                 `}
                 >
-                  {item.name}
-                </p>
-                <p
+                  <Icon
+                    className={`h-5 w-5 transition-all duration-300 ${
+                      isActive ? "text-white" : "text-gray-700"
+                    }`}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                </div>
+
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`
+                    font-semibold transition-all duration-300 khmer-sidebar tracking-wide
+                    ${
+                      isActive
+                        ? "text-white"
+                        : "text-gray-900 group-hover:text-indigo-700"
+                    }
+                  `}
+                  >
+                    {item.name}
+                  </p>
+                  <p
+                    className={`
+                    text-xs transition-all duration-300 english-modern font-medium
+                    ${
+                      isActive
+                        ? "text-white/90"
+                        : "text-gray-500 group-hover:text-indigo-600"
+                    }
+                  `}
+                  >
+                    {item.nameEn}
+                  </p>
+                </div>
+
+                {/* Arrow indicator */}
+                <div
                   className={`
-                  text-xs transition-all duration-300 english-modern font-medium
+                  transition-all duration-300 ease-out
                   ${
                     isActive
-                      ? "text-white/90"
-                      : "text-gray-500 group-hover:text-indigo-600"
+                      ? "opacity-100 translate-x-0"
+                      : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
                   }
                 `}
                 >
-                  {item.nameEn}
-                </p>
-              </div>
+                  <ChevronRight
+                    className={`h-5 w-5 ${
+                      isActive ? "text-white" : "text-indigo-600"
+                    }`}
+                  />
+                </div>
 
-              {/* Arrow indicator */}
-              <div
-                className={`
-                transition-all duration-300 ease-out
-                ${
-                  isActive
-                    ? "opacity-100 translate-x-0"
-                    : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
-                }
-              `}
-              >
-                <ChevronRight
-                  className={`h-5 w-5 ${
-                    isActive ? "text-white" : "text-indigo-600"
-                  }`}
-                />
-              </div>
-
-              {/* Glow effect for active item */}
-              {isActive && (
-                <div
-                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${item.color} opacity-20 blur-xl transition-opacity duration-500 animate-pulse`}
-                ></div>
-              )}
-            </Link>
-          );
-        })}
+                {/* Glow effect for active item */}
+                {isActive && (
+                  <div
+                    className={`absolute inset-0 rounded-xl bg-gradient-to-r ${item.color} opacity-20 blur-xl transition-opacity duration-500 animate-pulse`}
+                  ></div>
+                )}
+              </Link>
+            );
+          })
+        )}
       </nav>
 
       {/* Footer Section - User Profile */}
@@ -247,17 +273,17 @@ export default function Sidebar() {
           <div className="relative z-10">
             <div className="flex items-center space-x-3 mb-3">
               <div className="relative">
-                <div className="h-11 w-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-xl">
+                <div className="h-11 w-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg transition-all duration-300 group-hover:scale-105">
                   {currentUser?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-white animate-pulse shadow-sm"></div>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate english-modern">
-                  {currentUser?.name}
+                  {currentUser?.name || "User"}
                 </p>
                 <p className="text-xs text-gray-500 capitalize english-modern font-medium">
-                  {currentUser?.role}
+                  {currentUser?.role || "N/A"}
                 </p>
               </div>
             </div>

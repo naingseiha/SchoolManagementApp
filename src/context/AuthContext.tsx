@@ -1,57 +1,126 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, AuthContextType } from "@/types";
-import { storage } from "@/lib/storage";
-import { DEFAULT_USERS } from "@/lib/constants";
+import { useRouter } from "next/navigation";
+import { authApi } from "@/lib/api/auth";
+import { AuthContextType, User } from "@/types/auth";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Role mapping function - Convert backend roles to frontend roles
+const mapBackendRole = (backendRole: string): string => {
+  const roleMap: { [key: string]: string } = {
+    ADMIN: "superadmin",
+    TEACHER: "teacher",
+    STUDENT: "student",
+    CLASS_TEACHER: "classteacher",
+  };
+  return roleMap[backendRole] || backendRole.toLowerCase();
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
+  // Check authentication on mount
   useEffect(() => {
-    const storedUsers = storage.get("users");
-    if (!storedUsers) {
-      storage.set("users", DEFAULT_USERS);
-    }
-
-    const sessionUser = storage.get("currentUser");
-    if (sessionUser) {
-      setCurrentUser(sessionUser);
-      setIsAuthenticated(true);
-    }
+    checkAuth();
   }, []);
 
-  const login = (username: string, password: string): boolean => {
-    const users: User[] = storage.get("users") || DEFAULT_USERS;
-    const user = users.find(
-      (u) => u.username === username && u.password === password
-    );
+  const checkAuth = async () => {
+    try {
+      const storedToken = authApi.getToken();
+      const storedUser = authApi.getStoredUser();
 
-    if (user) {
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-      storage.set("currentUser", user);
-      return true;
+      if (storedToken && storedUser) {
+        setToken(storedToken);
+        setUser(storedUser);
+
+        // Verify token with backend
+        try {
+          const currentUser = await authApi.getCurrentUser();
+          setUser(currentUser);
+        } catch (error) {
+          // Token invalid, clear auth
+          console.error("Token verification failed:", error);
+          logout();
+        }
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+    } finally {
+      setIsLoading(false);
     }
-    return false;
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      const response = await authApi.login({ email, password });
+
+      if (response.success) {
+        setToken(response.token);
+        setUser(response.user);
+
+        // Redirect based on role (using backend role)
+        switch (response.user.role) {
+          case "ADMIN":
+            router.push("/students");
+            break;
+          case "TEACHER":
+          case "CLASS_TEACHER":
+            router.push("/grades");
+            break;
+          case "STUDENT":
+            router.push("/schedule");
+            break;
+          default:
+            router.push("/");
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
-    setCurrentUser(null);
-    setIsAuthenticated(false);
-    storage.remove("currentUser");
+    authApi.logout();
+    setUser(null);
+    setToken(null);
+    router.push("/login");
   };
 
-  return (
-    <AuthContext.Provider
-      value={{ currentUser, isAuthenticated, login, logout }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  // Transform user data for sidebar compatibility
+  const currentUser = user
+    ? {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        name: `${user.firstName} ${user.lastName}`,
+        role: mapBackendRole(user.role), // Map backend role to frontend role
+      }
+    : null;
+
+  const isAuthenticated = !!token && !!user;
+
+  const value: AuthContextType = {
+    user,
+    currentUser, // For backward compatibility with existing components
+    token,
+    isAuthenticated,
+    isLoading,
+    login,
+    logout,
+    checkAuth,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

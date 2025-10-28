@@ -3,15 +3,13 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { DataProvider } from "@/context/DataContext";
-import Sidebar from "@/components/layout/Sidebar";
-import Header from "@/components/layout/Header";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "School Management System",
   description:
-    "Complete school management system with student, teacher, and grade management",
+    "ប្រព័ន្ធគ្រប់គ្រងសាលា - Complete school management system with student, teacher, and grade management",
 };
 
 export default function RootLayout({
