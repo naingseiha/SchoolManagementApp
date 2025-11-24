@@ -2,11 +2,17 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const subject_controller_1 = require("../controllers/subject.controller");
-const auth_1 = require("../middleware/auth");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.get('/', auth_1.authenticate, subject_controller_1.getAllSubjects);
-router.get('/:id', auth_1.authenticate, subject_controller_1.getSubjectById);
-router.post('/', auth_1.authenticate, (0, auth_1.authorize)('ADMIN', 'CLASS_TEACHER'), subject_controller_1.createSubject);
-router.put('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN', 'CLASS_TEACHER'), subject_controller_1.updateSubject);
-router.delete('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), subject_controller_1.deleteSubject);
+// Apply auth middleware to all routes
+router.use(auth_middleware_1.authMiddleware);
+// Subject CRUD routes
+router.get("/", subject_controller_1.getAllSubjects);
+router.get("/:id", subject_controller_1.getSubjectById);
+router.post("/", subject_controller_1.createSubject);
+router.put("/:id", subject_controller_1.updateSubject);
+router.delete("/:id", subject_controller_1.deleteSubject);
+// Teacher assignment routes
+router.post("/:id/assign-teachers", subject_controller_1.assignTeachersToSubject);
+router.delete("/:id/teachers/:teacherId", subject_controller_1.removeTeacherFromSubject);
 exports.default = router;

@@ -21,17 +21,12 @@ const getAllGrades = async (req, res) => {
                         id: true,
                         name: true,
                         code: true,
-                        class: {
-                            select: {
-                                name: true,
-                                grade: true,
-                            },
-                        },
+                        // ✅ Remove class field - Subject doesn't have class relation
                     },
                 },
             },
             orderBy: {
-                createdAt: 'desc',
+                createdAt: "desc",
             },
         });
         res.json({
@@ -42,7 +37,7 @@ const getAllGrades = async (req, res) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching grades',
+            message: "Error fetching grades",
             error: error.message,
         });
     }
@@ -83,7 +78,7 @@ const getGradeById = async (req, res) => {
         if (!grade) {
             return res.status(404).json({
                 success: false,
-                message: 'Grade not found',
+                message: "Grade not found",
             });
         }
         res.json({
@@ -94,7 +89,7 @@ const getGradeById = async (req, res) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching grade',
+            message: "Error fetching grade",
             error: error.message,
         });
     }
@@ -104,14 +99,13 @@ exports.getGradeById = getGradeById;
 const getGradesByStudent = async (req, res) => {
     try {
         const { studentId } = req.params;
-        // Check if student exists
         const student = await prisma.student.findUnique({
             where: { id: studentId },
         });
         if (!student) {
             return res.status(404).json({
                 success: false,
-                message: 'Student not found',
+                message: "Student not found",
             });
         }
         const grades = await prisma.grade.findMany({
@@ -122,17 +116,12 @@ const getGradesByStudent = async (req, res) => {
                         id: true,
                         name: true,
                         code: true,
-                        class: {
-                            select: {
-                                name: true,
-                                grade: true,
-                            },
-                        },
+                        // ✅ Remove class field
                     },
                 },
             },
             orderBy: {
-                createdAt: 'desc',
+                createdAt: "desc",
             },
         });
         res.json({
@@ -143,7 +132,7 @@ const getGradesByStudent = async (req, res) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching student grades',
+            message: "Error fetching student grades",
             error: error.message,
         });
     }
@@ -153,14 +142,13 @@ exports.getGradesByStudent = getGradesByStudent;
 const getGradesByClass = async (req, res) => {
     try {
         const { classId } = req.params;
-        // Check if class exists
         const classExists = await prisma.class.findUnique({
             where: { id: classId },
         });
         if (!classExists) {
             return res.status(404).json({
                 success: false,
-                message: 'Class not found',
+                message: "Class not found",
             });
         }
         const grades = await prisma.grade.findMany({
@@ -186,7 +174,7 @@ const getGradesByClass = async (req, res) => {
                 },
             },
             orderBy: {
-                createdAt: 'desc',
+                createdAt: "desc",
             },
         });
         res.json({
@@ -197,7 +185,7 @@ const getGradesByClass = async (req, res) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching class grades',
+            message: "Error fetching class grades",
             error: error.message,
         });
     }
@@ -207,14 +195,13 @@ exports.getGradesByClass = getGradesByClass;
 const getGradesBySubject = async (req, res) => {
     try {
         const { subjectId } = req.params;
-        // Check if subject exists
         const subject = await prisma.subject.findUnique({
             where: { id: subjectId },
         });
         if (!subject) {
             return res.status(404).json({
                 success: false,
-                message: 'Subject not found',
+                message: "Subject not found",
             });
         }
         const grades = await prisma.grade.findMany({
@@ -235,7 +222,7 @@ const getGradesBySubject = async (req, res) => {
                 },
             },
             orderBy: {
-                createdAt: 'desc',
+                createdAt: "desc",
             },
         });
         res.json({
@@ -246,7 +233,7 @@ const getGradesBySubject = async (req, res) => {
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error fetching subject grades',
+            message: "Error fetching subject grades",
             error: error.message,
         });
     }
@@ -256,38 +243,34 @@ exports.getGradesBySubject = getGradesBySubject;
 const createGrade = async (req, res) => {
     try {
         const { studentId, subjectId, score, maxScore, remarks } = req.body;
-        // Validate required fields
         if (!studentId || !subjectId || score === undefined || !maxScore) {
             return res.status(400).json({
                 success: false,
-                message: 'StudentId, subjectId, score, and maxScore are required',
+                message: "StudentId, subjectId, score, and maxScore are required",
             });
         }
-        // Validate score range
         if (score < 0 || score > maxScore) {
             return res.status(400).json({
                 success: false,
                 message: `Score must be between 0 and ${maxScore}`,
             });
         }
-        // Check if student exists
         const student = await prisma.student.findUnique({
             where: { id: studentId },
         });
         if (!student) {
             return res.status(404).json({
                 success: false,
-                message: 'Student not found',
+                message: "Student not found",
             });
         }
-        // Check if subject exists
         const subject = await prisma.subject.findUnique({
             where: { id: subjectId },
         });
         if (!subject) {
             return res.status(404).json({
                 success: false,
-                message: 'Subject not found',
+                message: "Subject not found",
             });
         }
         const newGrade = await prisma.grade.create({
@@ -317,14 +300,14 @@ const createGrade = async (req, res) => {
         });
         res.status(201).json({
             success: true,
-            message: 'Grade created successfully',
+            message: "Grade created successfully",
             data: newGrade,
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error creating grade',
+            message: "Error creating grade",
             error: error.message,
         });
     }
@@ -335,17 +318,15 @@ const updateGrade = async (req, res) => {
     try {
         const { id } = req.params;
         const { score, maxScore, remarks } = req.body;
-        // Check if grade exists
         const existingGrade = await prisma.grade.findUnique({
             where: { id },
         });
         if (!existingGrade) {
             return res.status(404).json({
                 success: false,
-                message: 'Grade not found',
+                message: "Grade not found",
             });
         }
-        // Validate score range if provided
         const finalMaxScore = maxScore || existingGrade.maxScore;
         if (score !== undefined && (score < 0 || score > finalMaxScore)) {
             return res.status(400).json({
@@ -379,14 +360,14 @@ const updateGrade = async (req, res) => {
         });
         res.json({
             success: true,
-            message: 'Grade updated successfully',
+            message: "Grade updated successfully",
             data: updatedGrade,
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error updating grade',
+            message: "Error updating grade",
             error: error.message,
         });
     }
@@ -396,14 +377,13 @@ exports.updateGrade = updateGrade;
 const deleteGrade = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check if grade exists
         const existingGrade = await prisma.grade.findUnique({
             where: { id },
         });
         if (!existingGrade) {
             return res.status(404).json({
                 success: false,
-                message: 'Grade not found',
+                message: "Grade not found",
             });
         }
         await prisma.grade.delete({
@@ -411,13 +391,13 @@ const deleteGrade = async (req, res) => {
         });
         res.json({
             success: true,
-            message: 'Grade deleted successfully',
+            message: "Grade deleted successfully",
         });
     }
     catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error deleting grade',
+            message: "Error deleting grade",
             error: error.message,
         });
     }

@@ -2,11 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const student_controller_1 = require("../controllers/student.controller");
-const auth_1 = require("../middleware/auth");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.get('/', auth_1.authenticate, student_controller_1.getAllStudents);
-router.get('/:id', auth_1.authenticate, student_controller_1.getStudentById);
-router.post('/', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), student_controller_1.createStudent);
-router.put('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), student_controller_1.updateStudent);
-router.delete('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), student_controller_1.deleteStudent);
+// Apply auth middleware to all routes
+router.use(auth_middleware_1.authMiddleware);
+router.get("/", student_controller_1.getAllStudents);
+router.get("/:id", student_controller_1.getStudentById);
+router.post("/", student_controller_1.createStudent);
+router.put("/:id", student_controller_1.updateStudent);
+router.delete("/:id", student_controller_1.deleteStudent);
 exports.default = router;

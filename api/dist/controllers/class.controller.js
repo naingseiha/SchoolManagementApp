@@ -1,16 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteClass = exports.updateClass = exports.createClass = exports.getClassById = exports.getAllClasses = void 0;
+exports.removeStudentFromClass = exports.assignStudentsToClass = exports.deleteClass = exports.updateClass = exports.createClass = exports.getClassById = exports.getAllClasses = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 // Get all classes
 const getAllClasses = async (req, res) => {
     try {
+        console.log("📚 GET ALL CLASSES");
         const classes = await prisma.class.findMany({
             include: {
                 teacher: {
                     select: {
                         id: true,
+                        khmerName: true,
                         firstName: true,
                         lastName: true,
                         email: true,
@@ -19,28 +21,28 @@ const getAllClasses = async (req, res) => {
                 students: {
                     select: {
                         id: true,
+                        khmerName: true,
                         firstName: true,
                         lastName: true,
+                        gender: true,
                     },
                 },
-                subjects: {
+                _count: {
                     select: {
-                        id: true,
-                        name: true,
-                        code: true,
+                        students: true,
                     },
                 },
             },
+            orderBy: [{ grade: "asc" }, { section: "asc" }],
         });
-        res.json({
-            success: true,
-            data: classes,
-        });
+        console.log(`✅ Found ${classes.length} classes`);
+        res.json(classes);
     }
     catch (error) {
+        console.error("❌ Error getting classes:", error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching classes',
+            message: "Error getting classes",
             error: error.message,
         });
     }
@@ -50,33 +52,19 @@ exports.getAllClasses = getAllClasses;
 const getClassById = async (req, res) => {
     try {
         const { id } = req.params;
+        console.log("📖 GET CLASS BY ID:", id);
         const classData = await prisma.class.findUnique({
             where: { id },
             include: {
-                teacher: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        phone: true,
-                    },
-                },
+                teacher: true,
                 students: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
-                        dateOfBirth: true,
+                    orderBy: {
+                        khmerName: "asc",
                     },
                 },
-                subjects: {
+                _count: {
                     select: {
-                        id: true,
-                        name: true,
-                        code: true,
-                        description: true,
+                        students: true,
                     },
                 },
             },
@@ -84,74 +72,72 @@ const getClassById = async (req, res) => {
         if (!classData) {
             return res.status(404).json({
                 success: false,
-                message: 'Class not found',
+                message: "Class not found",
             });
         }
-        res.json({
-            success: true,
-            data: classData,
-        });
+        console.log("✅ Class found:", classData.name);
+        res.json(classData);
     }
     catch (error) {
+        console.error("❌ Error getting class:", error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching class',
+            message: "Error getting class",
             error: error.message,
         });
     }
 };
 exports.getClassById = getClassById;
-// Create new class
+// Create class
 const createClass = async (req, res) => {
     try {
-        const { name, grade, section, teacherId } = req.body;
-        // Validate required fields
-        if (!name || !grade) {
+        const { classId, name, grade, section, academicYear, capacity, teacherId } = req.body;
+        console.log("➕ CREATE CLASS:", { classId, name, grade });
+        if (!name || !grade || !academicYear) {
             return res.status(400).json({
                 success: false,
-                message: 'Name and grade are required',
+                message: "Name, grade, and academicYear are required",
             });
         }
-        // Check if teacher exists (if provided)
-        if (teacherId) {
-            const teacher = await prisma.teacher.findUnique({
-                where: { id: teacherId },
+        // Check if classId already exists
+        if (classId) {
+            const existing = await prisma.class.findUnique({
+                where: { classId },
             });
-            if (!teacher) {
-                return res.status(404).json({
+            if (existing) {
+                return res.status(400).json({
                     success: false,
-                    message: 'Teacher not found',
+                    message: `Class with ID "${classId}" already exists`,
                 });
             }
         }
-        const newClass = await prisma.class.create({
+        const classData = await prisma.class.create({
             data: {
+                classId: classId || `G${grade}-${section || "A"}`,
                 name,
                 grade,
-                section,
-                teacherId,
+                section: section || null,
+                academicYear,
+                capacity: capacity ? parseInt(capacity) : null,
+                teacherId: teacherId || null,
             },
             include: {
-                teacher: {
+                teacher: true,
+                _count: {
                     select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
+                        students: true,
                     },
                 },
             },
         });
-        res.status(201).json({
-            success: true,
-            message: 'Class created successfully',
-            data: newClass,
-        });
+        console.log("✅ Class created:", classData.id);
+        res.status(201).json(classData);
     }
     catch (error) {
+        console.error("❌ Error creating class:", error);
         res.status(500).json({
             success: false,
-            message: 'Error creating class',
+            message: "Error creating class",
             error: error.message,
         });
     }
@@ -161,58 +147,42 @@ exports.createClass = createClass;
 const updateClass = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, grade, section, teacherId } = req.body;
-        // Check if class exists
-        const existingClass = await prisma.class.findUnique({
+        const updateData = req.body;
+        console.log("✏️ UPDATE CLASS:", id);
+        const existing = await prisma.class.findUnique({
             where: { id },
         });
-        if (!existingClass) {
+        if (!existing) {
             return res.status(404).json({
                 success: false,
-                message: 'Class not found',
+                message: "Class not found",
             });
         }
-        // Check if teacher exists (if provided)
-        if (teacherId) {
-            const teacher = await prisma.teacher.findUnique({
-                where: { id: teacherId },
-            });
-            if (!teacher) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Teacher not found',
-                });
-            }
-        }
-        const updatedClass = await prisma.class.update({
+        const classData = await prisma.class.update({
             where: { id },
             data: {
-                name,
-                grade,
-                section,
-                teacherId,
+                ...updateData,
+                capacity: updateData.capacity
+                    ? parseInt(updateData.capacity)
+                    : existing.capacity,
             },
             include: {
-                teacher: {
+                teacher: true,
+                _count: {
                     select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                        email: true,
+                        students: true,
                     },
                 },
             },
         });
-        res.json({
-            success: true,
-            message: 'Class updated successfully',
-            data: updatedClass,
-        });
+        console.log("✅ Class updated");
+        res.json(classData);
     }
     catch (error) {
+        console.error("❌ Error updating class:", error);
         res.status(500).json({
             success: false,
-            message: 'Error updating class',
+            message: "Error updating class",
             error: error.message,
         });
     }
@@ -222,40 +192,124 @@ exports.updateClass = updateClass;
 const deleteClass = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check if class exists
-        const existingClass = await prisma.class.findUnique({
+        console.log("🗑️ DELETE CLASS:", id);
+        const classWithStudents = await prisma.class.findUnique({
             where: { id },
             include: {
                 students: true,
             },
         });
-        if (!existingClass) {
+        if (!classWithStudents) {
             return res.status(404).json({
                 success: false,
-                message: 'Class not found',
+                message: "Class not found",
             });
         }
-        // Check if class has students
-        if (existingClass.students.length > 0) {
+        if (classWithStudents.students.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Cannot delete class with enrolled students',
+                message: `Cannot delete class with ${classWithStudents.students.length} student(s). Please remove students first.`,
             });
         }
         await prisma.class.delete({
             where: { id },
         });
+        console.log("✅ Class deleted");
         res.json({
             success: true,
-            message: 'Class deleted successfully',
+            message: "Class deleted successfully",
         });
     }
     catch (error) {
+        console.error("❌ Error deleting class:", error);
         res.status(500).json({
             success: false,
-            message: 'Error deleting class',
+            message: "Error deleting class",
             error: error.message,
         });
     }
 };
 exports.deleteClass = deleteClass;
+// Assign students to class
+const assignStudentsToClass = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { studentIds } = req.body;
+        console.log("🔗 ASSIGN STUDENTS TO CLASS:", id);
+        if (!Array.isArray(studentIds)) {
+            return res.status(400).json({
+                success: false,
+                message: "studentIds must be an array",
+            });
+        }
+        const classData = await prisma.class.findUnique({
+            where: { id },
+        });
+        if (!classData) {
+            return res.status(404).json({
+                success: false,
+                message: "Class not found",
+            });
+        }
+        // Update students
+        await prisma.student.updateMany({
+            where: {
+                id: {
+                    in: studentIds,
+                },
+            },
+            data: {
+                classId: id,
+            },
+        });
+        const updatedClass = await prisma.class.findUnique({
+            where: { id },
+            include: {
+                students: true,
+                _count: {
+                    select: {
+                        students: true,
+                    },
+                },
+            },
+        });
+        console.log("✅ Students assigned");
+        res.json(updatedClass);
+    }
+    catch (error) {
+        console.error("❌ Error assigning students:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error assigning students",
+            error: error.message,
+        });
+    }
+};
+exports.assignStudentsToClass = assignStudentsToClass;
+// Remove student from class
+const removeStudentFromClass = async (req, res) => {
+    try {
+        const { id, studentId } = req.params;
+        console.log("🔓 REMOVE STUDENT FROM CLASS:", { id, studentId });
+        await prisma.student.update({
+            where: { id: studentId },
+            data: {
+                classId: null,
+            },
+        });
+        console.log("✅ Student removed");
+        res.json({
+            success: true,
+            message: "Student removed from class",
+        });
+    }
+    catch (error) {
+        console.error("❌ Error removing student:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error removing student",
+            error: error.message,
+        });
+    }
+};
+exports.removeStudentFromClass = removeStudentFromClass;
