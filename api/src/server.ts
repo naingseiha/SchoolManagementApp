@@ -17,6 +17,7 @@ import classRoutes from "./routes/class.routes";
 import subjectRoutes from "./routes/subject.routes";
 import gradeRoutes from "./routes/grade.routes";
 import attendanceRoutes from "./routes/attendance.routes";
+import exportRoutes from "./routes/export.routes";
 
 // Load environment variables
 dotenv.config();
@@ -86,6 +87,7 @@ app.use("/api/classes", classRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/grades", gradeRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/export", exportRoutes);
 
 // API Documentation Route
 app.get("/api", (req: Request, res: Response) => {
