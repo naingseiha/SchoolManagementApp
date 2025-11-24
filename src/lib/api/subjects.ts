@@ -1,19 +1,20 @@
-// Subjects API Service
+// Subjects API Service - Connected to Backend
 
 import { apiClient } from "./client";
 
 export interface Subject {
   id: string;
   name: string;
-  nameKh?: string;
+  nameKh: string;
   nameEn?: string;
   code: string;
   description?: string;
   grade: string;
   track?: string;
-  category: string;
+  category: "social" | "science"; // ✅ Only 2 categories
   weeklyHours: number;
   annualHours: number;
+  maxScore: number;
   isActive: boolean;
   teacherAssignments?: SubjectTeacherAssignment[];
   _count?: {
@@ -29,10 +30,10 @@ export interface SubjectTeacherAssignment {
   teacherId: string;
   teacher: {
     id: string;
-    firstName: string;
-    lastName: string;
+    khmerName: string;
+    englishName?: string;
     email: string;
-    subject?: string;
+    phoneNumber?: string;
   };
   createdAt?: string;
   updatedAt?: string;
@@ -40,33 +41,26 @@ export interface SubjectTeacherAssignment {
 
 export interface CreateSubjectData {
   name: string;
-  nameKh?: string;
+  nameKh: string;
   nameEn?: string;
   code: string;
   description?: string;
   grade: string;
   track?: string;
-  category?: string;
+  category: "social" | "science";
   weeklyHours?: number;
   annualHours?: number;
+  maxScore?: number;
   isActive?: boolean;
 }
 
-export interface SubjectsResponse {
-  success: boolean;
-  data: Subject[];
-}
-
-export interface SubjectResponse {
-  success: boolean;
-  data: Subject;
-  message?: string;
-}
-
 export const subjectsApi = {
+  /**
+   * Get all subjects from database
+   */
   async getAll(): Promise<Subject[]> {
     try {
-      // ✅ Response is already the array
+      console.log("📚 Fetching all subjects from API...");
       const subjects = await apiClient.get<Subject[]>("/subjects");
 
       if (!Array.isArray(subjects)) {
@@ -74,6 +68,7 @@ export const subjectsApi = {
         return [];
       }
 
+      console.log(`✅ Fetched ${subjects.length} subjects from database`);
       return subjects;
     } catch (error) {
       console.error("❌ subjectsApi.getAll error:", error);
@@ -81,9 +76,14 @@ export const subjectsApi = {
     }
   },
 
+  /**
+   * Get subject by ID
+   */
   async getById(id: string): Promise<Subject | null> {
     try {
+      console.log(`📖 Fetching subject ${id}...`);
       const subject = await apiClient.get<Subject>(`/subjects/${id}`);
+      console.log("✅ Subject fetched:", subject.name);
       return subject;
     } catch (error) {
       console.error("❌ subjectsApi.getById error:", error);
@@ -91,35 +91,89 @@ export const subjectsApi = {
     }
   },
 
-  async create(subject: Omit<Subject, "id">): Promise<Subject> {
-    const data = await apiClient.post<Subject>("/subjects", subject);
-    return data;
+  /**
+   * Create new subject
+   */
+  async create(data: CreateSubjectData): Promise<Subject> {
+    try {
+      console.log("➕ Creating subject:", data);
+      const subject = await apiClient.post<Subject>("/subjects", data);
+      console.log("✅ Subject created:", subject.id);
+      return subject;
+    } catch (error: any) {
+      console.error("❌ subjectsApi.create error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to create subject"
+      );
+    }
   },
 
-  async update(id: string, subject: Partial<Subject>): Promise<Subject> {
-    const data = await apiClient.put<Subject>(`/subjects/${id}`, subject);
-    return data;
+  /**
+   * Update existing subject
+   */
+  async update(id: string, data: Partial<CreateSubjectData>): Promise<Subject> {
+    try {
+      console.log(`✏️ Updating subject ${id}:`, data);
+      const subject = await apiClient.put<Subject>(`/subjects/${id}`, data);
+      console.log("✅ Subject updated:", subject.id);
+      return subject;
+    } catch (error: any) {
+      console.error("❌ subjectsApi.update error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update subject"
+      );
+    }
   },
 
+  /**
+   * Delete subject
+   */
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/subjects/${id}`);
+    try {
+      console.log(`🗑️ Deleting subject ${id}...`);
+      await apiClient.delete(`/subjects/${id}`);
+      console.log("✅ Subject deleted");
+    } catch (error: any) {
+      console.error("❌ subjectsApi.delete error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to delete subject"
+      );
+    }
   },
 
-  async assignTeachers(
-    subjectId: string,
-    teacherIds: string[]
-  ): Promise<Subject> {
-    const data = await apiClient.post<Subject>(
-      `/subjects/${subjectId}/teachers`,
-      { teacherIds }
-    );
-    return data;
+  /**
+   * Assign teachers to subject
+   */
+  async assignTeachers(subjectId: string, teacherIds: string[]): Promise<void> {
+    try {
+      console.log(`🔗 Assigning teachers to subject ${subjectId}:`, teacherIds);
+      await apiClient.post(`/subjects/${subjectId}/assign-teachers`, {
+        teacherIds,
+      });
+      console.log("✅ Teachers assigned");
+    } catch (error: any) {
+      console.error("❌ subjectsApi.assignTeachers error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to assign teachers"
+      );
+    }
   },
 
-  async removeTeacher(subjectId: string, teacherId: string): Promise<Subject> {
-    const data = await apiClient.delete<Subject>(
-      `/subjects/${subjectId}/teachers/${teacherId}`
-    );
-    return data;
+  /**
+   * Remove teacher from subject
+   */
+  async removeTeacher(subjectId: string, teacherId: string): Promise<void> {
+    try {
+      console.log(
+        `🔓 Removing teacher ${teacherId} from subject ${subjectId}...`
+      );
+      await apiClient.delete(`/subjects/${subjectId}/teachers/${teacherId}`);
+      console.log("✅ Teacher removed");
+    } catch (error: any) {
+      console.error("❌ subjectsApi.removeTeacher error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to remove teacher"
+      );
+    }
   },
 };
