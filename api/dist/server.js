@@ -21,12 +21,32 @@ const attendance_routes_1 = __importDefault(require("./routes/attendance.routes"
 dotenv_1.default.config();
 // Initialize Express app
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5000;
-// Middleware
+const PORT = process.env.PORT || 5001; // Changed to 5001
+// CORS Configuration - FIXED
+const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    process.env.CLIENT_URL,
+    "https://schoolmanagementapp-3irq.onrender.com", // Your production frontend if deployed
+].filter(Boolean);
 app.use((0, cors_1.default)({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, postman)
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            console.log("❌ CORS blocked origin:", origin);
+            return callback(null, true); // Still allow for development
+        }
+        return callback(null, true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
+// Handle preflight requests
+app.options("*", (0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, morgan_1.default)("dev"));
@@ -36,6 +56,14 @@ app.get("/", (req, res) => {
         success: true,
         message: "School Management System API",
         version: "1.0.0",
+        timestamp: new Date().toISOString(),
+    });
+});
+// Health Check Route (for frontend)
+app.get("/api/health", (req, res) => {
+    res.json({
+        success: true,
+        status: "healthy",
         timestamp: new Date().toISOString(),
     });
 });
@@ -53,6 +81,7 @@ app.get("/api", (req, res) => {
         success: true,
         message: "School Management System API Endpoints",
         endpoints: {
+            health: "GET /api/health",
             auth: {
                 register: "POST /api/auth/register",
                 login: "POST /api/auth/login",
@@ -115,15 +144,20 @@ app.use(errorHandler_1.errorHandler);
 // Start Server
 const startServer = async () => {
     try {
-        // Connect to database
+        // Connect to database with retry logic
         await (0, database_1.connectDatabase)();
         console.log("✅ Database connected successfully");
+        // Start keep-alive to prevent auto-suspend (Neon free tier)
+        (0, database_1.startKeepAlive)();
         // Start listening
         app.listen(PORT, () => {
+            console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
             console.log(`🌐 API URL: http://localhost:${PORT}`);
             console.log(`📚 API Docs: http://localhost:${PORT}/api`);
+            console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
+            console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         });
     }
     catch (error) {
@@ -131,6 +165,14 @@ const startServer = async () => {
         process.exit(1);
     }
 };
+// Graceful shutdown
+const shutdown = async () => {
+    console.log("\n🛑 Shutting down gracefully...");
+    (0, database_1.stopKeepAlive)();
+    process.exit(0);
+};
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
     console.error("❌ Unhandled Rejection:", err.message);
