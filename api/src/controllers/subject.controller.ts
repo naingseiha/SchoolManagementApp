@@ -3,75 +3,20 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Get all subjects
+// Get all subjects - RETURN ARRAY DIRECTLY
 export const getAllSubjects = async (req: Request, res: Response) => {
   try {
-    const { grade, track, category, isActive } = req.query;
-
-    const where: any = {};
-
-    if (grade) where.grade = grade as string;
-    if (track) where.track = track as string;
-    if (category) where.category = category as string;
-    if (isActive !== undefined) where.isActive = isActive === "true";
+    console.log("📚 GET ALL SUBJECTS");
 
     const subjects = await prisma.subject.findMany({
-      where,
       include: {
         teacherAssignments: {
           include: {
             teacher: {
               select: {
                 id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                subject: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            grades: true,
-          },
-        },
-      },
-      orderBy: [{ grade: "asc" }, { code: "asc" }],
-    });
-
-    res.json({
-      success: true,
-      data: subjects,
-    });
-  } catch (error: any) {
-    console.error("Error fetching subjects:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching subjects",
-      error: error.message,
-    });
-  }
-};
-
-// Get subject by ID
-export const getSubjectById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const subject = await prisma.subject.findUnique({
-      where: { id },
-      include: {
-        teacherAssignments: {
-          include: {
-            teacher: true,
-          },
-        },
-        grades: {
-          include: {
-            student: {
-              select: {
-                id: true,
+                khmerName: true,
+                englishName: true,
                 firstName: true,
                 lastName: true,
                 email: true,
@@ -82,42 +27,29 @@ export const getSubjectById = async (req: Request, res: Response) => {
         _count: {
           select: {
             grades: true,
-            teacherAssignments: true,
           },
         },
       },
+      orderBy: [{ grade: "asc" }, { name: "asc" }],
     });
 
-    if (!subject) {
-      return res.status(404).json({
-        success: false,
-        message: "Subject not found",
-      });
-    }
+    console.log(`✅ Found ${subjects.length} subjects`);
 
-    res.json({
-      success: true,
-      data: subject,
-    });
+    // ✅ FIX: Return array directly (not wrapped in {data: ...})
+    res.json(subjects);
   } catch (error: any) {
-    console.error("Error fetching subject:", error);
+    console.error("❌ Error getting subjects:", error);
     res.status(500).json({
       success: false,
-      message: "Error fetching subject",
+      message: "Error getting subjects",
       error: error.message,
     });
   }
 };
 
-// Create subject
+// Create subject - RETURN OBJECT DIRECTLY
 export const createSubject = async (req: Request, res: Response) => {
   try {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(
-      "📥 CREATE SUBJECT - Request body:",
-      JSON.stringify(req.body, null, 2)
-    );
-
     const {
       name,
       nameKh,
@@ -129,57 +61,44 @@ export const createSubject = async (req: Request, res: Response) => {
       category,
       weeklyHours,
       annualHours,
+      maxScore,
       isActive,
     } = req.body;
 
-    // Validate required fields
-    if (!name || name.trim() === "") {
+    console.log("➕ CREATE SUBJECT:", { name, code, grade });
+
+    if (!name || !code || !grade) {
       return res.status(400).json({
         success: false,
-        message: "Subject name is required",
+        message: "Name, code, and grade are required",
       });
     }
 
-    if (!code || code.trim() === "") {
-      return res.status(400).json({
-        success: false,
-        message: "Subject code is required",
-      });
-    }
-
-    if (!grade || grade.trim() === "") {
-      return res.status(400).json({
-        success: false,
-        message: "Grade is required",
-      });
-    }
-
-    // Check code uniqueness
     const existingSubject = await prisma.subject.findUnique({
-      where: { code: code.trim() },
+      where: { code },
     });
 
     if (existingSubject) {
       return res.status(400).json({
         success: false,
-        message: "Subject code already exists. Please use a different code.",
+        message: `Subject with code "${code}" already exists`,
       });
     }
 
-    // Create subject
     const subject = await prisma.subject.create({
       data: {
-        name: name.trim(),
-        nameKh: nameKh?.trim() || null,
-        nameEn: nameEn?.trim() || null,
-        code: code.trim(),
-        description: description?.trim() || null,
-        grade: grade.trim(),
-        track: track?.trim() || null,
+        name,
+        nameKh: nameKh || name,
+        nameEn,
+        code,
+        description,
+        grade,
+        track: track || null,
         category: category || "core",
         weeklyHours: parseFloat(weeklyHours) || 0,
         annualHours: parseInt(annualHours) || 0,
-        isActive: isActive !== undefined ? isActive : true,
+        maxScore: parseInt(maxScore) || 100,
+        isActive: isActive !== false,
       },
       include: {
         teacherAssignments: {
@@ -187,16 +106,18 @@ export const createSubject = async (req: Request, res: Response) => {
             teacher: true,
           },
         },
+        _count: {
+          select: {
+            grades: true,
+          },
+        },
       },
     });
 
     console.log("✅ Subject created successfully:", subject.id);
 
-    res.status(201).json({
-      success: true,
-      message: "Subject created successfully",
-      data: subject,
-    });
+    // ✅ FIX: Return object directly
+    res.status(201).json(subject);
   } catch (error: any) {
     console.error("❌ Error creating subject:", error);
     res.status(500).json({
@@ -207,28 +128,14 @@ export const createSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Update subject
+// Update subject - RETURN OBJECT DIRECTLY
 export const updateSubject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      nameKh,
-      nameEn,
-      code,
-      description,
-      grade,
-      track,
-      category,
-      weeklyHours,
-      annualHours,
-      isActive,
-    } = req.body;
+    const updateData = req.body;
 
-    console.log("📝 UPDATE SUBJECT:", id);
-    console.log("📥 Request body:", req.body);
+    console.log("✏️ UPDATE SUBJECT:", id);
 
-    // Check if subject exists
     const existingSubject = await prisma.subject.findUnique({
       where: { id },
     });
@@ -240,49 +147,45 @@ export const updateSubject = async (req: Request, res: Response) => {
       });
     }
 
-    // Check code uniqueness (exclude current subject)
-    if (code && code.trim() !== "") {
-      const codeExists = await prisma.subject.findFirst({
-        where: {
-          code: code.trim(),
-          NOT: { id },
-        },
+    if (updateData.code && updateData.code !== existingSubject.code) {
+      const duplicateCode = await prisma.subject.findUnique({
+        where: { code: updateData.code },
       });
 
-      if (codeExists) {
+      if (duplicateCode) {
         return res.status(400).json({
           success: false,
-          message: "Subject code already exists. Please use a different code.",
+          message: `Subject with code "${updateData.code}" already exists`,
         });
       }
     }
 
-    const updateData: any = {};
-
-    if (name !== undefined) updateData.name = name.trim();
-    if (nameKh !== undefined) updateData.nameKh = nameKh?.trim() || null;
-    if (nameEn !== undefined) updateData.nameEn = nameEn?.trim() || null;
-    if (code !== undefined) updateData.code = code.trim();
-    if (description !== undefined)
-      updateData.description = description?.trim() || null;
-    if (grade !== undefined) updateData.grade = grade.trim();
-    if (track !== undefined) updateData.track = track?.trim() || null;
-    if (category !== undefined) updateData.category = category;
-    if (weeklyHours !== undefined)
-      updateData.weeklyHours = parseFloat(weeklyHours);
-    if (annualHours !== undefined)
-      updateData.annualHours = parseInt(annualHours);
-    if (isActive !== undefined) updateData.isActive = isActive;
-
-    console.log("💾 Updating with data:", updateData);
-
     const subject = await prisma.subject.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        weeklyHours:
+          updateData.weeklyHours !== undefined
+            ? parseFloat(updateData.weeklyHours)
+            : existingSubject.weeklyHours,
+        annualHours:
+          updateData.annualHours !== undefined
+            ? parseInt(updateData.annualHours)
+            : existingSubject.annualHours,
+        maxScore:
+          updateData.maxScore !== undefined
+            ? parseInt(updateData.maxScore)
+            : existingSubject.maxScore,
+      },
       include: {
         teacherAssignments: {
           include: {
             teacher: true,
+          },
+        },
+        _count: {
+          select: {
+            grades: true,
           },
         },
       },
@@ -290,11 +193,8 @@ export const updateSubject = async (req: Request, res: Response) => {
 
     console.log("✅ Subject updated successfully");
 
-    res.json({
-      success: true,
-      message: "Subject updated successfully",
-      data: subject,
-    });
+    // ✅ FIX: Return object directly
+    res.json(subject);
   } catch (error: any) {
     console.error("❌ Error updating subject:", error);
     res.status(500).json({
@@ -305,17 +205,43 @@ export const updateSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Delete subject
+// Keep other functions same...
+export const getSubjectById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const subject = await prisma.subject.findUnique({
+      where: { id },
+      include: {
+        teacherAssignments: { include: { teacher: true } },
+        _count: { select: { grades: true } },
+      },
+    });
+
+    if (!subject) {
+      return res.status(404).json({
+        success: false,
+        message: "Subject not found",
+      });
+    }
+
+    res.json(subject);
+  } catch (error: any) {
+    console.error("❌ Error getting subject:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error getting subject",
+      error: error.message,
+    });
+  }
+};
+
 export const deleteSubject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if subject has grades
     const subjectWithGrades = await prisma.subject.findUnique({
       where: { id },
-      include: {
-        grades: true,
-      },
+      include: { grades: true },
     });
 
     if (!subjectWithGrades) {
@@ -328,14 +254,11 @@ export const deleteSubject = async (req: Request, res: Response) => {
     if (subjectWithGrades.grades.length > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete subject with ${subjectWithGrades.grades.length} grade(s). Please remove grades first.`,
+        message: `Cannot delete subject with ${subjectWithGrades.grades.length} grade(s).`,
       });
     }
 
-    // Delete subject (will cascade delete teacher assignments)
-    await prisma.subject.delete({
-      where: { id },
-    });
+    await prisma.subject.delete({ where: { id } });
 
     res.json({
       success: true,
@@ -351,14 +274,10 @@ export const deleteSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Assign teachers to subject
 export const assignTeachersToSubject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { teacherIds } = req.body;
-
-    console.log("🔗 ASSIGN TEACHERS TO SUBJECT:", id);
-    console.log("📥 Teacher IDs:", teacherIds);
 
     if (!Array.isArray(teacherIds)) {
       return res.status(400).json({
@@ -367,11 +286,7 @@ export const assignTeachersToSubject = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if subject exists
-    const subject = await prisma.subject.findUnique({
-      where: { id },
-    });
-
+    const subject = await prisma.subject.findUnique({ where: { id } });
     if (!subject) {
       return res.status(404).json({
         success: false,
@@ -379,27 +294,16 @@ export const assignTeachersToSubject = async (req: Request, res: Response) => {
       });
     }
 
-    // Delete existing assignments
-    await prisma.subjectTeacher.deleteMany({
-      where: { subjectId: id },
-    });
+    await prisma.subjectTeacher.deleteMany({ where: { subjectId: id } });
 
-    // Create new assignments
     const assignments = await Promise.all(
       teacherIds.map((teacherId) =>
         prisma.subjectTeacher.create({
-          data: {
-            subjectId: id,
-            teacherId,
-          },
-          include: {
-            teacher: true,
-          },
+          data: { subjectId: id, teacherId },
+          include: { teacher: true },
         })
       )
     );
-
-    console.log("✅ Teachers assigned successfully");
 
     res.json({
       success: true,
@@ -416,21 +320,16 @@ export const assignTeachersToSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Remove teacher from subject
 export const removeTeacherFromSubject = async (req: Request, res: Response) => {
   try {
     const { id, teacherId } = req.params;
-
     await prisma.subjectTeacher.deleteMany({
-      where: {
-        subjectId: id,
-        teacherId,
-      },
+      where: { subjectId: id, teacherId },
     });
 
     res.json({
       success: true,
-      message: "Teacher removed from subject successfully",
+      message: "Teacher removed successfully",
     });
   } catch (error: any) {
     console.error("❌ Error removing teacher:", error);

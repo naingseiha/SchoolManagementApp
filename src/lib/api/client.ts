@@ -12,7 +12,14 @@ interface ApiResponse<T = any> {
 class ApiClient {
   private baseURL: string;
 
-  constructor(baseURL: string) {
+  /*************  ✨ Windsurf Command ⭐  *************/
+  /**
+   * Initializes the API client with the given base URL.
+   * @param {string} baseURL - The base URL of the API.
+   */
+  /*******  5363a146-c879-41fa-8f9b-012217083ba8  *******/ constructor(
+    baseURL: string
+  ) {
     this.baseURL = baseURL;
   }
 
@@ -44,35 +51,10 @@ class ApiClient {
       const response = await fetch(url, {
         method: "GET",
         headers,
-        // ✅ FIX: Disable caching to avoid 304 responses
         cache: "no-store",
       });
 
       console.log("📥 Response status:", response.status);
-
-      // ✅ Handle 304 Not Modified - treat as success but need to refetch
-      if (response.status === 304) {
-        console.log("⚠️ 304 Not Modified - forcing fresh fetch");
-        // Force a fresh request without cache
-        const freshResponse = await fetch(url, {
-          method: "GET",
-          headers: {
-            ...headers,
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-          },
-        });
-
-        if (!freshResponse.ok && freshResponse.status !== 304) {
-          throw new Error(
-            `HTTP ${freshResponse.status}: ${freshResponse.statusText}`
-          );
-        }
-
-        const data: ApiResponse<T> = await freshResponse.json();
-        console.log("✅ GET Success (after 304)");
-        return data.data;
-      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({
@@ -82,9 +64,16 @@ class ApiClient {
         throw new Error(error.message || "Request failed");
       }
 
-      const data: ApiResponse<T> = await response.json();
+      const data = await response.json();
       console.log("✅ GET Success");
-      return data.data;
+
+      // ✅ Check if response has .data property
+      if (data && typeof data === "object" && "data" in data) {
+        return data.data;
+      }
+
+      // ✅ Otherwise return as is (direct array/object)
+      return data;
     } catch (error: any) {
       console.error("❌ GET Failed:", error);
       throw error;
