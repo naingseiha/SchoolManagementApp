@@ -1,7 +1,147 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { GradeImportService } from "../services/grade-import.service";
+import { GradeCalculationService } from "../services/grade-calculation.service";
+import multer from "multer";
 
 const prisma = new PrismaClient();
+
+// Configure multer for file upload
+const upload = multer({ storage: multer.memoryStorage() });
+
+export class GradeController {
+  // ==================== FILE UPLOAD ====================
+
+  /**
+   * Multer middleware for file upload
+   */
+  static uploadMiddleware = upload.single("file");
+
+  /**
+   * Upload and import grades from Excel
+   */
+  static async importGrades(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded",
+        });
+      }
+
+      console.log(`📤 Importing grades for class: ${classId}`);
+
+      const result = await GradeImportService.importGrades(
+        classId,
+        req.file.buffer
+      );
+
+      return res.status(result.success ? 200 : 207).json(result);
+    } catch (error: any) {
+      console.error("❌ Grade import error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to import grades",
+      });
+    }
+  }
+
+  /**
+   * Get grades by month
+   */
+  static async getGradesByMonth(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      const grades = await prisma.grade.findMany({
+        where: {
+          classId,
+          month: month as string,
+          year: parseInt(year as string),
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              khmerName: true,
+              firstName: true,
+              lastName: true,
+              gender: true,
+            },
+          },
+          subject: {
+            select: {
+              id: true,
+              nameKh: true,
+              nameEn: true,
+              code: true,
+              maxScore: true,
+              coefficient: true,
+            },
+          },
+        },
+        orderBy: [{ student: { khmerName: "asc" } }],
+      });
+
+      return res.json({
+        success: true,
+        data: grades,
+      });
+    } catch (error: any) {
+      console.error("❌ Get grades error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get grades",
+      });
+    }
+  }
+
+  /**
+   * Get monthly summary for a class
+   */
+  static async getMonthlySummary(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      const summaries = await prisma.studentMonthlySummary.findMany({
+        where: {
+          classId,
+          month: month as string,
+          year: parseInt(year as string),
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              khmerName: true,
+              firstName: true,
+              lastName: true,
+              gender: true,
+            },
+          },
+        },
+        orderBy: [{ classRank: "asc" }],
+      });
+
+      return res.json({
+        success: true,
+        data: summaries,
+      });
+    } catch (error: any) {
+      console.error("❌ Get summary error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get summary",
+      });
+    }
+  }
+}
+
+// ==================== EXISTING FUNCTIONS (Keep as is) ====================
 
 // Get all grades
 export const getAllGrades = async (req: Request, res: Response) => {
@@ -21,7 +161,6 @@ export const getAllGrades = async (req: Request, res: Response) => {
             id: true,
             name: true,
             code: true,
-            // ✅ Remove class field - Subject doesn't have class relation
           },
         },
       },
@@ -121,7 +260,6 @@ export const getGradesByStudent = async (req: Request, res: Response) => {
             id: true,
             name: true,
             code: true,
-            // ✅ Remove class field
           },
         },
       },
@@ -161,9 +299,7 @@ export const getGradesByClass = async (req: Request, res: Response) => {
 
     const grades = await prisma.grade.findMany({
       where: {
-        student: {
-          classId,
-        },
+        classId, // ✅ Use direct classId instead of nested query
       },
       include: {
         student: {
@@ -171,6 +307,7 @@ export const getGradesByClass = async (req: Request, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            khmerName: true,
           },
         },
         subject: {
@@ -223,6 +360,7 @@ export const getGradesBySubject = async (req: Request, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            khmerName: true,
             class: {
               select: {
                 name: true,
@@ -253,12 +391,28 @@ export const getGradesBySubject = async (req: Request, res: Response) => {
 // Create new grade
 export const createGrade = async (req: Request, res: Response) => {
   try {
-    const { studentId, subjectId, score, maxScore, remarks } = req.body;
+    const {
+      studentId,
+      subjectId,
+      classId,
+      score,
+      maxScore,
+      remarks,
+      month,
+      year,
+    } = req.body;
 
-    if (!studentId || !subjectId || score === undefined || !maxScore) {
+    if (
+      !studentId ||
+      !subjectId ||
+      !classId ||
+      score === undefined ||
+      !maxScore
+    ) {
       return res.status(400).json({
         success: false,
-        message: "StudentId, subjectId, score, and maxScore are required",
+        message:
+          "StudentId, subjectId, classId, score, and maxScore are required",
       });
     }
 
@@ -295,8 +449,11 @@ export const createGrade = async (req: Request, res: Response) => {
       data: {
         studentId,
         subjectId,
+        classId,
         score,
         maxScore,
+        month,
+        year,
         remarks,
       },
       include: {
@@ -305,6 +462,7 @@ export const createGrade = async (req: Request, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            khmerName: true,
           },
         },
         subject: {
@@ -316,6 +474,18 @@ export const createGrade = async (req: Request, res: Response) => {
         },
       },
     });
+
+    // Calculate summary if month/year provided
+    if (month && year) {
+      const monthNumber = GradeCalculationService.getMonthNumber?.(month) || 1;
+      await GradeCalculationService.calculateMonthlySummary(
+        studentId,
+        classId,
+        month,
+        monthNumber,
+        year
+      );
+    }
 
     res.status(201).json({
       success: true,
@@ -369,6 +539,7 @@ export const updateGrade = async (req: Request, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
+            khmerName: true,
           },
         },
         subject: {
@@ -380,6 +551,18 @@ export const updateGrade = async (req: Request, res: Response) => {
         },
       },
     });
+
+    // Recalculate summary
+    if (existingGrade.month && existingGrade.year) {
+      const monthNumber = existingGrade.monthNumber || 1;
+      await GradeCalculationService.calculateMonthlySummary(
+        existingGrade.studentId,
+        existingGrade.classId,
+        existingGrade.month,
+        monthNumber,
+        existingGrade.year
+      );
+    }
 
     res.json({
       success: true,
@@ -414,6 +597,18 @@ export const deleteGrade = async (req: Request, res: Response) => {
     await prisma.grade.delete({
       where: { id },
     });
+
+    // Recalculate summary after deletion
+    if (existingGrade.month && existingGrade.year) {
+      const monthNumber = existingGrade.monthNumber || 1;
+      await GradeCalculationService.calculateMonthlySummary(
+        existingGrade.studentId,
+        existingGrade.classId,
+        existingGrade.month,
+        monthNumber,
+        existingGrade.year
+      );
+    }
 
     res.json({
       success: true,

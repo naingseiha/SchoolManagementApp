@@ -21,14 +21,14 @@ model User {
 }
 
 model Student {
-  id             String       @id @default(cuid())
-  studentId      String?      @unique
+  id             String  @id @default(cuid())
+  studentId      String? @unique
   firstName      String
   lastName       String
   khmerName      String?
   englishName    String?
-  email          String?      @unique
-  dateOfBirth    DateTime
+  email          String? @unique
+  dateOfBirth    String // Changed to String for text format
   gender         Gender
   placeOfBirth   String?
   currentAddress String?
@@ -36,44 +36,45 @@ model Student {
   phone          String?
   phoneNumber    String?
   classId        String?
-  
-  // ✅ NEW: Exam-related fields
-  previousGrade  String?      // ឡើងពីថ្នាក់ទី
-  passedStatus   String?      // ត្រួត (ជាប់/ធ្លាក់)
-  examSession    String?      // សម័យប្រឡង
-  examCenter     String?      // ម.ប្រឡង
-  examRoom       String?      // បន្ទប់
-  examDesk       String?      // លេខតុ
-  remarks        String?      // ផ្សេងៗ
-  
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  
-  attendance     Attendance[]
-  grades         Grade[]
-  class          Class?       @relation(fields: [classId], references: [id])
+
+  // Exam-related fields
+  previousGrade String?
+  passedStatus  String?
+  examSession   String?
+  examCenter    String?
+  examRoom      String?
+  examDesk      String?
+  remarks       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendance Attendance[]
+  grades     Grade[]
+  summaries  StudentMonthlySummary[]
+  class      Class?                  @relation(fields: [classId], references: [id])
 
   @@map("students")
 }
 
 model Teacher {
-  id                 String           @id @default(cuid())
-  teacherId          String?          @unique
-  firstName          String
-  lastName           String
-  khmerName          String?
-  englishName        String?
-  email              String           @unique
-  phone              String?
-  phoneNumber        String?
-  subject            String?
-  employeeId         String?          @unique
-  gender             Gender?
-  dateOfBirth        DateTime?
-  position           String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  
+  id          String    @id @default(cuid())
+  teacherId   String?   @unique
+  firstName   String
+  lastName    String
+  khmerName   String?
+  englishName String?
+  email       String    @unique
+  phone       String?
+  phoneNumber String?
+  subject     String?
+  employeeId  String?   @unique
+  gender      Gender?
+  dateOfBirth DateTime?
+  position    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   classes            Class[]
   subjectAssignments SubjectTeacher[]
 
@@ -81,40 +82,46 @@ model Teacher {
 }
 
 model Class {
-  id           String       @id @default(cuid())
-  classId      String?      @unique
+  id           String   @id @default(cuid())
+  classId      String?  @unique
   name         String
   grade        String
   section      String?
-  academicYear String       @default("2024-2025")
+  academicYear String   @default("2024-2025")
   capacity     Int?
   teacherId    String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  
-  teacher      Teacher?     @relation(fields: [teacherId], references: [id])
-  students     Student[]
-  attendance   Attendance[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teacher    Teacher?                @relation(fields: [teacherId], references: [id])
+  students   Student[]
+  attendance Attendance[]
+  grades     Grade[]
+  summaries  StudentMonthlySummary[]
 
   @@map("classes")
 }
 
 model Subject {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   nameKh      String
   nameEn      String?
-  code        String   @unique
+  code        String  @unique
   description String?
   grade       String
   track       String?
-  category    String   // "social" | "science"
-  weeklyHours Float    @default(0)
-  annualHours Int      @default(0)
-  maxScore    Int      @default(100)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    String // "social" | "science"
+  weeklyHours Float   @default(0)
+  annualHours Int     @default(0)
+  maxScore    Int     @default(100)
+
+  // ✅ NEW: Coefficient for grade calculation
+  coefficient Float @default(1.0)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   teacherAssignments SubjectTeacher[]
   grades             Grade[]
@@ -128,28 +135,74 @@ model SubjectTeacher {
   teacherId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([subjectId, teacherId])
   @@map("subject_teachers")
 }
 
 model Grade {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   studentId String
   subjectId String
-  score     Float
-  maxScore  Float
+  classId   String
+
+  // Scores
+  score    Float
+  maxScore Float
+
+  // Monthly tracking
+  month       String?
+  monthNumber Int?
+  year        Int?
+
+  // Calculated fields
+  percentage    Float?
+  weightedScore Float?
+
   remarks   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId, classId, month, year])
+  @@index([classId, month, year])
   @@map("grades")
+}
+
+model StudentMonthlySummary {
+  id          String @id @default(cuid())
+  studentId   String
+  classId     String
+  month       String
+  monthNumber Int
+  year        Int
+
+  // Calculated totals
+  totalScore         Float
+  totalMaxScore      Float
+  totalWeightedScore Float
+  totalCoefficient   Float
+
+  // Average & Rank
+  average    Float
+  classRank  Int?
+  gradeLevel String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId, month, year])
+  @@index([classId, month, year])
+  @@map("student_monthly_summaries")
 }
 
 model Attendance {
@@ -161,9 +214,9 @@ model Attendance {
   remarks   String?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-  
-  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class     Class?           @relation(fields: [classId], references: [id])
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class?  @relation(fields: [classId], references: [id])
 
   @@map("attendance")
 }
