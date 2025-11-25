@@ -24,13 +24,19 @@ CREATE TABLE "users" (
 -- CreateTable
 CREATE TABLE "students" (
     "id" TEXT NOT NULL,
+    "studentId" TEXT,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
+    "khmerName" TEXT,
+    "englishName" TEXT,
+    "email" TEXT,
     "dateOfBirth" TIMESTAMP(3) NOT NULL,
     "gender" "Gender" NOT NULL,
+    "placeOfBirth" TEXT,
+    "currentAddress" TEXT,
     "address" TEXT,
     "phone" TEXT,
+    "phoneNumber" TEXT,
     "classId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -41,12 +47,19 @@ CREATE TABLE "students" (
 -- CreateTable
 CREATE TABLE "teachers" (
     "id" TEXT NOT NULL,
+    "teacherId" TEXT,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
+    "khmerName" TEXT,
+    "englishName" TEXT,
     "email" TEXT NOT NULL,
     "phone" TEXT,
+    "phoneNumber" TEXT,
     "subject" TEXT,
     "employeeId" TEXT,
+    "gender" "Gender",
+    "dateOfBirth" TIMESTAMP(3),
+    "position" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -56,9 +69,12 @@ CREATE TABLE "teachers" (
 -- CreateTable
 CREATE TABLE "classes" (
     "id" TEXT NOT NULL,
+    "classId" TEXT,
     "name" TEXT NOT NULL,
     "grade" TEXT NOT NULL,
     "section" TEXT,
+    "academicYear" TEXT NOT NULL DEFAULT '2024-2025',
+    "capacity" INTEGER,
     "teacherId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -70,15 +86,16 @@ CREATE TABLE "classes" (
 CREATE TABLE "subjects" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "nameKh" TEXT,
+    "nameKh" TEXT NOT NULL,
     "nameEn" TEXT,
     "code" TEXT NOT NULL,
     "description" TEXT,
     "grade" TEXT NOT NULL,
     "track" TEXT,
-    "category" TEXT NOT NULL DEFAULT 'core',
+    "category" TEXT NOT NULL,
     "weeklyHours" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "annualHours" INTEGER NOT NULL DEFAULT 0,
+    "maxScore" INTEGER NOT NULL DEFAULT 100,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -115,6 +132,7 @@ CREATE TABLE "grades" (
 CREATE TABLE "attendance" (
     "id" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
+    "classId" TEXT,
     "date" TIMESTAMP(3) NOT NULL,
     "status" "AttendanceStatus" NOT NULL,
     "remarks" TEXT,
@@ -128,13 +146,22 @@ CREATE TABLE "attendance" (
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "students_studentId_key" ON "students"("studentId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "students_email_key" ON "students"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "teachers_teacherId_key" ON "teachers"("teacherId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "teachers_email_key" ON "teachers"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "teachers_employeeId_key" ON "teachers"("employeeId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "classes_classId_key" ON "classes"("classId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "subjects_code_key" ON "subjects"("code");
@@ -162,3 +189,6 @@ ALTER TABLE "grades" ADD CONSTRAINT "grades_subjectId_fkey" FOREIGN KEY ("subjec
 
 -- AddForeignKey
 ALTER TABLE "attendance" ADD CONSTRAINT "attendance_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "students"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "attendance" ADD CONSTRAINT "attendance_classId_fkey" FOREIGN KEY ("classId") REFERENCES "classes"("id") ON DELETE SET NULL ON UPDATE CASCADE;

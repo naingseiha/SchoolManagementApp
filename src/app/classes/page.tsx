@@ -12,6 +12,7 @@ import ClassForm from "@/components/forms/ClassForm";
 import AssignStudentsModal from "@/components/modals/AssignStudentsModal";
 import ClassDetailsModal from "@/components/modals/ClassDetailsModal";
 import ExportStudentsModal from "@/components/modals/ExportStudentsModal";
+import ImportStudentsModal from "@/components/modals/ImportStudentsModal";
 import {
   GraduationCap,
   Plus,
@@ -24,6 +25,7 @@ import {
   Loader2,
   UserPlus,
   Download,
+  Upload,
   RefreshCw,
   AlertCircle,
   Filter,
@@ -50,6 +52,7 @@ export default function ClassesPage() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -190,6 +193,11 @@ export default function ClassesPage() {
   const handleExportClass = (classItem: Class) => {
     setSelectedClass(classItem);
     setIsExportModalOpen(true);
+  };
+
+  const handleImportStudents = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsImportModalOpen(true);
   };
 
   const handleRefresh = async () => {
@@ -463,6 +471,15 @@ export default function ClassesPage() {
                           </button>
 
                           <button
+                            onClick={() => handleImportStudents(classItem)}
+                            className="flex items-center justify-center gap-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-sm font-medium"
+                            title="នាំចូលសិស្សពី Excel"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span>នាំចូល</span>
+                          </button>
+
+                          <button
                             onClick={() => handleAssignStudents(classItem)}
                             className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-colors text-sm font-medium"
                             title="បន្ថែមសិស្ស"
@@ -473,7 +490,7 @@ export default function ClassesPage() {
 
                           <button
                             onClick={() => handleEditClass(classItem)}
-                            className="flex items-center justify-center gap-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-sm font-medium"
+                            className="flex items-center justify-center gap-2 px-3 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-600 rounded-lg transition-colors text-sm font-medium"
                             title="កែប្រែ"
                           >
                             <Edit className="w-4 h-4" />
@@ -548,6 +565,19 @@ export default function ClassesPage() {
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
           classData={selectedClass}
+        />
+      )}
+
+      {/* Import Students Modal */}
+      {selectedClass && (
+        <ImportStudentsModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          classData={selectedClass}
+          onImportSuccess={() => {
+            handleRefresh();
+            setIsImportModalOpen(false);
+          }}
         />
       )}
     </div>
