@@ -27,7 +27,7 @@ model Student {
   lastName       String
   khmerName      String?
   englishName    String?
-  email          String       @unique
+  email          String?      @unique
   dateOfBirth    DateTime
   gender         Gender
   placeOfBirth   String?
@@ -36,6 +36,16 @@ model Student {
   phone          String?
   phoneNumber    String?
   classId        String?
+  
+  // ✅ NEW: Exam-related fields
+  previousGrade  String?      // ឡើងពីថ្នាក់ទី
+  passedStatus   String?      // ត្រួត (ជាប់/ធ្លាក់)
+  examSession    String?      // សម័យប្រឡង
+  examCenter     String?      // ម.ប្រឡង
+  examRoom       String?      // បន្ទប់
+  examDesk       String?      // លេខតុ
+  remarks        String?      // ផ្សេងៗ
+  
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   

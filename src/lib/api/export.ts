@@ -27,6 +27,19 @@ export interface ExportPreview {
   suggestedFilename: string;
 }
 
+export interface ImportResult {
+  success: boolean;
+  totalRows: number;
+  validRows: number;
+  errorRows: number;
+  errors: Array<{
+    row: number;
+    data: any;
+    error: string;
+  }>;
+  importedStudents: any[];
+}
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -39,7 +52,6 @@ export const exportApi = {
     options: ExportOptions
   ): Promise<Blob> {
     try {
-      // ✅ Construct URL correctly (no double /api)
       const url = `${API_BASE_URL}/export/students/class/${classId}`;
 
       console.log("📤 Exporting to URL:", url);
@@ -74,6 +86,85 @@ export const exportApi = {
     }
   },
 
+  /**
+   * ✅ Download blank import template
+   */
+  async downloadImportTemplate(
+    classId: string,
+    options?: {
+      schoolName?: string;
+      provinceName?: string;
+      academicYear?: string;
+    }
+  ): Promise<Blob> {
+    try {
+      const params = new URLSearchParams();
+      if (options?.schoolName) params.append("schoolName", options.schoolName);
+      if (options?.provinceName)
+        params.append("provinceName", options.provinceName);
+      if (options?.academicYear)
+        params.append("academicYear", options.academicYear);
+
+      const url = `${API_BASE_URL}/export/template/import/${classId}?${params.toString()}`;
+
+      console.log("📥 Downloading import template:", url);
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download template");
+      }
+
+      const blob = await response.blob();
+      console.log("✅ Template downloaded, blob size:", blob.size);
+      return blob;
+    } catch (error: any) {
+      console.error("❌ Template download error:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * ✅ Import students from Excel file
+   */
+  async importStudentsFromExcel(
+    classId: string,
+    file: File
+  ): Promise<ImportResult> {
+    try {
+      const url = `${API_BASE_URL}/export/import/${classId}`;
+
+      console.log("📤 Uploading file:", file.name);
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Import failed");
+      }
+
+      const result = await response.json();
+      console.log("✅ Import result:", result);
+      return result.data;
+    } catch (error: any) {
+      console.error("❌ Import error:", error);
+      throw error;
+    }
+  },
+
   downloadFile(blob: Blob, filename: string): void {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -99,30 +190,6 @@ export const exportApi = {
       return response.data;
     } catch (error: any) {
       console.error("❌ Preview error:", error);
-      throw error;
-    }
-  },
-
-  async downloadImportTemplate(): Promise<void> {
-    try {
-      console.log("📥 Downloading import template...");
-
-      const url = `${API_BASE_URL}/export/template/import`;
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to download template");
-      }
-
-      const blob = await response.blob();
-      this.downloadFile(blob, "Student_Import_Template.xlsx");
-    } catch (error: any) {
-      console.error("❌ Template download error:", error);
       throw error;
     }
   },

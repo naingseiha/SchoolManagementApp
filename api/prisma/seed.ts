@@ -1,375 +1,127 @@
-import { PrismaClient, Role, Gender, AttendanceStatus } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting database seed...");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🌱 Seeding default users...");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // 1. Create Admin User
-  console.log("👤 Creating admin user...");
-  const hashedPassword = await bcrypt.hash("Admin123!", 10);
+  // ==================== ADMIN USER ====================
+  console.log("\n👤 Creating admin user...");
+
+  const hashedPassword = await bcrypt.hash("admin123", 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@school.com" },
+    where: { email: "admin@school.edu.kh" },
     update: {},
     create: {
-      email: "admin@school.com",
+      email: "admin@school.edu.kh",
       password: hashedPassword,
       firstName: "Admin",
-      lastName: "User",
+      lastName: "System",
       role: Role.ADMIN,
     },
   });
-  console.log("✅ Admin user created:", admin.email);
 
-  // 2. Create Teachers
-  console.log("👨‍🏫 Creating teachers...");
+  console.log(`  ✅ Admin: ${admin.email}`);
+  console.log(`     Password: admin123`);
+
+  // ==================== SAMPLE TEACHERS ====================
+  console.log("\n👨‍🏫 Creating sample teachers...");
+
+  const teacherPassword = await bcrypt.hash("teacher123", 10);
 
   const teacher1 = await prisma.teacher.upsert({
-    where: { email: "sokha.chan@school.com" },
+    where: { email: "sokha.teacher@school.edu.kh" },
     update: {},
     create: {
       firstName: "Sokha",
       lastName: "Chan",
-      email: "sokha.chan@school.com",
+      khmerName: "ចាន់ សុខា",
+      email: "sokha.teacher@school.edu.kh",
       phone: "012 345 678",
-      subject: "Mathematics",
-      employeeId: "T-001",
+      employeeId: "TCH-001",
+      gender: "MALE",
+      dateOfBirth: new Date("1985-05-15"),
+      position: "Senior Teacher",
     },
   });
 
   const teacher2 = await prisma.teacher.upsert({
-    where: { email: "dara.kim@school.com" },
-    update: {},
-    create: {
-      firstName: "Dara",
-      lastName: "Kim",
-      email: "dara.kim@school.com",
-      phone: "012 345 679",
-      subject: "Physics",
-      employeeId: "T-002",
-    },
-  });
-
-  const teacher3 = await prisma.teacher.upsert({
-    where: { email: "sophea.lim@school.com" },
-    update: {},
-    create: {
-      firstName: "Sophea",
-      lastName: "Lim",
-      email: "sophea.lim@school.com",
-      phone: "012 345 680",
-      subject: "Khmer Literature",
-      employeeId: "T-003",
-    },
-  });
-
-  console.log("✅ Teachers created");
-
-  // 3. Create Classes
-  console.log("🏫 Creating classes...");
-
-  const class7A = await prisma.class.upsert({
-    where: { id: "class-7a-001" },
-    update: {},
-    create: {
-      id: "class-7a-001",
-      name: "Grade 7A",
-      grade: "7",
-      section: "A",
-      teacherId: teacher1.id,
-    },
-  });
-
-  const class8A = await prisma.class.upsert({
-    where: { id: "class-8a-001" },
-    update: {},
-    create: {
-      id: "class-8a-001",
-      name: "Grade 8A",
-      grade: "8",
-      section: "A",
-      teacherId: teacher2.id,
-    },
-  });
-
-  console.log("✅ Classes created");
-
-  // 4. Create Subjects (✅ FIXED: Removed classId)
-  console.log("📚 Creating subjects...");
-
-  const mathSubject = await prisma.subject.upsert({
-    where: { code: "G7-MATH-001" },
-    update: {},
-    create: {
-      name: "គណិតវិទ្យា • Mathematics",
-      nameKh: "គណិតវិទ្យា",
-      nameEn: "Mathematics",
-      code: "G7-MATH-001",
-      description: "Grade 7 Mathematics",
-      grade: "7",
-      category: "core",
-      weeklyHours: 6,
-      annualHours: 192,
-      isActive: true,
-      // ✅ REMOVED: classId: class7A.id,
-    },
-  });
-
-  const physicsSubject = await prisma.subject.upsert({
-    where: { code: "G7-PHYS-001" },
-    update: {},
-    create: {
-      name: "រូបវិទ្យា • Physics",
-      nameKh: "រូបវិទ្យា",
-      nameEn: "Physics",
-      code: "G7-PHYS-001",
-      description: "Grade 7 Physics",
-      grade: "7",
-      category: "science",
-      weeklyHours: 2.5,
-      annualHours: 80,
-      isActive: true,
-      // ✅ REMOVED: classId: class7A.id,
-    },
-  });
-
-  const khmerSubject = await prisma.subject.upsert({
-    where: { code: "G7-KHMER-001" },
-    update: {},
-    create: {
-      name: "អក្សរសាស្ត្រខ្មែរ • Khmer Literature",
-      nameKh: "អក្សរសាស្ត្រខ្មែរ",
-      nameEn: "Khmer Literature",
-      code: "G7-KHMER-001",
-      description: "Grade 7 Khmer Literature",
-      grade: "7",
-      category: "core",
-      weeklyHours: 5,
-      annualHours: 160,
-      isActive: true,
-    },
-  });
-
-  const ictSubject = await prisma.subject.upsert({
-    where: { code: "G7-ICT-001" },
-    update: {},
-    create: {
-      name: "បច្ចេកវិទ្យាព័ត៌មានវិទ្យា • ICT",
-      nameKh: "បច្ចេកវិទ្យាព័ត៌មានវិទ្យា",
-      nameEn: "Information & Communication Technology",
-      code: "G7-ICT-001",
-      description: "Grade 7 ICT",
-      grade: "7",
-      category: "technology",
-      weeklyHours: 1.5,
-      annualHours: 50,
-      isActive: true,
-    },
-  });
-
-  console.log("✅ Subjects created");
-
-  // 5. ✅ NEW: Assign Teachers to Subjects (Many-to-Many)
-  console.log("🔗 Assigning teachers to subjects...");
-
-  // Teacher1 (Sokha) teaches Math
-  await prisma.subjectTeacher.upsert({
-    where: {
-      subjectId_teacherId: {
-        subjectId: mathSubject.id,
-        teacherId: teacher1.id,
-      },
-    },
-    update: {},
-    create: {
-      subjectId: mathSubject.id,
-      teacherId: teacher1.id,
-    },
-  });
-
-  // Teacher2 (Dara) teaches Physics
-  await prisma.subjectTeacher.upsert({
-    where: {
-      subjectId_teacherId: {
-        subjectId: physicsSubject.id,
-        teacherId: teacher2.id,
-      },
-    },
-    update: {},
-    create: {
-      subjectId: physicsSubject.id,
-      teacherId: teacher2.id,
-    },
-  });
-
-  // Teacher3 (Sophea) teaches Khmer
-  await prisma.subjectTeacher.upsert({
-    where: {
-      subjectId_teacherId: {
-        subjectId: khmerSubject.id,
-        teacherId: teacher3.id,
-      },
-    },
-    update: {},
-    create: {
-      subjectId: khmerSubject.id,
-      teacherId: teacher3.id,
-    },
-  });
-
-  // Teacher1 can also teach ICT (one teacher, multiple subjects)
-  await prisma.subjectTeacher.upsert({
-    where: {
-      subjectId_teacherId: {
-        subjectId: ictSubject.id,
-        teacherId: teacher1.id,
-      },
-    },
-    update: {},
-    create: {
-      subjectId: ictSubject.id,
-      teacherId: teacher1.id,
-    },
-  });
-
-  console.log("✅ Teacher-Subject assignments created");
-
-  // 6. Create Students
-  console.log("👨‍🎓 Creating students...");
-
-  const student1 = await prisma.student.upsert({
-    where: { email: "student1@school.com" },
-    update: {},
-    create: {
-      firstName: "Pisey",
-      lastName: "Sok",
-      email: "student1@school.com",
-      dateOfBirth: new Date("2010-05-15"),
-      gender: Gender.MALE,
-      address: "Phnom Penh",
-      phone: "012 111 111",
-      classId: class7A.id,
-    },
-  });
-
-  const student2 = await prisma.student.upsert({
-    where: { email: "student2@school.com" },
+    where: { email: "sreymom.teacher@school.edu.kh" },
     update: {},
     create: {
       firstName: "Sreymom",
-      lastName: "Touch",
-      email: "student2@school.com",
-      dateOfBirth: new Date("2010-08-22"),
-      gender: Gender.FEMALE,
-      address: "Phnom Penh",
-      phone: "012 222 222",
-      classId: class7A.id,
+      lastName: "Pich",
+      khmerName: "ពេជ្រ ស្រីមម",
+      email: "sreymom.teacher@school.edu.kh",
+      phone: "012 345 679",
+      employeeId: "TCH-002",
+      gender: "FEMALE",
+      dateOfBirth: new Date("1988-08-20"),
+      position: "Teacher",
     },
   });
 
-  const student3 = await prisma.student.upsert({
-    where: { email: "student3@school.com" },
+  console.log(`  ✅ Teacher 1: ${teacher1.email} (Password: teacher123)`);
+  console.log(`  ✅ Teacher 2: ${teacher2.email} (Password: teacher123)`);
+
+  // ==================== CLASS TEACHER USER ====================
+  console.log("\n👨‍🏫 Creating class teacher users...");
+
+  const classTeacher = await prisma.user.upsert({
+    where: { email: "classteacher@school.edu.kh" },
     update: {},
     create: {
-      firstName: "Virak",
-      lastName: "Chea",
-      email: "student3@school.com",
-      dateOfBirth: new Date("2009-03-10"),
-      gender: Gender.MALE,
-      address: "Phnom Penh",
-      phone: "012 333 333",
-      classId: class8A.id,
+      email: "classteacher@school.edu.kh",
+      password: teacherPassword,
+      firstName: "Class",
+      lastName: "Teacher",
+      role: Role.CLASS_TEACHER,
     },
   });
 
-  console.log("✅ Students created");
+  console.log(
+    `  ✅ Class Teacher: ${classTeacher.email} (Password: teacher123)`
+  );
 
-  // 7. Create Grades
-  console.log("📊 Creating grades...");
-
-  await prisma.grade.create({
-    data: {
-      studentId: student1.id,
-      subjectId: mathSubject.id,
-      score: 85,
-      maxScore: 100,
-      remarks: "Good performance",
+  // ==================== SUBJECT TEACHER USER ====================
+  const subjectTeacher = await prisma.user.upsert({
+    where: { email: "subjectteacher@school.edu.kh" },
+    update: {},
+    create: {
+      email: "subjectteacher@school.edu.kh",
+      password: teacherPassword,
+      firstName: "Subject",
+      lastName: "Teacher",
+      role: Role.SUBJECT_TEACHER,
     },
   });
 
-  await prisma.grade.create({
-    data: {
-      studentId: student1.id,
-      subjectId: physicsSubject.id,
-      score: 78,
-      maxScore: 100,
-      remarks: "Needs improvement",
-    },
-  });
+  console.log(
+    `  ✅ Subject Teacher: ${subjectTeacher.email} (Password: teacher123)`
+  );
 
-  await prisma.grade.create({
-    data: {
-      studentId: student2.id,
-      subjectId: mathSubject.id,
-      score: 92,
-      maxScore: 100,
-      remarks: "Excellent work",
-    },
-  });
-
-  console.log("✅ Grades created");
-
-  // 8. Create Attendance
-  console.log("📅 Creating attendance records...");
-
-  await prisma.attendance.create({
-    data: {
-      studentId: student1.id,
-      date: new Date(),
-      status: AttendanceStatus.PRESENT,
-      remarks: "On time",
-    },
-  });
-
-  await prisma.attendance.create({
-    data: {
-      studentId: student2.id,
-      date: new Date(),
-      status: AttendanceStatus.PRESENT,
-    },
-  });
-
-  await prisma.attendance.create({
-    data: {
-      studentId: student3.id,
-      date: new Date(),
-      status: AttendanceStatus.LATE,
-      remarks: "Arrived 15 minutes late",
-    },
-  });
-
-  console.log("✅ Attendance records created");
-
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("🎉 Database seeded successfully!");
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("✅ User seeding completed!");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("📊 Summary:");
   console.log("  - 1 Admin user");
-  console.log("  - 3 Teachers");
-  console.log("  - 2 Classes");
-  console.log("  - 4 Subjects");
-  console.log("  - 4 Teacher-Subject assignments");
-  console.log("  - 3 Students");
-  console.log("  - 3 Grades");
-  console.log("  - 3 Attendance records");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("  - 1 Class Teacher user");
+  console.log("  - 1 Subject Teacher user");
+  console.log("  - 2 Sample Teachers (database records)");
+  console.log("\n🔐 Login Credentials:");
+  console.log("  Admin: admin@school.edu.kh / admin123");
+  console.log("  Class Teacher: classteacher@school.edu.kh / teacher123");
+  console.log("  Subject Teacher: subjectteacher@school.edu.kh / teacher123");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Error seeding database:", e);
+    console.error("❌ Error seeding users:", e);
     process.exit(1);
   })
   .finally(async () => {

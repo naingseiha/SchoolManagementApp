@@ -43,7 +43,6 @@ export class ExcelTemplateService {
         return date.split("T")[0];
       }
 
-      // Try to convert to Date
       const dateObj = new Date(date);
       if (!isNaN(dateObj.getTime())) {
         return dateObj.toISOString().split("T")[0];
@@ -57,7 +56,7 @@ export class ExcelTemplateService {
   }
 
   /**
-   * ✅ Export students using pre-designed template
+   * ✅ Export students using pre-designed template with ALL fields
    */
   static async exportStudentsByClass(options: ExportOptions): Promise<Buffer> {
     const templatePath = path.join(
@@ -68,12 +67,10 @@ export class ExcelTemplateService {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("📂 Loading template:", templatePath);
 
-    // ✅ Check if template exists
     if (!fs.existsSync(templatePath)) {
       throw new Error(`Template not found: ${templatePath}`);
     }
 
-    // ✅ Get class data
     const classData = await prisma.class.findUnique({
       where: { id: options.classId },
       include: {
@@ -107,14 +104,12 @@ export class ExcelTemplateService {
       `👥 Students: ${totalStudents} (Male: ${maleStudents}, Female: ${femaleStudents})`
     );
 
-    // ✅ Load template
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(templatePath);
     const worksheet = workbook.getWorksheet(1) || workbook.worksheets[0];
 
     console.log(`📄 Template loaded: ${worksheet.name}`);
 
-    // ✅ Replace placeholders
     const instructorName =
       options.classInstructor ||
       classData.teacher?.khmerName ||
@@ -147,9 +142,7 @@ export class ExcelTemplateService {
     console.log("🔄 Replacing placeholders...");
     this.replacePlaceholders(worksheet, replacements);
 
-    // ✅ Find data start row
     let dataStartRow = 11;
-
     worksheet.eachRow((row, rowNumber) => {
       row.eachCell((cell) => {
         if (cell.value && cell.value.toString().includes("ល.រ")) {
@@ -160,11 +153,9 @@ export class ExcelTemplateService {
 
     console.log(`📍 Data will start at row: ${dataStartRow}`);
 
-    // ✅ Get template row for styling
     const templateRow = worksheet.getRow(dataStartRow);
 
-    // ✅ Insert student data
-    console.log(`📝 Inserting ${totalStudents} students...`);
+    console.log(`📝 Inserting ${totalStudents} students with all fields...`);
 
     classData.students.forEach((student, index) => {
       const rowNumber = dataStartRow + index;
@@ -193,55 +184,200 @@ export class ExcelTemplateService {
       cellGender.alignment = { horizontal: "center", vertical: "middle" };
       this.copyCellStyle(templateRow.getCell(3), cellGender);
 
-      // ✅ ថ្ងៃខែឆ្នាំកំណើត (Date of Birth) - FIXED
+      // ថ្ងៃខែឆ្នាំកំណើត (Date of Birth)
       const cellDob = row.getCell(colIndex++);
       cellDob.value = this.formatDate(student.dateOfBirth);
       cellDob.alignment = { horizontal: "center", vertical: "middle" };
       this.copyCellStyle(templateRow.getCell(4), cellDob);
 
-      // សម័យប្រឡង (Exam Session)
+      // ✅ ឡើងពីថ្នាក់ទី (Previous Grade)
+      const cellPrevGrade = row.getCell(colIndex++);
+      cellPrevGrade.value = (student as any).previousGrade || "";
+      cellPrevGrade.alignment = { horizontal: "center", vertical: "middle" };
+      this.copyCellStyle(templateRow.getCell(5), cellPrevGrade);
+
+      // ✅ ត្រួត (Pass/Fail Status)
+      const cellPassed = row.getCell(colIndex++);
+      cellPassed.value = (student as any).passedStatus || "";
+      cellPassed.alignment = { horizontal: "center", vertical: "middle" };
+      this.copyCellStyle(templateRow.getCell(6), cellPassed);
+
+      // ✅ សម័យប្រឡង (Exam Session)
       const cellExamSession = row.getCell(colIndex++);
-      cellExamSession.value = options.examSession || "";
+      cellExamSession.value =
+        (student as any).examSession || options.examSession || "";
       cellExamSession.alignment = { horizontal: "center", vertical: "middle" };
-      this.copyCellStyle(templateRow.getCell(5), cellExamSession);
+      this.copyCellStyle(templateRow.getCell(7), cellExamSession);
 
-      // ម.ប្រឡង (Exam Code)
-      const cellExamCode = row.getCell(colIndex++);
-      cellExamCode.value = options.examCode || "";
-      cellExamCode.alignment = { horizontal: "center", vertical: "middle" };
-      this.copyCellStyle(templateRow.getCell(6), cellExamCode);
+      // ✅ ម.ប្រឡង (Exam Center)
+      const cellExamCenter = row.getCell(colIndex++);
+      cellExamCenter.value =
+        (student as any).examCenter || options.examCode || "";
+      cellExamCenter.alignment = { horizontal: "center", vertical: "middle" };
+      this.copyCellStyle(templateRow.getCell(8), cellExamCenter);
 
-      // បន្ទប់ (Room)
+      // ✅ បន្ទប់ (Exam Room)
       const cellRoom = row.getCell(colIndex++);
-      cellRoom.value = "";
+      cellRoom.value = (student as any).examRoom || "";
       cellRoom.alignment = { horizontal: "center", vertical: "middle" };
-      this.copyCellStyle(templateRow.getCell(7), cellRoom);
+      this.copyCellStyle(templateRow.getCell(9), cellRoom);
 
-      // តុ (Desk)
+      // ✅ លេខតុ (Exam Desk)
       const cellDesk = row.getCell(colIndex++);
-      cellDesk.value = "";
+      cellDesk.value = (student as any).examDesk || "";
       cellDesk.alignment = { horizontal: "center", vertical: "middle" };
-      this.copyCellStyle(templateRow.getCell(8), cellDesk);
+      this.copyCellStyle(templateRow.getCell(10), cellDesk);
 
-      // ផ្សេងៗ (Notes)
-      const cellNotes = row.getCell(colIndex++);
-      cellNotes.value = "";
-      cellNotes.alignment = { horizontal: "left", vertical: "middle" };
-      this.copyCellStyle(templateRow.getCell(9), cellNotes);
+      // ✅ ផ្សេងៗ (Remarks)
+      const cellRemarks = row.getCell(colIndex++);
+      cellRemarks.value = (student as any).remarks || "";
+      cellRemarks.alignment = { horizontal: "left", vertical: "middle" };
+      this.copyCellStyle(templateRow.getCell(11), cellRemarks);
 
       // ហត្ថលេខា (Signature)
       const cellSignature = row.getCell(colIndex++);
       cellSignature.value = "";
       cellSignature.alignment = { horizontal: "center", vertical: "middle" };
-      this.copyCellStyle(templateRow.getCell(10), cellSignature);
+      this.copyCellStyle(templateRow.getCell(12), cellSignature);
 
       row.commit();
     });
 
-    console.log(`✅ ${totalStudents} students inserted successfully!`);
+    console.log(`✅ ${totalStudents} students inserted with all fields!`);
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    // ✅ Convert to buffer
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
+  /**
+   * ✅ Generate blank import template for manual entry
+   */
+  static async generateImportTemplate(
+    classId: string,
+    options: {
+      schoolName?: string;
+      provinceName?: string;
+      academicYear?: string;
+      className?: string;
+      sampleRows?: number;
+    }
+  ): Promise<Buffer> {
+    const templatePath = path.join(
+      this.TEMPLATE_DIR,
+      "student-list-by-class-template.xlsx"
+    );
+
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📄 Generating import template...");
+
+    if (!fs.existsSync(templatePath)) {
+      throw new Error(`Template not found: ${templatePath}`);
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.readFile(templatePath);
+    const worksheet = workbook.getWorksheet(1) || workbook.worksheets[0];
+
+    const replacements = {
+      "{{provinceName}}": options.provinceName || "[បំពេញខេត្ត/រាជធានី]",
+      "{{schoolName}}": options.schoolName || "[បំពេញឈ្មោះសាលា]",
+      "{{academicYear}}": options.academicYear || "[ឆ្នាំសិក្សា]",
+      "{{className}}": options.className || "[ថ្នាក់]",
+      "{{grade}}": "",
+      "{{section}}": "",
+      "{{totalStudents}}": "[ចំនួនសិស្ស]",
+      "{{maleStudents}}": "",
+      "{{femaleStudents}}": "",
+      "{{classInstructor}}": "[គ្រូប្រចាំថ្នាក់]",
+      "{{instructorDetails}}": "",
+      "{{directorDetails}}": "",
+      "{{examSession}}": "",
+      "{{examCode}}": "",
+      "{{currentDate}}": new Date().toLocaleDateString("km-KH"),
+    };
+
+    this.replacePlaceholders(worksheet, replacements);
+
+    let dataStartRow = 11;
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell) => {
+        if (cell.value && cell.value.toString().includes("ល.រ")) {
+          dataStartRow = rowNumber + 1;
+        }
+      });
+    });
+
+    console.log(`📍 Data entry starts at row: ${dataStartRow}`);
+
+    // ✅ Set date column format
+    worksheet.getColumn(4).numFmt = "dd/mm/yyyy";
+
+    const sampleRows = options.sampleRows || 5;
+    const templateRow = worksheet.getRow(dataStartRow);
+
+    for (let i = 0; i < sampleRows; i++) {
+      const rowNumber = dataStartRow + i;
+      const row = worksheet.getRow(rowNumber);
+      row.height = templateRow.height || 22;
+
+      // Sample data
+      if (i === 0) {
+        row.getCell(1).value = 1;
+        row.getCell(2).value = "សុខ វិរៈ";
+        row.getCell(3).value = "ប្រុស";
+        row.getCell(4).value = new Date(2008, 11, 29);
+        row.getCell(5).value = "ថ្នាក់ទី៩";
+        row.getCell(6).value = "ជាប់";
+        row.getCell(7).value = "ឆមាសទី១";
+        row.getCell(8).value = "HS-PP-01";
+      } else if (i === 1) {
+        row.getCell(1).value = 2;
+        row.getCell(2).value = "ចាន់ សោភា";
+        row.getCell(3).value = "ស្រី";
+        row.getCell(4).value = new Date(2008, 7, 20);
+        row.getCell(5).value = "ថ្នាក់ទី៩";
+        row.getCell(6).value = "ជាប់";
+      } else {
+        row.getCell(1).value = i + 1;
+        row.getCell(2).value = "";
+        row.getCell(3).value = "";
+        row.getCell(4).value = "";
+        row.getCell(5).value = "";
+        row.getCell(6).value = "";
+      }
+
+      row.getCell(7).value = "";
+      row.getCell(8).value = "";
+      row.getCell(9).value = "";
+      row.getCell(10).value = "";
+      row.getCell(11).value = "";
+      row.getCell(12).value = "";
+
+      for (let col = 1; col <= 12; col++) {
+        this.copyCellStyle(templateRow.getCell(col), row.getCell(col));
+      }
+
+      row.commit();
+    }
+
+    // Add instruction note
+    worksheet.getCell(`D${dataStartRow}`).note = {
+      texts: [
+        {
+          font: { name: "Khmer OS Battambang", size: 9, bold: true },
+          text: "ទម្រង់ថ្ងៃខែ • Date Format:\n\n",
+        },
+        {
+          font: { name: "Arial", size: 8 },
+          text: "✅ 29/12/2008 (DD/MM/YYYY)\n✅ 29/12/08 (DD/MM/YY)\n✅ 2008-12-29 (ISO)\n",
+        },
+      ],
+    };
+
+    console.log("✅ Import template generated with all fields!");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
   }
