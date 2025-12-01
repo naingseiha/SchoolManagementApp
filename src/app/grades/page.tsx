@@ -1,485 +1,398 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import Select from "@/components/ui/Select";
-import { Check, AlertCircle, Download, Upload } from "lucide-react";
 import Button from "@/components/ui/Button";
+import Select from "@/components/ui/Select";
+import ImportGradesModal from "@/components/modals/ImportGradesModal";
+import {
+  Upload,
+  Download,
+  Loader2,
+  BarChart3,
+  RefreshCw,
+  AlertCircle,
+} from "lucide-react";
+import { gradeApi, type StudentSummary } from "@/lib/api/grades";
+import type { Class } from "@/lib/api/classes";
+
+const MONTHS = [
+  { value: "មករា", label: "មករា - January", number: 1 },
+  { value: "កុម្ភៈ", label: "កុម្ភៈ - February", number: 2 },
+  { value: "មីនា", label: "មីនា - March", number: 3 },
+  { value: "មេសា", label: "មេសា - April", number: 4 },
+  { value: "ឧសភា", label: "ឧសភា - May", number: 5 },
+  { value: "មិថុនា", label: "មិថុនា - June", number: 6 },
+  { value: "កក្កដា", label: "កក្កដា - July", number: 7 },
+  { value: "សីហា", label: "សីហា - August", number: 8 },
+  { value: "កញ្ញា", label: "កញ្ញា - September", number: 9 },
+  { value: "តុលា", label: "តុលា - October", number: 10 },
+  { value: "វិច្ឆិកា", label: "វិច្ឆិកា - November", number: 11 },
+  { value: "ធ្នូ", label: "ធ្នូ - December", number: 12 },
+];
 
 export default function GradesPage() {
-  const { isAuthenticated, currentUser } = useAuth();
-  const { students, classes, subjects, grades, updateGrades } = useData();
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
+
+  // State
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("1");
-  const [gradeData, setGradeData] = useState<{
-    [key: string]: { [key: string]: string };
-  }>({});
-  const [saveStatus, setSaveStatus] = useState("");
-  const [focusedCell, setFocusedCell] = useState<{
-    studentId: string;
-    subjectId: string;
-  } | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState("មករា");
+  const [selectedYear, setSelectedYear] = useState(2024);
+  const [summaries, setSummaries] = useState<StudentSummary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  if (!isAuthenticated) {
-    router.push("/login");
-    return null;
-  }
-
-  // Filter classes based on user role
-  const accessibleClasses =
-    currentUser?.role === "superadmin"
-      ? classes
-      : currentUser?.role === "classteacher"
-      ? classes.filter((c) => c.classTeacherId === currentUser.teacherId)
-      : [];
-
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់ - Select Class" },
-    ...accessibleClasses.map((c) => ({ value: c.id, label: c.name })),
-  ];
-
-  const monthOptions = [
-    { value: "1", label: "មករា - January" },
-    { value: "2", label: "កុម្ភៈ - February" },
-    { value: "3", label: "មីនា - March" },
-    { value: "4", label: "មេសា - April" },
-    { value: "5", label: "ឧសភា - May" },
-    { value: "6", label: "មិថុនា - June" },
-    { value: "7", label: "កក្កដា - July" },
-    { value: "8", label: "សីហា - August" },
-    { value: "9", label: "កញ្ញា - September" },
-    { value: "10", label: "តុលា - October" },
-    { value: "11", label: "វិច្ឆិកា - November" },
-    { value: "12", label: "ធ្នូ - December" },
-  ];
-
-  const classStudents = students.filter((s) => s.classId === selectedClassId);
-  const selectedClass = classes.find((c) => c.id === selectedClassId);
-
-  // Load existing grades when class or month changes
+  // Redirect if not authenticated
   useEffect(() => {
-    if (!selectedClassId) return;
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
 
-    const data: { [key: string]: { [key: string]: string } } = {};
-    classStudents.forEach((student) => {
-      data[student.id] = {};
-      subjects.forEach((subject) => {
-        const grade = grades.find(
-          (g) =>
-            g.studentId === student.id &&
-            g.subjectId === subject.id &&
-            g.classId === selectedClassId &&
-            g.month === selectedMonth
-        );
-        data[student.id][subject.id] = grade?.score || "";
-      });
-    });
-    setGradeData(data);
-  }, [selectedClassId, selectedMonth, classStudents.length, grades.length]);
+  // Fetch summary when class/month changes
+  useEffect(() => {
+    if (selectedClassId) {
+      fetchGradeSummary();
+    }
+  }, [selectedClassId, selectedMonth, selectedYear]);
 
-  // Auto-save function with debounce
-  const autoSave = useCallback(
-    (studentId: string, subjectId: string, score: string) => {
-      if (!selectedClassId) return;
-
-      setSaveStatus("កំពុងរក្សាទុក... Saving...");
-
-      // Find existing grade
-      const existingGrades = [...grades];
-      const existingGradeIndex = existingGrades.findIndex(
-        (g) =>
-          g.studentId === studentId &&
-          g.subjectId === subjectId &&
-          g.classId === selectedClassId &&
-          g.month === selectedMonth
+  const fetchGradeSummary = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await gradeApi.getMonthlySummary(
+        selectedClassId,
+        selectedMonth,
+        selectedYear
       );
-
-      if (existingGradeIndex !== -1) {
-        // Update existing grade
-        existingGrades[existingGradeIndex] = {
-          ...existingGrades[existingGradeIndex],
-          score: score,
-        };
-      } else {
-        // Add new grade
-        existingGrades.push({
-          id: `g${Date.now()}_${studentId}_${subjectId}`,
-          studentId,
-          subjectId,
-          classId: selectedClassId,
-          score: score,
-          month: selectedMonth,
-          term: "1",
-          year: new Date().getFullYear(),
-        });
-      }
-
-      updateGrades(existingGrades);
-
-      setTimeout(() => {
-        setSaveStatus("រក្សាទុករួចរាល់ ✓ Saved");
-        setTimeout(() => setSaveStatus(""), 2000);
-      }, 300);
-    },
-    [selectedClassId, selectedMonth, grades, updateGrades]
-  );
-
-  // Handle score change with auto-save
-  const handleScoreChange = (
-    studentId: string,
-    subjectId: string,
-    value: string
-  ) => {
-    setGradeData((prev) => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [subjectId]: value,
-      },
-    }));
-
-    // Auto-save after typing
-    autoSave(studentId, subjectId, value);
-  };
-
-  // Calculate totals and averages
-  const calculateStudentStats = (studentId: string) => {
-    let total = 0;
-    let count = 0;
-
-    subjects.forEach((subject) => {
-      const score = parseFloat(gradeData[studentId]?.[subject.id] || "0");
-      if (score > 0) {
-        total += score;
-        count++;
-      }
-    });
-
-    const average = count > 0 ? total / count : 0;
-    return { total, average };
-  };
-
-  // Handle keyboard navigation (Arrow keys, Tab, Enter)
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    studentIndex: number,
-    subjectIndex: number
-  ) => {
-    const student = classStudents[studentIndex];
-    const subject = subjects[subjectIndex];
-
-    if (e.key === "Enter" || e.key === "ArrowDown") {
-      e.preventDefault();
-      if (studentIndex < classStudents.length - 1) {
-        const nextStudent = classStudents[studentIndex + 1];
-        setFocusedCell({ studentId: nextStudent.id, subjectId: subject.id });
-        const nextInput = document.getElementById(
-          `grade-${nextStudent.id}-${subject.id}`
-        );
-        nextInput?.focus();
-        (nextInput as HTMLInputElement)?.select();
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (studentIndex > 0) {
-        const prevStudent = classStudents[studentIndex - 1];
-        setFocusedCell({ studentId: prevStudent.id, subjectId: subject.id });
-        const prevInput = document.getElementById(
-          `grade-${prevStudent.id}-${subject.id}`
-        );
-        prevInput?.focus();
-        (prevInput as HTMLInputElement)?.select();
-      }
-    } else if (e.key === "ArrowRight" || e.key === "Tab") {
-      if (e.key === "Tab") e.preventDefault();
-      if (subjectIndex < subjects.length - 1) {
-        const nextSubject = subjects[subjectIndex + 1];
-        setFocusedCell({ studentId: student.id, subjectId: nextSubject.id });
-        const nextInput = document.getElementById(
-          `grade-${student.id}-${nextSubject.id}`
-        );
-        nextInput?.focus();
-        (nextInput as HTMLInputElement)?.select();
-      }
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      if (subjectIndex > 0) {
-        const prevSubject = subjects[subjectIndex - 1];
-        setFocusedCell({ studentId: student.id, subjectId: prevSubject.id });
-        const prevInput = document.getElementById(
-          `grade-${student.id}-${prevSubject.id}`
-        );
-        prevInput?.focus();
-        (prevInput as HTMLInputElement)?.select();
-      }
+      setSummaries(data);
+    } catch (err: any) {
+      console.error("Error fetching summary:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleRefresh = () => {
+    fetchGradeSummary();
+  };
+
+  const handleExport = async () => {
+    if (!selectedClassId) return;
+
+    try {
+      const blob = await gradeApi.exportGrades(
+        selectedClassId,
+        selectedMonth,
+        selectedYear
+      );
+
+      // Download file
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `grades_${selectedClassId}_${selectedMonth}_${selectedYear}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert(`❌ Export failed: ${err.message}`);
+    }
+  };
+
+  // Show loading
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">កំពុងពិនិត្យ...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+
+  const classOptions = [
+    { value: "", label: "ជ្រើសរើសថ្នាក់ - Select Class" },
+    ...classes.map((c) => ({ value: c.id, label: c.name })),
+  ];
+
+  const monthOptions = MONTHS.map((m) => ({
+    value: m.value,
+    label: m.label,
+  }));
+
+  const yearOptions = [
+    { value: "2023", label: "2023" },
+    { value: "2024", label: "2024" },
+    { value: "2025", label: "2025" },
+  ];
+
+  const getGradeLevelColor = (level: string) => {
+    const colors: { [key: string]: string } = {
+      A: "bg-green-500",
+      "B+": "bg-blue-500",
+      B: "bg-cyan-500",
+      C: "bg-yellow-500",
+      D: "bg-orange-500",
+      E: "bg-red-400",
+      F: "bg-red-600",
+    };
+    return colors[level] || "bg-gray-500";
+  };
+
+  // Calculate stats
+  const stats =
+    summaries.length > 0
+      ? {
+          avgScore:
+            summaries.reduce((sum, s) => sum + s.average, 0) / summaries.length,
+          highest: Math.max(...summaries.map((s) => s.average)),
+          lowest: Math.min(...summaries.map((s) => s.average)),
+          passRate:
+            (summaries.filter((s) => s.average >= 50).length /
+              summaries.length) *
+            100,
+        }
+      : null;
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1">
         <Header />
-        <main className="p-6 animate-fadeIn">
-          <div className="mb-6">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              បញ្ចូលពិន្ទុ Excel Style Grade Entry
-            </h1>
-            <p className="text-gray-600">
-              បញ្ចូលពិន្ទុរបៀប Excel/Google Sheets ដោយ Auto-save ស្វ័យប្រវត្តិ
-            </p>
+        <main className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <BarChart3 className="w-8 h-8 text-purple-600" />
+                ពិន្ទុប្រចាំខែ • Monthly Grades
+              </h1>
+              <p className="text-gray-600 mt-1">
+                មើល និងគ្រប់គ្រងពិន្ទុសិស្សតាមខែ
+              </p>
+            </div>
+            <Button
+              onClick={handleRefresh}
+              variant="secondary"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <RefreshCw className="w-5 h-5" />
+              )}
+              <span>ផ្ទុកឡើងវិញ</span>
+            </Button>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6 animate-slideUp">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Filters */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Select
-                label="ជ្រើសរើសថ្នាក់ Select Class"
+                label="ថ្នាក់"
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
                 options={classOptions}
               />
               <Select
-                label="ខែ Month"
+                label="ខែ"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 options={monthOptions}
               />
-            </div>
-
-            {saveStatus && (
-              <div className="mt-4 flex items-center space-x-2 px-4 py-3 bg-green-50 border-2 border-green-200 rounded-xl animate-scaleIn">
-                <Check className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-semibold text-green-700">
-                  {saveStatus}
-                </span>
+              <Select
+                label="ឆ្នាំ"
+                value={selectedYear.toString()}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                options={yearOptions}
+              />
+              <div className="flex items-end gap-2">
+                <Button
+                  onClick={() => setIsImportModalOpen(true)}
+                  disabled={!selectedClassId}
+                  className="flex-1"
+                >
+                  <Upload className="w-5 h-5" />
+                  <span>នាំចូល</span>
+                </Button>
+                <Button
+                  onClick={handleExport}
+                  disabled={!selectedClassId || summaries.length === 0}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>នាំចេញ</span>
+                </Button>
               </div>
-            )}
+            </div>
           </div>
 
-          {selectedClassId && (
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden animate-scaleIn">
-              <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold">{selectedClass?.name}</h2>
-                  <p className="text-blue-100 mt-1">
-                    សិស្សសរុប: {classStudents.length} នាក់ | មុខវិជ្ជា:{" "}
-                    {subjects.length}
-                  </p>
-                </div>
-                <div className="text-sm bg-white bg-opacity-20 px-4 py-2 rounded-lg">
-                  <p className="font-semibold">
-                    ខែ{" "}
-                    {
-                      monthOptions
-                        .find((m) => m.value === selectedMonth)
-                        ?.label.split(" - ")[0]
-                    }
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-gray-100 to-gray-200">
-                      <th className="px-3 py-4 text-left text-sm font-bold border-2 border-gray-300 sticky left-0 bg-gray-100 z-10 min-w-[60px]">
-                        ល.រ
-                      </th>
-                      <th className="px-4 py-4 text-left text-sm font-bold border-2 border-gray-300 sticky left-[60px] bg-gray-100 z-10 min-w-[200px]">
-                        គោត្តនាម និងនាម
-                      </th>
-                      {subjects.map((subject) => (
-                        <th
-                          key={subject.id}
-                          className="px-4 py-4 text-center text-sm font-bold border-2 border-gray-300 min-w-[120px]"
-                        >
-                          <div>{subject.name}</div>
-                          <div className="text-xs font-normal text-gray-600 mt-1">
-                            (/
-                            {subject.maxScore?.[
-                              String(selectedClass?.grade || 7)
-                            ] || 100}
-                            )
-                          </div>
-                        </th>
-                      ))}
-                      <th className="px-4 py-4 text-center text-sm font-bold border-2 border-gray-300 bg-yellow-100 min-w-[100px]">
-                        សរុប
-                      </th>
-                      <th className="px-4 py-4 text-center text-sm font-bold border-2 border-gray-300 bg-blue-100 min-w-[100px]">
-                        មធ្យម
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {classStudents.map((student, studentIndex) => {
-                      const stats = calculateStudentStats(student.id);
-
-                      return (
-                        <tr
-                          key={student.id}
-                          className="hover:bg-blue-50 transition-colors"
-                        >
-                          <td className="px-3 py-2 text-sm text-center border-2 border-gray-200 font-semibold sticky left-0 bg-white z-10">
-                            {studentIndex + 1}
-                          </td>
-                          <td className="px-4 py-2 text-sm font-medium border-2 border-gray-200 sticky left-[60px] bg-white z-10">
-                            {student.lastName} {student.firstName}
-                          </td>
-                          {subjects.map((subject, subjectIndex) => {
-                            const maxScore =
-                              subject.maxScore?.[
-                                String(selectedClass?.grade || 7)
-                              ] || 100;
-                            const currentScore = parseFloat(
-                              gradeData[student.id]?.[subject.id] || "0"
-                            );
-                            const isFailing =
-                              currentScore > 0 && currentScore < 50;
-
-                            return (
-                              <td
-                                key={subject.id}
-                                className={`px-2 py-2 border-2 border-gray-200 ${
-                                  isFailing ? "bg-red-50" : ""
-                                } ${
-                                  focusedCell?.studentId === student.id &&
-                                  focusedCell?.subjectId === subject.id
-                                    ? "ring-2 ring-blue-500"
-                                    : ""
-                                }`}
-                              >
-                                <input
-                                  id={`grade-${student.id}-${subject.id}`}
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  max={maxScore}
-                                  value={
-                                    gradeData[student.id]?.[subject.id] || ""
-                                  }
-                                  onChange={(e) =>
-                                    handleScoreChange(
-                                      student.id,
-                                      subject.id,
-                                      e.target.value
-                                    )
-                                  }
-                                  onFocus={(e) => {
-                                    e.target.select();
-                                    setFocusedCell({
-                                      studentId: student.id,
-                                      subjectId: subject.id,
-                                    });
-                                  }}
-                                  onKeyDown={(e) =>
-                                    handleKeyDown(e, studentIndex, subjectIndex)
-                                  }
-                                  className={`w-full px-2 py-2 text-center border-0 focus:ring-2 focus:ring-blue-500 rounded transition-all ${
-                                    isFailing ? "text-red-700 font-bold" : ""
-                                  }`}
-                                  placeholder="-"
-                                />
-                              </td>
-                            );
-                          })}
-                          <td className="px-4 py-2 text-sm border-2 border-gray-200 font-bold text-center bg-yellow-50">
-                            {stats.total.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-2 text-sm border-2 border-gray-200 font-bold text-center bg-blue-50">
-                            {stats.average.toFixed(2)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-t-4 border-blue-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white p-4 rounded-xl shadow">
-                    <h3 className="font-semibold text-gray-700 mb-2">
-                      💡 ជំនួយក្តារចុច Keyboard Shortcuts:
-                    </h3>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>
-                        •{" "}
-                        <kbd className="px-2 py-1 bg-gray-200 rounded">Tab</kbd>{" "}
-                        ឬ <kbd className="px-2 py-1 bg-gray-200 rounded">→</kbd>{" "}
-                        = ទៅក្រឡាបន្ទាប់
-                      </li>
-                      <li>
-                        •{" "}
-                        <kbd className="px-2 py-1 bg-gray-200 rounded">
-                          Enter
-                        </kbd>{" "}
-                        ឬ <kbd className="px-2 py-1 bg-gray-200 rounded">↓</kbd>{" "}
-                        = ទៅសិស្សបន្ទាប់
-                      </li>
-                      <li>
-                        • <kbd className="px-2 py-1 bg-gray-200 rounded">↑</kbd>{" "}
-                        <kbd className="px-2 py-1 bg-gray-200 rounded">←</kbd> =
-                        ត្រឡប់ក្រោយ
-                      </li>
-                      <li>• Auto-save ស្វ័យប្រវត្តិនៅពេលវាយបញ្ចូល</li>
-                    </ul>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl shadow">
-                    <h3 className="font-semibold text-gray-700 mb-2">
-                      📊 ស្ថិតិ Statistics:
-                    </h3>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>
-                        • ចំនួនសិស្ស:{" "}
-                        <span className="font-bold text-blue-600">
-                          {classStudents.length} នាក់
-                        </span>
-                      </li>
-                      <li>
-                        • មុខវិជ្ជា:{" "}
-                        <span className="font-bold text-green-600">
-                          {subjects.length}
-                        </span>
-                      </li>
-                      <li>
-                        • ពិន្ទុបានបញ្ចូល:{" "}
-                        <span className="font-bold text-purple-600">
-                          {Object.values(gradeData).reduce(
-                            (sum, studentGrades) =>
-                              sum +
-                              Object.values(studentGrades).filter(
-                                (score) => score !== ""
-                              ).length,
-                            0
-                          )}
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+          {/* Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700">{error}</p>
               </div>
             </div>
           )}
 
-          {!selectedClassId && (
-            <div className="bg-white rounded-2xl shadow-xl p-16 text-center animate-scaleIn">
-              <div className="text-6xl mb-4">📝</div>
-              <p className="text-xl text-gray-500 mb-2">
-                សូមជ្រើសរើសថ្នាក់ដើម្បីចាប់ផ្តើមបញ្ចូលពិន្ទុ
-              </p>
-              <p className="text-gray-400">
-                Please select a class to start entering grades
-              </p>
+          {/* Loading */}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+            </div>
+          ) : selectedClassId ? (
+            <>
+              {/* Stats */}
+              {stats && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600">មធ្យមភាគថ្នាក់</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {stats.avgScore.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600">ពិន្ទុខ្ពស់បំផុត</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {stats.highest.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-orange-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600">ពិន្ទុទាបបំផុត</p>
+                    <p className="text-2xl font-bold text-orange-600">
+                      {stats.lowest.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600">អត្រាជាប់</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {stats.passRate.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Table */}
+              {summaries.length > 0 ? (
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">
+                          ល.រ
+                        </th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">
+                          គោត្តនាម.នាម
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">
+                          ភេទ
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">
+                          ពិន្ទុសរុប
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">
+                          មធ្យមភាគ
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">
+                          ចំ.ថ្នាក់
+                        </th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">
+                          និទ្ទេស
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {summaries.map((summary, index) => (
+                        <tr key={summary.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-center">{index + 1}</td>
+                          <td className="px-4 py-3 font-medium">
+                            {summary.student.khmerName ||
+                              `${summary.student.lastName} ${summary.student.firstName}`}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {summary.student.gender === "MALE"
+                              ? "ប្រុស"
+                              : "ស្រី"}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {summary.totalScore.toFixed(2)} /{" "}
+                            {summary.totalMaxScore}
+                          </td>
+                          <td className="px-4 py-3 text-center font-bold text-lg">
+                            {summary.average.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-gray-100">
+                              #{summary.classRank}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold text-white ${getGradeLevelColor(
+                                summary.gradeLevel
+                              )}`}
+                            >
+                              {summary.gradeLevel}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl p-12 text-center">
+                  <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-600">
+                    មិនមានទិន្នន័យពិន្ទុសម្រាប់ខែនេះ
+                  </p>
+                  <Button
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="mt-4"
+                  >
+                    <Upload className="w-5 h-5" />
+                    <span>នាំចូលពិន្ទុ</span>
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="bg-white rounded-xl p-12 text-center">
+              <p className="text-gray-600">សូមជ្រើសរើសថ្នាក់ដើម្បីមើលពិន្ទុ</p>
             </div>
           )}
         </main>
       </div>
+
+      {/* Import Modal */}
+      {selectedClass && (
+        <ImportGradesModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          classData={selectedClass}
+          month={selectedMonth}
+          year={selectedYear}
+          onImportSuccess={handleRefresh}
+        />
+      )}
     </div>
   );
 }
