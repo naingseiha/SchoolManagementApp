@@ -1,36 +1,50 @@
 "use client";
 
-import { Settings } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface MonthlyReportSettingsProps {
   showSettings: boolean;
   setShowSettings: (show: boolean) => void;
   province: string;
-  setProvince: (province: string) => void;
+  setProvince: (value: string) => void;
   examCenter: string;
-  setExamCenter: (center: string) => void;
+  setExamCenter: (value: string) => void;
   roomNumber: string;
-  setRoomNumber: (number: string) => void;
+  setRoomNumber: (value: string) => void;
   reportTitle: string;
-  setReportTitle: (title: string) => void;
+  setReportTitle: (value: string) => void;
   examSession: string;
-  setExamSession: (session: string) => void;
+  setExamSession: (value: string) => void;
   reportDate: string;
-  setReportDate: (date: string) => void;
+  setReportDate: (value: string) => void;
   teacherName: string;
-  setTeacherName: (name: string) => void;
+  setTeacherName: (value: string) => void;
   principalName: string;
-  setPrincipalName: (name: string) => void;
+  setPrincipalName: (value: string) => void;
   showCircles: boolean;
-  setShowCircles: (show: boolean) => void;
+  setShowCircles: (value: boolean) => void;
   autoCircle: boolean;
-  setAutoCircle: (auto: boolean) => void;
+  setAutoCircle: (value: boolean) => void;
   showDateOfBirth: boolean;
-  setShowDateOfBirth: (show: boolean) => void;
+  setShowDateOfBirth: (value: boolean) => void;
   showGrade: boolean;
-  setShowGrade: (show: boolean) => void;
+  setShowGrade: (value: boolean) => void;
   showOther: boolean;
-  setShowOther: (show: boolean) => void;
+  setShowOther: (value: boolean) => void;
+  showSubjects?: boolean;
+  setShowSubjects?: (value: boolean) => void;
+  showAttendance?: boolean;
+  setShowAttendance?: (value: boolean) => void;
+  showTotal?: boolean;
+  setShowTotal?: (value: boolean) => void;
+  showAverage?: boolean;
+  setShowAverage?: (value: boolean) => void;
+  showGradeLevel?: boolean;
+  setShowGradeLevel?: (value: boolean) => void;
+  showRank?: boolean;
+  setShowRank?: (value: boolean) => void;
+  showRoomNumber?: boolean;
+  setShowRoomNumber?: (value: boolean) => void;
 }
 
 export default function MonthlyReportSettings({
@@ -62,174 +76,238 @@ export default function MonthlyReportSettings({
   setShowGrade,
   showOther,
   setShowOther,
+  showSubjects = false,
+  setShowSubjects = () => {},
+  showAttendance = true,
+  setShowAttendance = () => {},
+  showTotal = true,
+  setShowTotal = () => {},
+  showAverage = true,
+  setShowAverage = () => {},
+  showGradeLevel = true,
+  setShowGradeLevel = () => {},
+  showRank = true,
+  setShowRank = () => {},
+  showRoomNumber = true,
+  setShowRoomNumber = () => {},
 }: MonthlyReportSettingsProps) {
   return (
-    <div className="mt-4 space-y-4">
+    <div className="border-t pt-4">
       <button
         onClick={() => setShowSettings(!showSettings)}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 hover:from-blue-200 hover:to-purple-200 rounded-lg transition-colors"
+        className="flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-indigo-600 transition-colors"
       >
-        <Settings className="w-5 h-5 text-blue-700" />
-        <span className="text-sm font-semibold text-blue-700">
-          កំណត់របាយការណ៍
-        </span>
+        {showSettings ? (
+          <ChevronUp className="w-4 h-4" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
+        កំណត់សេវាកម្ម Report Settings
       </button>
+
       {showSettings && (
-        <div className="mt-4 p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-200 space-y-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-bold text-blue-800 mb-3">
-              ព័ត៌មានរបាយការណ៍
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  ខេត្ត Province
-                </label>
-                <input
-                  type="text"
-                  value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  មណ្ឌលប្រឡង Exam Center
-                </label>
-                <input
-                  type="text"
-                  value={examCenter}
-                  onChange={(e) => setExamCenter(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  បន្ទប់លេខ Room Number
-                </label>
-                <input
-                  type="text"
-                  value={roomNumber}
-                  onChange={(e) => setRoomNumber(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  ចំណងជើង Report Title
-                </label>
-                <input
-                  type="text"
-                  value={reportTitle}
-                  onChange={(e) => setReportTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  សម័យប្រឡង Exam Session
-                </label>
-                <input
-                  type="text"
-                  value={examSession}
-                  onChange={(e) => setExamSession(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  កាលបរិច្ឆេទ Date
-                </label>
-                <input
-                  type="text"
-                  value={reportDate}
-                  onChange={(e) => setReportDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  គ្រូបន្ទុក Teacher
-                </label>
-                <input
-                  type="text"
-                  value={teacherName}
-                  onChange={(e) => setTeacherName(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1 text-gray-700">
-                  នាយកសាលា Principal
-                </label>
-                <input
-                  type="text"
-                  value={principalName}
-                  onChange={(e) => setPrincipalName(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+        <div className="mt-4 space-y-6">
+          {/* General Settings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                មន្ទីរ/ខេត្ត Province
+              </label>
+              <input
+                type="text"
+                value={province}
+                onChange={(e) => setProvince(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ឈ្មោះសាលា School Name
+              </label>
+              <input
+                type="text"
+                value={examCenter}
+                onChange={(e) => setExamCenter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                បន្ទប់ប្រឡង Room Number
+              </label>
+              <input
+                type="text"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="01"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ចំណងជើង Title
+              </label>
+              <input
+                type="text"
+                value={reportTitle}
+                onChange={(e) => setReportTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="តារាងលទ្ធផលប្រចាំខែ"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                វគ្គប្រឡង Session
+              </label>
+              <input
+                type="text"
+                value={examSession}
+                onChange={(e) => setExamSession(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="សប្តាហ៍ទី ១២៖ ខែធ្នូ ២០២៤-២០២៥"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                កាលបរិច្ឆេទ Date
+              </label>
+              <input
+                type="text"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="ថ្ងៃទី. ....  ខែ..... ឆ្នាំ២០២៥"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                គ្រូបន្ទុក Teacher
+              </label>
+              <input
+                type="text"
+                value={teacherName}
+                onChange={(e) => setTeacherName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="គ្រូបន្ទុកថ្នាក់"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                នាយក Principal
+              </label>
+              <input
+                type="text"
+                value={principalName}
+                onChange={(e) => setPrincipalName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="នាយកសាលា"
+              />
             </div>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <h3 className="text-lg font-bold text-blue-800 mb-3">
-              ជម្រើសបង្ហាញ Display Options
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="flex items-center space-x-3 cursor-pointer">
+
+          {/* Column Visibility Settings */}
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <label className="block text-sm font-bold text-gray-700 mb-3">
+              បង្ហាញ/លាក់ជួរឈរ Show/Hide Columns
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showSubjects}
+                  onChange={(e) => setShowSubjects(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">បង្ហាញមុខវិជ្ជា</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAttendance}
+                  onChange={(e) => setShowAttendance(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">អវត្តមាន</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showTotal}
+                  onChange={(e) => setShowTotal(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">ពិន្ទុសរុប</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAverage}
+                  onChange={(e) => setShowAverage(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">មធ្យមភាគ</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showRank}
+                  onChange={(e) => setShowRank(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">ចំណាត់ថ្នាក់</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showGradeLevel}
+                  onChange={(e) => setShowGradeLevel(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">និទ្ទេស</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showRoomNumber}
+                  onChange={(e) => setShowRoomNumber(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">បន្ទប់ប្រឡង</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showCircles}
                   onChange={(e) => setShowCircles(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                 />
-                <span className="text-sm font-semibold text-gray-700">
-                  បង្ហាញរង្វង់ Show Circles
-                </span>
+                <span className="text-sm text-gray-700">រង្វង់ខ្ពស់</span>
               </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
+
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={autoCircle}
                   onChange={(e) => setAutoCircle(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                 />
-                <span className="text-sm font-semibold text-gray-700">
-                  រង្វង់ស្វ័យប្រវត្តិ Auto Circle
-                </span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showDateOfBirth}
-                  onChange={(e) => setShowDateOfBirth(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
-                />
-                <span className="text-sm font-semibold text-gray-700">
-                  ថ្ងៃខែឆ្នាំកំណើត Date of Birth
-                </span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showGrade}
-                  onChange={(e) => setShowGrade(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
-                />
-                <span className="text-sm font-semibold text-gray-700">
-                  និទ្ទេស Grade
-                </span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showOther}
-                  onChange={(e) => setShowOther(e.target.checked)}
-                  className="w-5 h-5 text-blue-600 rounded"
-                />
-                <span className="text-sm font-semibold text-gray-700">
-                  ផ្សេងៗ Other
-                </span>
+                <span className="text-sm text-gray-700">រង្វង់ស្វ័យ</span>
               </label>
             </div>
           </div>

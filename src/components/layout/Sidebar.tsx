@@ -86,7 +86,7 @@ export default function Sidebar() {
       icon: BarChart3,
       label: "របាយការណ៍",
       subLabel: "Reports",
-      href: "/reports",
+      href: "/reports/monthly",
       roles: ["ADMIN", "CLASS_TEACHER"],
       gradient: "from-pink-500 to-rose-500",
     },

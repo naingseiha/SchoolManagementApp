@@ -64,7 +64,7 @@ export default function ReportsPage() {
   const [reportDate, setReportDate] = useState("ថ្ងៃទី..... ខែ..... ឆ្នាំ២០២៥");
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(30);
+  const [studentsPerPage] = useState(22);
 
   // Honor Certificate Settings
   const [honorPeriod, setHonorPeriod] = useState("ប្រចាំខែ មករា");
