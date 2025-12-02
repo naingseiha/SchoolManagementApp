@@ -1,16 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import {
-  Loader2,
-  Check,
-  X,
-  Award,
-  Users,
-  Calendar,
-  TrendingUp,
-} from "lucide-react";
+import { Loader2, Check, X, TrendingUp } from "lucide-react";
 import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
+import { attendanceApi } from "@/lib/api/attendance";
 
 interface GradeGridEditorProps {
   gridData: GradeGridData;
@@ -38,6 +31,11 @@ export default function GradeGridEditor({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
 
+  // ✅ Attendance summary state
+  const [attendanceSummary, setAttendanceSummary] = useState<{
+    [studentId: string]: { absent: number; permission: number };
+  }>({});
+
   // Initialize cells
   useEffect(() => {
     const initialCells: { [key: string]: CellState } = {};
@@ -61,6 +59,36 @@ export default function GradeGridEditor({
 
     setCells(initialCells);
   }, [gridData]);
+
+  // ✅ Fetch attendance summary when grid loads
+  useEffect(() => {
+    const fetchAttendanceSummary = async () => {
+      try {
+        console.log("🔍 Fetching attendance for:", {
+          classId: gridData.classId,
+          month: gridData.month,
+          year: gridData.year,
+        });
+
+        const summary = await attendanceApi.getMonthlySummary(
+          gridData.classId,
+          gridData.month,
+          gridData.year
+        );
+
+        console.log("✅ Attendance summary received:", summary);
+        setAttendanceSummary(summary);
+      } catch (error: any) {
+        console.error("❌ Failed to fetch attendance summary:", error);
+        // Set empty summary on error
+        setAttendanceSummary({});
+      }
+    };
+
+    if (gridData && gridData.classId && gridData.month && gridData.year) {
+      fetchAttendanceSummary();
+    }
+  }, [gridData.classId, gridData.month, gridData.year]);
 
   // Auto-save pending changes
   useEffect(() => {
@@ -329,20 +357,29 @@ export default function GradeGridEditor({
     });
   }, [cells, gridData.students, gridData.subjects, totalCoefficientForClass]);
 
-  // Calculate ranks
+  // Calculate ranks and add attendance
   const rankedStudents = useMemo(() => {
     const sorted = [...calculatedStudents]
       .sort((a, b) => parseFloat(b.average) - parseFloat(a.average))
       .map((student, index) => ({
         ...student,
         rank: index + 1,
+        // ✅ Add attendance counts from fetched summary
+        absent: attendanceSummary[student.studentId]?.absent || 0,
+        permission: attendanceSummary[student.studentId]?.permission || 0,
       }));
 
     return calculatedStudents.map((student) => {
       const ranked = sorted.find((s) => s.studentId === student.studentId);
-      return { ...student, rank: ranked?.rank || 0 };
+      return {
+        ...student,
+        rank: ranked?.rank || 0,
+        // ✅ Add attendance counts
+        absent: ranked?.absent || 0,
+        permission: ranked?.permission || 0,
+      };
     });
-  }, [calculatedStudents]);
+  }, [calculatedStudents, attendanceSummary]);
 
   const getCellClassName = (cell: CellState) => {
     const baseClass =
@@ -374,7 +411,7 @@ export default function GradeGridEditor({
   const getStatusIcon = (cell: CellState) => {
     if (cell.isSaving)
       return <Loader2 className="w-3. 5 h-3.5 text-amber-600 animate-spin" />;
-    if (cell.error) return <X className="w-3. 5 h-3.5 text-red-600" />;
+    if (cell.error) return <X className="w-3.5 h-3.5 text-red-600" />;
     if (cell.value && !cell.isModified && !cell.isSaving)
       return <Check className="w-3.5 h-3.5 text-green-600" />;
     return null;
@@ -387,7 +424,7 @@ export default function GradeGridEditor({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
-              <Award className="w-8 h-8 text-white" />
+              <TrendingUp className="w-8 h-8 text-white" />
             </div>
             <div>
               <h3 className="text-2xl font-black text-white tracking-wide">
@@ -395,19 +432,16 @@ export default function GradeGridEditor({
               </h3>
               <div className="flex items-center gap-4 mt-2">
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1. 5 rounded-lg">
-                  <Calendar className="w-4 h-4 text-white" />
                   <span className="text-sm font-bold text-white">
                     {gridData.month} {gridData.year}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                  <Users className="w-4 h-4 text-white" />
                   <span className="text-sm font-bold text-white">
                     {gridData.students.length} សិស្ស
                   </span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                  <TrendingUp className="w-4 h-4 text-white" />
                   <span className="text-sm font-bold text-white">
                     Coef: {totalCoefficientForClass}
                   </span>
@@ -417,12 +451,14 @@ export default function GradeGridEditor({
           </div>
           <div className="text-right">
             <p className="text-sm font-bold text-white/90">Auto-Save ✓</p>
-            <p className="text-xs text-white/70 mt-1">Real-time Calculations</p>
+            <p className="text-xs text-white/70 mt-1">
+              រក្សាទុកស្វ័យប្រវត្តិ • គណនាលទ្ធផលភ្លាមៗ
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Grid - NO BLUR */}
+      {/* Grid */}
       <div
         className="overflow-auto"
         style={{
@@ -434,7 +470,7 @@ export default function GradeGridEditor({
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-20 shadow-md">
             <tr>
-              {/* ✅ FIXED: Solid background headers */}
+              {/* Fixed Columns */}
               <th className="sticky left-0 z-30 bg-gray-100 px-3 py-3 text-xs font-bold text-gray-700 border-b-2 border-r border-gray-300 w-12">
                 #
               </th>
@@ -473,7 +509,7 @@ export default function GradeGridEditor({
                 ចំ. ថ្នាក់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-red-800 border-b-2 border-r border-gray-300 w-12 bg-red-100">
-                អ. ច្បាប់
+                អ.ច្បាប់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-orange-800 border-b-2 border-gray-300 w-12 bg-orange-100">
                 ម.ច្បាប់
@@ -482,28 +518,26 @@ export default function GradeGridEditor({
           </thead>
           <tbody>
             {rankedStudents.map((student, studentIndex) => {
-              // ✅ FIXED: Match exact background to row
-              const isEvenRow = studentIndex % 2 === 0;
-              const rowBg = isEvenRow ? "bg-white" : "bg-gray-50";
+              const rowBg = studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50";
 
               return (
                 <tr
                   key={student.studentId}
                   className={`${rowBg} hover:bg-indigo-50/50 transition-colors`}
                 >
-                  {/* ✅ FIXED: Solid background cells - NO transparency */}
+                  {/* Fixed Columns */}
                   <td
-                    className={`sticky left-0 z-10 ${rowBg} group-hover:bg-indigo-50/50 px-3 py-2. 5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
+                    className={`sticky left-0 z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2. 5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
                   >
                     {studentIndex + 1}
                   </td>
                   <td
-                    className={`sticky left-12 z-10 ${rowBg} group-hover:bg-indigo-50/50 px-4 py-2.5 text-sm font-semibold text-gray-800 border-b border-r border-gray-200`}
+                    className={`sticky left-12 z-10 ${rowBg} hover:bg-indigo-50/50 px-4 py-2.5 text-sm font-semibold text-gray-800 border-b border-r border-gray-200`}
                   >
                     {student.studentName}
                   </td>
                   <td
-                    className={`sticky left-[220px] z-10 ${rowBg} group-hover:bg-indigo-50/50 px-3 py-2.5 text-center border-b border-r border-gray-200`}
+                    className={`sticky left-[220px] z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2.5 text-center border-b border-r border-gray-200`}
                   >
                     <span
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
@@ -579,6 +613,7 @@ export default function GradeGridEditor({
                   <td className="px-3 py-2.5 text-center text-sm font-bold border-b border-r border-gray-200 bg-indigo-50/50 text-indigo-700">
                     #{student.rank}
                   </td>
+                  {/* ✅ ATTENDANCE COLUMNS - Real data from API */}
                   <td className="px-3 py-2.5 text-center text-sm font-semibold border-b border-r border-gray-200 bg-red-50/50 text-red-600">
                     {student.absent || "-"}
                   </td>
