@@ -1,449 +1,411 @@
-import { Request, Response } from 'express';
-import { PrismaClient, AttendanceStatus } from '@prisma/client';
+import { Request, Response } from "express";
+import { PrismaClient, AttendanceStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Get all attendance records
-export const getAllAttendance = async (req: Request, res: Response) => {
-  try {
-    const attendance = await prisma.attendance.findMany({
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            class: {
-              select: {
-                name: true,
-                grade: true,
-              },
-            },
+export class AttendanceController {
+  /**
+   * Get attendance grid for Excel-like editing
+   */
+  static async getAttendanceGrid(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      // ✅ Log incoming params
+      console.log("📥 Get attendance grid params:", { classId, month, year });
+
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          students: {
+            orderBy: { khmerName: "asc" },
           },
         },
-      },
-      orderBy: {
-        date: 'desc',
-      },
-    });
-
-    res.json({
-      success: true,
-      data: attendance,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching attendance records',
-      error: error.message,
-    });
-  }
-};
-
-// Get attendance by ID
-export const getAttendanceById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const attendance = await prisma.attendance.findUnique({
-      where: { id },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            class: {
-              select: {
-                name: true,
-                grade: true,
-                section: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!attendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found',
       });
-    }
 
-    res.json({
-      success: true,
-      data: attendance,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching attendance record',
-      error: error.message,
-    });
-  }
-};
-
-// Get attendance by student
-export const getAttendanceByStudent = async (req: Request, res: Response) => {
-  try {
-    const { studentId } = req.params;
-
-    // Check if student exists
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found',
-      });
-    }
-
-    const attendance = await prisma.attendance.findMany({
-      where: { studentId },
-      orderBy: {
-        date: 'desc',
-      },
-    });
-
-    // Calculate statistics
-    const stats = {
-      total: attendance.length,
-      present: attendance.filter((a) => a.status === 'PRESENT').length,
-      absent: attendance.filter((a) => a.status === 'ABSENT').length,
-      late: attendance.filter((a) => a.status === 'LATE').length,
-      excused: attendance.filter((a) => a.status === 'EXCUSED').length,
-    };
-
-    res.json({
-      success: true,
-      data: attendance,
-      stats,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching student attendance',
-      error: error.message,
-    });
-  }
-};
-
-// Get attendance by class
-export const getAttendanceByClass = async (req: Request, res: Response) => {
-  try {
-    const { classId } = req.params;
-
-    // Check if class exists
-    const classExists = await prisma.class.findUnique({
-      where: { id: classId },
-    });
-
-    if (!classExists) {
-      return res.status(404).json({
-        success: false,
-        message: 'Class not found',
-      });
-    }
-
-    const attendance = await prisma.attendance.findMany({
-      where: {
-        student: {
-          classId,
-        },
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        date: 'desc',
-      },
-    });
-
-    res.json({
-      success: true,
-      data: attendance,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching class attendance',
-      error: error.message,
-    });
-  }
-};
-
-// Get attendance by date
-export const getAttendanceByDate = async (req: Request, res: Response) => {
-  try {
-    const { date } = req.params;
-
-    // Parse date
-    const targetDate = new Date(date);
-    
-    if (isNaN(targetDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid date format. Use YYYY-MM-DD',
-      });
-    }
-
-    // Set to start and end of day
-    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
-
-    const attendance = await prisma.attendance.findMany({
-      where: {
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            class: {
-              select: {
-                name: true,
-                grade: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    // Calculate statistics
-    const stats = {
-      total: attendance.length,
-      present: attendance.filter((a) => a.status === 'PRESENT').length,
-      absent: attendance.filter((a) => a.status === 'ABSENT').length,
-      late: attendance.filter((a) => a.status === 'LATE').length,
-      excused: attendance.filter((a) => a.status === 'EXCUSED').length,
-    };
-
-    res.json({
-      success: true,
-      data: attendance,
-      stats,
-      date: startOfDay.toISOString().split('T')[0],
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching attendance by date',
-      error: error.message,
-    });
-  }
-};
-
-// Create attendance record
-export const createAttendance = async (req: Request, res: Response) => {
-  try {
-    const { studentId, date, status, remarks } = req.body;
-
-    // Validate required fields
-    if (!studentId || !date || !status) {
-      return res.status(400).json({
-        success: false,
-        message: 'StudentId, date, and status are required',
-      });
-    }
-
-    // Validate status
-    const validStatuses: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status. Must be PRESENT, ABSENT, LATE, or EXCUSED',
-      });
-    }
-
-    // Check if student exists
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: 'Student not found',
-      });
-    }
-
-    // Check if attendance already exists for this student and date
-    const attendanceDate = new Date(date);
-    const startOfDay = new Date(attendanceDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(attendanceDate.setHours(23, 59, 59, 999));
-
-    const existingAttendance = await prisma.attendance.findFirst({
-      where: {
-        studentId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-    });
-
-    if (existingAttendance) {
-      return res.status(400).json({
-        success: false,
-        message: 'Attendance already recorded for this student on this date',
-      });
-    }
-
-    const newAttendance = await prisma.attendance.create({
-      data: {
-        studentId,
-        date: new Date(date),
-        status,
-        remarks,
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            class: {
-              select: {
-                name: true,
-                grade: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Attendance recorded successfully',
-      data: newAttendance,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error creating attendance record',
-      error: error.message,
-    });
-  }
-};
-
-// Update attendance record
-export const updateAttendance = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status, remarks } = req.body;
-
-    // Check if attendance exists
-    const existingAttendance = await prisma.attendance.findUnique({
-      where: { id },
-    });
-
-    if (!existingAttendance) {
-      return res.status(404).json({
-        success: false,
-        message: 'Attendance record not found',
-      });
-    }
-
-    // Validate status if provided
-    if (status) {
-      const validStatuses: AttendanceStatus[] = ['PRESENT', 'ABSENT', 'LATE', 'EXCUSED'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({
+      if (!classData) {
+        return res.status(404).json({
           success: false,
-          message: 'Invalid status. Must be PRESENT, ABSENT, LATE, or EXCUSED',
+          message: "Class not found",
         });
       }
-    }
 
-    const updatedAttendance = await prisma.attendance.update({
-      where: { id },
-      data: {
-        status,
-        remarks,
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            class: {
-              select: {
-                name: true,
-                grade: true,
-              },
-            },
+      const monthNames = [
+        "មករា",
+        "កុម្ភៈ",
+        "មីនា",
+        "មេសា",
+        "ឧសភា",
+        "មិថុនា",
+        "កក្កដា",
+        "សីហា",
+        "កញ្ញា",
+        "តុលា",
+        "វិច្ឆិកា",
+        "ធ្នូ",
+      ];
+
+      // ✅ Fix: indexOf returns -1 if not found, add 1 to get 1-12
+      const monthIndex = monthNames.indexOf(month as string);
+      const monthNumber = monthIndex + 1; // 1-12 (not 0-11)
+
+      console.log("📅 Month parsing:", {
+        monthName: month,
+        monthIndex,
+        monthNumber,
+      });
+
+      // ✅ Validate month number
+      if (monthNumber === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid month name: ${month}.  Must be one of: ${monthNames.join(
+            ", "
+          )}`,
+        });
+      }
+
+      // ✅ Use monthNumber (1-12) for Date constructor
+      // JavaScript Date months are 0-indexed, so subtract 1
+      const daysInMonth = new Date(
+        parseInt(year as string),
+        monthNumber, // This gives us the last day of the month
+        0
+      ).getDate();
+
+      const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+      // ✅ Create proper date range
+      const startDate = new Date(
+        parseInt(year as string),
+        monthNumber - 1,
+        1,
+        0,
+        0,
+        0
+      );
+      const endDate = new Date(
+        parseInt(year as string),
+        monthNumber - 1,
+        daysInMonth,
+        23,
+        59,
+        59
+      );
+
+      console.log("📅 Date range:", {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        daysInMonth,
+      });
+
+      const attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          classId,
+          date: {
+            gte: startDate,
+            lte: endDate,
           },
         },
-      },
-    });
+      });
 
-    res.json({
-      success: true,
-      message: 'Attendance updated successfully',
-      data: updatedAttendance,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error updating attendance record',
-      error: error.message,
-    });
-  }
-};
+      console.log(`✅ Found ${attendanceRecords.length} attendance records`);
 
-// Delete attendance record
-export const deleteAttendance = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
+      // Build grid data
+      const gridData = classData.students.map((student) => {
+        const studentAttendance: { [day: number]: any } = {};
+        let totalAbsent = 0;
+        let totalPermission = 0;
 
-    // Check if attendance exists
-    const existingAttendance = await prisma.attendance.findUnique({
-      where: { id },
-    });
+        days.forEach((day) => {
+          const record = attendanceRecords.find(
+            (a) =>
+              a.studentId === student.id &&
+              a.date.getDate() === day &&
+              a.date.getMonth() === monthNumber - 1 // JavaScript month is 0-indexed
+          );
 
-    if (!existingAttendance) {
-      return res.status(404).json({
+          let displayValue = "";
+          if (record) {
+            if (record.status === AttendanceStatus.ABSENT) {
+              displayValue = "A";
+              totalAbsent++;
+            } else if (record.status === AttendanceStatus.PERMISSION) {
+              displayValue = "P";
+              totalPermission++;
+            }
+          }
+
+          studentAttendance[day] = {
+            id: record?.id || null,
+            status: record?.status || null,
+            displayValue,
+            isSaved: !!record,
+          };
+        });
+
+        return {
+          studentId: student.id,
+          studentName:
+            student.khmerName || `${student.lastName} ${student.firstName}`,
+          gender: student.gender,
+          attendance: studentAttendance,
+          totalAbsent,
+          totalPermission,
+        };
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          classId: classData.id,
+          className: classData.name,
+          month: month as string,
+          year: parseInt(year as string),
+          monthNumber, // ✅ Now returns correct value (1-12)
+          daysInMonth,
+          days,
+          students: gridData,
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Get attendance grid error:", error);
+      return res.status(500).json({
         success: false,
-        message: 'Attendance record not found',
+        message: error.message || "Failed to get attendance grid",
       });
     }
-
-    await prisma.attendance.delete({
-      where: { id },
-    });
-
-    res.json({
-      success: true,
-      message: 'Attendance record deleted successfully',
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: 'Error deleting attendance record',
-      error: error.message,
-    });
   }
-};
+
+  /**
+   * Bulk save attendance
+   */
+  static async bulkSaveAttendance(req: Request, res: Response) {
+    try {
+      const { classId, month, year, monthNumber, attendance } = req.body;
+
+      console.log("💾 Bulk save attendance:", {
+        classId,
+        month,
+        year,
+        monthNumber,
+        recordCount: attendance?.length,
+      });
+
+      if (
+        !classId ||
+        !month ||
+        !year ||
+        !attendance ||
+        !Array.isArray(attendance)
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request data",
+        });
+      }
+
+      const savedRecords: any[] = [];
+      const errors: any[] = [];
+
+      for (const record of attendance) {
+        const { studentId, day, value } = record;
+
+        try {
+          let status: AttendanceStatus | null = null;
+          if (value === "A" || value === "a") {
+            status = AttendanceStatus.ABSENT;
+          } else if (value === "P" || value === "p") {
+            status = AttendanceStatus.PERMISSION;
+          }
+
+          // ✅ Create date at noon to avoid timezone issues
+          const dateKey = new Date(year, monthNumber - 1, day, 12, 0, 0, 0);
+
+          console.log(
+            `📝 Processing: Student ${studentId}, Day ${day}, Value: "${value}", Status: ${status}, Date: ${dateKey.toISOString()}`
+          );
+
+          if (status) {
+            // ✅ FIX: Find existing record first
+            const existingRecord = await prisma.attendance.findFirst({
+              where: {
+                studentId,
+                classId,
+                date: {
+                  gte: new Date(year, monthNumber - 1, day, 0, 0, 0),
+                  lt: new Date(year, monthNumber - 1, day + 1, 0, 0, 0),
+                },
+              },
+            });
+
+            if (existingRecord) {
+              // Update existing
+              const updated = await prisma.attendance.update({
+                where: { id: existingRecord.id },
+                data: { status },
+              });
+              savedRecords.push(updated);
+              console.log(`✅ Updated: ${updated.id}`);
+            } else {
+              // Create new
+              const created = await prisma.attendance.create({
+                data: {
+                  studentId,
+                  classId,
+                  date: dateKey,
+                  status,
+                },
+              });
+              savedRecords.push(created);
+              console.log(`✅ Created: ${created.id}`);
+            }
+          } else {
+            // Delete if exists (marked as PRESENT or empty)
+            const deleted = await prisma.attendance.deleteMany({
+              where: {
+                studentId,
+                classId,
+                date: {
+                  gte: new Date(year, monthNumber - 1, day, 0, 0, 0),
+                  lt: new Date(year, monthNumber - 1, day + 1, 0, 0, 0),
+                },
+              },
+            });
+            if (deleted.count > 0) {
+              console.log(`🗑️ Deleted ${deleted.count} record(s)`);
+            }
+          }
+        } catch (error: any) {
+          console.error(
+            `❌ Error processing student ${studentId}, day ${day}:`,
+            error
+          );
+          errors.push({
+            studentId,
+            day,
+            error: error.message,
+          });
+        }
+      }
+
+      console.log(
+        `✅ Bulk save complete: ${savedRecords.length} saved, ${errors.length} errors`
+      );
+
+      return res.json({
+        success: errors.length === 0,
+        message: `Saved ${savedRecords.length} records${
+          errors.length > 0 ? `, ${errors.length} errors` : ""
+        }`,
+        data: {
+          savedCount: savedRecords.length,
+          errorCount: errors.length,
+          errors: errors.length > 0 ? errors : undefined,
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Bulk save attendance error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to save attendance",
+      });
+    }
+  }
+
+  /**
+   * Get monthly attendance summary for grade entry
+   */
+  static async getMonthlySummary(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      console.log(
+        `📊 Getting attendance summary for class: ${classId}, month: ${month}, year: ${year}`
+      );
+
+      const monthNames = [
+        "មករា",
+        "កុម្ភៈ",
+        "មីនា",
+        "មេសា",
+        "ឧសភា",
+        "មិថុនា",
+        "កក្កដា",
+        "សីហា",
+        "កញ្ញា",
+        "តុលា",
+        "វិច្ឆិកា",
+        "ធ្នូ",
+      ];
+      const monthNumber = monthNames.indexOf(month as string) + 1;
+
+      if (monthNumber === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid month name",
+        });
+      }
+
+      const startDate = new Date(parseInt(year as string), monthNumber - 1, 1);
+      const endDate = new Date(
+        parseInt(year as string),
+        monthNumber,
+        0,
+        23,
+        59,
+        59
+      );
+
+      console.log(
+        `📅 Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
+      );
+
+      const attendanceRecords = await prisma.attendance.findMany({
+        where: {
+          classId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      });
+
+      console.log(`✅ Found ${attendanceRecords.length} attendance records`);
+
+      const summary: {
+        [studentId: string]: { absent: number; permission: number };
+      } = {};
+
+      attendanceRecords.forEach((record) => {
+        if (!summary[record.studentId]) {
+          summary[record.studentId] = { absent: 0, permission: 0 };
+        }
+
+        if (record.status === "ABSENT") {
+          summary[record.studentId].absent++;
+        } else if (record.status === "PERMISSION") {
+          summary[record.studentId].permission++;
+        }
+      });
+
+      console.log(
+        `📊 Summary for ${Object.keys(summary).length} students:`,
+        summary
+      );
+
+      return res.json({
+        success: true,
+        data: summary,
+      });
+    } catch (error: any) {
+      console.error("❌ Get attendance summary error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get attendance summary",
+      });
+    }
+  }
+}

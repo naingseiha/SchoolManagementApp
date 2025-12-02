@@ -206,19 +206,29 @@ model StudentMonthlySummary {
 }
 
 model Attendance {
-  id        String           @id @default(cuid())
+  id        String   @id @default(cuid())
   studentId String
-  classId   String?
-  date      DateTime
+  classId   String? 
+  date      DateTime // Full date (year-month-day)
   status    AttendanceStatus
   remarks   String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   class   Class?  @relation(fields: [classId], references: [id])
 
+  @@unique([studentId, classId, date]) // One record per student per day
+  @@index([classId, date])
   @@map("attendance")
+}
+
+enum AttendanceStatus {
+  PRESENT   // វត្តមាន
+  ABSENT    // អវត្តមានអត់ច្បាប់ (A)
+  PERMISSION // អវត្តមានមានច្បាប់ (P)
+  LATE      // យឺត (optional)
+  EXCUSED   // (optional, same as PERMISSION)
 }
 
 enum Role {
@@ -231,11 +241,4 @@ enum Gender {
   MALE
   FEMALE
   OTHER
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  EXCUSED
 }

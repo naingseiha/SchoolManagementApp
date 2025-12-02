@@ -42,7 +42,7 @@ export interface GradeGridData {
   grade: string;
   month: string;
   year: number;
-  totalCoefficient: number; // NEW: Total coefficient from ALL subjects
+  totalCoefficient: number;
   subjects: Array<{
     id: string;
     nameKh: string;
@@ -62,18 +62,18 @@ export interface GradeGridData {
         id: string | null;
         score: number | null;
         maxScore: number;
-        coefficient: number; // NEW
+        coefficient: number;
         isSaved: boolean;
       };
     };
     totalScore: string;
-    totalMaxScore: number; // NEW
-    totalCoefficient: string; // Total from ALL subjects
+    totalMaxScore: number;
+    totalCoefficient: string;
     average: string;
     gradeLevel: string;
     rank: number;
-    absent: number;
-    permission: number;
+    absent: number; // ✅ From attendance
+    permission: number; // ✅ From attendance
   }>;
 }
 
