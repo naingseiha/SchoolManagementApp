@@ -32,6 +32,57 @@ export interface StudentSummary {
   gradeLevel: string;
 }
 
+// Update the GradeGridData interface
+
+// Update GradeGridData interface
+
+export interface GradeGridData {
+  classId: string;
+  className: string;
+  grade: string;
+  month: string;
+  year: number;
+  totalCoefficient: number; // NEW: Total coefficient from ALL subjects
+  subjects: Array<{
+    id: string;
+    nameKh: string;
+    nameEn: string;
+    code: string;
+    shortCode: string;
+    maxScore: number;
+    coefficient: number;
+    order: number;
+  }>;
+  students: Array<{
+    studentId: string;
+    studentName: string;
+    gender: string;
+    grades: {
+      [subjectId: string]: {
+        id: string | null;
+        score: number | null;
+        maxScore: number;
+        coefficient: number; // NEW
+        isSaved: boolean;
+      };
+    };
+    totalScore: string;
+    totalMaxScore: number; // NEW
+    totalCoefficient: string; // Total from ALL subjects
+    average: string;
+    gradeLevel: string;
+    rank: number;
+    absent: number;
+    permission: number;
+  }>;
+}
+
+export interface BulkSaveGradeItem {
+  studentId: string;
+  subjectId: string;
+  score: number | null;
+}
+
 export const gradeApi = {
   /**
    * Get grades by class and month
@@ -42,7 +93,7 @@ export const gradeApi = {
     year: number
   ): Promise<Grade[]> {
     const response = await fetch(
-      `${API_BASE_URL}/grades/month/${classId}?month=${month}&year=${year}`
+      `${API_BASE_URL}/grades/month/${classId}? month=${month}&year=${year}`
     );
 
     if (!response.ok) {
@@ -69,6 +120,51 @@ export const gradeApi = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || "Failed to fetch summary");
+    }
+
+    const data = await response.json();
+    return data.data;
+  },
+
+  /**
+   * Get grades in grid format for editing
+   */
+  async getGradesGrid(
+    classId: string,
+    month: string,
+    year: number
+  ): Promise<GradeGridData> {
+    const response = await fetch(
+      `${API_BASE_URL}/grades/grid/${classId}?month=${month}&year=${year}`
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to fetch grid data");
+    }
+
+    const data = await response.json();
+    return data.data;
+  },
+
+  /**
+   * Bulk save grades
+   */
+  async bulkSaveGrades(
+    classId: string,
+    month: string,
+    year: number,
+    grades: BulkSaveGradeItem[]
+  ): Promise<{ savedCount: number; errorCount: number; errors?: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/grades/bulk-save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ classId, month, year, grades }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to save grades");
     }
 
     const data = await response.json();

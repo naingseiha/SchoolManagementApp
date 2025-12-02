@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { GradeController } from "../controllers/grade.controller";
 import {
   getAllGrades,
   getGradeById,
@@ -10,10 +9,11 @@ import {
   updateGrade,
   deleteGrade,
 } from "../controllers/grade.controller";
+import { GradeController } from "../controllers/grade.controller";
 
 const router = Router();
 
-// ==================== NEW: IMPORT/EXPORT ROUTES ====================
+// ==================== FILE UPLOAD & IMPORT ====================
 
 /**
  * @route   POST /api/grades/import/:classId
@@ -39,6 +39,22 @@ router.get("/month/:classId", GradeController.getGradesByMonth);
  * @access  Private
  */
 router.get("/summary/:classId", GradeController.getMonthlySummary);
+
+// ==================== NEW: BULK SAVE ====================
+
+/**
+ * @route   POST /api/grades/bulk-save
+ * @desc    Bulk save/update grades
+ * @access  Private
+ */
+router.post("/bulk-save", GradeController.bulkSaveGrades);
+
+/**
+ * @route   GET /api/grades/grid/:classId
+ * @desc    Get grades in grid format for editing
+ * @access  Private
+ */
+router.get("/grid/:classId", GradeController.getGradesGrid);
 
 // ==================== EXISTING ROUTES ====================
 

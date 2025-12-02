@@ -139,6 +139,395 @@ export class GradeController {
       });
     }
   }
+
+  // ==================== NEW: GRID DATA & BULK SAVE ====================
+
+  /**
+   * Get grades in grid format for Excel-like editing
+   */
+  // Update the getGradesGrid method in GradeController class
+
+  /**
+   * Get grades in grid format for Excel-like editing
+   */
+  // Update getSubjectOrder function in getGradesGrid method
+
+  // Update getGradesGrid method - Calculate Total Coefficients from ALL subjects
+
+  static async getGradesGrid(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      // Get class with students
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          students: {
+            orderBy: { khmerName: "asc" },
+          },
+        },
+      });
+
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found",
+        });
+      }
+
+      // Define subject order and codes by grade
+      const getSubjectOrder = (
+        grade: string
+      ): { [code: string]: { order: number; shortCode: string } } => {
+        const gradeNum = parseInt(grade);
+
+        // Grades 7, 8 - WITH He (គេហវិទ្យា)
+        if (gradeNum === 7 || gradeNum === 8) {
+          return {
+            WRITING: { order: 1, shortCode: "W" },
+            WRITER: { order: 2, shortCode: "R" },
+            DICTATION: { order: 3, shortCode: "D" },
+            MATH: { order: 4, shortCode: "M" },
+            PHY: { order: 5, shortCode: "P" },
+            CHEM: { order: 6, shortCode: "C" },
+            BIO: { order: 7, shortCode: "B" },
+            EARTH: { order: 8, shortCode: "Es" },
+            MORAL: { order: 9, shortCode: "Mo" },
+            GEO: { order: 10, shortCode: "G" },
+            HIST: { order: 11, shortCode: "H" },
+            ENG: { order: 12, shortCode: "E" },
+            HE: { order: 13, shortCode: "He" }, // FIXED: HE not HOME
+            SPORTS: { order: 14, shortCode: "S" },
+            AGRI: { order: 15, shortCode: "Ag" },
+            ICT: { order: 16, shortCode: "IT" },
+          };
+        }
+
+        // Grade 9 - WITH He (គេហវិទ្យា)
+        if (gradeNum === 9) {
+          return {
+            WRITING: { order: 1, shortCode: "W" },
+            WRITER: { order: 2, shortCode: "R" },
+            DICTATION: { order: 3, shortCode: "D" },
+            MATH: { order: 4, shortCode: "M" },
+            PHY: { order: 5, shortCode: "P" },
+            CHEM: { order: 6, shortCode: "C" },
+            BIO: { order: 7, shortCode: "B" },
+            EARTH: { order: 8, shortCode: "Es" },
+            MORAL: { order: 9, shortCode: "Mo" },
+            GEO: { order: 10, shortCode: "G" },
+            HIST: { order: 11, shortCode: "H" },
+            ENG: { order: 12, shortCode: "E" },
+            HE: { order: 13, shortCode: "He" }, // FIXED: HE not HOME
+            SPORTS: { order: 14, shortCode: "S" },
+            AGRI: { order: 15, shortCode: "Ag" },
+            ICT: { order: 16, shortCode: "IT" },
+          };
+        }
+
+        // Grades 10, 11, 12
+        return {
+          KHM: { order: 1, shortCode: "K" },
+          MATH: { order: 2, shortCode: "M" },
+          PHY: { order: 3, shortCode: "P" },
+          CHEM: { order: 4, shortCode: "C" },
+          BIO: { order: 5, shortCode: "B" },
+          EARTH: { order: 6, shortCode: "Es" },
+          MORAL: { order: 7, shortCode: "Mo" },
+          GEO: { order: 8, shortCode: "G" },
+          HIST: { order: 9, shortCode: "H" },
+          ENG: { order: 10, shortCode: "E" },
+          SPORTS: { order: 11, shortCode: "S" },
+          AGRI: { order: 12, shortCode: "Ag" },
+          ICT: { order: 13, shortCode: "IT" },
+        };
+      };
+
+      const subjectOrder = getSubjectOrder(classData.grade);
+
+      // Get subjects for this grade and sort them
+      const subjects = await prisma.subject.findMany({
+        where: {
+          grade: classData.grade,
+          isActive: true,
+        },
+      });
+
+      // Sort subjects by order
+      const sortedSubjects = subjects
+        .map((subject) => {
+          const baseCode = subject.code.split("-")[0];
+          const orderInfo = subjectOrder[baseCode] || {
+            order: 999,
+            shortCode: subject.code,
+          };
+          return {
+            ...subject,
+            displayOrder: orderInfo.order,
+            shortCode: orderInfo.shortCode,
+          };
+        })
+        .sort((a, b) => a.displayOrder - b.displayOrder);
+
+      // ✅ CALCULATE TOTAL COEFFICIENTS FROM ALL SUBJECTS (NOT JUST ENTERED ONES)
+      const totalCoefficientForClass = sortedSubjects.reduce(
+        (sum, subject) => sum + subject.coefficient,
+        0
+      );
+
+      // Get existing grades
+      const existingGrades = await prisma.grade.findMany({
+        where: {
+          classId,
+          month: month as string,
+          year: parseInt(year as string),
+        },
+      });
+
+      // Build grid data with calculations
+      const gridData = classData.students.map((student) => {
+        const studentGrades: { [subjectId: string]: any } = {};
+        let totalScore = 0;
+        let totalMaxScore = 0;
+
+        sortedSubjects.forEach((subject) => {
+          const grade = existingGrades.find(
+            (g) => g.studentId === student.id && g.subjectId === subject.id
+          );
+
+          const score = grade?.score || null;
+
+          if (score !== null) {
+            totalScore += score;
+            totalMaxScore += subject.maxScore;
+          }
+
+          studentGrades[subject.id] = {
+            id: grade?.id || null,
+            score,
+            maxScore: subject.maxScore,
+            coefficient: subject.coefficient,
+            isSaved: !!grade,
+          };
+        });
+
+        // ✅ FIXED: Average = Total Score / Total Coefficients (OF ALL SUBJECTS)
+        const average =
+          totalCoefficientForClass > 0
+            ? totalScore / totalCoefficientForClass
+            : 0;
+
+        // Determine grade level
+        let gradeLevel = "F";
+        if (average >= 90) gradeLevel = "A";
+        else if (average >= 80) gradeLevel = "B+";
+        else if (average >= 70) gradeLevel = "B";
+        else if (average >= 60) gradeLevel = "C";
+        else if (average >= 50) gradeLevel = "D";
+        else if (average >= 40) gradeLevel = "E";
+
+        return {
+          studentId: student.id,
+          studentName:
+            student.khmerName || `${student.lastName} ${student.firstName}`,
+          gender: student.gender,
+          grades: studentGrades,
+          totalScore: totalScore.toFixed(2),
+          totalMaxScore,
+          totalCoefficient: totalCoefficientForClass.toFixed(2), // Total from ALL subjects
+          average: average.toFixed(2),
+          gradeLevel,
+          absent: 0,
+          permission: 0,
+        };
+      });
+
+      // Calculate ranks
+      const rankedData = gridData
+        .slice()
+        .sort((a, b) => parseFloat(b.average) - parseFloat(a.average))
+        .map((student, index) => ({
+          ...student,
+          rank: index + 1,
+        }));
+
+      // Restore original order with ranks
+      const finalData = gridData.map((student) => {
+        const ranked = rankedData.find(
+          (r) => r.studentId === student.studentId
+        );
+        return { ...student, rank: ranked?.rank || 0 };
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          classId: classData.id,
+          className: classData.name,
+          grade: classData.grade,
+          month: month as string,
+          year: parseInt(year as string),
+          totalCoefficient: totalCoefficientForClass, // Send to frontend
+          subjects: sortedSubjects.map((s) => ({
+            id: s.id,
+            nameKh: s.nameKh,
+            nameEn: s.nameEn,
+            code: s.code,
+            shortCode: s.shortCode,
+            maxScore: s.maxScore,
+            coefficient: s.coefficient,
+            order: s.displayOrder,
+          })),
+          students: finalData,
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Get grid error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get grid data",
+      });
+    }
+  }
+
+  /**
+   * Bulk save/update grades
+   */
+  static async bulkSaveGrades(req: Request, res: Response) {
+    try {
+      const { classId, month, year, grades } = req.body;
+
+      if (!classId || !month || !year || !grades || !Array.isArray(grades)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request data",
+        });
+      }
+
+      const monthNumber = GradeCalculationService.getMonthNumber(month) || 1;
+      const savedGrades: any[] = [];
+      const errors: any[] = [];
+
+      // Process each grade
+      for (const gradeData of grades) {
+        const { studentId, subjectId, score } = gradeData;
+
+        try {
+          // Get subject for maxScore
+          const subject = await prisma.subject.findUnique({
+            where: { id: subjectId },
+          });
+
+          if (!subject) {
+            errors.push({
+              studentId,
+              subjectId,
+              error: "Subject not found",
+            });
+            continue;
+          }
+
+          // Validate score
+          if (score !== null && (score < 0 || score > subject.maxScore)) {
+            errors.push({
+              studentId,
+              subjectId,
+              error: `Score must be between 0 and ${subject.maxScore}`,
+            });
+            continue;
+          }
+
+          // Skip if score is null (no change)
+          if (score === null) continue;
+
+          // Upsert grade
+          const savedGrade = await prisma.grade.upsert({
+            where: {
+              studentId_subjectId_classId_month_year: {
+                studentId,
+                subjectId,
+                classId,
+                month,
+                year: parseInt(year),
+              },
+            },
+            update: {
+              score,
+              maxScore: subject.maxScore,
+              monthNumber,
+              percentage: (score / subject.maxScore) * 100,
+              weightedScore: score * subject.coefficient,
+            },
+            create: {
+              studentId,
+              subjectId,
+              classId,
+              score,
+              maxScore: subject.maxScore,
+              month,
+              monthNumber,
+              year: parseInt(year),
+              percentage: (score / subject.maxScore) * 100,
+              weightedScore: score * subject.coefficient,
+            },
+          });
+
+          savedGrades.push(savedGrade);
+        } catch (error: any) {
+          errors.push({
+            studentId,
+            subjectId,
+            error: error.message,
+          });
+        }
+      }
+
+      // Recalculate summaries for affected students
+      const studentIds = [...new Set(grades.map((g: any) => g.studentId))];
+      for (const studentId of studentIds) {
+        try {
+          await GradeCalculationService.calculateMonthlySummary(
+            studentId,
+            classId,
+            month,
+            monthNumber,
+            parseInt(year)
+          );
+        } catch (error: any) {
+          console.error(
+            `Failed to calculate summary for student ${studentId}:`,
+            error
+          );
+        }
+      }
+
+      // Recalculate class ranks
+      await GradeCalculationService.calculateClassRanks(
+        classId,
+        month,
+        parseInt(year)
+      );
+
+      return res.json({
+        success: errors.length === 0,
+        message: `Saved ${savedGrades.length} grades${
+          errors.length > 0 ? `, ${errors.length} errors` : ""
+        }`,
+        data: {
+          savedCount: savedGrades.length,
+          errorCount: errors.length,
+          errors: errors.length > 0 ? errors : undefined,
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Bulk save error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to save grades",
+      });
+    }
+  }
 }
 
 // ==================== EXISTING FUNCTIONS (Keep as is) ====================
@@ -195,14 +584,7 @@ export const getGradeById = async (req: Request, res: Response) => {
             id: true,
             firstName: true,
             lastName: true,
-            email: true,
-            class: {
-              select: {
-                name: true,
-                grade: true,
-                section: true,
-              },
-            },
+            khmerName: true,
           },
         },
         subject: {
@@ -210,7 +592,6 @@ export const getGradeById = async (req: Request, res: Response) => {
             id: true,
             name: true,
             code: true,
-            description: true,
           },
         },
       },
@@ -240,17 +621,6 @@ export const getGradeById = async (req: Request, res: Response) => {
 export const getGradesByStudent = async (req: Request, res: Response) => {
   try {
     const { studentId } = req.params;
-
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student not found",
-      });
-    }
 
     const grades = await prisma.grade.findMany({
       where: { studentId },
@@ -286,21 +656,8 @@ export const getGradesByClass = async (req: Request, res: Response) => {
   try {
     const { classId } = req.params;
 
-    const classExists = await prisma.class.findUnique({
-      where: { id: classId },
-    });
-
-    if (!classExists) {
-      return res.status(404).json({
-        success: false,
-        message: "Class not found",
-      });
-    }
-
     const grades = await prisma.grade.findMany({
-      where: {
-        classId, // ✅ Use direct classId instead of nested query
-      },
+      where: { classId },
       include: {
         student: {
           select: {
@@ -341,17 +698,6 @@ export const getGradesBySubject = async (req: Request, res: Response) => {
   try {
     const { subjectId } = req.params;
 
-    const subject = await prisma.subject.findUnique({
-      where: { id: subjectId },
-    });
-
-    if (!subject) {
-      return res.status(404).json({
-        success: false,
-        message: "Subject not found",
-      });
-    }
-
     const grades = await prisma.grade.findMany({
       where: { subjectId },
       include: {
@@ -389,6 +735,7 @@ export const getGradesBySubject = async (req: Request, res: Response) => {
 };
 
 // Create new grade
+// Create new grade
 export const createGrade = async (req: Request, res: Response) => {
   try {
     const {
@@ -411,8 +758,7 @@ export const createGrade = async (req: Request, res: Response) => {
     ) {
       return res.status(400).json({
         success: false,
-        message:
-          "StudentId, subjectId, classId, score, and maxScore are required",
+        message: "Please provide all required fields",
       });
     }
 
@@ -423,28 +769,6 @@ export const createGrade = async (req: Request, res: Response) => {
       });
     }
 
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-    });
-
-    if (!student) {
-      return res.status(404).json({
-        success: false,
-        message: "Student not found",
-      });
-    }
-
-    const subject = await prisma.subject.findUnique({
-      where: { id: subjectId },
-    });
-
-    if (!subject) {
-      return res.status(404).json({
-        success: false,
-        message: "Subject not found",
-      });
-    }
-
     const newGrade = await prisma.grade.create({
       data: {
         studentId,
@@ -452,9 +776,9 @@ export const createGrade = async (req: Request, res: Response) => {
         classId,
         score,
         maxScore,
+        remarks,
         month,
         year,
-        remarks,
       },
       include: {
         student: {
@@ -477,7 +801,8 @@ export const createGrade = async (req: Request, res: Response) => {
 
     // Calculate summary if month/year provided
     if (month && year) {
-      const monthNumber = GradeCalculationService.getMonthNumber?.(month) || 1;
+      // FIX: Remove optional chaining on static method
+      const monthNumber = GradeCalculationService.getMonthNumber(month) || 1;
       await GradeCalculationService.calculateMonthlySummary(
         studentId,
         classId,
@@ -552,18 +877,6 @@ export const updateGrade = async (req: Request, res: Response) => {
       },
     });
 
-    // Recalculate summary
-    if (existingGrade.month && existingGrade.year) {
-      const monthNumber = existingGrade.monthNumber || 1;
-      await GradeCalculationService.calculateMonthlySummary(
-        existingGrade.studentId,
-        existingGrade.classId,
-        existingGrade.month,
-        monthNumber,
-        existingGrade.year
-      );
-    }
-
     res.json({
       success: true,
       message: "Grade updated successfully",
@@ -597,18 +910,6 @@ export const deleteGrade = async (req: Request, res: Response) => {
     await prisma.grade.delete({
       where: { id },
     });
-
-    // Recalculate summary after deletion
-    if (existingGrade.month && existingGrade.year) {
-      const monthNumber = existingGrade.monthNumber || 1;
-      await GradeCalculationService.calculateMonthlySummary(
-        existingGrade.studentId,
-        existingGrade.classId,
-        existingGrade.month,
-        monthNumber,
-        existingGrade.year
-      );
-    }
 
     res.json({
       success: true,

@@ -70,7 +70,7 @@ export default function Sidebar() {
       icon: ClipboardList,
       label: "ពិន្ទុ",
       subLabel: "Grades",
-      href: "/grades",
+      href: "/grade-entry",
       roles: ["ADMIN", "CLASS_TEACHER", "SUBJECT_TEACHER"],
       gradient: "from-yellow-500 to-orange-500",
     },
