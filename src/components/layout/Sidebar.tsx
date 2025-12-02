@@ -91,6 +91,14 @@ export default function Sidebar() {
       gradient: "from-pink-500 to-rose-500",
     },
     {
+      icon: BookOpen,
+      label: "សៀវភៅតាមដានសិស្ស",
+      subLabel: "Reports",
+      href: "/reports/tracking-book",
+      roles: ["ADMIN", "CLASS_TEACHER"],
+      gradient: "from-pink-500 to-rose-500",
+    },
+    {
       icon: Settings,
       label: "ការកំណត់",
       subLabel: "Settings",

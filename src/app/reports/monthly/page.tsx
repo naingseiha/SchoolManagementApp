@@ -70,8 +70,8 @@ export default function ReportsPage() {
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(22);
-  const [firstPageStudentCount, setFirstPageStudentCount] = useState(20); // ✅ New
+  const [studentsPerPage] = useState(28);
+  const [firstPageStudentCount, setFirstPageStudentCount] = useState(28); // ✅ New
   const [tableFontSize, setTableFontSize] = useState(10); // ✅ New
 
   // Column visibility
