@@ -15,4 +15,10 @@ router.get("/monthly/:classId", ReportController.getMonthlyReport);
  */
 router.get("/grade-wide/:grade", ReportController.getGradeWideReport);
 
+/**
+ * @route   GET /api/reports/tracking-book/:classId
+ * @desc    Get student tracking book (all months)
+ */
+router.get("/tracking-book/:classId", ReportController.getStudentTrackingBook);
+
 export default router;
