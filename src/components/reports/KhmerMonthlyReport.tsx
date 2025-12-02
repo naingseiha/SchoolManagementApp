@@ -27,6 +27,10 @@ interface KhmerMonthlyReportProps {
   showRank?: boolean;
   showRoomNumber?: boolean;
   selectedYear?: number;
+  isGradeWide?: boolean;
+  showClassName?: boolean;
+  firstPageStudentCount?: number;
+  tableFontSize?: number;
 }
 
 export default function KhmerMonthlyReport({
@@ -56,6 +60,10 @@ export default function KhmerMonthlyReport({
   showRank = true,
   showRoomNumber = true,
   selectedYear = 2025,
+  isGradeWide = false,
+  showClassName = true,
+  firstPageStudentCount = 20,
+  tableFontSize = 10,
 }: KhmerMonthlyReportProps) {
   return (
     <>
@@ -77,8 +85,7 @@ export default function KhmerMonthlyReport({
           src: local("Tacteing"), local("TacteingA");
         }
 
-        /* ✅ Prevent page break inside header + table */
-        .report-page {
+        . report-page {
           page-break-inside: avoid;
           page-break-after: always;
         }
@@ -106,11 +113,31 @@ export default function KhmerMonthlyReport({
             boxSizing: "border-box",
           }}
         >
-          {/* ✅ Header - Only on first page, but stays with table */}
+          {/* Header - Only on first page */}
           {pageIndex === 0 && (
             <div className="mb-4">
-              {/* Row 1: Kingdom on right */}
-              <div className="flex justify-end mb-1">
+              {/* Row 1: Kingdom (right) and School info (left) on same level */}
+              <div className="flex justify-between items-start mb-2">
+                {/* Left: School info - aligned with "ជាតិ សាសនា ព្រះមហាក្សត្រ" */}
+                <div
+                  className="text-left"
+                  style={{
+                    fontFamily: "'Khmer OS Bokor', serif",
+                    paddingTop: "20px",
+                  }}
+                >
+                  <p className="text-sm" style={{ lineHeight: "1.8" }}>
+                    {province || "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"}
+                  </p>
+                  <p
+                    className="text-sm font-bold"
+                    style={{ lineHeight: "1.8" }}
+                  >
+                    {examCenter || "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ"}
+                  </p>
+                </div>
+
+                {/* Right: Kingdom */}
                 <div className="text-center">
                   <p
                     className="font-bold text-base"
@@ -133,7 +160,7 @@ export default function KhmerMonthlyReport({
                     ជាតិ សាសនា ព្រះមហាក្សត្រ
                   </p>
                   <p
-                    className="text-black-600 text-base mt-0.5"
+                    className="text-red-600 text-base mt-0.5"
                     style={{
                       fontFamily: "'Tacteing', serif",
                       letterSpacing: "0.1em",
@@ -145,27 +172,7 @@ export default function KhmerMonthlyReport({
                 </div>
               </div>
 
-              {/* Row 2: School info on left */}
-              <div className="flex justify-start mb-2">
-                <div
-                  className="text-left"
-                  style={{
-                    fontFamily: "'Khmer OS Bokor', serif",
-                  }}
-                >
-                  <p className="text-sm" style={{ lineHeight: "1.8" }}>
-                    {province || "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"}
-                  </p>
-                  <p
-                    className="text-sm font-bold"
-                    style={{ lineHeight: "1.8" }}
-                  >
-                    {examCenter || "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Row 3: Title in center */}
+              {/* Row 2: Title in center */}
               <div className="text-center mb-3">
                 <h1
                   className="text-lg font-bold mb-1"
@@ -184,7 +191,7 @@ export default function KhmerMonthlyReport({
                   ឆ្នាំសិក្សា៖ {selectedYear}-{selectedYear + 1}
                 </p>
 
-                {/* ✅ Class and Room on same line */}
+                {/* Class and Room on same line */}
                 <div className="flex justify-between items-center px-4">
                   <p
                     className="text-sm font-bold"
@@ -193,9 +200,11 @@ export default function KhmerMonthlyReport({
                         "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                     }}
                   >
-                    ថ្នាក់ទី៖ {selectedClass?.name}
+                    {isGradeWide
+                      ? `កម្រិតថ្នាក់៖ ${selectedClass?.name}`
+                      : `ថ្នាក់ទី៖ ${selectedClass?.name}`}
                   </p>
-                  {showRoomNumber && roomNumber && (
+                  {!isGradeWide && showRoomNumber && roomNumber && (
                     <p
                       className="text-sm font-bold"
                       style={{
@@ -211,17 +220,19 @@ export default function KhmerMonthlyReport({
             </div>
           )}
 
-          {/* ✅ Table - immediately after header, no break */}
+          {/* Table */}
           <table
-            className="w-full text-xs"
+            className="w-full"
             style={{
               fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
               borderCollapse: "collapse",
+              fontSize: `${tableFontSize}px`,
             }}
           >
             <thead>
               {/* Row 1: Main Headers */}
               <tr style={{ border: "1px solid black" }}>
+                {/* ល.រ */}
                 <th
                   rowSpan={showAttendance ? 2 : 1}
                   className="px-2 py-2 bg-gray-100 w-10 align-middle"
@@ -230,6 +241,7 @@ export default function KhmerMonthlyReport({
                   ល.រ
                 </th>
 
+                {/* គោត្តនាម និងនាម */}
                 <th
                   rowSpan={showAttendance ? 2 : 1}
                   className="px-2 py-2 bg-gray-100 align-middle"
@@ -238,6 +250,18 @@ export default function KhmerMonthlyReport({
                   គោត្តនាម និងនាម
                 </th>
 
+                {/* ថ្នាក់ (for grade-wide only) */}
+                {isGradeWide && showClassName && (
+                  <th
+                    rowSpan={showAttendance ? 2 : 1}
+                    className="px-2 py-2 bg-blue-100 align-middle"
+                    style={{ border: "1px solid black", minWidth: "50px" }}
+                  >
+                    ថ្នាក់
+                  </th>
+                )}
+
+                {/* អវត្តមាន */}
                 {showAttendance && (
                   <th
                     colSpan={3}
@@ -248,6 +272,7 @@ export default function KhmerMonthlyReport({
                   </th>
                 )}
 
+                {/* មុខវិជ្ជា */}
                 {showSubjects &&
                   subjects.map((subject) => (
                     <th
@@ -260,6 +285,7 @@ export default function KhmerMonthlyReport({
                     </th>
                   ))}
 
+                {/* ពិន្ទុសរុប */}
                 {showTotal && (
                   <th
                     rowSpan={showAttendance ? 2 : 1}
@@ -270,16 +296,18 @@ export default function KhmerMonthlyReport({
                   </th>
                 )}
 
+                {/* ម. ភាគ */}
                 {showAverage && (
                   <th
                     rowSpan={showAttendance ? 2 : 1}
                     className="px-2 py-2 bg-green-100 w-16 align-middle"
                     style={{ border: "1px solid black" }}
                   >
-                    ម.ភាគ
+                    ម. ភាគ
                   </th>
                 )}
 
+                {/* ចំ. ថ្នាក់ */}
                 {showRank && (
                   <th
                     rowSpan={showAttendance ? 2 : 1}
@@ -290,6 +318,7 @@ export default function KhmerMonthlyReport({
                   </th>
                 )}
 
+                {/* និទ្ទេស */}
                 {showGradeLevel && (
                   <th
                     rowSpan={showAttendance ? 2 : 1}
@@ -328,7 +357,15 @@ export default function KhmerMonthlyReport({
 
             <tbody>
               {pageReports.map((report, index) => {
-                const globalIndex = pageIndex * studentsPerPage + index + 1;
+                // ✅ Calculate global index correctly
+                const globalIndex =
+                  pageIndex === 0
+                    ? index + 1
+                    : firstPageStudentCount +
+                      (pageIndex - 1) * studentsPerPage +
+                      index +
+                      1;
+
                 const isPassed =
                   autoCircle &&
                   showCircles &&
@@ -339,6 +376,7 @@ export default function KhmerMonthlyReport({
                     key={report.student.id}
                     style={{ border: "1px solid black" }}
                   >
+                    {/* ល.រ */}
                     <td
                       className="px-2 py-1. 5 text-center relative"
                       style={{ border: "1px solid black" }}
@@ -353,6 +391,7 @@ export default function KhmerMonthlyReport({
                       )}
                     </td>
 
+                    {/* គោត្តនាម និងនាម */}
                     <td
                       className={`px-2 py-1.5 ${
                         isPassed ? "bg-yellow-100 font-bold" : ""
@@ -362,10 +401,21 @@ export default function KhmerMonthlyReport({
                       {report.student.lastName} {report.student.firstName}
                     </td>
 
+                    {/* ថ្នាក់ (for grade-wide only) */}
+                    {isGradeWide && showClassName && (
+                      <td
+                        className="px-2 py-1. 5 text-center font-semibold bg-blue-50"
+                        style={{ border: "1px solid black" }}
+                      >
+                        {report.student.className}
+                      </td>
+                    )}
+
+                    {/* អវត្តមាន */}
                     {showAttendance && (
                       <>
                         <td
-                          className="px-1 py-1. 5 text-center"
+                          className="px-1 py-1.5 text-center"
                           style={{ border: "1px solid black" }}
                         >
                           {report.permission || 0}
@@ -385,6 +435,7 @@ export default function KhmerMonthlyReport({
                       </>
                     )}
 
+                    {/* មុខវិជ្ជា */}
                     {showSubjects &&
                       subjects.map((subject) => {
                         const grade = report.grades.find(
@@ -394,7 +445,7 @@ export default function KhmerMonthlyReport({
                         return (
                           <td
                             key={subject.id}
-                            className="px-1 py-1. 5 text-center"
+                            className="px-1 py-1.5 text-center"
                             style={{ border: "1px solid black" }}
                           >
                             {score !== null && score !== undefined
@@ -404,6 +455,7 @@ export default function KhmerMonthlyReport({
                         );
                       })}
 
+                    {/* Summary */}
                     {showTotal && (
                       <td
                         className="px-2 py-1.5 text-center font-bold bg-green-50"
@@ -442,7 +494,7 @@ export default function KhmerMonthlyReport({
             </tbody>
           </table>
 
-          {/* ✅ Footer - Only on last page */}
+          {/* Footer - Only on last page */}
           {pageIndex === paginatedReports.length - 1 && (
             <div
               className="mt-8 flex justify-between text-sm"
