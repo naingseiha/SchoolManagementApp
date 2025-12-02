@@ -5,8 +5,14 @@ const router = Router();
 
 /**
  * @route   GET /api/reports/monthly/:classId
- * @desc    Get monthly report for a class
+ * @desc    Get monthly report for a specific class
  */
 router.get("/monthly/:classId", ReportController.getMonthlyReport);
+
+/**
+ * @route   GET /api/reports/grade-wide/:grade
+ * @desc    Get grade-wide report (all classes combined)
+ */
+router.get("/grade-wide/:grade", ReportController.getGradeWideReport);
 
 export default router;

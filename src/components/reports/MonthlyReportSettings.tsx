@@ -45,6 +45,12 @@ interface MonthlyReportSettingsProps {
   setShowRank?: (value: boolean) => void;
   showRoomNumber?: boolean;
   setShowRoomNumber?: (value: boolean) => void;
+  showClassName?: boolean;
+  setShowClassName?: (value: boolean) => void;
+  firstPageStudentCount?: number;
+  setFirstPageStudentCount?: (value: number) => void;
+  tableFontSize?: number;
+  setTableFontSize?: (value: number) => void;
 }
 
 export default function MonthlyReportSettings({
@@ -90,6 +96,12 @@ export default function MonthlyReportSettings({
   setShowRank = () => {},
   showRoomNumber = true,
   setShowRoomNumber = () => {},
+  showClassName = true,
+  setShowClassName = () => {},
+  firstPageStudentCount = 20,
+  setFirstPageStudentCount = () => {},
+  tableFontSize = 10,
+  setTableFontSize = () => {},
 }: MonthlyReportSettingsProps) {
   return (
     <div className="border-t pt-4">
@@ -183,7 +195,7 @@ export default function MonthlyReportSettings({
                 value={reportDate}
                 onChange={(e) => setReportDate(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                placeholder="ថ្ងៃទី. ....  ខែ..... ឆ្នាំ២០២៥"
+                placeholder="ថ្ងៃទី.   ....    ខែ.  ....  ឆ្នាំ២០២៥"
               />
             </div>
 
@@ -211,6 +223,91 @@ export default function MonthlyReportSettings({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                 placeholder="នាយកសាលា"
               />
+            </div>
+          </div>
+
+          {/* ✅ Layout Settings */}
+          <div className="p-4 bg-purple-50 rounded-lg">
+            <label className="block text-sm font-bold text-gray-700 mb-3">
+              ការកំណត់ Layout Settings
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Font Size Control */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ទំហំអក្សរក្នុងតារាង Table Font Size: {tableFontSize}px
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="7"
+                    max="14"
+                    step="1"
+                    value={tableFontSize}
+                    onChange={(e) => setTableFontSize(parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="7"
+                    max="14"
+                    value={tableFontSize}
+                    onChange={(e) =>
+                      setTableFontSize(parseInt(e.target.value) || 10)
+                    }
+                    className="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>តូច (7px)</span>
+                  <span>មធ្យម (10px)</span>
+                  <span>ធំ (14px)</span>
+                </div>
+              </div>
+
+              {/* First Page Student Count */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ចំនួនសិស្សទំព័រដំបូង First Page Students:{" "}
+                  {firstPageStudentCount}
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="15"
+                    max="30"
+                    step="1"
+                    value={firstPageStudentCount}
+                    onChange={(e) =>
+                      setFirstPageStudentCount(parseInt(e.target.value))
+                    }
+                    className="flex-1 h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min="15"
+                    max="30"
+                    value={firstPageStudentCount}
+                    onChange={(e) =>
+                      setFirstPageStudentCount(parseInt(e.target.value) || 20)
+                    }
+                    className="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>តិច (15)</span>
+                  <span>មធ្យម (20)</span>
+                  <span>ច្រើន (30)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Message */}
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                💡 <strong>ជំនួយ:</strong> ទំព័រដំបូងមាន header ធំ
+                ដូច្នេះត្រូវការសិស្សតិចជាង។ ទំព័របន្ទាប់ៗគឺ 22 សិស្ស/ទំព័រ។
+              </p>
             </div>
           </div>
 
@@ -289,6 +386,19 @@ export default function MonthlyReportSettings({
                 />
                 <span className="text-sm text-gray-700">បន្ទប់ប្រឡង</span>
               </label>
+
+              {/* Show class name for grade-wide */}
+              {setShowClassName !== (() => {}) && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showClassName}
+                    onChange={(e) => setShowClassName(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-700">បង្ហាញថ្នាក់</span>
+                </label>
+              )}
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input

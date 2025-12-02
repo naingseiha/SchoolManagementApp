@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import {
   Printer,
@@ -14,8 +13,8 @@ import {
   ArrowUpDown,
   Loader2,
   AlertCircle,
-  Settings,
   FileText,
+  Users,
 } from "lucide-react";
 import { reportsApi, type MonthlyReportData } from "@/lib/api/reports";
 
@@ -35,12 +34,15 @@ export default function ReportsPage() {
   const { classes } = useData();
   const router = useRouter();
 
-  // ✅ Get current month as default
   const currentMonth = getCurrentKhmerMonth();
 
   // State management
+  const [reportType, setReportType] = useState<"single" | "grade-wide">(
+    "single"
+  );
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth); // ✅ Default to current month
+  const [selectedGrade, setSelectedGrade] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [reportData, setReportData] = useState<MonthlyReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,11 +66,13 @@ export default function ReportsPage() {
   const [principalName, setPrincipalName] = useState("នាយកសាលា");
   const [teacherName, setTeacherName] = useState("គ្រូបន្ទុកថ្នាក់");
   const [reportDate, setReportDate] = useState(
-    "ថ្ងៃទី. ....  ខែ..... ឆ្នាំ២០២៥"
+    "ថ្ងៃទី.  ....   ខែ. ....  ឆ្នាំ២០២៥"
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(25);
+  const [studentsPerPage] = useState(22);
+  const [firstPageStudentCount, setFirstPageStudentCount] = useState(20); // ✅ New
+  const [tableFontSize, setTableFontSize] = useState(10); // ✅ New
 
   // Column visibility
   const [showDateOfBirth, setShowDateOfBirth] = useState(false);
@@ -81,21 +85,39 @@ export default function ReportsPage() {
   const [showGradeLevel, setShowGradeLevel] = useState(true);
   const [showRank, setShowRank] = useState(true);
   const [showRoomNumber, setShowRoomNumber] = useState(true);
+  const [showClassName, setShowClassName] = useState(true);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // Get unique grades from classes
+  const grades = Array.from(new Set(classes.map((c) => c.grade))).sort();
+  const gradeOptions = [
+    { value: "", label: "ជ្រើសរើសកម្រិតថ្នាក់" },
+    ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី${g} ទាំងអស់` })),
+  ];
+
   // Fetch report data from API
   const fetchReport = async () => {
-    if (!selectedClassId) return;
+    if (reportType === "single" && !selectedClassId) return;
+    if (reportType === "grade-wide" && !selectedGrade) return;
 
     setLoading(true);
     setError(null);
     try {
-      const data = await reportsApi.getMonthlyReport(
-        selectedClassId,
-        selectedMonth,
-        selectedYear
-      );
+      let data;
+      if (reportType === "single") {
+        data = await reportsApi.getMonthlyReport(
+          selectedClassId,
+          selectedMonth,
+          selectedYear
+        );
+      } else {
+        data = await reportsApi.getGradeWideReport(
+          selectedGrade,
+          selectedMonth,
+          selectedYear
+        );
+      }
       setReportData(data);
     } catch (err: any) {
       console.error("Error fetching report:", err);
@@ -111,6 +133,13 @@ export default function ReportsPage() {
       `សប្តាហ៍ទី ១២៖ ខែ${selectedMonth} ${selectedYear}-${selectedYear + 1}`
     );
   }, [selectedMonth, selectedYear]);
+
+  // Reset selections when report type changes
+  useEffect(() => {
+    setSelectedClassId("");
+    setSelectedGrade("");
+    setReportData(null);
+  }, [reportType]);
 
   if (authLoading) {
     return (
@@ -135,13 +164,20 @@ export default function ReportsPage() {
     return { value: year.toString(), label: year.toString() };
   });
 
-  const selectedClass = reportData
-    ? {
-        id: reportData.classId,
-        name: reportData.className,
-        grade: reportData.grade,
-      }
-    : null;
+  const selectedClass =
+    reportData && reportType === "single"
+      ? {
+          id: reportData.classId!,
+          name: reportData.className!,
+          grade: reportData.grade!,
+        }
+      : reportData && reportType === "grade-wide"
+      ? {
+          id: "grade-wide",
+          name: `ថ្នាក់ទី${reportData.grade}`,
+          grade: reportData.grade!,
+        }
+      : null;
 
   // Transform API data
   const studentReports = reportData
@@ -164,6 +200,7 @@ export default function ReportsPage() {
             firstName: student.studentName.split(" ").slice(1).join(" ") || "",
             gender: student.gender.toLowerCase() as "male" | "female",
             dateOfBirth: "",
+            className: student.className || "",
           },
           grades: gradesArray,
           total: parseFloat(student.totalScore),
@@ -189,10 +226,20 @@ export default function ReportsPage() {
     return sortOrder === "asc" ? comparison : -comparison;
   });
 
-  // Paginate reports
+  // ✅ Paginate reports with custom first page count
   const paginatedReports = [];
-  for (let i = 0; i < sortedReports.length; i += studentsPerPage) {
-    paginatedReports.push(sortedReports.slice(i, i + studentsPerPage));
+  if (sortedReports.length > 0) {
+    // First page with custom count
+    paginatedReports.push(sortedReports.slice(0, firstPageStudentCount));
+
+    // Remaining pages with standard count
+    for (
+      let i = firstPageStudentCount;
+      i < sortedReports.length;
+      i += studentsPerPage
+    ) {
+      paginatedReports.push(sortedReports.slice(i, i + studentsPerPage));
+    }
   }
 
   // Transform subjects
@@ -211,10 +258,14 @@ export default function ReportsPage() {
   const exportToExcel = () => {
     const data = sortedReports.map((report, index) => {
       const row: any = {
-        "ល. រ": index + 1,
+        "ល.រ": index + 1,
         "គោត្តនាម និងនាម": `${report.student.lastName} ${report.student.firstName}`,
         ភេទ: report.student.gender === "male" ? "ប្រុស" : "ស្រី",
       };
+
+      if (reportType === "grade-wide" && showClassName) {
+        row["ថ្នាក់"] = report.student.className;
+      }
 
       if (showSubjects) {
         subjects.forEach((subject) => {
@@ -249,10 +300,13 @@ export default function ReportsPage() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `របាយការណ៍_${reportData?.className}_${selectedMonth}_${selectedYear}.csv`
-    );
+
+    const fileName =
+      reportType === "single"
+        ? `របាយការណ៍_${reportData?.className}_${selectedMonth}_${selectedYear}.csv`
+        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${selectedMonth}_${selectedYear}. csv`;
+
+    link.setAttribute("download", fileName);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -289,7 +343,7 @@ export default function ReportsPage() {
           <Header />
         </div>
         <main className="p-6 animate-fadeIn">
-          {/* ✅ Professional Page Header */}
+          {/* Professional Page Header */}
           <div className="mb-6 no-print">
             <div className="flex items-center gap-4 mb-2">
               <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
@@ -306,26 +360,77 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* ✅ Clean Controls Panel */}
+          {/* Clean Controls Panel */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 no-print">
+            {/* Report Type Selector */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                ប្រភេទរបាយការណ៍ Report Type
+              </label>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setReportType("single")}
+                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    reportType === "single"
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  តាមថ្នាក់នីមួយៗ
+                </button>
+                <button
+                  onClick={() => setReportType("grade-wide")}
+                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    reportType === "grade-wide"
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  រួមទាំងកម្រិតថ្នាក់
+                </button>
+              </div>
+            </div>
+
             {/* Selection Row */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  ថ្នាក់ Class
-                </label>
-                <select
-                  value={selectedClassId}
-                  onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                >
-                  {classOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Single Class or Grade-wide */}
+              {reportType === "single" ? (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ថ្នាក់ Class
+                  </label>
+                  <select
+                    value={selectedClassId}
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  >
+                    {classOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    កម្រិតថ្នាក់ Grade Level
+                  </label>
+                  <select
+                    value={selectedGrade}
+                    onChange={(e) => setSelectedGrade(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  >
+                    {gradeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -367,7 +472,11 @@ export default function ReportsPage() {
                 </label>
                 <button
                   onClick={fetchReport}
-                  disabled={!selectedClassId || loading}
+                  disabled={
+                    loading ||
+                    (reportType === "single" && !selectedClassId) ||
+                    (reportType === "grade-wide" && !selectedGrade)
+                  }
                   className="w-full h-11 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {loading ? (
@@ -386,96 +495,108 @@ export default function ReportsPage() {
             </div>
 
             {/* Settings & Actions */}
-            {selectedClassId && reportData && (
-              <div className="border-t pt-4 space-y-4">
-                <MonthlyReportSettings
-                  showSettings={showSettings}
-                  setShowSettings={setShowSettings}
-                  province={province}
-                  setProvince={setProvince}
-                  examCenter={examCenter}
-                  setExamCenter={setExamCenter}
-                  roomNumber={roomNumber}
-                  setRoomNumber={setRoomNumber}
-                  reportTitle={reportTitle}
-                  setReportTitle={setReportTitle}
-                  examSession={examSession}
-                  setExamSession={setExamSession}
-                  reportDate={reportDate}
-                  setReportDate={setReportDate}
-                  teacherName={teacherName}
-                  setTeacherName={setTeacherName}
-                  principalName={principalName}
-                  setPrincipalName={setPrincipalName}
-                  showCircles={showCircles}
-                  setShowCircles={setShowCircles}
-                  autoCircle={autoCircle}
-                  setAutoCircle={setAutoCircle}
-                  showDateOfBirth={showDateOfBirth}
-                  setShowDateOfBirth={setShowDateOfBirth}
-                  showGrade={showGrade}
-                  setShowGrade={setShowGrade}
-                  showOther={showOther}
-                  setShowOther={setShowOther}
-                  showSubjects={showSubjects}
-                  setShowSubjects={setShowSubjects}
-                  showAttendance={showAttendance}
-                  setShowAttendance={setShowAttendance}
-                  showTotal={showTotal}
-                  setShowTotal={setShowTotal}
-                  showAverage={showAverage}
-                  setShowAverage={setShowAverage}
-                  showGradeLevel={showGradeLevel}
-                  setShowGradeLevel={setShowGradeLevel}
-                  showRank={showRank}
-                  setShowRank={setShowRank}
-                  showRoomNumber={showRoomNumber}
-                  setShowRoomNumber={setShowRoomNumber}
-                />
+            {((reportType === "single" && selectedClassId) ||
+              (reportType === "grade-wide" && selectedGrade)) &&
+              reportData && (
+                <div className="border-t pt-4 space-y-4">
+                  <MonthlyReportSettings
+                    showSettings={showSettings}
+                    setShowSettings={setShowSettings}
+                    province={province}
+                    setProvince={setProvince}
+                    examCenter={examCenter}
+                    setExamCenter={setExamCenter}
+                    roomNumber={roomNumber}
+                    setRoomNumber={setRoomNumber}
+                    reportTitle={reportTitle}
+                    setReportTitle={setReportTitle}
+                    examSession={examSession}
+                    setExamSession={setExamSession}
+                    reportDate={reportDate}
+                    setReportDate={setReportDate}
+                    teacherName={teacherName}
+                    setTeacherName={setTeacherName}
+                    principalName={principalName}
+                    setPrincipalName={setPrincipalName}
+                    showCircles={showCircles}
+                    setShowCircles={setShowCircles}
+                    autoCircle={autoCircle}
+                    setAutoCircle={setAutoCircle}
+                    showDateOfBirth={showDateOfBirth}
+                    setShowDateOfBirth={setShowDateOfBirth}
+                    showGrade={showGrade}
+                    setShowGrade={setShowGrade}
+                    showOther={showOther}
+                    setShowOther={setShowOther}
+                    showSubjects={showSubjects}
+                    setShowSubjects={setShowSubjects}
+                    showAttendance={showAttendance}
+                    setShowAttendance={setShowAttendance}
+                    showTotal={showTotal}
+                    setShowTotal={setShowTotal}
+                    showAverage={showAverage}
+                    setShowAverage={setShowAverage}
+                    showGradeLevel={showGradeLevel}
+                    setShowGradeLevel={setShowGradeLevel}
+                    showRank={showRank}
+                    setShowRank={setShowRank}
+                    showRoomNumber={showRoomNumber}
+                    setShowRoomNumber={setShowRoomNumber}
+                    showClassName={
+                      reportType === "grade-wide" ? showClassName : undefined
+                    }
+                    setShowClassName={
+                      reportType === "grade-wide" ? setShowClassName : undefined
+                    }
+                    firstPageStudentCount={firstPageStudentCount}
+                    setFirstPageStudentCount={setFirstPageStudentCount}
+                    tableFontSize={tableFontSize}
+                    setTableFontSize={setTableFontSize}
+                  />
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
-                      className="h-10 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                    >
-                      <option value="rank">តម្រៀបតាមចំណាត់ថ្នាក់</option>
-                      <option value="name">តម្រៀបតាមឈ្មោះ</option>
-                      <option value="average">តម្រៀបតាមមធ្យមភាគ</option>
-                    </select>
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex items-center gap-3">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="h-10 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                      >
+                        <option value="rank">តម្រៀបតាមចំណាត់ថ្នាក់</option>
+                        <option value="name">តម្រៀបតាមឈ្មោះ</option>
+                        <option value="average">តម្រៀបតាមមធ្យមភាគ</option>
+                      </select>
 
-                    <button
-                      onClick={() =>
-                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                      }
-                      className="h-10 px-4 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-indigo-400 hover:bg-gray-50 transition-all flex items-center gap-2"
-                    >
-                      <ArrowUpDown className="w-4 h-4" />
-                      {sortOrder === "asc" ? "ឡើង" : "ចុះ"}
-                    </button>
-                  </div>
+                      <button
+                        onClick={() =>
+                          setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+                        }
+                        className="h-10 px-4 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-indigo-400 hover:bg-gray-50 transition-all flex items-center gap-2"
+                      >
+                        <ArrowUpDown className="w-4 h-4" />
+                        {sortOrder === "asc" ? "ឡើង" : "ចុះ"}
+                      </button>
+                    </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handlePrint}
-                      className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-indigo-400 hover:bg-gray-50 transition-all flex items-center gap-2"
-                    >
-                      <Printer className="w-4 h-4" />
-                      បោះពុម្ព
-                    </button>
-                    <button
-                      onClick={exportToExcel}
-                      className="h-10 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-                    >
-                      <FileSpreadsheet className="w-4 h-4" />
-                      Export Excel
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handlePrint}
+                        className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-indigo-400 hover:bg-gray-50 transition-all flex items-center gap-2"
+                      >
+                        <Printer className="w-4 h-4" />
+                        បោះពុម្ព
+                      </button>
+                      <button
+                        onClick={exportToExcel}
+                        className="h-10 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Export Excel
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           {/* Error Message */}
@@ -512,6 +633,8 @@ export default function ReportsPage() {
                 showGrade={showGrade}
                 showOther={showOther}
                 studentsPerPage={studentsPerPage}
+                firstPageStudentCount={firstPageStudentCount}
+                tableFontSize={tableFontSize}
                 getSubjectAbbr={getSubjectAbbr}
                 showSubjects={showSubjects}
                 showAttendance={showAttendance}
@@ -521,22 +644,32 @@ export default function ReportsPage() {
                 showRank={showRank}
                 showRoomNumber={showRoomNumber}
                 selectedYear={selectedYear}
+                isGradeWide={reportType === "grade-wide"}
+                showClassName={showClassName}
               />
             </div>
           )}
 
           {/* Empty State */}
-          {!selectedClassId && !loading && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
-              <div className="text-6xl mb-4">📊</div>
-              <p className="text-xl font-semibold text-gray-700 mb-2">
-                សូមជ្រើសរើសថ្នាក់ដើម្បីមើលរបាយការណ៍
-              </p>
-              <p className="text-gray-500">
-                Please select a class to view the report
-              </p>
-            </div>
-          )}
+          {!(
+            (reportType === "single" && selectedClassId) ||
+            (reportType === "grade-wide" && selectedGrade)
+          ) &&
+            !loading && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
+                <div className="text-6xl mb-4">📊</div>
+                <p className="text-xl font-semibold text-gray-700 mb-2">
+                  សូមជ្រើសរើស
+                  {reportType === "single" ? "ថ្នាក់" : "កម្រិតថ្នាក់"}
+                  ដើម្បីមើលរបាយការណ៍
+                </p>
+                <p className="text-gray-500">
+                  Please select a{" "}
+                  {reportType === "single" ? "class" : "grade level"} to view
+                  the report
+                </p>
+              </div>
+            )}
         </main>
       </div>
     </div>
