@@ -36,17 +36,9 @@ export default function Sidebar() {
     },
     {
       icon: Users,
-      label: "បញ្ជីរឈ្មោះសិស្ស",
-      subLabel: "Students",
-      href: "/students",
-      roles: ["ADMIN", "CLASS_TEACHER"],
-      gradient: "from-purple-500 to-pink-500",
-    },
-    {
-      icon: Users,
       label: "សិស្ស",
       subLabel: "Students",
-      href: "/students/bulk-import",
+      href: "/students",
       roles: ["ADMIN", "CLASS_TEACHER"],
       gradient: "from-purple-500 to-pink-500",
     },
