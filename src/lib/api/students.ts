@@ -1,13 +1,13 @@
 // Student API Service
 
 import { apiClient } from "./client";
+import { parseDate } from "../utils/dateParser";
 
 export interface Student {
   id: string;
   studentId?: string;
   khmerName?: string;
   englishName?: string;
-  // Legacy fields for backward compatibility
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -16,7 +16,6 @@ export interface Student {
   placeOfBirth?: string;
   currentAddress?: string;
   phoneNumber?: string;
-  // Legacy
   address?: string;
   phone?: string;
   guardianName?: string;
@@ -52,6 +51,50 @@ export interface CreateStudentData {
   classId?: string;
 }
 
+export interface BulkStudentData {
+  name: string;
+  gender: string;
+  dateOfBirth: string;
+  previousGrade?: string;
+  previousSchool?: string;
+  repeatingGrade?: string;
+  transferredFrom?: string;
+  remarks?: string;
+  grade9ExamSession?: string;
+  grade9ExamCenter?: string;
+  grade9ExamRoom?: string;
+  grade9ExamDesk?: string;
+  grade9PassStatus?: string;
+  grade12ExamSession?: string;
+  grade12ExamCenter?: string;
+  grade12ExamRoom?: string;
+  grade12ExamDesk?: string;
+  grade12PassStatus?: string;
+  grade12Track?: string;
+}
+
+export interface BulkImportResponse {
+  success: boolean;
+  message: string;
+  data: {
+    total: number;
+    success: number;
+    failed: number;
+    results: {
+      success: Array<{
+        row: number;
+        studentId: string;
+        name: string;
+      }>;
+      failed: Array<{
+        row: number;
+        name: string;
+        error: string;
+      }>;
+    };
+  };
+}
+
 export interface StudentsResponse {
   success: boolean;
   data: Student[];
@@ -63,22 +106,22 @@ export interface StudentResponse {
   message?: string;
 }
 
-// Helper function to map frontend gender to backend Gender enum
-const mapGenderToBackend = (gender: "male" | "female"): string => {
-  return gender === "male" ? "MALE" : "FEMALE";
+const mapGenderToBackend = (gender: "male" | "female" | string): string => {
+  const g = gender.toLowerCase();
+  if (g === "male" || g === "m" || g === "ប" || g === "ប្រុស") {
+    return "MALE";
+  }
+  return "FEMALE";
 };
 
-// Helper function to map backend Gender enum to frontend
 const mapGenderToFrontend = (gender: string): "male" | "female" => {
   return gender === "MALE" ? "male" : "female";
 };
 
-// Helper function to transform student data from backend
 const transformStudent = (backendStudent: any): Student => {
   return {
     ...backendStudent,
     gender: mapGenderToFrontend(backendStudent.gender),
-    // Map new fields to legacy fields for backward compatibility
     firstName:
       backendStudent.firstName ||
       backendStudent.englishName?.split(" ")[0] ||
@@ -93,11 +136,13 @@ const transformStudent = (backendStudent: any): Student => {
   };
 };
 
-// Helper function to transform frontend data to backend format
 const transformToBackend = (frontendData: CreateStudentData): any => {
   const payload = {
     firstName: frontendData.firstName?.trim() || "",
     lastName: frontendData.lastName?.trim() || "",
+    khmerName:
+      frontendData.khmerName?.trim() ||
+      `${frontendData.firstName} ${frontendData.lastName}`,
     email: frontendData.email?.trim() || undefined,
     gender: mapGenderToBackend(frontendData.gender),
     dateOfBirth: frontendData.dateOfBirth,
@@ -106,27 +151,13 @@ const transformToBackend = (frontendData: CreateStudentData): any => {
     classId: frontendData.classId?.trim() || undefined,
   };
 
-  console.log("🔄 Transform to backend:", {
-    input: frontendData,
-    output: payload,
-  });
-
   return payload;
 };
 
 export const studentsApi = {
-  // Get all students
   async getAll(): Promise<Student[]> {
     try {
-      // ✅ apiClient.get already extracts data, so response IS the array
       const students = await apiClient.get<Student[]>("/students");
-
-      console.log("📥 Students received:", students);
-      console.log(
-        "  - Type:",
-        Array.isArray(students) ? "Array ✅" : typeof students
-      );
-      console.log("  - Count:", students?.length || 0);
 
       if (!Array.isArray(students)) {
         console.error("❌ Expected array but got:", students);
@@ -136,14 +167,12 @@ export const studentsApi = {
       return students.map(transformStudent);
     } catch (error: any) {
       console.error("❌ Error fetching students:", error);
-      return []; // ✅ Return empty array instead of throwing
+      return [];
     }
   },
 
-  // Get student by ID
   async getById(id: string): Promise<Student> {
     try {
-      // ✅ apiClient.get returns the student object directly
       const student = await apiClient.get<Student>(`/students/${id}`);
       return transformStudent(student);
     } catch (error: any) {
@@ -152,37 +181,113 @@ export const studentsApi = {
     }
   },
 
-  // Create new student
   async create(data: CreateStudentData): Promise<Student> {
     try {
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("📤 FRONTEND: Creating student");
-      console.log("📥 Input data:", data);
-
       const backendData = transformToBackend(data);
-
-      console.log("📦 Sending to backend:", backendData);
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-      // ✅ apiClient.post returns the student object directly
       const student = await apiClient.post<Student>("/students", backendData);
-
-      console.log("✅ Response from backend:", student);
-
       return transformStudent(student);
     } catch (error: any) {
-      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.error("❌ FRONTEND ERROR:", error);
-      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       throw new Error(error.message || "Failed to create student");
     }
   },
 
-  // Update student
+  async bulkCreate(
+    classId: string,
+    students: BulkStudentData[]
+  ): Promise<BulkImportResponse> {
+    try {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📤 FRONTEND: Bulk creating students");
+      console.log("📊 Class ID:", classId);
+      console.log("👥 Students count:", students.length);
+
+      const payload = {
+        classId,
+        students: students.map((student, index) => {
+          try {
+            const parsedDate = parseDate(student.dateOfBirth);
+
+            return {
+              name: student.name.trim(),
+              gender: student.gender.trim(),
+              dateOfBirth: parsedDate,
+              previousGrade: student.previousGrade?.trim() || undefined,
+              previousSchool: student.previousSchool?.trim() || undefined,
+              repeatingGrade: student.repeatingGrade?.trim() || undefined,
+              transferredFrom: student.transferredFrom?.trim() || undefined,
+              remarks: student.remarks?.trim() || undefined,
+              grade9ExamSession: student.grade9ExamSession?.trim() || undefined,
+              grade9ExamCenter: student.grade9ExamCenter?.trim() || undefined,
+              grade9ExamRoom: student.grade9ExamRoom?.trim() || undefined,
+              grade9ExamDesk: student.grade9ExamDesk?.trim() || undefined,
+              grade9PassStatus: student.grade9PassStatus?.trim() || undefined,
+              grade12ExamSession:
+                student.grade12ExamSession?.trim() || undefined,
+              grade12ExamCenter: student.grade12ExamCenter?.trim() || undefined,
+              grade12ExamRoom: student.grade12ExamRoom?.trim() || undefined,
+              grade12ExamDesk: student.grade12ExamDesk?.trim() || undefined,
+              grade12PassStatus: student.grade12PassStatus?.trim() || undefined,
+              grade12Track: student.grade12Track?.trim() || undefined,
+            };
+          } catch (error: any) {
+            console.error(
+              `❌ Row ${index + 1} date parsing error:`,
+              error.message
+            );
+            throw new Error(`Row ${index + 1}: ${error.message}`);
+          }
+        }),
+      };
+
+      console.log("📦 Sending payload.. .");
+
+      // ✅ Call API and get raw response
+      const rawResponse = await apiClient.post<any>("/students/bulk", payload);
+
+      console.log("📥 Raw response:", rawResponse);
+
+      // ✅ Handle different response structures
+      let response: BulkImportResponse;
+
+      if (rawResponse.success !== undefined && rawResponse.data !== undefined) {
+        // Structure: { success, data: { total, success, failed, results } }
+        response = {
+          success: rawResponse.success,
+          message: rawResponse.message || "",
+          data: rawResponse.data,
+        };
+      } else if (rawResponse.total !== undefined) {
+        // Structure: { total, success, failed, results } (direct data)
+        response = {
+          success: true,
+          message: "Bulk import completed",
+          data: rawResponse,
+        };
+      } else {
+        throw new Error("Invalid response structure");
+      }
+
+      console.log("✅ Parsed response:", response);
+      console.log(
+        `   - Success: ${response.data.success}/${response.data.total}`
+      );
+      console.log(
+        `   - Failed: ${response.data.failed}/${response.data.total}`
+      );
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      return response;
+    } catch (error: any) {
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("❌ BULK IMPORT ERROR:", error);
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      throw new Error(error.message || "Failed to bulk create students");
+    }
+  },
+
   async update(id: string, data: Partial<CreateStudentData>): Promise<Student> {
     try {
       const backendData = transformToBackend(data as CreateStudentData);
-      // ✅ apiClient.put returns the student object directly
       const student = await apiClient.put<Student>(
         `/students/${id}`,
         backendData
@@ -194,7 +299,6 @@ export const studentsApi = {
     }
   },
 
-  // Delete student
   async delete(id: string): Promise<void> {
     try {
       await apiClient.delete(`/students/${id}`);
@@ -204,7 +308,6 @@ export const studentsApi = {
     }
   },
 
-  // Get students by class ID
   async getByClass(classId: string): Promise<Student[]> {
     try {
       const allStudents = await this.getAll();
