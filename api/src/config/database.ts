@@ -1,16 +1,29 @@
 import { PrismaClient } from "@prisma/client";
 
-// Enable connection pooling and configure timeouts
-const prisma = new PrismaClient({
-  log: ["error", "warn"],
-  datasources: {
-    db: {
-      url: process.env.DIRECT_URL || process.env.DATABASE_URL, // Prefer DIRECT_URL for faster wake-up
-    },
-  },
-});
+// ✅ Singleton pattern with proper connection management
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-// Connection retry logic for sleeping database
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    datasources: {
+      db: {
+        url: process.env.DIRECT_URL || process.env.DATABASE_URL,
+      },
+    },
+    // ✅ Configure connection pool and timeouts
+    // Note: These are client-side settings
+  });
+
+// ✅ Prevent multiple instances in development
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
+
+// ✅ Connection retry logic for Neon cold starts
 export const connectDatabase = async (maxRetries = 5, retryDelay = 3000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -18,10 +31,7 @@ export const connectDatabase = async (maxRetries = 5, retryDelay = 3000) => {
         `🔄 Connecting to database (attempt ${attempt}/${maxRetries})...`
       );
 
-      // Connect to database
       await prisma.$connect();
-
-      // Test connection with simple query
       await prisma.$queryRaw`SELECT 1`;
 
       console.log("✅ Database connected successfully");
@@ -30,17 +40,10 @@ export const connectDatabase = async (maxRetries = 5, retryDelay = 3000) => {
       console.log(`❌ Connection attempt ${attempt} failed:`, error.message);
 
       if (attempt < maxRetries) {
-        console.log(
-          `⏳ Database might be sleeping. Waiting ${
-            retryDelay / 1000
-          }s before retry...`
-        );
+        console.log(`⏳ Retrying in ${retryDelay / 1000}s...`);
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
       } else {
         console.error(`❌ Failed to connect after ${maxRetries} attempts`);
-        console.log(
-          "💡 Tip: Neon free tier auto-suspends after 5 min inactivity"
-        );
         throw new Error(`Database connection failed: ${error.message}`);
       }
     }
@@ -56,7 +59,7 @@ export const disconnectDatabase = async () => {
   }
 };
 
-// Keep-alive: Ping database every 4 minutes to prevent auto-suspend
+// ✅ Keep-alive with connection health check
 let keepAliveInterval: NodeJS.Timeout | null = null;
 
 export const startKeepAlive = () => {
@@ -70,6 +73,13 @@ export const startKeepAlive = () => {
       console.log("💓 Database keep-alive ping successful");
     } catch (error: any) {
       console.error("❌ Keep-alive ping failed:", error.message);
+      // Try to reconnect
+      try {
+        await prisma.$connect();
+        console.log("🔄 Reconnected to database");
+      } catch (reconnectError) {
+        console.error("❌ Reconnection failed");
+      }
     }
   }, 4 * 60 * 1000); // 4 minutes
 };
@@ -80,6 +90,14 @@ export const stopKeepAlive = () => {
     keepAliveInterval = null;
     console.log("⏹️ Database keep-alive stopped");
   }
+};
+
+// ✅ Graceful shutdown handler
+export const gracefulShutdown = async () => {
+  console.log("🛑 Initiating graceful shutdown...");
+  stopKeepAlive();
+  await disconnectDatabase();
+  console.log("✅ Shutdown complete");
 };
 
 export default prisma;

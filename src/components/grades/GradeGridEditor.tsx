@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Loader2, Check, X, TrendingUp } from "lucide-react";
+import { Loader2, Check, X, TrendingUp, ClipboardPaste } from "lucide-react";
 import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
 import { attendanceApi } from "@/lib/api/attendance";
 
@@ -30,6 +30,7 @@ export default function GradeGridEditor({
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
+  const [pastePreview, setPastePreview] = useState<string | null>(null);
 
   // ✅ Attendance summary state
   const [attendanceSummary, setAttendanceSummary] = useState<{
@@ -80,7 +81,6 @@ export default function GradeGridEditor({
         setAttendanceSummary(summary);
       } catch (error: any) {
         console.error("❌ Failed to fetch attendance summary:", error);
-        // Set empty summary on error
         setAttendanceSummary({});
       }
     };
@@ -204,6 +204,95 @@ export default function GradeGridEditor({
         updated.delete(cellKey);
         return updated;
       });
+    }
+  };
+
+  // 🎯 NEW: Handle Paste from Excel
+  const handlePaste = (
+    e: React.ClipboardEvent<HTMLInputElement>,
+    startStudentIndex: number,
+    startSubjectIndex: number
+  ) => {
+    e.preventDefault();
+
+    try {
+      // Get clipboard data
+      const clipboardData = e.clipboardData.getData("text/plain");
+
+      if (!clipboardData || clipboardData.trim() === "") {
+        console.log("📋 Empty clipboard");
+        return;
+      }
+
+      // Parse clipboard data (Excel uses tab-separated values)
+      const rows = clipboardData
+        .split(/\r?\n/)
+        .filter((row) => row.trim() !== "");
+
+      const data: string[][] = rows.map((row) => {
+        // Split by tab (Excel default) or comma (CSV)
+        return row.split(/\t|,/).map((cell) => cell.trim());
+      });
+
+      console.log("📊 Parsed paste data:", {
+        rows: data.length,
+        cols: data[0]?.length || 0,
+        data,
+      });
+
+      let pastedCount = 0;
+      let errorCount = 0;
+
+      // Apply data to grid
+      data.forEach((row, rowOffset) => {
+        const studentIndex = startStudentIndex + rowOffset;
+
+        // Check if student index is within bounds
+        if (studentIndex >= gridData.students.length) {
+          console.warn(`⚠️ Student index ${studentIndex} out of bounds`);
+          return;
+        }
+
+        const student = gridData.students[studentIndex];
+
+        row.forEach((value, colOffset) => {
+          const subjectIndex = startSubjectIndex + colOffset;
+
+          // Check if subject index is within bounds
+          if (subjectIndex >= gridData.subjects.length) {
+            console.warn(`⚠️ Subject index ${subjectIndex} out of bounds`);
+            return;
+          }
+
+          const subject = gridData.subjects[subjectIndex];
+          const cellKey = `${student.studentId}_${subject.id}`;
+
+          // Clean the value
+          const cleanValue = value.replace(/[^\d.-]/g, "");
+
+          // Apply the change
+          if (cleanValue !== "" || value === "") {
+            handleCellChange(cellKey, cleanValue);
+            pastedCount++;
+          } else {
+            errorCount++;
+          }
+        });
+      });
+
+      // Show feedback
+      setPastePreview(
+        `✅ បានបញ្ចូល ${pastedCount} cells${
+          errorCount > 0 ? ` (${errorCount} errors)` : ""
+        }`
+      );
+      setTimeout(() => setPastePreview(null), 3000);
+
+      console.log("✅ Paste completed:", { pastedCount, errorCount });
+    } catch (error) {
+      console.error("❌ Paste error:", error);
+      setPastePreview("❌ មានបញ្ហាក្នុងការបញ្ចូលទិន្នន័យ");
+      setTimeout(() => setPastePreview(null), 3000);
     }
   };
 
@@ -364,7 +453,6 @@ export default function GradeGridEditor({
       .map((student, index) => ({
         ...student,
         rank: index + 1,
-        // ✅ Add attendance counts from fetched summary
         absent: attendanceSummary[student.studentId]?.absent || 0,
         permission: attendanceSummary[student.studentId]?.permission || 0,
       }));
@@ -374,7 +462,6 @@ export default function GradeGridEditor({
       return {
         ...student,
         rank: ranked?.rank || 0,
-        // ✅ Add attendance counts
         absent: ranked?.absent || 0,
         permission: ranked?.permission || 0,
       };
@@ -458,6 +545,18 @@ export default function GradeGridEditor({
         </div>
       </div>
 
+      {/* 🆕 Paste Preview Notification */}
+      {pastePreview && (
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-6 py-3">
+          <div className="flex items-center gap-3">
+            <ClipboardPaste className="w-5 h-5 text-green-600" />
+            <p className="text-sm font-semibold text-green-800">
+              {pastePreview}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Grid */}
       <div
         className="overflow-auto"
@@ -506,10 +605,10 @@ export default function GradeGridEditor({
                 និទ្ទេស
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-indigo-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-indigo-100">
-                ចំ. ថ្នាក់
+                ចំ.ថ្នាក់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-red-800 border-b-2 border-r border-gray-300 w-12 bg-red-100">
-                អ.ច្បាប់
+                អ. ច្បាប់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-orange-800 border-b-2 border-gray-300 w-12 bg-orange-100">
                 ម.ច្បាប់
@@ -582,6 +681,9 @@ export default function GradeGridEditor({
                             onKeyDown={(e) =>
                               handleKeyDown(e, studentIndex, subjectIndex)
                             }
+                            onPaste={(e) =>
+                              handlePaste(e, studentIndex, subjectIndex)
+                            }
                             disabled={isLoading}
                             className={getCellClassName(cell)}
                             placeholder="-"
@@ -613,7 +715,6 @@ export default function GradeGridEditor({
                   <td className="px-3 py-2.5 text-center text-sm font-bold border-b border-r border-gray-200 bg-indigo-50/50 text-indigo-700">
                     #{student.rank}
                   </td>
-                  {/* ✅ ATTENDANCE COLUMNS - Real data from API */}
                   <td className="px-3 py-2.5 text-center text-sm font-semibold border-b border-r border-gray-200 bg-red-50/50 text-red-600">
                     {student.absent || "-"}
                   </td>
@@ -641,6 +742,13 @@ export default function GradeGridEditor({
           <div className="flex items-center gap-1.5">
             <Check className="w-4 h-4 text-green-600" />
             <span>រក្សារួច</span>
+          </div>
+          {/* 🆕 Paste Instruction */}
+          <div className="flex items-center gap-1. 5 ml-4 pl-4 border-l border-gray-300">
+            <ClipboardPaste className="w-4 h-4 text-purple-600" />
+            <span className="text-purple-700 font-semibold">
+              Ctrl+V ដើម្បី Paste ពី Excel
+            </span>
           </div>
         </div>
         <div className="text-xs font-semibold text-gray-600">

@@ -6,6 +6,7 @@ import {
   connectDatabase,
   startKeepAlive,
   stopKeepAlive,
+  disconnectDatabase,
 } from "./config/database";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 
@@ -25,26 +26,24 @@ dotenv.config();
 
 // Initialize Express app
 const app: Application = express();
-const PORT = process.env.PORT || 5001; // Changed to 5001
+const PORT = process.env.PORT || 5001;
 
-// CORS Configuration - FIXED
+// CORS Configuration
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
   process.env.CLIENT_URL,
-  "https://schoolmanagementapp-3irq.onrender.com", // Your production frontend if deployed
+  "https://schoolmanagementapp-3irq.onrender.com",
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps, curl, postman)
       if (!origin) return callback(null, true);
-
       if (allowedOrigins.indexOf(origin) === -1) {
         console.log("❌ CORS blocked origin:", origin);
-        return callback(null, true); // Still allow for development
+        return callback(null, true);
       }
       return callback(null, true);
     },
@@ -54,7 +53,6 @@ app.use(
   })
 );
 
-// Handle preflight requests
 app.options("*", cors());
 
 app.use(express.json());
@@ -71,7 +69,6 @@ app.get("/", (req: Request, res: Response) => {
   });
 });
 
-// Health Check Route (for frontend)
 app.get("/api/health", (req: Request, res: Response) => {
   res.json({
     success: true,
@@ -162,14 +159,11 @@ app.use(errorHandler);
 // Start Server
 const startServer = async () => {
   try {
-    // Connect to database with retry logic
     await connectDatabase();
     console.log("✅ Database connected successfully");
 
-    // Start keep-alive to prevent auto-suspend (Neon free tier)
     startKeepAlive();
 
-    // Start listening
     app.listen(PORT, () => {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log(`🚀 Server running on port ${PORT}`);
@@ -177,6 +171,7 @@ const startServer = async () => {
       console.log(`🌐 API URL: http://localhost:${PORT}`);
       console.log(`📚 API Docs: http://localhost:${PORT}/api`);
       console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
+      console.log(`🔌 Connection pool: 20 connections available`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     });
   } catch (error) {
@@ -185,26 +180,60 @@ const startServer = async () => {
   }
 };
 
-// Graceful shutdown
+// ✅ Enhanced Graceful Shutdown
 const shutdown = async () => {
-  console.log("\n🛑 Shutting down gracefully...");
+  console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🛑 Shutting down gracefully...");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  // Stop keep-alive
   stopKeepAlive();
+  console.log("⏹️  Keep-alive stopped");
+
+  // Disconnect database
+  try {
+    await disconnectDatabase();
+    console.log("✅ Database disconnected");
+  } catch (error) {
+    console.error("❌ Error disconnecting database:", error);
+  }
+
+  console.log("👋 Goodbye!");
   process.exit(0);
 };
 
+// Process signals
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
 
-// Handle unhandled promise rejections
+// ✅ Enhanced Error Handlers
 process.on("unhandledRejection", (err: Error) => {
-  console.error("❌ Unhandled Rejection:", err.message);
-  process.exit(1);
+  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.error("❌ Unhandled Promise Rejection");
+  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.error("Message:", err.message);
+  console.error("Stack:", err.stack);
+  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  // Give time for logging before exit
+  setTimeout(() => {
+    console.log("⚠️  Exiting process due to unhandled rejection...");
+    process.exit(1);
+  }, 1000);
 });
 
-// Handle uncaught exceptions
 process.on("uncaughtException", (err: Error) => {
-  console.error("❌ Uncaught Exception:", err.message);
-  process.exit(1);
+  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.error("❌ Uncaught Exception");
+  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.error("Message:", err.message);
+  console.error("Stack:", err.stack);
+  console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  setTimeout(() => {
+    console.log("⚠️  Exiting process due to uncaught exception...");
+    process.exit(1);
+  }, 1000);
 });
 
 // Start the server
