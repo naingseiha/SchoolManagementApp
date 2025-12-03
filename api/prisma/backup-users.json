@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cmiecl0j10000jv2medrad94z",
+    "email": "admin@school.edu.kh",
+    "password": "$2a$10$BdPY1ASRLUvMB85ud7MAnehLv5BsreuAd7y8SCZ9bYo6Aapl5JYAe",
+    "firstName": "Admin",
+    "lastName": "System",
+    "role": "ADMIN",
+    "createdAt": "2025-11-25T09:02:34.477Z",
+    "updatedAt": "2025-11-25T09:02:34.477Z"
+  },
+  {
+    "id": "cmiecl5nw0003jv2mq755xeig",
+    "email": "classteacher@school.edu.kh",
+    "password": "$2a$10$dqNf5QKPbcmlv14tBDgdOOe0FXAa5vnQWprj8ZcSFqmsq4rNLM5me",
+    "firstName": "Class",
+    "lastName": "Teacher",
+    "role": "CLASS_TEACHER",
+    "createdAt": "2025-11-25T09:02:41.133Z",
+    "updatedAt": "2025-11-25T09:02:41.133Z"
+  },
+  {
+    "id": "cmiecl6sg0004jv2ma8y6sxul",
+    "email": "subjectteacher@school.edu.kh",
+    "password": "$2a$10$dqNf5QKPbcmlv14tBDgdOOe0FXAa5vnQWprj8ZcSFqmsq4rNLM5me",
+    "firstName": "Subject",
+    "lastName": "Teacher",
+    "role": "SUBJECT_TEACHER",
+    "createdAt": "2025-11-25T09:02:42.592Z",
+    "updatedAt": "2025-11-25T09:02:42.592Z"
+  }
+]
