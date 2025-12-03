@@ -3,6 +3,7 @@ import {
   getAllStudents,
   getStudentById,
   createStudent,
+  bulkCreateStudents,
   updateStudent,
   deleteStudent,
 } from "../controllers/student.controller";
@@ -16,6 +17,7 @@ router.use(authMiddleware);
 router.get("/", getAllStudents);
 router.get("/:id", getStudentById);
 router.post("/", createStudent);
+router.post("/bulk", bulkCreateStudents);
 router.put("/:id", updateStudent);
 router.delete("/:id", deleteStudent);
 

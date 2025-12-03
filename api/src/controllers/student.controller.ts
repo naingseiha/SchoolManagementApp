@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient, Gender } from "@prisma/client";
 import { generateStudentId } from "../utils/studentIdGenerator";
+import { parseDate } from "../utils/dateParser"; // ✅ MUST HAVE THIS
 
 const prisma = new PrismaClient();
 
@@ -97,7 +98,6 @@ export const createStudent = async (req: Request, res: Response) => {
       remarks,
     } = req.body;
 
-    // ✅ Validate REQUIRED fields (only 5 fields)
     if (!firstName || firstName.trim() === "") {
       return res.status(400).json({
         success: false,
@@ -133,11 +133,9 @@ export const createStudent = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Auto-generate Student ID
     const studentId = await generateStudentId(classId);
     console.log(`🎯 Generated Student ID: ${studentId}`);
 
-    // ✅ Auto-generate email if not provided
     const studentEmail =
       email && email.trim() !== ""
         ? email.trim()
@@ -145,7 +143,6 @@ export const createStudent = async (req: Request, res: Response) => {
 
     console.log(`📧 Email: ${studentEmail}`);
 
-    // ✅ Validate classId if provided
     if (classId && classId.trim() !== "") {
       const classExists = await prisma.class.findUnique({
         where: { id: classId },
@@ -159,7 +156,6 @@ export const createStudent = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ Prepare student data
     const studentData: any = {
       studentId,
       firstName: firstName.trim(),
@@ -179,14 +175,12 @@ export const createStudent = async (req: Request, res: Response) => {
       remarks: remarks?.trim() || null,
     };
 
-    // Add classId if provided
     if (classId && classId.trim() !== "") {
       studentData.classId = classId;
     }
 
     console.log("💾 Creating student in database...");
 
-    // ✅ Create student
     const student = await prisma.student.create({
       data: studentData,
       include: {
@@ -221,6 +215,176 @@ export const createStudent = async (req: Request, res: Response) => {
   }
 };
 
+// ✅ BULK CREATE WITH DATE PARSING
+export const bulkCreateStudents = async (req: Request, res: Response) => {
+  try {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📥 BULK CREATE STUDENTS");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    const { classId, students } = req.body;
+
+    if (!classId || !Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "classId and students array are required",
+      });
+    }
+
+    const classExists = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { id: true, name: true, grade: true },
+    });
+
+    if (!classExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Class not found",
+      });
+    }
+
+    console.log(`📊 Class: ${classExists.name} (Grade ${classExists.grade})`);
+    console.log(`👥 Students to create: ${students.length}`);
+
+    const results = { success: [], failed: [] };
+
+    for (let i = 0; i < students.length; i++) {
+      const studentData = students[i];
+      const rowNumber = i + 1;
+
+      try {
+        // Parse name
+        const fullName = studentData.name?.trim();
+        if (!fullName) throw new Error("Name is required");
+
+        const nameParts = fullName.split(/\s+/);
+        const firstName = nameParts.pop() || "";
+        const lastName = nameParts.join(" ") || firstName;
+
+        // Parse gender
+        let gender: "MALE" | "FEMALE" = "MALE";
+        if (studentData.gender) {
+          const g = studentData.gender.toString().trim().toUpperCase();
+          if (["ប", "ប្រុស", "M", "MALE", "BOY"].includes(g)) {
+            gender = "MALE";
+          } else if (["ស", "ស្រី", "F", "FEMALE", "GIRL"].includes(g)) {
+            gender = "FEMALE";
+          }
+        }
+
+        // ✅ PARSE DATE using imported parseDate function
+        let dateOfBirth: string;
+        try {
+          if (!studentData.dateOfBirth) {
+            throw new Error("Date of birth is required");
+          }
+
+          // ✅ USE parseDate function
+          dateOfBirth = parseDate(studentData.dateOfBirth);
+          console.log(
+            `  📅 Row ${rowNumber}: ${studentData.dateOfBirth} → ${dateOfBirth}`
+          );
+        } catch (dateError: any) {
+          throw new Error(`Invalid date: ${dateError.message}`);
+        }
+
+        // Generate student ID
+        const studentId = await generateStudentId(classId);
+
+        // Create student
+        const newStudent = await prisma.student.create({
+          data: {
+            studentId,
+            firstName,
+            lastName,
+            khmerName: fullName,
+            dateOfBirth,
+            gender,
+            classId,
+            email: `${studentId}@student.edu.kh`,
+
+            // Academic history
+            previousGrade: studentData.previousGrade?.trim() || null,
+            previousSchool: studentData.previousSchool?.trim() || null,
+            repeatingGrade: studentData.repeatingGrade?.trim() || null,
+            transferredFrom: studentData.transferredFrom?.trim() || null,
+
+            // Grade 9 Exam
+            grade9ExamSession: studentData.grade9ExamSession?.trim() || null,
+            grade9ExamCenter: studentData.grade9ExamCenter?.trim() || null,
+            grade9ExamRoom: studentData.grade9ExamRoom?.trim() || null,
+            grade9ExamDesk: studentData.grade9ExamDesk?.trim() || null,
+            grade9PassStatus: studentData.grade9PassStatus?.trim() || null,
+
+            // Grade 12 Exam
+            grade12ExamSession: studentData.grade12ExamSession?.trim() || null,
+            grade12ExamCenter: studentData.grade12ExamCenter?.trim() || null,
+            grade12ExamRoom: studentData.grade12ExamRoom?.trim() || null,
+            grade12ExamDesk: studentData.grade12ExamDesk?.trim() || null,
+            grade12PassStatus: studentData.grade12PassStatus?.trim() || null,
+            grade12Track: studentData.grade12Track?.trim() || null,
+
+            // Other
+            remarks: studentData.remarks?.trim() || null,
+
+            // Defaults
+            placeOfBirth: "ភ្នំពេញ",
+            currentAddress: "ភ្នំពេញ",
+            fatherName: "ឪពុក",
+            motherName: "ម្តាយ",
+            parentOccupation: "កសិករ",
+          },
+          include: {
+            class: {
+              select: { id: true, name: true, grade: true },
+            },
+          },
+        });
+
+        results.success.push({
+          row: rowNumber,
+          studentId: newStudent.studentId,
+          name: newStudent.khmerName,
+        });
+
+        console.log(
+          `  ✅ Row ${rowNumber}: ${newStudent.khmerName} (${newStudent.studentId})`
+        );
+      } catch (error: any) {
+        results.failed.push({
+          row: rowNumber,
+          name: studentData.name || "Unknown",
+          error: error.message,
+        });
+        console.error(`  ❌ Row ${rowNumber}: ${error.message}`);
+      }
+    }
+
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`✅ Success: ${results.success.length}/${students.length}`);
+    console.log(`❌ Failed: ${results.failed.length}/${students.length}`);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    res.status(201).json({
+      success: true,
+      message: `Created ${results.success.length} students successfully`,
+      data: {
+        total: students.length,
+        success: results.success.length,
+        failed: results.failed.length,
+        results,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Bulk create error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create students",
+      error: error.message,
+    });
+  }
+};
+
 export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -245,7 +409,6 @@ export const updateStudent = async (req: Request, res: Response) => {
 
     console.log("📝 UPDATE STUDENT:", id);
 
-    // Validate classId if provided
     if (classId && classId.trim() !== "") {
       const classExists = await prisma.class.findUnique({
         where: { id: classId },
@@ -259,7 +422,6 @@ export const updateStudent = async (req: Request, res: Response) => {
       }
     }
 
-    // Validate gender if provided
     if (gender && gender !== "MALE" && gender !== "FEMALE") {
       return res.status(400).json({
         success: false,
