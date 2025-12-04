@@ -5,26 +5,27 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useSubjects } from "@/hooks/useSubjects";
 import SubjectForm from "@/components/forms/SubjectForm";
+import SubjectCard from "@/components/subjects/SubjectCard";
+import SubjectStatistics from "@/components/subjects/SubjectStatistics";
+import SubjectFilters from "@/components/subjects/SubjectFilters";
+import EmptyState from "@/components/subjects/EmptyState";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import Select from "@/components/ui/Select";
-import Sidebar from "@/components/layout/Sidebar"; // ✅ ADD
-import Header from "@/components/layout/Header"; // ✅ ADD
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
 import {
   Plus,
-  Search,
   BookOpen,
   Edit,
-  Trash2,
   Loader2,
   RefreshCw,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 import type { Subject } from "@/lib/api/subjects";
 
 export default function SubjectsPage() {
-  const { isAuthenticated, currentUser, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const {
     subjects,
@@ -40,12 +41,14 @@ export default function SubjectsPage() {
   const [filterGrade, setFilterGrade] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterTrack, setFilterTrack] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSubjects, setShowSubjects] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!  authLoading && ! isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, authLoading, router]);
@@ -58,9 +61,9 @@ export default function SubjectsPage() {
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!  isAuthenticated) return null;
 
-  if (loading && subjects.length === 0) {
+  if (loading && showSubjects && subjects.length === 0) {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
@@ -69,7 +72,7 @@ export default function SubjectsPage() {
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">កំពុងផ្ទុកមុខវិជ្ជា...</p>
+              <p className="text-gray-600">កំពុងផ្ទុកមុខវិជ្ជា...  </p>
             </div>
           </div>
         </div>
@@ -87,10 +90,7 @@ export default function SubjectsPage() {
             <div className="text-center">
               <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
               <p className="text-red-600 mb-4">{error}</p>
-              <Button
-                onClick={refresh}
-                icon={<RefreshCw className="w-5 h-5" />}
-              >
+              <Button onClick={refresh} icon={<RefreshCw className="w-5 h-5" />}>
                 សាកល្បងម្តងទៀត
               </Button>
             </div>
@@ -100,34 +100,43 @@ export default function SubjectsPage() {
     );
   }
 
+  // Filter subjects
   const filteredSubjects = subjects.filter((subject) => {
     const matchesSearch =
-      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subject.nameKh?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subject.code.toLowerCase().includes(searchTerm.toLowerCase());
+      subject.name.toLowerCase(). includes(searchTerm.toLowerCase()) ||
+      subject.nameKh? .  toLowerCase(). includes(searchTerm.  toLowerCase()) ||
+      subject.code. toLowerCase().includes(searchTerm. toLowerCase());
 
     const matchesGrade = filterGrade === "all" || subject.grade === filterGrade;
     const matchesCategory =
       filterCategory === "all" || subject.category === filterCategory;
     const matchesTrack =
       filterTrack === "all" ||
-      (filterTrack === "none" && !subject.track) ||
+      (filterTrack === "none" && !  subject.track) ||
       subject.track === filterTrack;
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" && subject.isActive) ||
+      (filterStatus === "inactive" && ! subject.  isActive);
 
-    return matchesSearch && matchesGrade && matchesCategory && matchesTrack;
+    return (
+      matchesSearch &&
+      matchesGrade &&
+      matchesCategory &&
+      matchesTrack &&
+      matchesStatus
+    );
   });
 
+  // Calculate statistics
   const stats = {
-    totalSubjects: subjects.length,
-    activeSubjects: subjects.filter((s) => s.isActive).length,
-    totalTeachers: new Set(
-      subjects.flatMap(
-        (s) => s.teacherAssignments?.map((ta) => ta.teacherId) || []
-      )
-    ).size,
-    totalHours: subjects.reduce((sum, s) => sum + (s.weeklyHours || 0), 0),
+    totalSubjects: subjects. length,
+    activeSubjects: subjects.filter((s) => s.isActive).  length,
+    inactiveSubjects: subjects.filter((s) => ! s.isActive). length,
+    totalHours: subjects.reduce((sum, s) => sum + (s. weeklyHours || 0), 0),
   };
 
+  // Handlers
   const handleSaveSubject = async (subjectData: any) => {
     try {
       setIsSubmitting(true);
@@ -149,8 +158,8 @@ export default function SubjectsPage() {
 
   const handleDeleteSubject = async (subject: Subject) => {
     if (
-      !confirm(
-        `តើអ្នកចង់លុបមុខវិជ្ជា "${subject.nameKh || subject.name}" មែនទេ?`
+      !  confirm(
+        `តើអ្នកចង់លុបមុខវិជ្ជា "${subject.nameKh || subject.name}" មែនទេ?  `
       )
     ) {
       return;
@@ -164,225 +173,191 @@ export default function SubjectsPage() {
     }
   };
 
+  const handleToggleView = () => {
+    setShowSubjects(!showSubjects);
+    if (! showSubjects && subjects.length === 0) {
+      refresh();
+    }
+  };
+
+  const handleViewSubject = (subject: Subject) => {
+    // TODO: Implement view modal
+    alert(`មើលព័ត៌មានលម្អិត: ${subject.nameKh || subject.name}`);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterGrade("all");
+    setFilterCategory("all");
+    setFilterTrack("all");
+    setFilterStatus("all");
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* ✅ ADD SIDEBAR */}
       <Sidebar />
 
       <div className="flex-1">
-        {/* ✅ ADD HEADER */}
         <Header />
 
-        {/* ✅ MAIN CONTENT */}
         <main className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <BookOpen className="w-8 h-8 text-blue-600" />
-                មុខវិជ្ជា • Subjects
-              </h1>
-              <p className="text-gray-600 mt-1">គ្រប់គ្រងមុខវិជ្ជាទាំងអស់</p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                onClick={refresh}
-                variant="secondary"
-                icon={
-                  loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-5 h-5" />
-                  )
-                }
-                disabled={loading}
-              >
-                ផ្ទុកឡើងវិញ
-              </Button>
-              <Button
-                onClick={() => {
-                  setSelectedSubject(undefined);
-                  setIsModalOpen(true);
-                }}
-                variant="primary"
-                icon={<Plus className="w-5 h-5" />}
-              >
-                បង្កើតមុខវិជ្ជា
-              </Button>
-            </div>
-          </div>
-
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="text-sm opacity-90 mb-1">សរុប</div>
-              <div className="text-3xl font-bold">{stats.totalSubjects}</div>
-              <div className="text-sm opacity-90">មុខវិជ្ជា</div>
-            </div>
-            <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="text-sm opacity-90 mb-1">សកម្ម</div>
-              <div className="text-3xl font-bold">{stats.activeSubjects}</div>
-              <div className="text-sm opacity-90">មុខវិជ្ជា</div>
-            </div>
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="text-sm opacity-90 mb-1">គ្រូបង្រៀន</div>
-              <div className="text-3xl font-bold">{stats.totalTeachers}</div>
-              <div className="text-sm opacity-90">នាក់</div>
-            </div>
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white shadow-lg">
-              <div className="text-sm opacity-90 mb-1">ម៉ោង/សប្តាហ៍</div>
-              <div className="text-3xl font-bold">{stats.totalHours}</div>
-              <div className="text-sm opacity-90">ម៉ោង</div>
+          {/* Page Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+                  <BookOpen className="w-8 h-8 text-blue-600" />
+                  មុខវិជ្ជា Subjects
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  គ្រប់គ្រងមុខវិជ្ជា • Manage subject information
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={refresh}
+                  variant="secondary"
+                  icon={
+                    loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-5 h-5" />
+                    )
+                  }
+                  disabled={loading}
+                >
+                  ផ្ទុកឡើងវិញ
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelectedSubject(undefined);
+                    setIsModalOpen(true);
+                  }}
+                  variant="primary"
+                  icon={<Plus className="w-5 h-5" />}
+                >
+                  បង្កើតមុខវិជ្ជាថ្មី
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Input
-                placeholder="ស្វែងរក..."
-                icon={<Search className="w-5 h-5" />}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Select
-                value={filterGrade}
-                onChange={(e) => setFilterGrade(e.target.value)}
-                options={[
-                  { value: "all", label: "ថ្នាក់ទាំងអស់" },
-                  { value: "7", label: "ថ្នាក់ទី៧" },
-                  { value: "8", label: "ថ្នាក់ទី៨" },
-                  { value: "9", label: "ថ្នាក់ទី៩" },
-                  { value: "10", label: "ថ្នាក់ទី១០" },
-                  { value: "11", label: "ថ្នាក់ទី១១" },
-                  { value: "12", label: "ថ្នាក់ទី១២" },
-                ]}
-              />
-              <Select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                options={[
-                  { value: "all", label: "ប្រភេទទាំងអស់" },
-                  { value: "social", label: "សង្គម" },
-                  { value: "science", label: "វិទ្យាសាស្ត្រ" },
-                ]}
-              />
-              <Select
-                value={filterTrack}
-                onChange={(e) => setFilterTrack(e.target.value)}
-                options={[
-                  { value: "all", label: "ផ្លូវទាំងអស់" },
-                  { value: "none", label: "គ្មាន" },
-                  { value: "science", label: "វិទ្យាសាស្ត្រ" },
-                  { value: "social", label: "សង្គម" },
-                ]}
-              />
-            </div>
-          </div>
+          {/* Show/Hide Subjects Section */}
+          {! showSubjects ?  (
+            // Empty State with Show Button
+            <EmptyState onShowSubjects={handleToggleView} />
+          ) : (
+            // Subjects Content
+            <>
+              {/* Statistics */}
+              {subjects.length > 0 && <SubjectStatistics stats={stats} />}
 
-          {/* Table */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    លេខកូដ
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    ឈ្មោះមុខវិជ្ជា
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    ថ្នាក់
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    ប្រភេទ
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    ពិន្ទុ
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    ស្ថានភាព
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                    សកម្មភាព
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredSubjects.map((subject) => (
-                  <tr key={subject.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {subject.code}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium">
-                        {subject.nameKh || subject.name}
-                      </div>
-                      {subject.nameEn && (
-                        <div className="text-sm text-gray-500">
-                          {subject.nameEn}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      ថ្នាក់ទី {subject.grade}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                        {subject.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                      {subject.maxScore || 100}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          subject.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+              {/* Filters */}
+              <SubjectFilters
+                searchTerm={searchTerm}
+                filterGrade={filterGrade}
+                filterCategory={filterCategory}
+                filterTrack={filterTrack}
+                filterStatus={filterStatus}
+                filteredCount={filteredSubjects.  length}
+                totalCount={subjects.length}
+                onSearchChange={setSearchTerm}
+                onGradeChange={setFilterGrade}
+                onCategoryChange={setFilterCategory}
+                onTrackChange={setFilterTrack}
+                onStatusChange={setFilterStatus}
+                onClearFilters={clearFilters}
+              />
+
+              {/* Subjects Grid or Empty */}
+              {filteredSubjects.length === 0 ?  (
+                <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {searchTerm
+                      ? "រកមិនឃើញ No subjects found"
+                      : "មិនទាន់មានមុខវិជ្ជា No subjects yet"}
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    {searchTerm
+                      ? "សូមស្វែងរកដោយពាក្យគន្លឹះផ្សេង Try a different search term"
+                      : "ចាប់ផ្តើមដោយបង្កើតមុខវិជ្ជាដំបូង Get started by adding your first subject"}
+                  </p>
+                  {!  searchTerm && (
+                    <div className="flex gap-3 justify-center">
+                      <Button
+                        onClick={() => setShowSubjects(false)}
+                        variant="secondary"
+                        icon={<Eye className="w-5 h-5" />}
                       >
-                        {subject.isActive ? "សកម្ម" : "អសកម្ម"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
+                        លាក់មុខវិជ្ជា
+                      </Button>
+                      <Button
                         onClick={() => {
+                          setSelectedSubject(undefined);
+                          setIsModalOpen(true);
+                        }}
+                        variant="primary"
+                        icon={<Plus className="w-5 h-5" />}
+                      >
+                        បង្កើតមុខវិជ្ជាថ្មី
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Hide Button - Above Grid */}
+                  <div className="mb-4 flex justify-end">
+                    <Button
+                      onClick={() => setShowSubjects(false)}
+                      variant="secondary"
+                      icon={<Eye className="w-5 h-5" />}
+                      size="small"
+                    >
+                      លាក់មុខវិជ្ជា
+                    </Button>
+                  </div>
+
+                  {/* Subjects Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredSubjects.map((subject) => (
+                      <SubjectCard
+                        key={subject.id}
+                        subject={subject}
+                        onView={handleViewSubject}
+                        onEdit={(subject) => {
                           setSelectedSubject(subject);
                           setIsModalOpen(true);
                         }}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSubject(subject)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {filteredSubjects.length === 0 && (
-              <div className="text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">មិនទាន់មានមុខវិជ្ជា</p>
-              </div>
-            )}
-          </div>
+                        onDelete={handleDeleteSubject}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </main>
       </div>
 
-      {/* Modal */}
+      {/* Create/Edit Subject Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => !isSubmitting && setIsModalOpen(false)}
-        title={selectedSubject ? "កែប្រែមុខវិជ្ជា" : "បង្កើតមុខវិជ្ជា"}
+        onClose={() => !  isSubmitting && setIsModalOpen(false)}
+        title={
+          selectedSubject ? (
+            <span className="flex items-center gap-2">
+              <Edit className="w-6 h-6" />
+              កែប្រែមុខវិជ្ជា
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Plus className="w-6 h-6" />
+              បង្កើតមុខវិជ្ជាថ្មី
+            </span>
+          )
+        }
         size="large"
       >
         <SubjectForm
