@@ -2,9 +2,26 @@
 
 import React, { useState, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
-import StudentListTab from "./StudentListTab";
-import { Eye, Users, Clock, BookOpen } from "lucide-react";
-import { Class, classesApi } from "@/lib/api/classes";
+import Button from "@/components/ui/Button";
+import StudentListTab from "@/components/classes/StudentListTab";
+import AssignStudentsModal from "@/components/modals/AssignStudentsModal";
+import { useClasses } from "@/hooks/useClasses";
+import { useToast } from "@/hooks/useToast";
+import {
+  X,
+  Users,
+  BookOpen,
+  Calendar,
+  GraduationCap,
+  User,
+  Loader2,
+  RefreshCw,
+  GitBranch,
+  Award,
+  Sparkles,
+  AlertCircle,
+} from "lucide-react";
+import type { Class } from "@/lib/api/classes";
 
 interface ClassViewModalProps {
   isOpen: boolean;
@@ -19,258 +36,397 @@ export default function ClassViewModal({
   onClose,
   onRefresh,
 }: ClassViewModalProps) {
-  const [activeTab, setActiveTab] = useState<
-    "students" | "teachers" | "schedule"
-  >("students");
-  const [students, setStudents] = useState(classData?.students || []);
-  const [loading, setLoading] = useState(false);
+  const { removeStudent, refresh: refreshClasses } = useClasses();
+  const { success, error: showError, warning, ToastContainer } = useToast();
 
-  // Fetch students when modal opens
-  useEffect(() => {
-    if (isOpen && classData?.id) {
-      fetchClassDetails();
-    }
-  }, [isOpen, classData?.id]);
+  const [activeTab, setActiveTab] = useState<"info" | "students">("info");
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [localClassData, setLocalClassData] = useState<Class | null>(classData);
 
-  // Reset tab when modal closes
+  // Update local data when classData changes
   useEffect(() => {
-    if (!isOpen) {
-      setActiveTab("students");
+    setLocalClassData(classData);
+  }, [classData]);
+
+  // Reset tab when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab("info");
     }
   }, [isOpen]);
 
-  const fetchClassDetails = async () => {
-    if (!classData?.id) return;
+  if (!localClassData) return null;
 
+  // Handle remove student
+  const handleRemoveStudent = async (studentId: string) => {
     try {
-      setLoading(true);
-      const details = await classesApi.getById(classData.id);
-      if (details?.students) {
-        setStudents(details.students);
+      await removeStudent(localClassData.id, studentId);
+      success("✅ បានដកសិស្សចេញពីថ្នាក់ដោយជោគជ័យ!");
+
+      // Refresh class data
+      await handleRefresh();
+    } catch (error: any) {
+      showError("❌ " + (error.message || "Failed to remove student"));
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await refreshClasses();
+      if (onRefresh) {
+        await onRefresh();
       }
     } catch (error) {
-      console.error("Failed to fetch class details:", error);
+      console.error("Error refreshing:", error);
+      showError("មិនអាចផ្ទុកទិន្នន័យឡើងវិញ");
     } finally {
-      setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  const handleRemoveStudent = async (studentId: string) => {
-    if (!classData?.id) return;
-
-    try {
-      await classesApi.removeStudent(classData.id, studentId);
-      alert("✅ ដកសិស្សចេញពីថ្នាក់ដោយជោគជ័យ!");
-      await fetchClassDetails();
-      onRefresh?.();
-    } catch (error: any) {
-      alert("❌ " + (error.message || "Failed to remove student"));
-    }
-  };
-
-  const handleAddStudent = () => {
-    alert("មុខងារបន្ថែមសិស្ស: នឹងបើក modal ជ្រើសរើសសិស្ស");
-    // TODO: Implement student selection modal
-  };
-
+  // Handle import students (placeholder)
   const handleImportStudents = () => {
-    alert("មុខងារនាំចូលសិស្ស: នឹងបើក file upload");
-    // TODO: Implement file upload for students
+    warning("មុខងារនេះនឹងត្រូវ implement ជាមួយ CSV/Excel import");
   };
 
-  if (!classData) return null;
+  // Close assign modal and refresh
+  const handleAssignModalClose = async () => {
+    setShowAssignModal(false);
+    await handleRefresh();
+  };
 
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={
+  // Get track badge with improved design
+  const getTrackBadge = () => {
+    const gradeNum = parseInt(localClassData.grade);
+    if (gradeNum !== 11 && gradeNum !== 12) return null;
+
+    if (!localClassData.track) {
+      return (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-white p-2 rounded-lg shadow-sm">
+              <AlertCircle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-900">ត្រូវកំណត់ Track</p>
+              <p className="text-sm text-amber-700">
+                ថ្នាក់ទី១១ និងទី១២ ត្រូវជ្រើសរើស វិទ្យាសាស្ត្រ ឬ សង្គម
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const trackConfig = {
+      science: {
+        icon: "🧪",
+        emoji: "🔬",
+        label: "វិទ្យាសាស្ត្រ",
+        labelEn: "Science",
+        gradient: "from-blue-500 to-cyan-500",
+        bg: "from-blue-50 to-cyan-50",
+        border: "border-blue-300",
+        text: "text-blue-900",
+      },
+      social: {
+        icon: "📚",
+        emoji: "🌍",
+        label: "សង្គម",
+        labelEn: "Social Studies",
+        gradient: "from-green-500 to-emerald-500",
+        bg: "from-green-50 to-emerald-50",
+        border: "border-green-300",
+        text: "text-green-900",
+      },
+    };
+
+    const config =
+      trackConfig[localClassData.track as keyof typeof trackConfig];
+    if (!config) return null;
+
+    return (
+      <div
+        className={`bg-gradient-to-r ${config.bg} border-2 ${config.border} rounded-xl p-4 shadow-sm`}
+      >
         <div className="flex items-center gap-3">
-          <Eye className="w-6 h-6 text-purple-600" />
-          <div>
-            <h2 className="text-xl font-black text-gray-900">
-              {classData.name}
-            </h2>
-            <p className="text-sm text-gray-600">
-              ថ្នាក់ទី {classData.grade} • {classData.section || "គ្មានផ្នែក"} •{" "}
-              {classData.academicYear}
+          <div
+            className={`bg-gradient-to-br ${config.gradient} p-3 rounded-xl shadow-md`}
+          >
+            <span className="text-2xl">{config.icon}</span>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-600 mb-1">
+              ផ្លូវសិក្សា • Track
+            </p>
+            <p
+              className={`font-bold text-lg ${config.text} flex items-center gap-2`}
+            >
+              <span>{config.emoji}</span>
+              <span>
+                {config.label} • {config.labelEn}
+              </span>
             </p>
           </div>
         </div>
-      }
-      size="xlarge"
-    >
-      <div className="space-y-4">
-        {/* Tabs */}
-        <div className="flex gap-2 border-b-2 border-gray-200">
-          <button
-            onClick={() => setActiveTab("students")}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold transition-colors relative ${
-              activeTab === "students"
-                ? "text-purple-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <Users className="w-5 h-5" />
-            <span>បញ្ជីសិស្ស</span>
-            <span
-              className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
-                activeTab === "students"
-                  ? "bg-purple-100 text-purple-600"
-                  : "bg-gray-100 text-gray-600"
+      </div>
+    );
+  };
+
+  const students = localClassData.students || [];
+  const studentCount = localClassData._count?.students || students.length;
+  const capacityPercentage = localClassData.capacity
+    ? Math.round((studentCount / localClassData.capacity) * 100)
+    : 0;
+
+  return (
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={
+          <div className="flex items-center gap-4">
+            <div className="bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 p-4 rounded-2xl shadow-lg">
+              <GraduationCap className="w-8 h-8 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                {localClassData.name}
+                <Sparkles className="w-5 h-5 text-yellow-500" />
+              </h2>
+              <p className="text-sm text-gray-600 font-medium">
+                ព័ត៌មានលម្អិតអំពីថ្នាក់រៀន • Class Details
+              </p>
+            </div>
+          </div>
+        }
+        size="large"
+      >
+        <div className="space-y-6">
+          {/* ✅ FIXED: Simple Tabs - Only color change */}
+          <div className="flex gap-2 border-b-2 border-gray-200">
+            <button
+              onClick={() => setActiveTab("info")}
+              className={`px-6 py-3 font-bold transition-colors border-b-4 ${
+                activeTab === "info"
+                  ? "text-purple-600 border-purple-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
               }`}
             >
-              {students.length}
-            </span>
-            {activeTab === "students" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"></div>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("teachers")}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold transition-colors relative ${
-              activeTab === "teachers"
-                ? "text-purple-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                <span>ព័ត៌មាន</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab("students")}
+              className={`px-6 py-3 font-bold transition-colors border-b-4 ${
+                activeTab === "students"
+                  ? "text-purple-600 border-purple-600"
+                  : "text-gray-500 border-transparent hover:text-gray-700"
+              }`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5. 356-1.857M17 20H7m10 0v-2c0-. 656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1. 857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <span>គ្រូបង្រៀន</span>
-            {activeTab === "teachers" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"></div>
-            )}
-          </button>
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                <span>សិស្ស</span>
+                <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full font-bold">
+                  {studentCount}
+                </span>
+              </div>
+            </button>
+          </div>
 
-          <button
-            onClick={() => setActiveTab("schedule")}
-            className={`flex items-center gap-2 px-6 py-3 font-semibold transition-colors relative ${
-              activeTab === "schedule"
-                ? "text-purple-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            <Clock className="w-5 h-5" />
-            <span>កាលវិភាគ</span>
-            {activeTab === "schedule" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"></div>
-            )}
-          </button>
-        </div>
+          {/* Info Tab */}
+          {activeTab === "info" && (
+            <div className="space-y-5">
+              {/* Track Badge for Grade 11 & 12 */}
+              {(parseInt(localClassData.grade) === 11 ||
+                parseInt(localClassData.grade) === 12) &&
+                getTrackBadge()}
 
-        {/* Tab Content */}
-        <div className="min-h-[400px] max-h-[600px] overflow-y-auto">
-          {activeTab === "students" && (
-            <StudentListTab
-              students={students}
-              classId={classData.id}
-              loading={loading}
-              onAddStudent={handleAddStudent}
-              onImportStudents={handleImportStudents}
-              onRemoveStudent={handleRemoveStudent}
-            />
-          )}
+              {/* Class Statistics Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Grade Card */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <GraduationCap className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <span className="text-sm font-bold text-blue-800">
+                      ថ្នាក់ • Grade
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-blue-900">
+                    ថ្នាក់ទី {localClassData.grade}
+                  </p>
+                </div>
 
-          {activeTab === "teachers" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">គ្រូបង្រៀនក្នុងថ្នាក់</h3>
+                {/* Section Card */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <BookOpen className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <span className="text-sm font-bold text-purple-800">
+                      ផ្នែក • Section
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-purple-900">
+                    {localClassData.section || "គ្មាន"}
+                  </p>
+                </div>
+
+                {/* Academic Year Card */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <Calendar className="w-6 h-6 text-green-600" />
+                    </div>
+                    <span className="text-sm font-bold text-green-800">
+                      ឆ្នាំសិក្សា • Year
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-green-900">
+                    {localClassData.academicYear}
+                  </p>
+                </div>
+
+                {/* Capacity Card */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <Users className="w-6 h-6 text-orange-600" />
+                    </div>
+                    <span className="text-sm font-bold text-orange-800">
+                      សមត្ថភាព • Capacity
+                    </span>
+                  </div>
+                  <p className="text-2xl font-black text-orange-900">
+                    {studentCount}
+                    {localClassData.capacity && (
+                      <span className="text-lg text-orange-600">
+                        {" "}
+                        / {localClassData.capacity}
+                      </span>
+                    )}
+                  </p>
+                  {localClassData.capacity && (
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs font-bold text-orange-800 mb-1">
+                        <span>ការបំពេញ</span>
+                        <span>{capacityPercentage}%</span>
+                      </div>
+                      <div className="w-full bg-orange-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            capacityPercentage >= 90
+                              ? "bg-gradient-to-r from-red-500 to-orange-500"
+                              : capacityPercentage >= 70
+                              ? "bg-gradient-to-r from-orange-500 to-yellow-500"
+                              : "bg-gradient-to-r from-green-500 to-emerald-500"
+                          }`}
+                          style={{
+                            width: `${Math.min(capacityPercentage, 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Homeroom Teacher */}
-              {classData.teacher && (
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-6 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-purple-500 p-4 rounded-full">
-                      <svg
-                        className="w-8 h-8 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <div className="text-xs text-purple-600 font-semibold mb-1">
-                        គ្រូបន្ទុកថ្នាក់
+              {/* Teacher Card */}
+              <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-2 border-indigo-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="bg-white p-3 rounded-xl shadow-md">
+                    <User className="w-7 h-7 text-indigo-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-indigo-800 mb-2">
+                      គ្រូបន្ទុក • Class Teacher
+                    </p>
+                    {localClassData.teacher ? (
+                      <>
+                        <p className="text-xl font-black text-indigo-900 mb-1">
+                          {localClassData.teacher.khmerName ||
+                            `${localClassData.teacher.firstName} ${localClassData.teacher.lastName}`}
+                        </p>
+                        {localClassData.teacher.email && (
+                          <div className="flex items-center gap-2 text-sm text-indigo-700">
+                            <Award className="w-4 h-4" />
+                            <span>{localClassData.teacher.email}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2 text-gray-500 italic">
+                        <AlertCircle className="w-5 h-5" />
+                        <span>មិនទាន់កំណត់គ្រូបន្ទុក • Not assigned yet</span>
                       </div>
-                      <div className="text-lg font-black text-gray-900">
-                        {classData.teacher.khmerName ||
-                          `${classData.teacher.firstName} ${classData.teacher.lastName}`}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {classData.teacher.email}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {/* Subject Teachers - Placeholder */}
-              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-12 text-center">
-                <svg
-                  className="w-16 h-16 text-gray-400 mx-auto mb-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5. 356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1. 857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                <p className="text-gray-600 font-semibold">
-                  បញ្ជីគ្រូបង្រៀនតាមវិជ្ជានឹងត្រូវ implement ជាមួយ API
-                </p>
-                <p className="text-gray-500 text-sm mt-2">
-                  នឹងបង្ហាញគ្រូបង្រៀនទាំងអស់ដែលបង្រៀនក្នុងថ្នាក់នេះ
-                </p>
               </div>
             </div>
           )}
 
-          {activeTab === "schedule" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">
-                  កាលវិភាគសិក្សាប្រចាំសប្តាហ៍
-                </h3>
-              </div>
-
-              {/* Schedule Placeholder */}
-              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-12 text-center">
-                <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 font-semibold">
-                  កាលវិភាគសិក្សានឹងត្រូវ implement ជាមួយ API
-                </p>
-                <p className="text-gray-500 text-sm mt-2">
-                  នឹងបង្ហាញកាលវិភាគម៉ោងរៀនពីច័ន្ទ-សុក្រ
-                </p>
-              </div>
+          {/* Students Tab */}
+          {activeTab === "students" && (
+            <div>
+              <StudentListTab
+                students={students}
+                classId={localClassData.id}
+                loading={isRefreshing}
+                onAddStudent={() => setShowAssignModal(true)}
+                onImportStudents={handleImportStudents}
+                onRemoveStudent={handleRemoveStudent}
+              />
             </div>
           )}
+
+          {/* Footer Actions */}
+          <div className="flex justify-between items-center pt-5 border-t-2 border-gray-200">
+            <Button
+              variant="secondary"
+              icon={
+                isRefreshing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-5 h-5" />
+                )
+              }
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="font-bold"
+            >
+              ផ្ទុកឡើងវិញ
+            </Button>
+
+            <Button
+              variant="secondary"
+              icon={<X className="w-5 h-5" />}
+              onClick={onClose}
+              className="font-bold"
+            >
+              បិទ
+            </Button>
+          </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      {/* Assign Students Modal */}
+      {showAssignModal && (
+        <AssignStudentsModal
+          isOpen={showAssignModal}
+          onClose={handleAssignModalClose}
+          classData={localClassData}
+        />
+      )}
+
+      <ToastContainer />
+    </>
   );
 }
