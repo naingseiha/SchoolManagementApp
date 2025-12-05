@@ -133,7 +133,13 @@ class ApiClient {
     }
 
     const data: ApiResponse<T> = await response.json();
-    return data.data;
+    // ✅ Check if wrapped in {success, data}
+    if (data && typeof data === "object" && "data" in data) {
+      return data.data;
+    }
+
+    // ✅ Otherwise return direct object (like backend does)
+    return data;
   }
 
   async delete<T = any>(endpoint: string): Promise<T> {

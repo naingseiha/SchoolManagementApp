@@ -9,10 +9,12 @@ import SubjectCard from "@/components/subjects/SubjectCard";
 import SubjectStatistics from "@/components/subjects/SubjectStatistics";
 import SubjectFilters from "@/components/subjects/SubjectFilters";
 import EmptyState from "@/components/subjects/EmptyState";
+import ViewSubjectModal from "@/components/subjects/ViewSubjectModal";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import SimpleLoading from "@/components/ui/SimpleLoading";
 import {
   Plus,
   BookOpen,
@@ -29,7 +31,7 @@ export default function SubjectsPage() {
   const router = useRouter();
   const {
     subjects,
-    loading,
+    loading: subjectsLoading,
     error,
     addSubject,
     updateSubject,
@@ -47,8 +49,16 @@ export default function SubjectsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubjects, setShowSubjects] = useState(false);
 
+  // Simple loading state
+  const [loadingMessage, setLoadingMessage] = useState("");
+  const [showLoading, setShowLoading] = useState(false);
+
+  // View modal state
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewingSubject, setViewingSubject] = useState<Subject | undefined>();
+
   useEffect(() => {
-    if (!  authLoading && ! isAuthenticated) {
+    if (!authLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, authLoading, router]);
@@ -61,9 +71,9 @@ export default function SubjectsPage() {
     );
   }
 
-  if (!  isAuthenticated) return null;
+  if (!isAuthenticated) return null;
 
-  if (loading && showSubjects && subjects.length === 0) {
+  if (subjectsLoading && showSubjects && subjects.length === 0) {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
@@ -72,7 +82,7 @@ export default function SubjectsPage() {
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">កំពុងផ្ទុកមុខវិជ្ជា...  </p>
+              <p className="text-gray-600">Loading subjects...</p>
             </div>
           </div>
         </div>
@@ -90,8 +100,11 @@ export default function SubjectsPage() {
             <div className="text-center">
               <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
               <p className="text-red-600 mb-4">{error}</p>
-              <Button onClick={refresh} icon={<RefreshCw className="w-5 h-5" />}>
-                សាកល្បងម្តងទៀត
+              <Button
+                onClick={refresh}
+                icon={<RefreshCw className="w-5 h-5" />}
+              >
+                Retry
               </Button>
             </div>
           </div>
@@ -103,21 +116,21 @@ export default function SubjectsPage() {
   // Filter subjects
   const filteredSubjects = subjects.filter((subject) => {
     const matchesSearch =
-      subject.name.toLowerCase(). includes(searchTerm.toLowerCase()) ||
-      subject.nameKh? .  toLowerCase(). includes(searchTerm.  toLowerCase()) ||
-      subject.code. toLowerCase().includes(searchTerm. toLowerCase());
+      subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.nameKh?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      subject.code.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesGrade = filterGrade === "all" || subject.grade === filterGrade;
     const matchesCategory =
       filterCategory === "all" || subject.category === filterCategory;
     const matchesTrack =
       filterTrack === "all" ||
-      (filterTrack === "none" && !  subject.track) ||
+      (filterTrack === "none" && !subject.track) ||
       subject.track === filterTrack;
     const matchesStatus =
       filterStatus === "all" ||
       (filterStatus === "active" && subject.isActive) ||
-      (filterStatus === "inactive" && ! subject.  isActive);
+      (filterStatus === "inactive" && !subject.isActive);
 
     return (
       matchesSearch &&
@@ -130,27 +143,37 @@ export default function SubjectsPage() {
 
   // Calculate statistics
   const stats = {
-    totalSubjects: subjects. length,
-    activeSubjects: subjects.filter((s) => s.isActive).  length,
-    inactiveSubjects: subjects.filter((s) => ! s.isActive). length,
-    totalHours: subjects.reduce((sum, s) => sum + (s. weeklyHours || 0), 0),
+    totalSubjects: subjects.length,
+    activeSubjects: subjects.filter((s) => s.isActive).length,
+    inactiveSubjects: subjects.filter((s) => !s.isActive).length,
+    totalHours: subjects.reduce((sum, s) => sum + (s.weeklyHours || 0), 0),
   };
 
   // Handlers
   const handleSaveSubject = async (subjectData: any) => {
     try {
       setIsSubmitting(true);
+
       if (selectedSubject) {
+        setLoadingMessage("Updating subject...");
+        setShowLoading(true);
         await updateSubject(selectedSubject.id, subjectData);
-        alert("✅ មុខវិជ្ជាត្រូវបានកែប្រែដោយជោគជ័យ!");
+        setLoadingMessage("Subject updated successfully!");
+        setTimeout(() => setShowLoading(false), 1500);
       } else {
+        setLoadingMessage("Creating subject...");
+        setShowLoading(true);
         await addSubject(subjectData);
-        alert("✅ មុខវិជ្ជាត្រូវបានបង្កើតដោយជោគជ័យ!");
+        setLoadingMessage("Subject created successfully!");
+        setTimeout(() => setShowLoading(false), 1500);
       }
+
       setIsModalOpen(false);
       setSelectedSubject(undefined);
     } catch (error: any) {
-      alert("❌ " + (error.message || "Failed to save subject"));
+      console.error("Save subject error:", error);
+      setLoadingMessage(error.message || "Failed to save subject");
+      setTimeout(() => setShowLoading(false), 2000);
     } finally {
       setIsSubmitting(false);
     }
@@ -158,31 +181,35 @@ export default function SubjectsPage() {
 
   const handleDeleteSubject = async (subject: Subject) => {
     if (
-      !  confirm(
-        `តើអ្នកចង់លុបមុខវិជ្ជា "${subject.nameKh || subject.name}" មែនទេ?  `
+      !confirm(
+        `Are you sure you want to delete "${subject.nameKh || subject.name}"?`
       )
     ) {
       return;
     }
 
     try {
+      setLoadingMessage("Deleting subject.. .");
+      setShowLoading(true);
       await deleteSubject(subject.id);
-      alert("✅ មុខវិជ្ជាត្រូវបានលុបដោយជោគជ័យ!");
+      setLoadingMessage("Subject deleted successfully!");
+      setTimeout(() => setShowLoading(false), 1500);
     } catch (error: any) {
-      alert("❌ " + (error.message || "Failed to delete subject"));
+      setLoadingMessage(error.message || "Failed to delete subject");
+      setTimeout(() => setShowLoading(false), 2000);
     }
   };
 
   const handleToggleView = () => {
     setShowSubjects(!showSubjects);
-    if (! showSubjects && subjects.length === 0) {
+    if (!showSubjects && subjects.length === 0) {
       refresh();
     }
   };
 
   const handleViewSubject = (subject: Subject) => {
-    // TODO: Implement view modal
-    alert(`មើលព័ត៌មានលម្អិត: ${subject.nameKh || subject.name}`);
+    setViewingSubject(subject);
+    setViewModalOpen(true);
   };
 
   const clearFilters = () => {
@@ -207,7 +234,7 @@ export default function SubjectsPage() {
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
                   <BookOpen className="w-8 h-8 text-blue-600" />
-                  មុខវិជ្ជា Subjects
+                  មុខវិជ្ជា • Subjects
                 </h1>
                 <p className="text-gray-600 mt-1">
                   គ្រប់គ្រងមុខវិជ្ជា • Manage subject information
@@ -218,15 +245,15 @@ export default function SubjectsPage() {
                   onClick={refresh}
                   variant="secondary"
                   icon={
-                    loading ? (
+                    subjectsLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <RefreshCw className="w-5 h-5" />
                     )
                   }
-                  disabled={loading}
+                  disabled={subjectsLoading}
                 >
-                  ផ្ទុកឡើងវិញ
+                  ផ្ទុកឡើងវិញ • Refresh
                 </Button>
                 <Button
                   onClick={() => {
@@ -236,30 +263,26 @@ export default function SubjectsPage() {
                   variant="primary"
                   icon={<Plus className="w-5 h-5" />}
                 >
-                  បង្កើតមុខវិជ្ជាថ្មី
+                  បង្កើតមុខវិជ្ជាថ្មី • Create Subject
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Show/Hide Subjects Section */}
-          {! showSubjects ?  (
-            // Empty State with Show Button
+          {!showSubjects ? (
             <EmptyState onShowSubjects={handleToggleView} />
           ) : (
-            // Subjects Content
             <>
-              {/* Statistics */}
               {subjects.length > 0 && <SubjectStatistics stats={stats} />}
 
-              {/* Filters */}
               <SubjectFilters
                 searchTerm={searchTerm}
                 filterGrade={filterGrade}
                 filterCategory={filterCategory}
                 filterTrack={filterTrack}
                 filterStatus={filterStatus}
-                filteredCount={filteredSubjects.  length}
+                filteredCount={filteredSubjects.length}
                 totalCount={subjects.length}
                 onSearchChange={setSearchTerm}
                 onGradeChange={setFilterGrade}
@@ -269,28 +292,27 @@ export default function SubjectsPage() {
                 onClearFilters={clearFilters}
               />
 
-              {/* Subjects Grid or Empty */}
-              {filteredSubjects.length === 0 ?  (
+              {filteredSubjects.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                   <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {searchTerm
-                      ? "រកមិនឃើញ No subjects found"
-                      : "មិនទាន់មានមុខវិជ្ជា No subjects yet"}
+                      ? "រកមិនឃើញ • No subjects found"
+                      : "មិនទាន់មានមុខវិជ្ជា • No subjects yet"}
                   </h3>
                   <p className="text-gray-600 mb-6">
                     {searchTerm
-                      ? "សូមស្វែងរកដោយពាក្យគន្លឹះផ្សេង Try a different search term"
-                      : "ចាប់ផ្តើមដោយបង្កើតមុខវិជ្ជាដំបូង Get started by adding your first subject"}
+                      ? "សូមស្វែងរកដោយពាក្យគន្លឹះផ្សេង • Try a different search term"
+                      : "ចាប់ផ្តើមដោយបង្កើតមុខវិជ្ជាដំបូង • Get started by adding your first subject"}
                   </p>
-                  {!  searchTerm && (
+                  {!searchTerm && (
                     <div className="flex gap-3 justify-center">
                       <Button
                         onClick={() => setShowSubjects(false)}
                         variant="secondary"
                         icon={<Eye className="w-5 h-5" />}
                       >
-                        លាក់មុខវិជ្ជា
+                        លាក់មុខវិជ្ជា • Hide
                       </Button>
                       <Button
                         onClick={() => {
@@ -300,14 +322,13 @@ export default function SubjectsPage() {
                         variant="primary"
                         icon={<Plus className="w-5 h-5" />}
                       >
-                        បង្កើតមុខវិជ្ជាថ្មី
+                        បង្កើតមុខវិជ្ជាថ្មី • Create Subject
                       </Button>
                     </div>
                   )}
                 </div>
               ) : (
                 <>
-                  {/* Hide Button - Above Grid */}
                   <div className="mb-4 flex justify-end">
                     <Button
                       onClick={() => setShowSubjects(false)}
@@ -315,11 +336,10 @@ export default function SubjectsPage() {
                       icon={<Eye className="w-5 h-5" />}
                       size="small"
                     >
-                      លាក់មុខវិជ្ជា
+                      លាក់មុខវិជ្ជា • Hide
                     </Button>
                   </div>
 
-                  {/* Subjects Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredSubjects.map((subject) => (
                       <SubjectCard
@@ -344,17 +364,17 @@ export default function SubjectsPage() {
       {/* Create/Edit Subject Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => !  isSubmitting && setIsModalOpen(false)}
+        onClose={() => !isSubmitting && setIsModalOpen(false)}
         title={
           selectedSubject ? (
             <span className="flex items-center gap-2">
               <Edit className="w-6 h-6" />
-              កែប្រែមុខវិជ្ជា
+              កែប្រែមុខវិជ្ជា • Edit Subject
             </span>
           ) : (
             <span className="flex items-center gap-2">
               <Plus className="w-6 h-6" />
-              បង្កើតមុខវិជ្ជាថ្មី
+              បង្កើតមុខវិជ្ជាថ្មី • Create Subject
             </span>
           )
         }
@@ -367,6 +387,19 @@ export default function SubjectsPage() {
           isSubmitting={isSubmitting}
         />
       </Modal>
+
+      {/* View Subject Modal */}
+      <ViewSubjectModal
+        subject={viewingSubject || null}
+        isOpen={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setViewingSubject(undefined);
+        }}
+      />
+
+      {/* Simple Loading Overlay */}
+      <SimpleLoading message={loadingMessage} show={showLoading} />
     </div>
   );
 }
