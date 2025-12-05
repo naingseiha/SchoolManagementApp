@@ -79,6 +79,7 @@ export default function ClassFilters({
               icon={<Search className="w-5 h-5" />}
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
+              style={{ height: "52px" }}
             />
 
             <Select

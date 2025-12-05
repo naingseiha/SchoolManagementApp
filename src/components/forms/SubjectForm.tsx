@@ -89,8 +89,12 @@ export default function SubjectForm({
     }
 
     const coefficientValue = parseFloat(String(formData.coefficient || 1.0));
-    if (coefficientValue < 0.5 || coefficientValue > 3.0) {
-      alert("Coefficient must be between 0.5 and 3.0");
+    if (
+      isNaN(coefficientValue) ||
+      coefficientValue < 0.1 ||
+      coefficientValue > 5.0
+    ) {
+      alert("Coefficient must be between 0.1 and 5.0");
       return;
     }
 
@@ -135,14 +139,14 @@ export default function SubjectForm({
     { value: "science", label: "Science" },
   ];
 
-  // ✅ NEW: Added 2.5
+  // ✅ Coefficient quick presets (optional - click to apply)
   const coefficientPresets = [
-    { value: 0.5, label: "0.5 - Extra", color: "text-gray-600" },
-    { value: 1.0, label: "1.0 - Normal", color: "text-blue-600" },
-    { value: 1.5, label: "1.5 - Important", color: "text-green-600" },
-    { value: 2.0, label: "2.0 - Very Important", color: "text-orange-600" },
-    { value: 2.5, label: "2.5 - Very High", color: "text-red-500" }, // ✅ NEW
-    { value: 3.0, label: "3.0 - Critical", color: "text-red-700" },
+    { value: 0.5, label: "0.5", color: "text-gray-600" },
+    { value: 1.0, label: "1.0", color: "text-blue-600" },
+    { value: 1.5, label: "1.5", color: "text-green-600" },
+    { value: 2.0, label: "2.0", color: "text-orange-600" },
+    { value: 2.5, label: "2.5", color: "text-red-500" },
+    { value: 3.0, label: "3.0", color: "text-red-700" },
   ];
 
   return (
@@ -159,7 +163,7 @@ export default function SubjectForm({
               name: e.target.value || formData.name,
             });
           }}
-          placeholder="Mathematics"
+          placeholder="គណិតវិទ្យា"
           required
         />
 
@@ -217,34 +221,42 @@ export default function SubjectForm({
           label="Max Score"
           icon={<Award className="w-5 h-5" />}
           type="number"
-          value={formData.maxScore || 100}
-          onChange={(e) =>
-            setFormData({ ...formData, maxScore: parseInt(e.target.value) })
-          }
+          value={formData.maxScore || ""}
+          onChange={(e) => {
+            const value = e.target.value;
+            setFormData({
+              ...formData,
+              maxScore: value === "" ? undefined : parseInt(value),
+            });
+          }}
           placeholder="100"
           min={0}
           required
         />
 
         <div>
+          {/* ✅ FIXED: Free text coefficient input */}
           <Input
-            label="Coefficient (0.5 - 3.0)"
+            label="Coefficient (0.1 - 5.0)"
             icon={<TrendingUp className="w-5 h-5" />}
             type="number"
-            value={formData.coefficient || 1.0}
-            onChange={(e) =>
+            value={formData.coefficient ?? ""}
+            onChange={(e) => {
+              const value = e.target.value;
+              // ✅ Allow empty string or any valid number
               setFormData({
                 ...formData,
-                coefficient: parseFloat(e.target.value),
-              })
-            }
+                coefficient: value === "" ? undefined : parseFloat(value),
+              });
+            }}
             placeholder="1.0"
-            step="0.5"
-            min={0.5}
-            max={3.0}
+            step="0.01"
+            min={0.1}
+            max={5.0}
             required
           />
 
+          {/* Quick presets */}
           <div className="mt-2 flex flex-wrap gap-2">
             {coefficientPresets.map((preset) => (
               <button
@@ -271,13 +283,14 @@ export default function SubjectForm({
           label="Weekly Hours"
           icon={<Clock className="w-5 h-5" />}
           type="number"
-          value={formData.weeklyHours || 0}
-          onChange={(e) =>
+          value={formData.weeklyHours ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
             setFormData({
               ...formData,
-              weeklyHours: parseFloat(e.target.value),
-            })
-          }
+              weeklyHours: value === "" ? undefined : parseFloat(value),
+            });
+          }}
           placeholder="4"
           step="0.5"
           min={0}
@@ -287,10 +300,14 @@ export default function SubjectForm({
           label="Annual Hours"
           icon={<Clock className="w-5 h-5" />}
           type="number"
-          value={formData.annualHours || 0}
-          onChange={(e) =>
-            setFormData({ ...formData, annualHours: parseInt(e.target.value) })
-          }
+          value={formData.annualHours ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
+            setFormData({
+              ...formData,
+              annualHours: value === "" ? undefined : parseInt(value),
+            });
+          }}
           placeholder="120"
           min={0}
         />
@@ -335,8 +352,11 @@ export default function SubjectForm({
               Coefficient is used to calculate weighted average based on subject
               importance.
               <br />
-              <strong>Formula:</strong> Average = (Score x Coefficient) / Total
+              <strong>Formula:</strong> Average = (Score × Coefficient) / Total
               Coefficient
+              <br />
+              <strong>Examples:</strong> 0.5 (extra), 1.0 (normal), 1.5
+              (important), 2.0 (very important)
             </p>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import React from "react";
 import { Filter, Search } from "lucide-react";
-import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 
 interface SubjectFiltersProps {
@@ -53,12 +52,20 @@ export default function SubjectFilters({
 
       {/* Filter Inputs */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Input
-          placeholder="ស្វែងរកមុខវិជ្ជា..."
-          icon={<Search className="w-5 h-5" />}
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
+        {/* ✅ Search Input - matching Select height exactly */}
+        <div className="relative w-full">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
+            <Search className="w-5 h-5" />
+          </div>
+          <input
+            type="text"
+            placeholder="ស្វែងរកមុខវិជ្ជា..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none bg-white cursor-text"
+            style={{ height: "52px" }}
+          />
+        </div>
 
         <Select
           value={filterGrade}
@@ -116,7 +123,7 @@ export default function SubjectFilters({
         {hasActiveFilters && (
           <button
             onClick={onClearFilters}
-            className="text-blue-600 hover:text-blue-800 font-semibold"
+            className="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
           >
             សម្អាតច្រោះ
           </button>

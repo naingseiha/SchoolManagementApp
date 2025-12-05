@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useSubjects } from "@/hooks/useSubjects";
+import { useToast } from "@/hooks/useToast"; // ✅ NEW
 import SubjectForm from "@/components/forms/SubjectForm";
 import SubjectCard from "@/components/subjects/SubjectCard";
 import SubjectStatistics from "@/components/subjects/SubjectStatistics";
@@ -14,7 +15,6 @@ import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import SimpleLoading from "@/components/ui/SimpleLoading";
 import {
   Plus,
   BookOpen,
@@ -39,6 +39,9 @@ export default function SubjectsPage() {
     refresh,
   } = useSubjects();
 
+  // ✅ NEW: Toast notifications
+  const { success, error: showError, warning, ToastContainer } = useToast();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGrade, setFilterGrade] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -48,10 +51,6 @@ export default function SubjectsPage() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubjects, setShowSubjects] = useState(false);
-
-  // Simple loading state
-  const [loadingMessage, setLoadingMessage] = useState("");
-  const [showLoading, setShowLoading] = useState(false);
 
   // View modal state
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -149,31 +148,24 @@ export default function SubjectsPage() {
     totalHours: subjects.reduce((sum, s) => sum + (s.weeklyHours || 0), 0),
   };
 
-  // Handlers
+  // ✅ UPDATED: Handlers with Toast
   const handleSaveSubject = async (subjectData: any) => {
     try {
       setIsSubmitting(true);
 
       if (selectedSubject) {
-        setLoadingMessage("Updating subject...");
-        setShowLoading(true);
         await updateSubject(selectedSubject.id, subjectData);
-        setLoadingMessage("Subject updated successfully!");
-        setTimeout(() => setShowLoading(false), 1500);
+        success("✅ មុខវិជ្ជាត្រូវបានកែប្រែដោយជោគជ័យ!");
       } else {
-        setLoadingMessage("Creating subject...");
-        setShowLoading(true);
         await addSubject(subjectData);
-        setLoadingMessage("Subject created successfully!");
-        setTimeout(() => setShowLoading(false), 1500);
+        success("✅ មុខវិជ្ជាត្រូវបានបង្កើតដោយជោគជ័យ!");
       }
 
       setIsModalOpen(false);
       setSelectedSubject(undefined);
     } catch (error: any) {
       console.error("Save subject error:", error);
-      setLoadingMessage(error.message || "Failed to save subject");
-      setTimeout(() => setShowLoading(false), 2000);
+      showError("❌ " + (error.message || "Failed to save subject"));
     } finally {
       setIsSubmitting(false);
     }
@@ -182,21 +174,19 @@ export default function SubjectsPage() {
   const handleDeleteSubject = async (subject: Subject) => {
     if (
       !confirm(
-        `Are you sure you want to delete "${subject.nameKh || subject.name}"?`
+        `តើអ្នកប្រាកដថាចង់លុបមុខវិជ្ជា "${
+          subject.nameKh || subject.name
+        }" មែនទេ? `
       )
     ) {
       return;
     }
 
     try {
-      setLoadingMessage("Deleting subject.. .");
-      setShowLoading(true);
       await deleteSubject(subject.id);
-      setLoadingMessage("Subject deleted successfully!");
-      setTimeout(() => setShowLoading(false), 1500);
+      success("✅ មុខវិជ្ជាត្រូវបានលុបដោយជោគជ័យ!");
     } catch (error: any) {
-      setLoadingMessage(error.message || "Failed to delete subject");
-      setTimeout(() => setShowLoading(false), 2000);
+      showError("❌ " + (error.message || "Failed to delete subject"));
     }
   };
 
@@ -398,8 +388,8 @@ export default function SubjectsPage() {
         }}
       />
 
-      {/* Simple Loading Overlay */}
-      <SimpleLoading message={loadingMessage} show={showLoading} />
+      {/* ✅ Toast Container */}
+      <ToastContainer />
     </div>
   );
 }
