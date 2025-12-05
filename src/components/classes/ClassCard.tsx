@@ -9,6 +9,7 @@ import {
   Download,
   Upload,
   UserPlus,
+  AlertCircle,
 } from "lucide-react";
 import { Class } from "@/lib/api/classes";
 
@@ -38,6 +39,48 @@ export default function ClassCard({
     return "from-orange-500 to-red-500";
   };
 
+  // ✅ Track Badge Helper (Small & Clean)
+  const getTrackBadge = () => {
+    const gradeNum = parseInt(classData.grade);
+    if (gradeNum !== 11 && gradeNum !== 12) return null;
+
+    if (!classData.track) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-xs font-semibold">
+          <AlertCircle className="w-3 h-3" />
+          ត្រូវកំណត់
+        </span>
+      );
+    }
+
+    const trackConfig = {
+      science: {
+        icon: "🧪",
+        label: "វិទ្យា",
+        bg: "bg-blue-100",
+        text: "text-blue-700",
+      },
+      social: {
+        icon: "📚",
+        label: "សង្គម",
+        bg: "bg-green-100",
+        text: "text-green-700",
+      },
+    };
+
+    const config = trackConfig[classData.track as keyof typeof trackConfig];
+    if (!config) return null;
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${config.bg} ${config.text}`}
+      >
+        <span>{config.icon}</span>
+        <span>{config.label}</span>
+      </span>
+    );
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
       {/* Gradient Header */}
@@ -50,9 +93,11 @@ export default function ClassCard({
           <GraduationCap className="w-24 h-24 text-white" />
         </div>
         <div className="relative z-10">
-          <h3 className="text-2xl font-black text-white mb-1">
-            {classData.name}
-          </h3>
+          <div className="flex items-start justify-between mb-1">
+            <h3 className="text-2xl font-black text-white">{classData.name}</h3>
+            {/* ✅ Track Badge */}
+            {getTrackBadge()}
+          </div>
           <p className="text-white text-sm opacity-90">
             ថ្នាក់ទី {classData.grade} • {classData.section || "គ្មានផ្នែក"}
           </p>
@@ -96,11 +141,8 @@ export default function ClassCard({
               {classData._count?.students || classData.students?.length || 0}
             </span>{" "}
             នាក់
-            {classData.students?.length && (
-              <span className="text-gray-500">
-                {" "}
-                / {classData.students?.length}
-              </span>
+            {classData.capacity && (
+              <span className="text-gray-500"> / {classData.capacity}</span>
             )}
           </span>
         </div>

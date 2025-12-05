@@ -8,6 +8,7 @@ export interface Class {
   name: string;
   grade: string;
   section?: string;
+  track?: string | null; // ✅ NEW: "science" | "social" | null
   academicYear: string;
   capacity?: number;
   teacherId?: string;
@@ -44,6 +45,7 @@ export interface CreateClassData {
   name: string;
   grade: string;
   section?: string;
+  track?: string | null; // ✅ NEW
   academicYear: string;
   capacity?: number;
   teacherId?: string;
@@ -96,7 +98,7 @@ export const classesApi = {
       console.log("✅ Class created:", classData.id);
       return classData;
     } catch (error: any) {
-      console.error("❌ classesApi.create error:", error);
+      console.error("❌ classesApi. create error:", error);
       throw new Error(
         error.response?.data?.message || "Failed to create class"
       );

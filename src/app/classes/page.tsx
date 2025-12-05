@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useClasses } from "@/hooks/useClasses";
+import { useToast } from "@/hooks/useToast"; // ✅ NEW
 import ClassForm from "@/components/forms/ClassForm";
 import ClassCard from "@/components/classes/ClassCard";
 import ClassStatistics from "@/components/classes/ClassStatistics";
@@ -36,6 +37,9 @@ export default function ClassesPage() {
     deleteClass,
     refresh,
   } = useClasses();
+
+  // ✅ NEW: Toast notification
+  const { success, error: showError, warning, ToastContainer } = useToast();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGrade, setFilterGrade] = useState("all");
@@ -78,7 +82,7 @@ export default function ClassesPage() {
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">កំពុងផ្ទុកថ្នាក់រៀន...</p>
+              <p className="text-gray-600">កំពុងផ្ទុកថ្នាក់រៀន... </p>
             </div>
           </div>
         </div>
@@ -150,36 +154,45 @@ export default function ClassesPage() {
         : 0,
   };
 
-  // Handlers
+  // ✅ UPDATED: Handlers with Toast
   const handleSaveClass = async (classData: any) => {
     try {
       setIsSubmitting(true);
       if (selectedClass) {
         await updateClass(selectedClass.id, classData);
-        alert("✅ ថ្នាក់រៀនត្រូវបានកែប្រែដោយជោគជ័យ!");
+        success("✅ ថ្នាក់រៀនត្រូវបានកែប្រែដោយជោគជ័យ!");
       } else {
         await addClass(classData);
-        alert("✅ ថ្នាក់រៀនត្រូវបានបង្កើតដោយជោគជ័យ!");
+        success("✅ ថ្នាក់រៀនត្រូវបានបង្កើតដោយជោគជ័យ!");
       }
       setIsModalOpen(false);
       setSelectedClass(undefined);
     } catch (error: any) {
-      alert("❌ " + (error.message || "Failed to save class"));
+      showError("❌ " + (error.message || "Failed to save class"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteClass = async (cls: Class) => {
-    if (!confirm(`តើអ្នកចង់លុបថ្នាក់រៀន "${cls.name}" មែនទេ? `)) {
+    const studentCount = cls._count?.students || cls.students?.length || 0;
+
+    if (studentCount > 0) {
+      warning(
+        `មិនអាចលុបថ្នាក់ដែលមានសិស្ស ${studentCount} នាក់!  សូមផ្ទេរសិស្សមុនសិន។`
+      );
+      return;
+    }
+
+    if (!confirm(`តើអ្នកចង់លុបថ្នាក់រៀន "${cls.name}" មែនទេ?`)) {
       return;
     }
 
     try {
       await deleteClass(cls.id);
-      alert("✅ ថ្នាក់រៀនត្រូវបានលុបដោយជោគជ័យ!");
+      success("✅ ថ្នាក់រៀនត្រូវបានលុបដោយជោគជ័យ!");
     } catch (error: any) {
-      alert("❌ " + (error.message || "Failed to delete class"));
+      showError("❌ " + (error.message || "Failed to delete class"));
     }
   };
 
@@ -195,19 +208,18 @@ export default function ClassesPage() {
   };
 
   const handleExport = (cls: Class) => {
-    alert(`នាំចេញថ្នាក់: ${cls.name}\n\nមុខងារនេះនឹងត្រូវ implement ជាមួយ API`);
-    // TODO: Implement export functionality
+    warning(
+      `នាំចេញថ្នាក់: ${cls.name}\n\nមុខងារនេះនឹងត្រូវ implement ជាមួយ API`
+    );
   };
 
   const handleImport = (cls: Class) => {
-    alert(
+    warning(
       `នាំចូលសិស្សក្នុងថ្នាក់: ${cls.name}\n\nមុខងារនេះនឹងត្រូវ implement ជាមួយ API`
     );
-    // TODO: Implement import functionality
   };
 
   const handleManage = (cls: Class) => {
-    // Open view modal on students tab
     setViewClassModal({ isOpen: true, classData: cls });
   };
 
@@ -271,12 +283,12 @@ export default function ClassesPage() {
             </div>
           </div>
 
-          {/* Statistics - Only show when classes are visible */}
+          {/* Statistics */}
           {showClasses && classes.length > 0 && (
             <ClassStatistics stats={stats} />
           )}
 
-          {/* Filters - Only show when classes are visible */}
+          {/* Filters */}
           {showClasses && (
             <ClassFilters
               showClasses={showClasses}
@@ -368,6 +380,9 @@ export default function ClassesPage() {
         onClose={() => setViewClassModal({ isOpen: false, classData: null })}
         onRefresh={refresh}
       />
+
+      {/* ✅ Toast Container */}
+      <ToastContainer />
     </div>
   );
 }

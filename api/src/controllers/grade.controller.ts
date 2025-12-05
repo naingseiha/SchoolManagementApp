@@ -153,7 +153,7 @@ export class GradeController {
   // Update getSubjectOrder function in getGradesGrid method
 
   // Update getGradesGrid method - Calculate Total Coefficients from ALL subjects
-
+  // Update getGradesGrid method in GradeController class
   static async getGradesGrid(req: Request, res: Response) {
     try {
       const { classId } = req.params;
@@ -182,7 +182,7 @@ export class GradeController {
       ): { [code: string]: { order: number; shortCode: string } } => {
         const gradeNum = parseInt(grade);
 
-        // Grades 7, 8 - WITH He (គេហវិទ្យា)
+        // Grades 7, 8
         if (gradeNum === 7 || gradeNum === 8) {
           return {
             WRITING: { order: 1, shortCode: "W" },
@@ -197,14 +197,15 @@ export class GradeController {
             GEO: { order: 10, shortCode: "G" },
             HIST: { order: 11, shortCode: "H" },
             ENG: { order: 12, shortCode: "E" },
-            HE: { order: 13, shortCode: "He" }, // FIXED: HE not HOME
-            SPORTS: { order: 14, shortCode: "S" },
-            AGRI: { order: 15, shortCode: "Ag" },
-            ICT: { order: 16, shortCode: "IT" },
+            HE: { order: 13, shortCode: "He" },
+            HLTH: { order: 14, shortCode: "Hl" },
+            SPORTS: { order: 15, shortCode: "S" },
+            AGRI: { order: 16, shortCode: "Ag" },
+            ICT: { order: 17, shortCode: "IT" },
           };
         }
 
-        // Grade 9 - WITH He (គេហវិទ្យា)
+        // Grade 9
         if (gradeNum === 9) {
           return {
             WRITING: { order: 1, shortCode: "W" },
@@ -219,10 +220,13 @@ export class GradeController {
             GEO: { order: 10, shortCode: "G" },
             HIST: { order: 11, shortCode: "H" },
             ENG: { order: 12, shortCode: "E" },
-            HE: { order: 13, shortCode: "He" }, // FIXED: HE not HOME
-            SPORTS: { order: 14, shortCode: "S" },
-            AGRI: { order: 15, shortCode: "Ag" },
-            ICT: { order: 16, shortCode: "IT" },
+            KHM: { order: 13, shortCode: "K" },
+            ECON: { order: 14, shortCode: "Ec" },
+            HLTH: { order: 15, shortCode: "Hl" },
+            HE: { order: 16, shortCode: "He" },
+            SPORTS: { order: 17, shortCode: "S" },
+            AGRI: { order: 18, shortCode: "Ag" },
+            ICT: { order: 19, shortCode: "IT" },
           };
         }
 
@@ -238,21 +242,45 @@ export class GradeController {
           GEO: { order: 8, shortCode: "G" },
           HIST: { order: 9, shortCode: "H" },
           ENG: { order: 10, shortCode: "E" },
-          SPORTS: { order: 11, shortCode: "S" },
-          AGRI: { order: 12, shortCode: "Ag" },
-          ICT: { order: 13, shortCode: "IT" },
+          ECON: { order: 11, shortCode: "Ec" },
+          HLTH: { order: 12, shortCode: "Hl" },
+          SPORTS: { order: 13, shortCode: "S" },
+          AGRI: { order: 14, shortCode: "Ag" },
+          ICT: { order: 15, shortCode: "IT" },
         };
       };
 
       const subjectOrder = getSubjectOrder(classData.grade);
 
-      // Get subjects for this grade and sort them
+      // ✅ FIXED: Filter subjects by grade AND track
+      const whereClause: any = {
+        grade: classData.grade,
+        isActive: true,
+      };
+
+      // ✅ For Grade 11 & 12, filter by track
+      const gradeNum = parseInt(classData.grade);
+      if ((gradeNum === 11 || gradeNum === 12) && classData.track) {
+        whereClause.OR = [
+          { track: classData.track }, // Subjects specific to this track
+          { track: null }, // Common subjects (for both tracks)
+          { track: "common" }, // Common subjects (explicit)
+        ];
+
+        console.log(
+          `📚 Filtering subjects for Grade ${classData.grade} - Track: ${classData.track}`
+        );
+      }
+
       const subjects = await prisma.subject.findMany({
-        where: {
-          grade: classData.grade,
-          isActive: true,
-        },
+        where: whereClause,
       });
+
+      console.log(
+        `✅ Found ${subjects.length} subjects for grade ${classData.grade}${
+          classData.track ? ` (${classData.track})` : ""
+        }`
+      );
 
       // Sort subjects by order
       const sortedSubjects = subjects
@@ -270,7 +298,7 @@ export class GradeController {
         })
         .sort((a, b) => a.displayOrder - b.displayOrder);
 
-      // ✅ CALCULATE TOTAL COEFFICIENTS FROM ALL SUBJECTS (NOT JUST ENTERED ONES)
+      // ✅ CALCULATE TOTAL COEFFICIENTS FROM ALL SUBJECTS
       const totalCoefficientForClass = sortedSubjects.reduce(
         (sum, subject) => sum + subject.coefficient,
         0
@@ -312,13 +340,11 @@ export class GradeController {
           };
         });
 
-        // ✅ FIXED: Average = Total Score / Total Coefficients (OF ALL SUBJECTS)
         const average =
           totalCoefficientForClass > 0
             ? totalScore / totalCoefficientForClass
             : 0;
 
-        // Determine grade level
         let gradeLevel = "F";
         if (average >= 90) gradeLevel = "A";
         else if (average >= 80) gradeLevel = "B+";
@@ -335,7 +361,7 @@ export class GradeController {
           grades: studentGrades,
           totalScore: totalScore.toFixed(2),
           totalMaxScore,
-          totalCoefficient: totalCoefficientForClass.toFixed(2), // Total from ALL subjects
+          totalCoefficient: totalCoefficientForClass.toFixed(2),
           average: average.toFixed(2),
           gradeLevel,
           absent: 0,
@@ -366,9 +392,10 @@ export class GradeController {
           classId: classData.id,
           className: classData.name,
           grade: classData.grade,
+          track: classData.track || null, // ✅ Include track in response
           month: month as string,
           year: parseInt(year as string),
-          totalCoefficient: totalCoefficientForClass, // Send to frontend
+          totalCoefficient: totalCoefficientForClass,
           subjects: sortedSubjects.map((s) => ({
             id: s.id,
             nameKh: s.nameKh,
