@@ -1,51 +1,93 @@
+"use client";
+
 import React from "react";
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SelectProps {
   label?: string;
-  error?: string;
-  options: { value: string; label: string }[];
+  icon?: React.ReactNode;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  options: SelectOption[];
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
 }
 
 export default function Select({
   label,
-  error,
+  icon,
+  value,
+  onChange,
   options,
+  required = false,
+  disabled = false,
   className = "",
-  ...props
 }: SelectProps) {
   return (
-    <div className="w-full">
+    <div className={className}>
       {label && (
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          {label}
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
       <div className="relative">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10">
+            {icon}
+          </div>
+        )}
         <select
+          value={value}
+          onChange={onChange}
+          required={required}
+          disabled={disabled}
+          style={{
+            // ✅ Custom styles for dropdown options
+            lineHeight: "1.5",
+          }}
           className={`
-            w-full px-4 py-3 
-            border-2 rounded-xl 
-            appearance-none bg-white
-            outline-none
-            transition-all duration-200
-            cursor-pointer
-            ${
-              error
-                ? "border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-100"
-                : "border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
-            }
-            ${className}
+            w-full 
+            ${icon ? "pl-10" : "pl-4"} 
+            pr-10 
+            py-3
+            text-base
+            border-2 
+            border-gray-300 
+            rounded-lg 
+            focus:ring-2 
+            focus:ring-blue-500 
+            focus:border-blue-500 
+            bg-white 
+            text-gray-900 
+            disabled:bg-gray-100 
+            disabled:cursor-not-allowed 
+            appearance-none 
+            cursor-pointer 
+            transition-all
+            hover:border-gray-400
+            [&>option]:py-3
+            [&>option]:px-4
+            [&>option]:text-base
+            [&>option]:leading-relaxed
           `}
-          {...props}
         >
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <option
+              key={option.value}
+              value={option.value}
+              className="py-3 px-4 text-base"
+            >
               {option.label}
             </option>
           ))}
         </select>
         {/* Custom dropdown arrow */}
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
           <svg
             className="w-5 h-5 text-gray-400"
             fill="none"
@@ -61,18 +103,6 @@ export default function Select({
           </svg>
         </div>
       </div>
-      {error && (
-        <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          {error}
-        </p>
-      )}
     </div>
   );
 }

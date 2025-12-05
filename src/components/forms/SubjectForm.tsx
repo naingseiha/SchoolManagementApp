@@ -15,6 +15,7 @@ import {
   Tag,
   FileText,
   Award,
+  TrendingUp,
 } from "lucide-react";
 import type { Subject } from "@/lib/api/subjects";
 
@@ -31,41 +32,65 @@ export default function SubjectForm({
   onCancel,
   isSubmitting = false,
 }: SubjectFormProps) {
-  const [formData, setFormData] = useState<Partial<Subject>>(
-    subject || {
-      name: "",
-      nameKh: "",
-      nameEn: "",
-      code: "",
-      description: "",
-      grade: "",
-      track: "",
-      category: "social",
-      weeklyHours: 0,
-      annualHours: 0,
-      maxScore: 100,
-      isActive: true,
+  const [formData, setFormData] = useState<Partial<Subject>>(() => {
+    if (subject) {
+      return {
+        name: subject.name || "",
+        nameKh: subject.nameKh || "",
+        nameEn: subject.nameEn || "",
+        code: subject.code || "",
+        description: subject.description || "",
+        grade: subject.grade || "",
+        track: subject.track || "",
+        category: subject.category || "social",
+        weeklyHours: subject.weeklyHours || 0,
+        annualHours: subject.annualHours || 0,
+        maxScore: subject.maxScore || 100,
+        coefficient: subject.coefficient || 1.0,
+        isActive: subject.isActive !== false,
+      };
+    } else {
+      return {
+        name: "",
+        nameKh: "",
+        nameEn: "",
+        code: "",
+        description: "",
+        grade: "",
+        track: "",
+        category: "social",
+        weeklyHours: 0,
+        annualHours: 0,
+        maxScore: 100,
+        coefficient: 1.0,
+        isActive: true,
+      };
     }
-  );
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log("📝 Form submitted with:", formData);
+    console.log("Form submitted with:", formData);
 
-    // Validate required fields
     if (!formData.nameKh || formData.nameKh.trim() === "") {
-      alert("Khmer name is required / ឈ្មោះខ្មែរត្រូវតែបំពេញ");
+      alert("Khmer name is required");
       return;
     }
 
     if (!formData.code || formData.code.trim() === "") {
-      alert("Subject code is required / លេខកូដត្រូវតែបំពេញ");
+      alert("Subject code is required");
       return;
     }
 
     if (!formData.grade || formData.grade.trim() === "") {
-      alert("Grade is required / ថ្នាក់ត្រូវតែបំពេញ");
+      alert("Grade is required");
+      return;
+    }
+
+    const coefficientValue = parseFloat(String(formData.coefficient || 1.0));
+    if (coefficientValue < 0.5 || coefficientValue > 3.0) {
+      alert("Coefficient must be between 0.5 and 3.0");
       return;
     }
 
@@ -81,40 +106,50 @@ export default function SubjectForm({
       weeklyHours: parseFloat(String(formData.weeklyHours)) || 0,
       annualHours: parseInt(String(formData.annualHours)) || 0,
       maxScore: parseInt(String(formData.maxScore)) || 100,
+      coefficient: coefficientValue,
       isActive: formData.isActive !== false,
     };
 
-    console.log("✅ Sending subject data:", subjectData);
+    console.log("Sending subject data:", subjectData);
     onSave(subjectData);
   };
 
   const gradeOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់ • Select Grade *" },
-    { value: "7", label: "ថ្នាក់ទី៧ • Grade 7" },
-    { value: "8", label: "ថ្នាក់ទី៨ • Grade 8" },
-    { value: "9", label: "ថ្នាក់ទី៩ • Grade 9" },
-    { value: "10", label: "ថ្នាក់ទី១០ • Grade 10" },
-    { value: "11", label: "ថ្នាក់ទី១១ • Grade 11" },
-    { value: "12", label: "ថ្នាក់ទី១២ • Grade 12" },
+    { value: "", label: "Select Grade" },
+    { value: "7", label: "Grade 7" },
+    { value: "8", label: "Grade 8" },
+    { value: "9", label: "Grade 9" },
+    { value: "10", label: "Grade 10" },
+    { value: "11", label: "Grade 11" },
+    { value: "12", label: "Grade 12" },
   ];
 
   const trackOptions = [
-    { value: "", label: "គ្មាន • None" },
-    { value: "science", label: "វិទ្យាសាស្ត្រ • Science" },
-    { value: "social", label: "សង្គម • Social" },
+    { value: "", label: "None" },
+    { value: "science", label: "Science" },
+    { value: "social", label: "Social" },
   ];
 
   const categoryOptions = [
-    { value: "social", label: "សង្គម • Social" },
-    { value: "science", label: "វិទ្យាសាស្ត្រ • Science" },
+    { value: "social", label: "Social" },
+    { value: "science", label: "Science" },
+  ];
+
+  // ✅ NEW: Added 2.5
+  const coefficientPresets = [
+    { value: 0.5, label: "0.5 - Extra", color: "text-gray-600" },
+    { value: 1.0, label: "1.0 - Normal", color: "text-blue-600" },
+    { value: 1.5, label: "1.5 - Important", color: "text-green-600" },
+    { value: 2.0, label: "2.0 - Very Important", color: "text-orange-600" },
+    { value: 2.5, label: "2.5 - Very High", color: "text-red-500" }, // ✅ NEW
+    { value: 3.0, label: "3.0 - Critical", color: "text-red-700" },
   ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Subject Names */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="ឈ្មោះមុខវិជ្ជា (ខ្មែរ) • Khmer Name *"
+          label="Khmer Name"
           icon={<BookOpen className="w-5 h-5" />}
           value={formData.nameKh || ""}
           onChange={(e) => {
@@ -124,12 +159,12 @@ export default function SubjectForm({
               name: e.target.value || formData.name,
             });
           }}
-          placeholder="គណិតវិទ្យា"
+          placeholder="Mathematics"
           required
         />
 
         <Input
-          label="ឈ្មោះមុខវិជ្ជា (អង់គ្លេស) • English Name"
+          label="English Name"
           icon={<BookOpen className="w-5 h-5" />}
           value={formData.nameEn || ""}
           onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
@@ -137,10 +172,9 @@ export default function SubjectForm({
         />
       </div>
 
-      {/* Code and Category */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="លេខកូដ • Subject Code *"
+          label="Subject Code"
           icon={<Hash className="w-5 h-5" />}
           value={formData.code || ""}
           onChange={(e) => setFormData({ ...formData, code: e.target.value })}
@@ -149,7 +183,7 @@ export default function SubjectForm({
         />
 
         <Select
-          label="ប្រភេទ • Category"
+          label="Category"
           icon={<Tag className="w-5 h-5" />}
           value={formData.category || "core"}
           onChange={(e) =>
@@ -159,10 +193,9 @@ export default function SubjectForm({
         />
       </div>
 
-      {/* Grade and Track */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
-          label="ថ្នាក់ • Grade *"
+          label="Grade"
           icon={<Calendar className="w-5 h-5" />}
           value={formData.grade || ""}
           onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
@@ -171,7 +204,7 @@ export default function SubjectForm({
         />
 
         <Select
-          label="ផ្លូវសិក្សា • Track (ថ្នាក់ ១១-១២)"
+          label="Track"
           icon={<FileText className="w-5 h-5" />}
           value={formData.track || ""}
           onChange={(e) => setFormData({ ...formData, track: e.target.value })}
@@ -179,10 +212,9 @@ export default function SubjectForm({
         />
       </div>
 
-      {/* Max Score and Hours */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="ពិន្ទុអតិបរមា • Max Score *"
+          label="Max Score"
           icon={<Award className="w-5 h-5" />}
           type="number"
           value={formData.maxScore || 100}
@@ -194,8 +226,49 @@ export default function SubjectForm({
           required
         />
 
+        <div>
+          <Input
+            label="Coefficient (0.5 - 3.0)"
+            icon={<TrendingUp className="w-5 h-5" />}
+            type="number"
+            value={formData.coefficient || 1.0}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                coefficient: parseFloat(e.target.value),
+              })
+            }
+            placeholder="1.0"
+            step="0.5"
+            min={0.5}
+            max={3.0}
+            required
+          />
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {coefficientPresets.map((preset) => (
+              <button
+                key={preset.value}
+                type="button"
+                onClick={() =>
+                  setFormData({ ...formData, coefficient: preset.value })
+                }
+                className={`text-xs px-3 py-1. 5 rounded-lg border-2 transition-all font-medium ${
+                  formData.coefficient === preset.value
+                    ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
+                    : "bg-white border-gray-300 hover:border-blue-400 hover:shadow-sm"
+                } ${preset.color}`}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
-          label="ម៉ោង/សប្តាហ៍ • Weekly Hours"
+          label="Weekly Hours"
           icon={<Clock className="w-5 h-5" />}
           type="number"
           value={formData.weeklyHours || 0}
@@ -211,7 +284,7 @@ export default function SubjectForm({
         />
 
         <Input
-          label="ម៉ោង/ឆ្នាំ • Annual Hours"
+          label="Annual Hours"
           icon={<Clock className="w-5 h-5" />}
           type="number"
           value={formData.annualHours || 0}
@@ -223,10 +296,9 @@ export default function SubjectForm({
         />
       </div>
 
-      {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          ការពណ៌នា • Description
+          Description
         </label>
         <textarea
           value={formData.description || ""}
@@ -235,11 +307,10 @@ export default function SubjectForm({
           }
           rows={3}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          placeholder="មុខវិជ្ជាគណិតវិទ្យាសម្រាប់ថ្នាក់ទី១០..."
+          placeholder="Subject description..."
         />
       </div>
 
-      {/* Active Status */}
       <div className="flex items-center gap-3">
         <input
           type="checkbox"
@@ -251,11 +322,26 @@ export default function SubjectForm({
           className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
         />
         <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-          ប្រើប្រាស់ • Active Subject
+          Active Subject
         </label>
       </div>
 
-      {/* Actions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <p className="font-semibold mb-1">About Coefficient:</p>
+            <p>
+              Coefficient is used to calculate weighted average based on subject
+              importance.
+              <br />
+              <strong>Formula:</strong> Average = (Score x Coefficient) / Total
+              Coefficient
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex gap-3 pt-4">
         <Button
           type="submit"
@@ -270,11 +356,7 @@ export default function SubjectForm({
           disabled={isSubmitting}
           className="flex-1"
         >
-          {isSubmitting
-            ? "កំពុងរក្សាទុក..."
-            : subject
-            ? "កែប្រែ • Update"
-            : "បង្កើត • Create"}
+          {isSubmitting ? "Saving..." : subject ? "Update" : "Create"}
         </Button>
 
         <Button
@@ -284,7 +366,7 @@ export default function SubjectForm({
           onClick={onCancel}
           disabled={isSubmitting}
         >
-          បោះបង់ • Cancel
+          Cancel
         </Button>
       </div>
     </form>

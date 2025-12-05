@@ -62,15 +62,26 @@ export const createSubject = async (req: Request, res: Response) => {
       weeklyHours,
       annualHours,
       maxScore,
+      coefficient,
       isActive,
     } = req.body;
 
-    console.log("➕ CREATE SUBJECT:", { name, code, grade });
+    console.log("➕ CREATE SUBJECT:", { name, code, grade, coefficient });
 
     if (!name || !code || !grade) {
       return res.status(400).json({
         success: false,
         message: "Name, code, and grade are required",
+      });
+    }
+
+    // ✅ NEW: Validate coefficient
+    const coefficientValue =
+      coefficient !== undefined ? parseFloat(coefficient) : 1.0;
+    if (coefficientValue < 0.5 || coefficientValue > 3.0) {
+      return res.status(400).json({
+        success: false,
+        message: "Coefficient must be between 0.5 and 3.0",
       });
     }
 
@@ -98,6 +109,7 @@ export const createSubject = async (req: Request, res: Response) => {
         weeklyHours: parseFloat(weeklyHours) || 0,
         annualHours: parseInt(annualHours) || 0,
         maxScore: parseInt(maxScore) || 100,
+        coefficient: coefficientValue,
         isActive: isActive !== false,
       },
       include: {
@@ -134,7 +146,7 @@ export const updateSubject = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    console.log("✏️ UPDATE SUBJECT:", id);
+    console.log("✏️ UPDATE SUBJECT:", id, updateData);
 
     const existingSubject = await prisma.subject.findUnique({
       where: { id },
@@ -160,6 +172,17 @@ export const updateSubject = async (req: Request, res: Response) => {
       }
     }
 
+    // ✅ NEW: Validate coefficient if provided
+    if (updateData.coefficient !== undefined) {
+      const coefficientValue = parseFloat(updateData.coefficient);
+      if (coefficientValue < 0.5 || coefficientValue > 3.0) {
+        return res.status(400).json({
+          success: false,
+          message: "Coefficient must be between 0.5 and 3.0",
+        });
+      }
+    }
+
     const subject = await prisma.subject.update({
       where: { id },
       data: {
@@ -176,6 +199,10 @@ export const updateSubject = async (req: Request, res: Response) => {
           updateData.maxScore !== undefined
             ? parseInt(updateData.maxScore)
             : existingSubject.maxScore,
+        coefficient:
+          updateData.coefficient !== undefined
+            ? parseFloat(updateData.coefficient)
+            : existingSubject.coefficient,
       },
       include: {
         teacherAssignments: {
@@ -254,7 +281,7 @@ export const deleteSubject = async (req: Request, res: Response) => {
     if (subjectWithGrades.grades.length > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete subject with ${subjectWithGrades.grades.length} grade(s).`,
+        message: `Cannot delete subject with ${subjectWithGrades.grades.length} grade(s). `,
       });
     }
 

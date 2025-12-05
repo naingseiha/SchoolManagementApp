@@ -11,10 +11,11 @@ export interface Subject {
   description?: string;
   grade: string;
   track?: string;
-  category: "social" | "science"; // ✅ Only 2 categories
+  category: "social" | "science";
   weeklyHours: number;
   annualHours: number;
   maxScore: number;
+  coefficient: number;
   isActive: boolean;
   teacherAssignments?: SubjectTeacherAssignment[];
   _count?: {
@@ -51,6 +52,7 @@ export interface CreateSubjectData {
   weeklyHours?: number;
   annualHours?: number;
   maxScore?: number;
+  coefficient?: number;
   isActive?: boolean;
 }
 
@@ -60,7 +62,7 @@ export const subjectsApi = {
    */
   async getAll(): Promise<Subject[]> {
     try {
-      console.log("📚 Fetching all subjects from API...");
+      console.log("📚 Fetching all subjects from API.. .");
       const subjects = await apiClient.get<Subject[]>("/subjects");
 
       if (!Array.isArray(subjects)) {
@@ -81,9 +83,9 @@ export const subjectsApi = {
    */
   async getById(id: string): Promise<Subject | null> {
     try {
-      console.log(`📖 Fetching subject ${id}...`);
+      console.log(`📖 Fetching subject ${id}... `);
       const subject = await apiClient.get<Subject>(`/subjects/${id}`);
-      console.log("✅ Subject fetched:", subject.name);
+      console.log("✅ Subject fetched:", subject?.name);
       return subject;
     } catch (error) {
       console.error("❌ subjectsApi.getById error:", error);
@@ -98,6 +100,13 @@ export const subjectsApi = {
     try {
       console.log("➕ Creating subject:", data);
       const subject = await apiClient.post<Subject>("/subjects", data);
+
+      if (!subject || !subject.id) {
+        throw new Error(
+          "Invalid response from server - no subject ID returned"
+        );
+      }
+
       console.log("✅ Subject created:", subject.id);
       return subject;
     } catch (error: any) {
@@ -114,13 +123,32 @@ export const subjectsApi = {
   async update(id: string, data: Partial<CreateSubjectData>): Promise<Subject> {
     try {
       console.log(`✏️ Updating subject ${id}:`, data);
+
+      // ✅ FIX: Check if id is valid
+      if (!id || id.trim() === "") {
+        throw new Error("Subject ID is required for update");
+      }
+
       const subject = await apiClient.put<Subject>(`/subjects/${id}`, data);
+
+      // ✅ FIX: Validate response
+      if (!subject) {
+        throw new Error("No response from server");
+      }
+
+      if (!subject.id) {
+        console.error("❌ Invalid response structure:", subject);
+        throw new Error("Invalid response from server - missing subject ID");
+      }
+
       console.log("✅ Subject updated:", subject.id);
       return subject;
     } catch (error: any) {
       console.error("❌ subjectsApi.update error:", error);
       throw new Error(
-        error.response?.data?.message || "Failed to update subject"
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update subject"
       );
     }
   },
@@ -130,7 +158,7 @@ export const subjectsApi = {
    */
   async delete(id: string): Promise<void> {
     try {
-      console.log(`🗑️ Deleting subject ${id}...`);
+      console.log(`🗑️ Deleting subject ${id}... `);
       await apiClient.delete(`/subjects/${id}`);
       console.log("✅ Subject deleted");
     } catch (error: any) {
@@ -165,7 +193,7 @@ export const subjectsApi = {
   async removeTeacher(subjectId: string, teacherId: string): Promise<void> {
     try {
       console.log(
-        `🔓 Removing teacher ${teacherId} from subject ${subjectId}...`
+        `🔓 Removing teacher ${teacherId} from subject ${subjectId}... `
       );
       await apiClient.delete(`/subjects/${subjectId}/teachers/${teacherId}`);
       console.log("✅ Teacher removed");
