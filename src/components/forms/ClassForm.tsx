@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
-import { Save, X, GraduationCap, Users, Calendar, Loader2 } from "lucide-react";
+import {
+  Save,
+  X,
+  GraduationCap,
+  Users,
+  Calendar,
+  Loader2,
+  GitBranch,
+} from "lucide-react";
 import type { Class } from "@/lib/api/classes";
 
 interface ClassFormProps {
@@ -25,11 +33,25 @@ export default function ClassForm({
       name: "",
       grade: "",
       section: "",
+      track: null,
       academicYear: "2024-2025",
       capacity: 45,
       teacherId: null,
     }
   );
+
+  // ✅ Show track field only for Grade 11 & 12
+  const [showTrack, setShowTrack] = useState(false);
+
+  useEffect(() => {
+    const gradeNum = formData.grade ? parseInt(formData.grade) : 0;
+    setShowTrack(gradeNum === 11 || gradeNum === 12);
+
+    // ✅ Clear track if not Grade 11/12
+    if (gradeNum !== 11 && gradeNum !== 12) {
+      setFormData((prev) => ({ ...prev, track: null }));
+    }
+  }, [formData.grade]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +61,21 @@ export default function ClassForm({
       return;
     }
 
+    // ✅ Validate track for Grade 11 & 12
+    const gradeNum = parseInt(formData.grade);
+    if (gradeNum === 11 || gradeNum === 12) {
+      if (!formData.track) {
+        alert("សូមជ្រើសរើស ផ្លូវ (Track) សម្រាប់ថ្នាក់ទី១១ និងទី១២!");
+        return;
+      }
+    }
+
     const data = {
       classId: formData.classId,
       name: formData.name.trim(),
       grade: formData.grade.trim(),
       section: formData.section?.trim() || null,
+      track: formData.track || null,
       academicYear: formData.academicYear.trim(),
       capacity: formData.capacity ? parseInt(String(formData.capacity)) : null,
       teacherId: formData.teacherId || null,
@@ -74,6 +106,37 @@ export default function ClassForm({
     { value: "ឆ", label: "ឆ" },
     { value: "ជ", label: "ជ" },
   ];
+
+  const trackOptions = [
+    { value: "", label: "ជ្រើសរើសផ្លូវ • Select Track *" },
+    { value: "science", label: "🧪 វិទ្យាសាស្ត្រ • Science" },
+    { value: "social", label: "📚 សង្គម • Social" },
+  ];
+
+  // ✅ Auto-generate Academic Year options
+  const academicYearOptions = (() => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+
+    years.push({
+      value: "",
+      label: "ជ្រើសរើសឆ្នាំសិក្សា • Select Academic Year *",
+    });
+
+    // Generate from 2 years ago to 5 years ahead
+    for (let i = -2; i <= 5; i++) {
+      const startYear = currentYear + i;
+      const endYear = startYear + 1;
+      const yearLabel = `${startYear}-${endYear}`;
+
+      years.push({
+        value: yearLabel,
+        label: i === 0 ? `${yearLabel} (បច្ចុប្បន្ន)` : yearLabel,
+      });
+    }
+
+    return years;
+  })();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -108,16 +171,36 @@ export default function ClassForm({
         />
       </div>
 
-      {/* Academic Year and Capacity */}
+      {/* Track Field (Only for Grade 11 & 12) */}
+      {showTrack && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-4">
+          <Select
+            label="ផ្លូវ • Track *"
+            icon={<GitBranch className="w-5 h-5 text-blue-600" />}
+            value={formData.track || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, track: e.target.value })
+            }
+            options={trackOptions}
+            required={showTrack}
+          />
+          <p className="text-xs text-blue-700 mt-2 flex items-center gap-1">
+            <span>💡</span>
+            <span>ថ្នាក់ទី១១ និងទី១២ ត្រូវជ្រើសរើស វិទ្យាសាស្ត្រ ឬ សង្គម</span>
+          </p>
+        </div>
+      )}
+
+      {/* ✅ UPDATED: Academic Year as Select + Capacity */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
+        <Select
           label="ឆ្នាំសិក្សា • Academic Year *"
           icon={<Calendar className="w-5 h-5" />}
           value={formData.academicYear || ""}
           onChange={(e) =>
             setFormData({ ...formData, academicYear: e.target.value })
           }
-          placeholder="2024-2025"
+          options={academicYearOptions}
           required
         />
 

@@ -339,56 +339,106 @@ export default function GradeGridEditor({
     }
   };
 
-  // Khmer display names
-  const getKhmerShortName = (shortCode: string): string => {
+  // ✅ FIXED: Khmer display names with subject code mapping
+  const getKhmerShortName = (code: string): string => {
+    // Extract base code (before grade suffix)
+    const baseCode = code.split("-")[0];
+
     const khmerNames: { [key: string]: string } = {
-      W: "តែង. ក្តី",
-      R: "ស. អាន",
-      M: "គណិត",
-      P: "រូប",
-      C: "គីមី",
-      B: "ជីវៈ",
-      Es: "ផែនដី",
-      Mo: "សីលធម៌",
-      G: "ភូមិ",
-      H: "ប្រវត្តិ",
-      E: "ភាសា",
-      He: "គេហ",
-      S: "កីឡា",
-      Ag: "កសិកម្ម",
-      IT: "ICT",
-      K: "ភាសាខ្មែរ",
+      // ✅ Grade 7, 8, 9 - Khmer Language Components
+      WRITING: "តែង.  ក្តី",
+      WRITER: "ស.  អាន",
+      DICTATION: "ចំ. តាម",
+
+      // ✅ Grade 9+ - Full Khmer Language
+      KHM: "ភាសាខ្មែរ",
+
+      // ✅ Core Subjects (All Grades)
+      MATH: "គណិត",
+      PHY: "រូប",
+      CHEM: "គីមី",
+      BIO: "ជីវៈ",
+      EARTH: "ផែនដី",
+      MORAL: "សីលធម៌",
+      GEO: "ភូមិ",
+      HIST: "ប្រវត្តិ",
+      ENG: "ភាសា",
+
+      // ✅ NEW: Health Education (All Grades)
+      HLTH: "សុខភាព",
+
+      // ✅ NEW: Economics (Grades 9, 10, 11, 12)
+      ECON: "សេដ្ឋកិច្ច",
+
+      // ✅ Homemaking (Grades 7, 8, 9)
+      HE: "គេហ",
+
+      // ✅ Other Subjects
+      SPORTS: "កីឡា",
+      AGRI: "កសិកម្ម",
+      ICT: "ICT",
     };
-    return khmerNames[shortCode] || shortCode;
+
+    return khmerNames[baseCode] || code;
   };
 
-  // Color coding for subject categories
-  const getSubjectColor = (
-    shortCode: string
-  ): { header: string; cell: string } => {
+  // ✅ FIXED: Color coding for subject categories
+  const getSubjectColor = (code: string): { header: string; cell: string } => {
+    // Extract base code
+    const baseCode = code.split("-")[0];
+
     const colors: { [key: string]: { header: string; cell: string } } = {
-      W: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
-      R: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
-      E: { header: "bg-cyan-100 text-cyan-800", cell: "bg-cyan-50/30" },
-      K: { header: "bg-sky-100 text-sky-800", cell: "bg-sky-50/30" },
-      M: { header: "bg-purple-100 text-purple-800", cell: "bg-purple-50/30" },
-      P: { header: "bg-indigo-100 text-indigo-800", cell: "bg-indigo-50/30" },
-      C: { header: "bg-violet-100 text-violet-800", cell: "bg-violet-50/30" },
-      B: { header: "bg-green-100 text-green-800", cell: "bg-green-50/30" },
-      Es: { header: "bg-teal-100 text-teal-800", cell: "bg-teal-50/30" },
-      Mo: { header: "bg-amber-100 text-amber-800", cell: "bg-amber-50/30" },
-      G: { header: "bg-orange-100 text-orange-800", cell: "bg-orange-50/30" },
-      H: { header: "bg-yellow-100 text-yellow-800", cell: "bg-yellow-50/30" },
-      He: { header: "bg-pink-100 text-pink-800", cell: "bg-pink-50/30" },
-      S: { header: "bg-rose-100 text-rose-800", cell: "bg-rose-50/30" },
-      Ag: { header: "bg-lime-100 text-lime-800", cell: "bg-lime-50/30" },
-      IT: {
+      // Khmer Language Components
+      WRITING: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
+      WRITER: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
+      DICTATION: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
+
+      // Full Languages
+      KHM: { header: "bg-sky-100 text-sky-800", cell: "bg-sky-50/30" },
+      ENG: { header: "bg-cyan-100 text-cyan-800", cell: "bg-cyan-50/30" },
+
+      // Math & Sciences
+      MATH: {
+        header: "bg-purple-100 text-purple-800",
+        cell: "bg-purple-50/30",
+      },
+      PHY: { header: "bg-indigo-100 text-indigo-800", cell: "bg-indigo-50/30" },
+      CHEM: {
+        header: "bg-violet-100 text-violet-800",
+        cell: "bg-violet-50/30",
+      },
+      BIO: { header: "bg-green-100 text-green-800", cell: "bg-green-50/30" },
+      EARTH: { header: "bg-teal-100 text-teal-800", cell: "bg-teal-50/30" },
+
+      // Social Sciences
+      MORAL: { header: "bg-amber-100 text-amber-800", cell: "bg-amber-50/30" },
+      GEO: { header: "bg-orange-100 text-orange-800", cell: "bg-orange-50/30" },
+      HIST: {
+        header: "bg-yellow-100 text-yellow-800",
+        cell: "bg-yellow-50/30",
+      },
+
+      // ✅ NEW: Economics
+      ECON: {
+        header: "bg-emerald-100 text-emerald-800",
+        cell: "bg-emerald-50/30",
+      },
+
+      // ✅ NEW: Health Education
+      HLTH: { header: "bg-rose-100 text-rose-800", cell: "bg-rose-50/30" },
+
+      // Others
+      HE: { header: "bg-pink-100 text-pink-800", cell: "bg-pink-50/30" },
+      SPORTS: { header: "bg-red-100 text-red-800", cell: "bg-red-50/30" },
+      AGRI: { header: "bg-lime-100 text-lime-800", cell: "bg-lime-50/30" },
+      ICT: {
         header: "bg-fuchsia-100 text-fuchsia-800",
         cell: "bg-fuchsia-50/30",
       },
     };
+
     return (
-      colors[shortCode] || {
+      colors[baseCode] || {
         header: "bg-gray-100 text-gray-800",
         cell: "bg-gray-50/30",
       }
@@ -582,14 +632,16 @@ export default function GradeGridEditor({
 
               {/* Colorful Subject Columns */}
               {gridData.subjects.map((subject) => {
-                const colors = getSubjectColor(subject.shortCode);
+                const colors = getSubjectColor(subject.code);
+                const khmerName = getKhmerShortName(subject.code);
+
                 return (
                   <th
                     key={subject.id}
                     className={`px-3 py-3 text-center text-sm font-bold border-b-2 border-r border-gray-300 min-w-[70px] ${colors.header}`}
                     title={`${subject.nameKh} (Max: ${subject.maxScore}, Coefficient: ${subject.coefficient})`}
                   >
-                    {getKhmerShortName(subject.shortCode)}
+                    {khmerName}
                   </th>
                 );
               })}
@@ -599,7 +651,7 @@ export default function GradeGridEditor({
                 សរុប
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-green-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-green-100">
-                ម.ភាគ
+                ម. ភាគ
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-yellow-800 border-b-2 border-r border-gray-300 min-w-[65px] bg-yellow-100">
                 និទ្ទេស
@@ -608,10 +660,10 @@ export default function GradeGridEditor({
                 ចំ.ថ្នាក់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-red-800 border-b-2 border-r border-gray-300 w-12 bg-red-100">
-                អ. ច្បាប់
+                អ.ច្បាប់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-orange-800 border-b-2 border-gray-300 w-12 bg-orange-100">
-                ម.ច្បាប់
+                ម. ច្បាប់
               </th>
             </tr>
           </thead>
@@ -636,7 +688,7 @@ export default function GradeGridEditor({
                     {student.studentName}
                   </td>
                   <td
-                    className={`sticky left-[220px] z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2.5 text-center border-b border-r border-gray-200`}
+                    className={`sticky left-[220px] z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2. 5 text-center border-b border-r border-gray-200`}
                   >
                     <span
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
@@ -653,7 +705,7 @@ export default function GradeGridEditor({
                   {gridData.subjects.map((subject, subjectIndex) => {
                     const cellKey = `${student.studentId}_${subject.id}`;
                     const cell = cells[cellKey];
-                    const colors = getSubjectColor(subject.shortCode);
+                    const colors = getSubjectColor(subject.code);
 
                     if (!cell)
                       return (

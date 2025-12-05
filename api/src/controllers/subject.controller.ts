@@ -35,7 +35,7 @@ export const getAllSubjects = async (req: Request, res: Response) => {
 
     console.log(`✅ Found ${subjects.length} subjects`);
 
-    // ✅ FIX: Return array directly (not wrapped in {data: ...})
+    // ✅ Return array directly (not wrapped in {data: ...})
     res.json(subjects);
   } catch (error: any) {
     console.error("❌ Error getting subjects:", error);
@@ -47,7 +47,7 @@ export const getAllSubjects = async (req: Request, res: Response) => {
   }
 };
 
-// Create subject - RETURN OBJECT DIRECTLY
+// ✅ FIXED: Create subject - RETURN WRAPPED RESPONSE
 export const createSubject = async (req: Request, res: Response) => {
   try {
     const {
@@ -75,7 +75,7 @@ export const createSubject = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ NEW: Validate coefficient
+    // ✅ Validate coefficient
     const coefficientValue =
       coefficient !== undefined ? parseFloat(coefficient) : 1.0;
     if (coefficientValue < 0.5 || coefficientValue > 3.0) {
@@ -128,8 +128,12 @@ export const createSubject = async (req: Request, res: Response) => {
 
     console.log("✅ Subject created successfully:", subject.id);
 
-    // ✅ FIX: Return object directly
-    res.status(201).json(subject);
+    // ✅ FIX: Return wrapped response to match frontend expectation
+    res.status(201).json({
+      success: true,
+      message: "Subject created successfully",
+      data: subject,
+    });
   } catch (error: any) {
     console.error("❌ Error creating subject:", error);
     res.status(500).json({
@@ -140,7 +144,7 @@ export const createSubject = async (req: Request, res: Response) => {
   }
 };
 
-// Update subject - RETURN OBJECT DIRECTLY
+// ✅ FIXED: Update subject - RETURN WRAPPED RESPONSE
 export const updateSubject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -172,13 +176,13 @@ export const updateSubject = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ NEW: Validate coefficient if provided
+    // ✅ Validate coefficient if provided
     if (updateData.coefficient !== undefined) {
       const coefficientValue = parseFloat(updateData.coefficient);
       if (coefficientValue < 0.5 || coefficientValue > 3.0) {
         return res.status(400).json({
           success: false,
-          message: "Coefficient must be between 0.5 and 3.0",
+          message: "Coefficient must be between 0. 5 and 3.0",
         });
       }
     }
@@ -220,8 +224,12 @@ export const updateSubject = async (req: Request, res: Response) => {
 
     console.log("✅ Subject updated successfully");
 
-    // ✅ FIX: Return object directly
-    res.json(subject);
+    // ✅ FIX: Return wrapped response
+    res.json({
+      success: true,
+      message: "Subject updated successfully",
+      data: subject,
+    });
   } catch (error: any) {
     console.error("❌ Error updating subject:", error);
     res.status(500).json({
@@ -290,6 +298,7 @@ export const deleteSubject = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: "Subject deleted successfully",
+      data: null,
     });
   } catch (error: any) {
     console.error("❌ Error deleting subject:", error);
@@ -357,6 +366,7 @@ export const removeTeacherFromSubject = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: "Teacher removed successfully",
+      data: null,
     });
   } catch (error: any) {
     console.error("❌ Error removing teacher:", error);
