@@ -20,7 +20,8 @@ export default function StudentsPage() {
 
   const [activeTab, setActiveTab] = useState<ViewMode>("list");
   const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
 
@@ -30,15 +31,15 @@ export default function StudentsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  useEffect(() => {
-    loadStudents();
-  }, []);
+  // ✅ REMOVED auto-load on mount
+  // Students will only load when user clicks "Load Data" button
 
   const loadStudents = async () => {
     try {
       setLoading(true);
       const data = await studentsApi.getAll();
       setStudents(data);
+      setIsDataLoaded(true);
     } catch (error) {
       console.error("Failed to load students:", error);
     } finally {
@@ -47,9 +48,15 @@ export default function StudentsPage() {
   };
 
   const handleBulkImportSuccess = () => {
+    // Auto-load students after bulk import
     loadStudents();
     refreshStudents();
     setActiveTab("list");
+  };
+
+  const handleRefreshData = () => {
+    loadStudents();
+    refreshStudents();
   };
 
   if (authLoading) {
@@ -88,7 +95,7 @@ export default function StudentsPage() {
               <div className="flex items-center gap-6">
                 <div className="text-center px-6 py-3 bg-blue-50 rounded-xl border-l-4 border-blue-500">
                   <div className="text-3xl font-black text-blue-600">
-                    {students.length}
+                    {isDataLoaded ? students.length : "-"}
                   </div>
                   <div className="text-sm text-gray-600 font-semibold">
                     សិស្សសរុប
@@ -139,7 +146,9 @@ export default function StudentsPage() {
                 students={students}
                 classes={classes}
                 loading={loading}
-                onRefresh={loadStudents}
+                isDataLoaded={isDataLoaded}
+                onLoadData={loadStudents}
+                onRefresh={handleRefreshData}
               />
             ) : (
               <BulkImportView
