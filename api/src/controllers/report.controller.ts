@@ -5,6 +5,7 @@ export class ReportController {
   /**
    * Get monthly report for a class
    */
+
   static async getMonthlyReport(req: Request, res: Response) {
     try {
       const { classId } = req.params;
@@ -31,13 +32,36 @@ export class ReportController {
         });
       }
 
+      // ✅ FIXED: Filter subjects by grade AND track
+      const whereClause: any = {
+        grade: classData.grade,
+        isActive: true,
+      };
+
+      // ✅ For Grade 11 & 12, filter by track
+      const gradeNum = parseInt(classData.grade);
+      if ((gradeNum === 11 || gradeNum === 12) && classData.track) {
+        whereClause.OR = [
+          { track: classData.track }, // Track-specific subjects
+          { track: null }, // Common subjects
+          { track: "common" }, // Explicitly common subjects
+        ];
+
+        console.log(
+          `📚 Filtering subjects for Grade ${classData.grade} - Track: ${classData.track}`
+        );
+      }
+
       const subjects = await prisma.subject.findMany({
-        where: {
-          grade: classData.grade,
-          isActive: true,
-        },
+        where: whereClause,
         orderBy: { code: "asc" },
       });
+
+      console.log(
+        `✅ Found ${subjects.length} subjects for grade ${classData.grade}${
+          classData.track ? ` (${classData.track})` : ""
+        }`
+      );
 
       const monthNames = [
         "មករា",
@@ -113,11 +137,17 @@ export class ReportController {
         }
       });
 
-      const totalCoefficient = subjects.reduce(
+      // ✅ FIXED: Calculate total coefficient from filtered subjects
+      const totalCoefficientForClass = subjects.reduce(
         (sum, s) => sum + s.coefficient,
         0
       );
 
+      console.log(
+        `✅ Total coefficient for class: ${totalCoefficientForClass}`
+      );
+
+      // ✅ FIXED: Calculate using filtered subjects only
       const studentsData = classData.students.map((student) => {
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
@@ -137,8 +167,11 @@ export class ReportController {
           }
         });
 
+        // ✅ Average = totalScore / totalCoefficientForClass
         const average =
-          totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+          totalCoefficientForClass > 0
+            ? totalScore / totalCoefficientForClass
+            : 0;
 
         let gradeLevel = "F";
         if (average >= 45) gradeLevel = "A";
@@ -176,12 +209,13 @@ export class ReportController {
           classId: classData.id,
           className: classData.name,
           grade: classData.grade,
+          track: classData.track || null, // ✅ Include track
           teacherName: classData.teacher
             ? `${classData.teacher.lastName} ${classData.teacher.firstName}`
             : null,
           month: month as string,
           year: parseInt(year as string),
-          totalCoefficient,
+          totalCoefficient: totalCoefficientForClass,
           subjects: subjects.map((s) => ({
             id: s.id,
             nameKh: s.nameKh,
@@ -203,7 +237,7 @@ export class ReportController {
   }
 
   /**
-   * Get grade-wide report
+   * ✅ FIXED: Get grade-wide report - Handle multiple tracks
    */
   static async getGradeWideReport(req: Request, res: Response) {
     try {
@@ -231,9 +265,11 @@ export class ReportController {
           ...s,
           className: c.name,
           classId: c.id,
+          classTrack: c.track, // ✅ Include class track
         }))
       );
 
+      // ✅ FIXED: Get ALL subjects for this grade (all tracks)
       const subjects = await prisma.subject.findMany({
         where: {
           grade: grade,
@@ -241,6 +277,10 @@ export class ReportController {
         },
         orderBy: { code: "asc" },
       });
+
+      console.log(
+        `✅ Found ${subjects.length} total subjects for grade ${grade}`
+      );
 
       const monthNames = [
         "មករា",
@@ -317,17 +357,30 @@ export class ReportController {
         }
       });
 
-      const totalCoefficient = subjects.reduce(
-        (sum, s) => sum + s.coefficient,
-        0
-      );
-
+      // ✅ FIXED: Calculate per-student with their class track
       const studentsData = allStudents.map((student) => {
+        // ✅ Filter subjects for THIS student's class track
+        const gradeNum = parseInt(grade);
+        const studentSubjects =
+          gradeNum === 11 || gradeNum === 12
+            ? subjects.filter(
+                (s) =>
+                  s.track === student.classTrack ||
+                  s.track === null ||
+                  s.track === "common"
+              )
+            : subjects;
+
+        const totalCoefficientForStudent = studentSubjects.reduce(
+          (sum, s) => sum + s.coefficient,
+          0
+        );
+
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
         let gradeCount = 0;
 
-        subjects.forEach((subject) => {
+        studentSubjects.forEach((subject) => {
           const grade = grades.find(
             (g) => g.studentId === student.id && g.subjectId === subject.id
           );
@@ -342,7 +395,9 @@ export class ReportController {
         });
 
         const average =
-          totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+          totalCoefficientForStudent > 0
+            ? totalScore / totalCoefficientForStudent
+            : 0;
 
         let gradeLevel = "F";
         if (average >= 45) gradeLevel = "A";
@@ -375,6 +430,10 @@ export class ReportController {
         return { ...student, rank: ranked?.rank || 0 };
       });
 
+      // ✅ Calculate average coefficient across all classes
+      const avgCoefficient =
+        subjects.reduce((sum, s) => sum + s.coefficient, 0) / classes.length;
+
       return res.json({
         success: true,
         data: {
@@ -383,7 +442,7 @@ export class ReportController {
           totalClasses: classes.length,
           month: month as string,
           year: parseInt(year as string),
-          totalCoefficient,
+          totalCoefficient: avgCoefficient,
           subjects: subjects.map((s) => ({
             id: s.id,
             nameKh: s.nameKh,
@@ -391,6 +450,7 @@ export class ReportController {
             code: s.code,
             maxScore: s.maxScore,
             coefficient: s.coefficient,
+            track: s.track, // ✅ Include track info
           })),
           students: finalData,
         },
@@ -403,12 +463,11 @@ export class ReportController {
       });
     }
   }
-
-  /**
-   * ✅ FIXED: Get student tracking book data
-   */
   /**
    * ✅ UPDATED: Get student tracking book with attendance data
+   */
+  /**
+   * ✅ FIXED: Get student tracking book - Filter subjects by track
    */
   static async getStudentTrackingBook(req: Request, res: Response) {
     try {
@@ -454,14 +513,30 @@ export class ReportController {
 
       console.log(`\n📚 Class: ${classInfo.name}`);
       console.log(`👥 Students: ${classInfo.students.length}`);
+      console.log(`📊 Grade: ${classInfo.grade}`);
+      console.log(`🎯 Track: ${classInfo.track || "N/A"}`);
 
+      // ✅ FIXED: Build subject filter with track support
       const subjectWhereClause: any = {
         grade: classInfo.grade,
         isActive: true,
       };
 
+      // ✅ If specific subject requested, use it
       if (subjectId) {
         subjectWhereClause.id = subjectId as string;
+      } else {
+        // ✅ For Grade 11 & 12, filter by track
+        const gradeNum = parseInt(classInfo.grade);
+        if ((gradeNum === 11 || gradeNum === 12) && classInfo.track) {
+          subjectWhereClause.OR = [
+            { track: classInfo.track }, // Track-specific subjects
+            { track: null }, // Common subjects
+            { track: "common" }, // Explicitly common subjects
+          ];
+
+          console.log(`🔍 Filtering subjects by track: ${classInfo.track}`);
+        }
       }
 
       const subjects = await prisma.subject.findMany({
@@ -474,10 +549,15 @@ export class ReportController {
           code: true,
           maxScore: true,
           coefficient: true,
+          track: true, // ✅ Include track
         },
       });
 
       console.log(`📖 Subjects: ${subjects.length}`);
+      console.log(
+        `📋 Subject list:`,
+        subjects.map((s) => `${s.nameKh} (${s.track || "common"})`).join(", ")
+      );
 
       const gradeWhereClause: any = {
         classId: classId,
@@ -486,7 +566,7 @@ export class ReportController {
           in: classInfo.students.map((s) => s.id),
         },
         subjectId: {
-          in: subjects.map((s) => s.id),
+          in: subjects.map((s) => s.id), // ✅ Only filtered subjects
         },
       };
 
@@ -539,7 +619,7 @@ export class ReportController {
 
       console.log(`\n✅ Found ${grades.length} grade records`);
 
-      // ✅ NEW: Fetch attendance data for selected month/year
+      // ✅ Fetch attendance data
       const attendanceWhereClause: any = {
         classId: classId,
         studentId: {
@@ -547,7 +627,6 @@ export class ReportController {
         },
       };
 
-      // Filter attendance by date range for selected month/year
       if (month && month !== "") {
         const monthNames = [
           "មករា",
@@ -591,7 +670,6 @@ export class ReportController {
           );
         }
       } else {
-        // If no month selected, get all attendance for the year
         const startDate = new Date(parseInt(year as string), 0, 1);
         const endDate = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
 
@@ -613,7 +691,7 @@ export class ReportController {
 
       console.log(`\n✅ Found ${attendanceRecords.length} attendance records`);
 
-      // ✅ Calculate attendance summary for each student
+      // Calculate attendance summary
       const attendanceSummary: {
         [studentId: string]: {
           totalAbsent: number;
@@ -640,23 +718,21 @@ export class ReportController {
         }
 
         if (record.status === "ABSENT") {
-          // ABSENT = without permission
           attendanceSummary[record.studentId].withoutPermission++;
           attendanceSummary[record.studentId].totalAbsent++;
         } else if (record.status === "PERMISSION") {
-          // PERMISSION = with permission
           attendanceSummary[record.studentId].permission++;
           attendanceSummary[record.studentId].totalAbsent++;
         }
       });
 
-      console.log("\n📊 Attendance summary (first 3 students):");
-      classInfo.students.slice(0, 3).forEach((student) => {
-        const att = attendanceSummary[student.id];
-        console.log(
-          `  ${student.khmerName}: Total=${att.totalAbsent}, Permission=${att.permission}, Without=${att.withoutPermission}`
-        );
-      });
+      // ✅ FIXED: Calculate total coefficient from filtered subjects
+      const totalCoefficientForClass = subjects.reduce(
+        (sum, s) => sum + s.coefficient,
+        0
+      );
+
+      console.log(`\n📊 Total Coefficient: ${totalCoefficientForClass}`);
 
       // Build student data
       const studentsData = classInfo.students.map((student) => {
@@ -685,9 +761,13 @@ export class ReportController {
           }
         });
 
+        // ✅ FIXED: Average = totalScore / totalCoefficientForClass
         const averageScore =
-          subjectsWithScores > 0 ? totalScore / subjectsWithScores : 0;
+          totalCoefficientForClass > 0
+            ? totalScore / totalCoefficientForClass
+            : 0;
 
+        // ✅ FIXED: Grade level thresholds
         let gradeLevel = "F";
         if (averageScore >= 45) gradeLevel = "A";
         else if (averageScore >= 40) gradeLevel = "B";
@@ -718,7 +798,6 @@ export class ReportController {
           gradeLevel: gradeLevel,
           gradeLevelKhmer: gradeLevelKhmer[gradeLevel],
           subjectsRecorded: subjectsWithScores,
-          // ✅ NEW: Include attendance data
           attendance: attendanceSummary[student.id] || {
             totalAbsent: 0,
             permission: 0,
@@ -749,9 +828,7 @@ export class ReportController {
         console.log(`  Total: ${finalData[0].totalScore}`);
         console.log(`  Average: ${finalData[0].averageScore}`);
         console.log(`  Rank: ${finalData[0].rank}`);
-        console.log(
-          `  Attendance: Total=${finalData[0].attendance.totalAbsent}, Permission=${finalData[0].attendance.permission}, Without=${finalData[0].attendance.withoutPermission}`
-        );
+        console.log(`  Grade Level: ${finalData[0].gradeLevel}`);
       }
 
       console.log("=== END TRACKING BOOK ===\n");
@@ -762,11 +839,13 @@ export class ReportController {
           classId: classInfo.id,
           className: classInfo.name,
           grade: classInfo.grade,
+          track: classInfo.track || null, // ✅ Include track
           year: parseInt(year as string),
           month: (month as string) || null,
           teacherName: classInfo.teacher
             ? `${classInfo.teacher.lastName} ${classInfo.teacher.firstName}`
             : "",
+          totalCoefficient: totalCoefficientForClass, // ✅ Include total coefficient
           subjects: subjects.map((s) => ({
             id: s.id,
             nameKh: s.nameKh,
@@ -774,6 +853,7 @@ export class ReportController {
             code: s.code,
             maxScore: s.maxScore,
             coefficient: s.coefficient,
+            track: s.track, // ✅ Include track info
           })),
           students: finalData,
         },
