@@ -4,6 +4,7 @@ import { useState } from "react";
 import BulkStudentGrid from "./BulkStudentGrid";
 import { StudentRowData } from "./StudentGridRow";
 import { studentsApi, BulkStudentData } from "@/lib/api/students";
+import { Download, Users, CheckCircle } from "lucide-react";
 
 interface BulkImportViewProps {
   classes: any[];
@@ -118,65 +119,57 @@ export default function BulkImportView({
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Instructions Card */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-xl p-6">
-        <div className="flex items-start gap-4">
-          <div className="bg-blue-500 p-3 rounded-xl text-white text-2xl">
-            ℹ️
+    <div className="space-y-4">
+      {/* ✅ Clean Instructions Card - No heavy shadow */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-lg">ℹ️</span>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
+            <h3 className="text-sm font-bold text-blue-900 mb-2">
               📋 របៀបប្រើប្រាស់
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
-              <div className="flex items-start gap-2">
-                <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 text-xs text-blue-800">
+              <div className="flex items-center gap-2">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                   1
                 </span>
-                <span className="font-medium">ជ្រើសរើសថ្នាក់រៀន</span>
+                <span>ជ្រើសរើសថ្នាក់រៀន</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                   2
                 </span>
-                <span className="font-medium">
-                  ទាញយក Template (ប្រសិនបើត្រូវការ)
-                </span>
+                <span>ទាញយក Template (ប្រសិនបើត្រូវការ)</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                   3
                 </span>
-                <span className="font-medium">
-                  Copy ទិន្នន័យពី Excel (Ctrl+C)
-                </span>
+                <span>Copy ទិន្នន័យពី Excel (Ctrl+C)</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                   4
                 </span>
-                <span className="font-medium">Paste ទៅក្នុង Grid (Ctrl+V)</span>
+                <span>Paste ទៅក្នុង Grid (Ctrl+V)</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                   5
                 </span>
-                <span className="font-medium">
-                  ពិនិត្យទិន្នន័យ (បំពេញ fields ដែលមាន *)
-                </span>
+                <span>ពិនិត្យទិន្នន័យ (បំពេញ fields ដែលមាន *)</span>
               </div>
-              <div className="flex items-start gap-2">
-                <span className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="flex-shrink-0 w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                   6
                 </span>
-                <span className="font-medium">
-                  ចុច "Save All" ដើម្បីរក្សាទុក
-                </span>
+                <span>ចុច "Save All" ដើម្បីរក្សាទុក</span>
               </div>
             </div>
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800 font-semibold">
+            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+              <p className="text-xs text-yellow-800 font-semibold">
                 ⚠️ <strong>សម្គាល់:</strong> ទ្រង់ទ្រាយកាលបរិច្ឆេទគឺ DD/MM/YY
                 (ឧទាហរណ៍: 7/5/12, 20/2/13)
               </p>
@@ -185,18 +178,19 @@ export default function BulkImportView({
         </div>
       </div>
 
-      {/* Class Selection */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Class Selector */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              ជ្រើសរើសថ្នាក់ *
-            </label>
+      {/* ✅ Redesigned Class Selection - Clean & Aligned */}
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <label className="block text-sm font-bold text-gray-700 mb-3">
+          ជ្រើសរើសថ្នាក់ *
+        </label>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          {/* Class Selector - Takes more space */}
+          <div className="lg:col-span-5">
             <select
               value={selectedClassId}
               onChange={(e) => handleClassChange(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium bg-white"
+              className="w-full h-12 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
               <option value="">-- ជ្រើសរើសថ្នាក់ --</option>
               {classes.map((cls) => (
@@ -207,21 +201,18 @@ export default function BulkImportView({
             </select>
           </div>
 
-          {/* Class Info */}
+          {/* Class Info Card - Same height */}
           {selectedClass && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-500 p-2 rounded-lg text-white text-2xl">
-                  👥
+            <div className="lg:col-span-4">
+              <div className="h-12 bg-blue-50 border border-blue-200 rounded-lg px-4 flex items-center gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <div className="text-xs text-blue-600 font-semibold">
-                    ថ្នាក់ដែលបានជ្រើសរើស
-                  </div>
-                  <div className="text-sm font-black text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-blue-600 font-semibold truncate">
                     {selectedClass.name}
                   </div>
-                  <div className="text-xs text-gray-600">
+                  <div className="text-[10px] text-blue-700 truncate">
                     កម្រិត {selectedClass.grade} • ផ្នែក{" "}
                     {selectedClass.section || "N/A"}
                   </div>
@@ -230,14 +221,16 @@ export default function BulkImportView({
             </div>
           )}
 
-          {/* Download Template Button */}
+          {/* Download Template Button - Same height */}
           {selectedClass && (
-            <div className="flex items-end">
+            <div className="lg:col-span-3">
               <button
                 onClick={downloadTemplate}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 font-bold shadow-lg transition-all transform hover:scale-105"
+                className="w-full h-12 px-4 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
               >
-                📥 ទាញយក Template
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">ទាញយក Template</span>
+                <span className="sm:hidden">Template</span>
               </button>
             </div>
           )}
@@ -252,17 +245,17 @@ export default function BulkImportView({
           onSave={handleSave}
         />
       ) : (
-        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-16 text-center">
+        <div className="bg-white border border-gray-200 rounded-lg p-16 text-center">
           <div className="max-w-md mx-auto">
-            <div className="text-6xl mb-6">📤</div>
-            <h3 className="text-2xl font-black text-gray-900 mb-3">
+            <div className="text-6xl mb-4">📤</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
               សូមជ្រើសរើសថ្នាក់
             </h3>
-            <p className="text-gray-600 font-medium mb-6">
+            <p className="text-sm text-gray-600 mb-4">
               ដើម្បីចាប់ផ្តើមបញ្ចូលទិន្នន័យសិស្សជាបណ្តុំ
               សូមជ្រើសរើសថ្នាក់ពីខាងលើ
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
               <span>📊</span>
               <span>គាំទ្រទម្រង់ Excel និង CSV</span>
             </div>
@@ -270,21 +263,21 @@ export default function BulkImportView({
         </div>
       )}
 
-      {/* Success/Failure Modal */}
+      {/* ✅ Clean Success Modal - Minimal shadow */}
       {showResult && importResult && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-3xl w-full max-h-[85vh] overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-600 p-8 text-white">
-              <div className="flex items-center gap-4">
-                <div className="bg-white bg-opacity-20 backdrop-blur-sm p-4 rounded-2xl text-4xl">
-                  ✅
+            <div className="bg-green-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-black mb-1">
-                    បញ្ចូលទិន្នន័យបានជោគជ័យ!
+                  <h2 className="text-2xl font-bold">
+                    បញ្ចូលទិន្នន័យបានជោគជ័យ!{" "}
                   </h2>
-                  <p className="text-green-100 font-medium">
+                  <p className="text-sm text-green-100 mt-1">
                     Import completed successfully
                   </p>
                 </div>
@@ -292,30 +285,30 @@ export default function BulkImportView({
             </div>
 
             {/* Content */}
-            <div className="p-8 overflow-y-auto max-h-[calc(85vh-250px)]">
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
               {/* Summary Cards */}
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-200">
-                  <div className="text-4xl font-black text-blue-600 mb-2">
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
+                  <div className="text-3xl font-black text-blue-600 mb-1">
                     {importResult.total}
                   </div>
-                  <div className="text-sm text-blue-800 font-bold uppercase tracking-wide">
+                  <div className="text-xs text-blue-800 font-bold uppercase">
                     សរុបទាំងអស់
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-2xl border-2 border-green-200">
-                  <div className="text-4xl font-black text-green-600 mb-2">
+                <div className="bg-green-50 border border-green-200 p-4 rounded-lg text-center">
+                  <div className="text-3xl font-black text-green-600 mb-1">
                     {importResult.success}
                   </div>
-                  <div className="text-sm text-green-800 font-bold uppercase tracking-wide">
+                  <div className="text-xs text-green-800 font-bold uppercase">
                     ជោគជ័យ
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-red-50 to-rose-100 p-6 rounded-2xl border-2 border-red-200">
-                  <div className="text-4xl font-black text-red-600 mb-2">
+                <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-center">
+                  <div className="text-3xl font-black text-red-600 mb-1">
                     {importResult.failed}
                   </div>
-                  <div className="text-sm text-red-800 font-bold uppercase tracking-wide">
+                  <div className="text-xs text-red-800 font-bold uppercase">
                     បរាជ័យ
                   </div>
                 </div>
@@ -323,30 +316,30 @@ export default function BulkImportView({
 
               {/* Success List */}
               {importResult.results.success.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-2xl">✅</span>
-                    <h3 className="text-lg font-black text-green-700">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">✅</span>
+                    <h3 className="text-sm font-bold text-green-700">
                       បញ្ជីសិស្សដែលបានបង្កើតជោគជ័យ (
                       {importResult.results.success.length})
                     </h3>
                   </div>
-                  <div className="bg-green-50 rounded-xl p-4 max-h-64 overflow-y-auto border-2 border-green-200">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 max-h-64 overflow-y-auto">
                     <div className="space-y-2">
                       {importResult.results.success.map((item: any) => (
                         <div
                           key={item.row}
-                          className="flex items-center justify-between bg-white p-3 rounded-lg border border-green-200"
+                          className="flex items-center justify-between bg-white border border-green-200 p-2 rounded"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="bg-green-100 text-green-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-green-100 text-green-700 rounded flex items-center justify-center text-xs font-bold">
                               {item.row}
                             </div>
-                            <span className="text-sm font-bold text-gray-900">
+                            <span className="text-sm font-semibold text-gray-900">
                               {item.name}
                             </span>
                           </div>
-                          <span className="font-mono text-sm text-green-700 font-bold bg-green-100 px-3 py-1 rounded-lg">
+                          <span className="text-xs text-green-700 font-mono font-bold bg-green-100 px-2 py-1 rounded">
                             {item.studentId}
                           </span>
                         </div>
@@ -359,25 +352,25 @@ export default function BulkImportView({
               {/* Failed List */}
               {importResult.results.failed.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-2xl">❌</span>
-                    <h3 className="text-lg font-black text-red-700">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">❌</span>
+                    <h3 className="text-sm font-bold text-red-700">
                       បញ្ជីសិស្សដែលបរាជ័យ ({importResult.results.failed.length})
                     </h3>
                   </div>
-                  <div className="bg-red-50 rounded-xl p-4 max-h-64 overflow-y-auto border-2 border-red-200">
-                    <div className="space-y-3">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 max-h-64 overflow-y-auto">
+                    <div className="space-y-2">
                       {importResult.results.failed.map((item: any) => (
                         <div
                           key={item.row}
-                          className="bg-white p-4 rounded-lg border border-red-200"
+                          className="bg-white border border-red-200 p-3 rounded"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className="bg-red-100 text-red-700 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0">
+                          <div className="flex items-start gap-2">
+                            <div className="w-6 h-6 bg-red-100 text-red-700 rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
                               {item.row}
                             </div>
-                            <div className="flex-1">
-                              <div className="font-bold text-gray-900 mb-1">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-gray-900 mb-1">
                                 {item.name}
                               </div>
                               <div className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded inline-block">
@@ -394,10 +387,10 @@ export default function BulkImportView({
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 p-6 flex justify-end gap-3 border-t border-gray-200">
+            <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-end">
               <button
                 onClick={handleCloseResult}
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold shadow-lg transition-all transform hover:scale-105"
+                className="h-10 px-6 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors"
               >
                 បិទ
               </button>

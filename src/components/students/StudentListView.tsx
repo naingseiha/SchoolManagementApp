@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Database, Loader2 } from "lucide-react";
-import StudentModal from "./StudentModal";
+import {
+  Search,
+  Grid,
+  List,
+  Database,
+  RefreshCw,
+  Eye,
+  Edit,
+  X,
+  Loader2,
+} from "lucide-react";
 
 interface StudentListViewProps {
   students: any[];
   classes: any[];
-  loading: boolean;
   isDataLoaded: boolean;
   onLoadData: () => void;
   onRefresh: () => void;
@@ -16,28 +24,24 @@ interface StudentListViewProps {
 export default function StudentListView({
   students,
   classes,
-  loading,
   isDataLoaded,
   onLoadData,
   onRefresh,
 }: StudentListViewProps) {
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [selectedGender, setSelectedGender] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // ✅ NEW: Modal state
-  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"view" | "edit">("view");
-
-  // Filter students
+  // ✅ Filter students
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      student.khmerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.studentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.lastName?.toLowerCase().includes(searchQuery.toLowerCase());
+      student.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      student.studentId?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesClass =
       selectedClass === "all" || student.classId === selectedClass;
@@ -48,364 +52,412 @@ export default function StudentListView({
     return matchesSearch && matchesClass && matchesGender;
   });
 
-  // ✅ NEW: Handle view/edit student
-  const handleViewStudent = (student: any, mode: "view" | "edit" = "view") => {
+  // ✅ Handle load data with loading state
+  const handleLoadData = async () => {
+    setIsLoading(true);
+    try {
+      await onLoadData();
+    } catch (error) {
+      console.error("Failed to load data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ Handle refresh with loading state
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error("Failed to refresh:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // ✅ Handle view student details
+  const handleViewStudent = (student: any) => {
     setSelectedStudent(student);
-    setModalMode(mode);
-    setShowModal(true);
+    setShowDetailModal(true);
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedStudent(null);
+  // ✅ Get class name
+  const getClassName = (classId: string) => {
+    const cls = classes.find((c) => c.id === classId);
+    return cls?.name || "-";
   };
 
-  const handleStudentUpdated = () => {
-    // Refresh data after update
-    onRefresh();
-    setShowModal(false);
-    setSelectedStudent(null);
+  // ✅ Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("km-KH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
   };
-
-  // ✅ Initial Empty State
-  if (!isDataLoaded && !loading) {
-    return (
-      <div className="p-6">
-        <div className="flex flex-col items-center justify-center py-20 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-dashed border-blue-300">
-          <div className="bg-white p-6 rounded-full shadow-lg mb-6">
-            <Database className="w-16 h-16 text-blue-600" />
-          </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-2">
-            ទិន្នន័យសិស្សមិនទាន់ផ្ទុក
-          </h3>
-          <p className="text-gray-600 font-medium mb-6 text-center max-w-md">
-            ចុចប៊ូតុងខាងក្រោម ដើម្បីផ្ទុកទិន្នន័យសិស្សទាំងអស់ពីប្រព័ន្ធ
-          </p>
-          <button
-            onClick={onLoadData}
-            className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-          >
-            <Database className="w-5 h-5" />
-            ផ្ទុកទិន្នន័យសិស្ស
-          </button>
-          <p className="text-sm text-gray-500 mt-4">
-            💡 ការផ្ទុកទិន្នន័យគ្រាន់តែម្តងប៉ុណ្ណោះ ហើយនឹងត្រូវរក្សាទុកក្នុង
-            cache
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ Loading State
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <Loader2 className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">កំពុងផ្ទុកទិន្នន័យ...</p>
-          <p className="text-sm text-gray-500 mt-2">សូមរង់ចាំមួយភ្លែត</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <>
-      <div className="p-6 space-y-6">
-        {/* Refresh Button Header */}
-        <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-semibold text-gray-700">
-              ទិន្នន័យត្រូវបានផ្ទុករួច ({students.length} សិស្ស)
-            </span>
+    <div className="space-y-4">
+      {/* ✅ No Data State with Loading */}
+      {!isDataLoaded ? (
+        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-16 text-center">
+          <div className="max-w-md mx-auto">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              {isLoading ? (
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+              ) : (
+                <Database className="w-10 h-10 text-blue-600" />
+              )}
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {isLoading
+                ? "កំពុងផ្ទុកទិន្នន័យ..."
+                : "ទិន្នន័យសិស្សមិនទាន់ផ្ទុក"}
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              {isLoading
+                ? "សូមរង់ចាំបន្តិច យើងកំពុងទាញយកទិន្នន័យពីប្រព័ន្ធ"
+                : "ចុចប៊ូតុងខាងក្រោម ដើម្បីផ្ទុកទិន្នន័យសិស្សទាំងអស់ពីប្រព័ន្ធ"}
+            </p>
+            {!isLoading && (
+              <button
+                onClick={handleLoadData}
+                className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors inline-flex items-center gap-2"
+              >
+                <Database className="w-4 h-4" />
+                ផ្ទុកទិន្នន័យសិស្ស
+              </button>
+            )}
           </div>
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 font-semibold shadow-sm border border-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            ធ្វើបច្ចុប្បន្នភាព
-          </button>
         </div>
+      ) : (
+        <>
+          {/* ✅ Filters Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              {/* Search */}
+              <div className="md:col-span-5">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="ស្វែងរកតាមឈ្មោះ ឬអត្តលេខ..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-11 pl-10 pr-10 text-sm font-medium border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
 
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-1">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                🔍
-              </span>
-              <input
-                type="text"
-                placeholder="ស្វែងរកតាមឈ្មោះ ឬអត្តលេខ..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-              />
+              {/* Class Filter */}
+              <div className="md:col-span-3">
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  className="w-full h-11 px-4 text-sm font-medium border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">ថ្នាក់ទាំងអស់</option>
+                  {classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Gender Filter */}
+              <div className="md:col-span-2">
+                <select
+                  value={selectedGender}
+                  onChange={(e) => setSelectedGender(e.target.value)}
+                  className="w-full h-11 px-4 text-sm font-medium border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">ភេទទាំងអស់</option>
+                  <option value="male">ប្រុស</option>
+                  <option value="female">ស្រី</option>
+                </select>
+              </div>
+
+              {/* Refresh Button */}
+              <div className="md:col-span-2">
+                <button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="w-full h-11 px-4 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-100 disabled:cursor-not-allowed border border-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                  {isRefreshing ? "កំពុងផ្ទុក..." : "ផ្ទុកឡើងវិញ"}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div>
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-            >
-              <option value="all">ថ្នាក់ទាំងអស់</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
+          {/* ✅ View Mode & Stats */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600 font-medium">
+                បង្ហាញ{" "}
+                <strong className="text-gray-900">
+                  {filteredStudents.length}
+                </strong>{" "}
+                នាក់ ពី{" "}
+                <strong className="text-gray-900">{students.length}</strong>{" "}
+                នាក់
+                {searchQuery && (
+                  <span className="ml-2 text-blue-600">
+                    (ស្វែងរក: "{searchQuery}")
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setViewMode("table")}
+                  className={`h-10 px-4 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                    viewMode === "table"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-300"
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                  តារាង
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`h-10 px-4 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                    viewMode === "grid"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-300"
+                  }`}
+                >
+                  <Grid className="w-4 h-4" />
+                  ក្រឡា
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <select
-              value={selectedGender}
-              onChange={(e) => setSelectedGender(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-            >
-              <option value="all">ភេទទាំងអស់</option>
-              <option value="male">ប្រុស</option>
-              <option value="female">ស្រី</option>
-            </select>
-          </div>
-        </div>
-
-        {/* View Mode & Stats */}
-        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-          <div className="text-sm text-gray-600 font-medium">
-            បង្ហាញ{" "}
-            <strong className="text-gray-900">{filteredStudents.length}</strong>{" "}
-            នាក់ ពី <strong className="text-gray-900">{students.length}</strong>{" "}
-            នាក់
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode("table")}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                viewMode === "table"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border-2 border-gray-200"
-              }`}
-            >
-              📊 តារាង
-            </button>
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                viewMode === "grid"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border-2 border-gray-200"
-              }`}
-            >
-              🔲 ក្រឡា
-            </button>
-          </div>
-        </div>
-
-        {/* Table View */}
-        {viewMode === "table" && (
-          <div className="overflow-x-auto rounded-xl border-2 border-gray-200 shadow-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    អត្តលេខ
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    ឈ្មោះ
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    ភេទ
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    ថ្ងៃខែឆ្នាំកំណើត
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    ថ្នាក់
-                  </th>
-                  <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    សកម្មភាព
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredStudents.map((student) => (
-                  <tr
-                    key={student.id}
-                    className="hover:bg-blue-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          🎓
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">
-                            {student.studentId || "N/A"}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {student.email}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-bold text-gray-900">
-                        {student.khmerName || "N/A"}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {student.firstName} {student.lastName}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          student.gender === "male"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-pink-100 text-pink-800"
-                        }`}
-                      >
-                        {student.gender === "male" ? "👦 ប្រុស" : "👧 ស្រី"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
-                      📅 {student.dateOfBirth || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full bg-green-100 text-green-800">
-                        {student.class?.name || "មិនមានថ្នាក់"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => handleViewStudent(student, "view")}
-                          className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="មើល"
+          {/* ✅ Student List/Grid */}
+          {filteredStudents.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-lg p-16 text-center">
+              <div className="text-gray-400 text-6xl mb-4">🔍</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                រកមិនឃើញទិន្នន័យ
+              </h3>
+              <p className="text-sm text-gray-600">
+                សូមព្យាយាមស្វែងរកដោយប្រើពាក្យគន្លឹះផ្សេង
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              {viewMode === "table" ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          លេខ
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          អត្តលេខ
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          ឈ្មោះ
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          ភេទ
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          ថ្នាក់
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          ថ្ងៃខែឆ្នាំកំណើត
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredStudents.map((student, index) => (
+                        <tr
+                          key={student.id}
+                          className="hover:bg-gray-50 transition-colors"
                         >
-                          👁️
-                        </button>
-                        <button
-                          onClick={() => handleViewStudent(student, "edit")}
-                          className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded-lg transition-colors"
-                          title="កែសម្រួល"
-                        >
-                          ✏️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Grid View */}
-        {viewMode === "grid" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredStudents.map((student) => (
-              <div
-                key={student.id}
-                onClick={() => handleViewStudent(student, "view")}
-                className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:shadow-xl hover:border-blue-500 transition-all cursor-pointer"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-2xl">
-                    🎓
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-500 font-medium">
-                      អត្តលេខ
-                    </div>
-                    <div className="text-sm font-black text-blue-600">
-                      {student.studentId || "N/A"}
-                    </div>
-                  </div>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {index + 1}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-mono text-gray-900">
+                            {student.studentId || "-"}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                            {student.name}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-semibold ${
+                                student.gender === "male"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-pink-100 text-pink-700"
+                              }`}
+                            >
+                              {student.gender === "male" ? "ប្រុស" : "ស្រី"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {getClassName(student.classId)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {formatDate(student.dateOfBirth)}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <button
+                              onClick={() => handleViewStudent(student)}
+                              className="text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1"
+                            >
+                              <Eye className="w-4 h-4" />
+                              មើល
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="text-lg font-black text-gray-900">
-                    {student.khmerName || "N/A"}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {student.firstName} {student.lastName}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        student.gender === "male"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-pink-100 text-pink-800"
-                      }`}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {filteredStudents.map((student) => (
+                    <div
+                      key={student.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer"
+                      onClick={() => handleViewStudent(student)}
                     >
-                      {student.gender === "male" ? "👦 ប្រុស" : "👧 ស្រី"}
-                    </span>
-                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
-                      {student.class?.name || "N/A"}
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-gray-500">
-                    📅 {student.dateOfBirth || "N/A"}
-                  </div>
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="font-bold text-gray-900 mb-1">
+                            {student.name}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono">
+                            {student.studentId || "No ID"}
+                          </div>
+                        </div>
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-semibold ${
+                            student.gender === "male"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-pink-100 text-pink-700"
+                          }`}
+                        >
+                          {student.gender === "male" ? "ប្រុស" : "ស្រី"}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div>📚 {getClassName(student.classId)}</div>
+                        <div>🎂 {formatDate(student.dateOfBirth)}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewStudent(student, "view");
-                    }}
-                    className="flex-1 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-semibold text-sm"
-                  >
-                    មើល
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewStudent(student, "edit");
-                    }}
-                    className="flex-1 py-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors font-semibold text-sm"
-                  >
-                    កែ
-                  </button>
+      {/* ✅ Student Detail Modal */}
+      {showDetailModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg border border-gray-200 max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-blue-600 p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedStudent.name}</h2>
+                  <p className="text-sm text-blue-100 mt-1">
+                    អត្តលេខ: {selectedStudent.studentId || "N/A"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="text-white hover:bg-blue-700 p-2 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase">
+                    ព័ត៌មានផ្ទាល់ខ្លួន
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-gray-600">ភេទ</label>
+                      <p className="text-sm font-semibold">
+                        {selectedStudent.gender === "male" ? "ប្រុស" : "ស្រី"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">
+                        ថ្ងៃខែឆ្នាំកំណើត
+                      </label>
+                      <p className="text-sm font-semibold">
+                        {formatDate(selectedStudent.dateOfBirth)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">ថ្នាក់</label>
+                      <p className="text-sm font-semibold">
+                        {getClassName(selectedStudent.classId)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-600">
+                        លេខទូរសព្ទ
+                      </label>
+                      <p className="text-sm font-semibold">
+                        {selectedStudent.phoneNumber ||
+                          selectedStudent.phone ||
+                          "-"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
 
-        {/* Empty State */}
-        {filteredStudents.length === 0 && (
-          <div className="text-center py-20 bg-gray-50 rounded-2xl">
-            <div className="text-6xl mb-4">👥</div>
-            <h3 className="text-xl font-bold text-gray-700 mb-2">
-              មិនមានសិស្សទេ
-            </h3>
-            <p className="text-gray-500">
-              សូមបញ្ចូលសិស្សដោយប្រើប៊ូតុង "បញ្ចូលជាបណ្តុំ"
-            </p>
+            <div className="bg-gray-50 border-t border-gray-200 p-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowDetailModal(false)}
+                className="h-10 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded-lg transition-colors"
+              >
+                បិទ
+              </button>
+              <button className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors inline-flex items-center gap-2">
+                <Edit className="w-4 h-4" />
+                កែប្រែ
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-
-      {/* ✅ NEW: Student Modal */}
-      {showModal && selectedStudent && (
-        <StudentModal
-          student={selectedStudent}
-          mode={modalMode}
-          onClose={handleCloseModal}
-          onUpdate={handleStudentUpdated}
-        />
+        </div>
       )}
-    </>
+    </div>
   );
 }
