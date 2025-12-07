@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -21,6 +21,7 @@ import {
 import { reportsApi, type MonthlyReportData } from "@/lib/api/reports";
 import { formatReportDate } from "@/lib/khmerDateUtils";
 import { paginateReports } from "@/lib/reportPagination";
+import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 
 // Import existing components
 import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
@@ -75,7 +76,7 @@ export default function ReportsPage() {
   const [principalName, setPrincipalName] = useState("នាយកសាលា");
   const [teacherName, setTeacherName] = useState("គ្រូបន្ទុកថ្នាក់");
   const [reportDate, setReportDate] = useState(
-    "ថ្ងៃទី.    ....     ខែ.   ....   ឆ្នាំ២០២៥"
+    "ថ្ងៃទី.     ....      ខែ.    ....    ឆ្នាំ២០២៥"
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
@@ -163,14 +164,13 @@ export default function ReportsPage() {
   useEffect(() => {
     if (reportFormat === "detailed") {
       setShowSubjects(true);
-      setTableFontSize(8);
-      setFirstPageStudentCount(48);
+      setTableFontSize(10);
+      setFirstPageStudentCount(35);
       setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
     } else {
       setShowSubjects(false);
       setTableFontSize(10);
       setFirstPageStudentCount(28);
-      setFirstPageStudentCount(29);
       setSecondPageStudentCount(36);
       setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
     }
@@ -214,10 +214,32 @@ export default function ReportsPage() {
         }
       : null;
 
-  // Transform API data
+  // ✅ Sort subjects based on grade level
+  const sortedSubjects = useMemo(() => {
+    if (!reportData || !reportData.subjects) return [];
+
+    const grade = reportData.grade;
+    console.log("📊 [Reports] Sorting subjects for grade:", grade);
+    console.log(
+      "📋 [Reports] Original subjects:",
+      reportData.subjects.map((s) => s.nameKh || s.code)
+    );
+
+    const sorted = sortSubjectsByOrder(reportData.subjects, grade);
+
+    console.log(
+      "✅ [Reports] Sorted subjects:",
+      sorted.map((s) => s.nameKh || s.code)
+    );
+
+    return sorted;
+  }, [reportData]);
+
+  // Transform API data - use sortedSubjects
   const studentReports = reportData
     ? reportData.students.map((student) => {
-        const gradesArray = reportData.subjects.map((subject) => {
+        // ✅ Use sortedSubjects for grades array
+        const gradesArray = sortedSubjects.map((subject) => {
           const score = student.grades[subject.id];
           return {
             id: `grade_${student.studentId}_${subject.id}`,
@@ -261,18 +283,16 @@ export default function ReportsPage() {
     return sortOrder === "asc" ? comparison : -comparison;
   });
 
-  // Transform subjects
-  const subjects = reportData
-    ? reportData.subjects.map((s) => ({
-        id: s.id,
-        name: s.nameKh,
-        code: s.code,
-        nameKh: s.nameKh,
-        nameEn: s.nameEn || "",
-        maxScore: s.maxScore,
-        coefficient: s.coefficient,
-      }))
-    : [];
+  // Transform subjects - use sortedSubjects
+  const subjects = sortedSubjects.map((s) => ({
+    id: s.id,
+    name: s.nameKh,
+    code: s.code,
+    nameKh: s.nameKh,
+    nameEn: s.nameEn || "",
+    maxScore: s.maxScore,
+    coefficient: s.coefficient,
+  }));
 
   // ✅ Dynamic pagination for BOTH formats
   const paginatedReports =
@@ -290,13 +310,9 @@ export default function ReportsPage() {
           secondPageStudentCount
         )
       : (() => {
-          // ✅ Manual pagination for summary - NOW uses secondPageStudentCount
           const pages = [];
           if (sortedReports.length > 0) {
-            // First page
             pages.push(sortedReports.slice(0, firstPageStudentCount));
-
-            // Subsequent pages - use secondPageStudentCount instead of studentsPerPage
             for (
               let i = firstPageStudentCount;
               i < sortedReports.length;
@@ -356,8 +372,8 @@ export default function ReportsPage() {
 
     const fileName =
       reportType === "single"
-        ? `របាយការណ៍_${reportData?.className}_${selectedMonth}_${selectedYear}. csv`
-        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${selectedMonth}_${selectedYear}.csv`;
+        ? `របាយការណ៍_${reportData?.className}_${selectedMonth}_${selectedYear}.csv`
+        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${selectedMonth}_${selectedYear}. csv`;
 
     link.setAttribute("download", fileName);
     link.style.visibility = "hidden";
@@ -637,8 +653,8 @@ export default function ReportsPage() {
                     }
                     firstPageStudentCount={firstPageStudentCount}
                     setFirstPageStudentCount={setFirstPageStudentCount}
-                    secondPageStudentCount={secondPageStudentCount} // ✅ បន្ថែមបន្ទាត់នេះ
-                    setSecondPageStudentCount={setSecondPageStudentCount} // ✅ បន្ថែមបន្ទាត់នេះ
+                    secondPageStudentCount={secondPageStudentCount}
+                    setSecondPageStudentCount={setSecondPageStudentCount}
                     tableFontSize={tableFontSize}
                     setTableFontSize={setTableFontSize}
                     useAutoDate={useAutoDate}

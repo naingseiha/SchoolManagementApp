@@ -55,6 +55,11 @@ export default function SubjectDetailsReport({
   showClassName,
   selectedMonth,
 }: SubjectDetailsReportProps) {
+  console.log(
+    "📋 [SubjectDetailsReport] Subjects order:",
+    subjects.map((s) => s.nameKh || s.name || s.code)
+  );
+
   return (
     <>
       <style jsx>{`
@@ -84,7 +89,7 @@ export default function SubjectDetailsReport({
           page-break-after: auto;
         }
 
-        /* Vertical text for column headers - FIXED horizontal centering */
+        /* Vertical text for column headers */
         .vertical-text {
           writing-mode: vertical-rl;
           text-orientation: mixed;
@@ -179,7 +184,7 @@ export default function SubjectDetailsReport({
               {/* Row 2: Title */}
               <div className="text-center mb-1. 5">
                 <h1
-                  className="text-base font-bold mb-0. 5"
+                  className="text-base font-bold mb-0.5"
                   style={{
                     fontFamily: "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                   }}
@@ -239,30 +244,32 @@ export default function SubjectDetailsReport({
 
                 {/* គោត្តនាម និងនាម */}
                 <th
-                  className="px-0 py-0. 5 bg-gray-100 text-center"
+                  className="px-1 py-0.5 bg-gray-100 text-center"
                   style={{
                     border: "1px solid black",
-                    width: "38px",
-                    minWidth: "38px",
-                    maxWidth: "38px",
-                    fontSize: `${tableFontSize - 1}px`,
-                    lineHeight: "1.0",
+                    width: "60px",
+                    minWidth: "60px",
+                    maxWidth: "60px",
+                    fontSize: `${tableFontSize}px`,
+                    lineHeight: "1.1",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: `${tableFontSize - 1}px`,
-                      lineHeight: "1.1",
+                      fontSize: `${tableFontSize}px`,
+                      lineHeight: "1.2",
                     }}
                   >
-                    គោត្តនាម.នាម
+                    គោត្តនាម
+                    <br />
+                    និងនាម
                   </div>
                 </th>
 
                 {/* ថ្នាក់ (for grade-wide only) */}
                 {isGradeWide && showClassName && (
                   <th
-                    className="px-0. 5 py-0.5 bg-blue-100 align-middle"
+                    className="px-0.5 py-0.5 bg-blue-100 align-middle"
                     style={{ border: "1px solid black", width: "22px" }}
                   >
                     <div
@@ -332,7 +339,7 @@ export default function SubjectDetailsReport({
                 {/* ពិន្ទុសរុប */}
                 {showTotal && (
                   <th
-                    className="px-0. 5 py-0.5 bg-green-100 align-middle"
+                    className="px-0.5 py-0. 5 bg-green-100 align-middle"
                     style={{ border: "1px solid black", width: "20px" }}
                   >
                     <div
@@ -344,7 +351,7 @@ export default function SubjectDetailsReport({
                   </th>
                 )}
 
-                {/* ម. ភាគ */}
+                {/* ម.ភាគ */}
                 {showAverage && (
                   <th
                     className="px-0.5 py-0.5 bg-green-100 align-middle"
@@ -377,7 +384,7 @@ export default function SubjectDetailsReport({
                 {/* និទ្ទេស */}
                 {showGradeLevel && (
                   <th
-                    className="px-0.5 py-0. 5 bg-yellow-100 align-middle"
+                    className="px-0.5 py-0.5 bg-yellow-100 align-middle"
                     style={{ border: "1px solid black", width: "18px" }}
                   >
                     <div
@@ -411,12 +418,13 @@ export default function SubjectDetailsReport({
                     key={report.student.id}
                     style={{ border: "1px solid black" }}
                   >
-                    {/* ល.រ */}
+                    {/* ✅ ល.រ - បង្រីក padding */}
                     <td
-                      className="px-0.5 py-0 text-center"
+                      className="px-0.5 py-1 text-center"
                       style={{
                         border: "1px solid black",
                         fontSize: `${tableFontSize - 1}px`,
+                        height: "20px",
                       }}
                     >
                       {isPassed ? (
@@ -447,41 +455,42 @@ export default function SubjectDetailsReport({
                       )}
                     </td>
 
-                    {/* គោត្តនាម និងនាម */}
+                    {/* ✅ គោត្តនាម និងនាម - បង្រីក padding */}
                     <td
-                      className={`px-0 py-0 text-left ${
+                      className={`px-1 py-1 text-left ${
                         isPassed ? "bg-yellow-100 font-bold" : ""
                       }`}
                       style={{
                         border: "1px solid black",
-                        fontSize: `${tableFontSize - 2}px`,
-                        lineHeight: "0.95",
-                        width: "38px",
-                        minWidth: "38px",
-                        maxWidth: "38px",
-                        wordBreak: "break-all",
+                        fontSize: `${tableFontSize - 1}px`,
+                        lineHeight: "1.2",
+                        width: "60px",
+                        minWidth: "60px",
+                        maxWidth: "60px",
+                        wordBreak: "break-word",
                         whiteSpace: "normal",
                         overflow: "hidden",
-                        padding: "1px 2px",
+                        height: "20px",
                       }}
                     >
                       {report.student.lastName} {report.student.firstName}
                     </td>
 
-                    {/* ថ្នាក់ */}
+                    {/* ✅ ថ្នាក់ - បង្រីក padding */}
                     {isGradeWide && showClassName && (
                       <td
-                        className="px-0.5 py-0 text-center font-semibold bg-blue-50"
+                        className="px-0.5 py-1 text-center font-semibold bg-blue-50"
                         style={{
                           border: "1px solid black",
                           fontSize: `${tableFontSize - 1}px`,
+                          height: "20px",
                         }}
                       >
                         {report.student.className}
                       </td>
                     )}
 
-                    {/* Subject scores */}
+                    {/* ✅ Subject scores - បង្រីក padding */}
                     {subjects.map((subject) => {
                       const grade = report.grades.find(
                         (g: any) => g.subjectId === subject.id
@@ -490,10 +499,11 @@ export default function SubjectDetailsReport({
                       return (
                         <td
                           key={subject.id}
-                          className="px-0 py-0 text-center"
+                          className="px-0 py-1 text-center"
                           style={{
                             border: "1px solid black",
                             fontSize: `${tableFontSize - 1}px`,
+                            height: "20px",
                           }}
                         >
                           {score !== null && score !== undefined
@@ -503,32 +513,35 @@ export default function SubjectDetailsReport({
                       );
                     })}
 
-                    {/* Attendance */}
+                    {/* ✅ Attendance - បង្រីក padding */}
                     {showAttendance && (
                       <>
                         <td
-                          className="px-0 py-0 text-center"
+                          className="px-0 py-1 text-center"
                           style={{
                             border: "1px solid black",
                             fontSize: `${tableFontSize - 1}px`,
+                            height: "20px",
                           }}
                         >
                           {report.permission || 0}
                         </td>
                         <td
-                          className="px-0 py-0 text-center"
+                          className="px-0 py-1 text-center"
                           style={{
                             border: "1px solid black",
                             fontSize: `${tableFontSize - 1}px`,
+                            height: "20px",
                           }}
                         >
                           {report.absent || 0}
                         </td>
                         <td
-                          className="px-0 py-0 text-center font-bold"
+                          className="px-0 py-1 text-center font-bold"
                           style={{
                             border: "1px solid black",
                             fontSize: `${tableFontSize - 1}px`,
+                            height: "20px",
                           }}
                         >
                           {(report.permission || 0) + (report.absent || 0)}
@@ -536,13 +549,14 @@ export default function SubjectDetailsReport({
                       </>
                     )}
 
-                    {/* Summary */}
+                    {/* ✅ Summary - បង្រីក padding */}
                     {showTotal && (
                       <td
-                        className="px-0 py-0 text-center font-bold bg-green-50"
+                        className="px-0 py-1 text-center font-bold bg-green-50"
                         style={{
                           border: "1px solid black",
                           fontSize: `${tableFontSize}px`,
+                          height: "20px",
                         }}
                       >
                         {report.total.toFixed(0)}
@@ -550,10 +564,11 @@ export default function SubjectDetailsReport({
                     )}
                     {showAverage && (
                       <td
-                        className="px-0 py-0 text-center font-bold bg-green-50"
+                        className="px-0 py-1 text-center font-bold bg-green-50"
                         style={{
                           border: "1px solid black",
                           fontSize: `${tableFontSize}px`,
+                          height: "20px",
                         }}
                       >
                         {report.average.toFixed(2)}
@@ -561,10 +576,11 @@ export default function SubjectDetailsReport({
                     )}
                     {showRank && (
                       <td
-                        className="px-0 py-0 text-center font-bold text-red-600 bg-indigo-50"
+                        className="px-0 py-1 text-center font-bold text-red-600 bg-indigo-50"
                         style={{
                           border: "1px solid black",
                           fontSize: `${tableFontSize}px`,
+                          height: "20px",
                         }}
                       >
                         {report.rank}
@@ -572,10 +588,11 @@ export default function SubjectDetailsReport({
                     )}
                     {showGradeLevel && (
                       <td
-                        className="px-0 py-0 text-center font-bold bg-yellow-50"
+                        className="px-0 py-1 text-center font-bold bg-yellow-50"
                         style={{
                           border: "1px solid black",
                           fontSize: `${tableFontSize}px`,
+                          height: "20px",
                         }}
                       >
                         {report.letterGrade}
@@ -695,7 +712,7 @@ export default function SubjectDetailsReport({
                 {/* Principal */}
                 <div className="text-center">
                   <p
-                    className="text-xs mb-0.5"
+                    className="text-xs mb-0. 5"
                     style={{ fontFamily: "'Khmer OS Siem Reap', serif" }}
                   >
                     {reportDate}
@@ -726,7 +743,7 @@ export default function SubjectDetailsReport({
                     {reportDate}
                   </p>
                   <p
-                    className="text-xs font-bold mb-0.5"
+                    className="text-xs font-bold mb-0. 5"
                     style={{ fontFamily: "'Khmer OS Siem Reap', serif" }}
                   >
                     គ្រូទទួលបន្ទុកថ្នាក់
