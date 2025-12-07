@@ -9,7 +9,7 @@ import Header from "@/components/layout/Header";
 import StudentListView from "@/components/students/StudentListView";
 import BulkImportView from "@/components/students/BulkImportView";
 import { studentsApi } from "@/lib/api/students";
-import { Users, Upload, Search, Filter, Grid3x3, List } from "lucide-react";
+import { Users, Upload } from "lucide-react";
 
 type ViewMode = "list" | "bulk-import";
 
@@ -22,17 +22,12 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedClass, setSelectedClass] = useState<string>("all");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, authLoading, router]);
-
-  // ✅ REMOVED auto-load on mount
-  // Students will only load when user clicks "Load Data" button
 
   const loadStudents = async () => {
     try {
@@ -48,7 +43,6 @@ export default function StudentsPage() {
   };
 
   const handleBulkImportSuccess = () => {
-    // Auto-load students after bulk import
     loadStudents();
     refreshStudents();
     setActiveTab("list");
@@ -70,22 +64,23 @@ export default function StudentsPage() {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
       <Sidebar />
-      <div className="flex-1">
+
+      <div className="flex-1 flex flex-col min-w-0">
         <Header />
 
-        <main className="p-6 space-y-6">
-          {/* Header Section */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+        <main className="flex-1 p-6 space-y-4 overflow-x-hidden">
+          {/* ✅ Clean Header Section - No heavy shadow */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl shadow-lg">
-                  <Users className="w-8 h-8 text-white" />
+                <div className="bg-blue-600 p-3 rounded-lg">
+                  <Users className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-black text-gray-900">
+                  <h1 className="text-2xl font-bold text-gray-900">
                     គ្រប់គ្រងសិស្ស
                   </h1>
-                  <p className="text-gray-600 font-medium">
+                  <p className="text-sm text-gray-600 font-medium">
                     Student Management System
                   </p>
                 </div>
@@ -93,70 +88,80 @@ export default function StudentsPage() {
 
               {/* Stats */}
               <div className="flex items-center gap-6">
-                <div className="text-center px-6 py-3 bg-blue-50 rounded-xl border-l-4 border-blue-500">
-                  <div className="text-3xl font-black text-blue-600">
-                    {isDataLoaded ? students.length : "-"}
+                <div className="text-center">
+                  <div className="text-2xl font-black text-blue-600">
+                    {contextStudents.length}
                   </div>
-                  <div className="text-sm text-gray-600 font-semibold">
-                    សិស្សសរុប
+                  <div className="text-xs text-gray-600 font-semibold">
+                    សរុប
                   </div>
                 </div>
-                <div className="text-center px-6 py-3 bg-green-50 rounded-xl border-l-4 border-green-500">
-                  <div className="text-3xl font-black text-green-600">
-                    {classes.length}
+                <div className="text-center">
+                  <div className="text-2xl font-black text-pink-600">
+                    {
+                      contextStudents.filter((s) => s.gender === "female")
+                        .length
+                    }
                   </div>
-                  <div className="text-sm text-gray-600 font-semibold">
-                    ថ្នាក់សរុប
+                  <div className="text-xs text-gray-600 font-semibold">
+                    ស្រី
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-indigo-600">
+                    {contextStudents.filter((s) => s.gender === "male").length}
+                  </div>
+                  <div className="text-xs text-gray-600 font-semibold">
+                    ប្រុស
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Tabs */}
-            <div className="flex gap-2 mt-6 border-b border-gray-200">
+          {/* ✅ Clean Tabs - No shadow, consistent padding */}
+          <div className="bg-white border border-gray-200 rounded-lg p-2">
+            <div className="flex gap-2">
               <button
                 onClick={() => setActiveTab("list")}
-                className={`flex items-center gap-2 px-6 py-3 font-semibold transition-all ${
+                className={`flex-1 h-11 flex items-center justify-center gap-2 px-6 rounded-lg font-bold text-sm transition-all ${
                   activeTab === "list"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                <List className="w-5 h-5" />
+                <Users className="w-4 h-4" />
                 បញ្ជីសិស្ស
               </button>
               <button
                 onClick={() => setActiveTab("bulk-import")}
-                className={`flex items-center gap-2 px-6 py-3 font-semibold transition-all ${
+                className={`flex-1 h-11 flex items-center justify-center gap-2 px-6 rounded-lg font-bold text-sm transition-all ${
                   activeTab === "bulk-import"
-                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                <Upload className="w-5 h-5" />
+                <Upload className="w-4 h-4" />
                 បញ្ចូលជាបណ្តុំ
               </button>
             </div>
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-            {activeTab === "list" ? (
-              <StudentListView
-                students={students}
-                classes={classes}
-                loading={loading}
-                isDataLoaded={isDataLoaded}
-                onLoadData={loadStudents}
-                onRefresh={handleRefreshData}
-              />
-            ) : (
-              <BulkImportView
-                classes={classes}
-                onSuccess={handleBulkImportSuccess}
-              />
-            )}
-          </div>
+          {activeTab === "list" ? (
+            <StudentListView
+              students={students}
+              classes={classes}
+              isDataLoaded={isDataLoaded}
+              onLoadData={loadStudents}
+              onRefresh={handleRefreshData}
+            />
+          ) : (
+            <BulkImportView
+              classes={classes}
+              onSuccess={handleBulkImportSuccess}
+            />
+          )}
         </main>
       </div>
     </div>
