@@ -202,7 +202,7 @@ export default function KhmerMonthlyReport({
                   >
                     {isGradeWide
                       ? `កម្រិតថ្នាក់៖ ${selectedClass?.name}`
-                      : `ថ្នាក់ទី៖ ${selectedClass?.name}`}
+                      : `${selectedClass?.name}`}
                   </p>
                   {!isGradeWide && showRoomNumber && roomNumber && (
                     <p
@@ -494,25 +494,192 @@ export default function KhmerMonthlyReport({
             </tbody>
           </table>
 
-          {/* Footer - Only on last page */}
+          {/* ✅ Statistics & Signatures (only on last page) */}
           {pageIndex === paginatedReports.length - 1 && (
-            <div
-              className="mt-8 flex justify-between text-sm"
-              style={{
-                fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
-              }}
-            >
-              <div className="text-center">
-                <p className="mb-12">{reportDate}</p>
-                <p className="font-bold">គ្រូបន្ទុកថ្នាក់</p>
-                <p className="mt-2">{teacherName}</p>
+            <>
+              {/* Statistics Summary */}
+              <div className="mb-4 pb-3 mt-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex-1">
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Khmer OS Bokor', 'Khmer OS Bokor', serif",
+                      }}
+                    >
+                      សិស្សសរុប៖{" "}
+                    </span>
+                    <span className="font-bold text-blue-700">
+                      {paginatedReports.flat().length} នាក់
+                    </span>
+                    <span className="mx-1">/</span>
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Khmer OS Bokor', 'Khmer OS Bokor', serif",
+                      }}
+                    >
+                      ស្រី៖{" "}
+                    </span>
+                    <span className="font-bold text-pink-700">
+                      {
+                        paginatedReports
+                          .flat()
+                          .filter((r) => r.student.gender === "female").length
+                      }{" "}
+                      នាក់
+                    </span>
+                  </div>
+
+                  <div className="flex-1 text-center">
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Khmer OS Bokor', 'Khmer OS Bokor', serif",
+                      }}
+                    >
+                      ជាប់៖{" "}
+                    </span>
+                    <span className="font-bold text-green-700">
+                      {
+                        paginatedReports.flat().filter((r) => r.average >= 25)
+                          .length
+                      }{" "}
+                      នាក់
+                    </span>
+                    <span className="mx-1">/</span>
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Khmer OS Bokor', 'Khmer OS Bokor', serif",
+                      }}
+                    >
+                      ស្រី៖{" "}
+                    </span>
+                    <span className="font-bold text-pink-700">
+                      {
+                        paginatedReports
+                          .flat()
+                          .filter(
+                            (r) =>
+                              r.average >= 25 && r.student.gender === "female"
+                          ).length
+                      }{" "}
+                      នាក់
+                    </span>
+                  </div>
+
+                  <div className="flex-1 text-right">
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Khmer OS Bokor', 'Khmer OS Bokor', serif",
+                      }}
+                    >
+                      ធ្លាក់៖{" "}
+                    </span>
+                    <span className="font-bold text-orange-700">
+                      {
+                        paginatedReports.flat().filter((r) => r.average < 25)
+                          .length
+                      }{" "}
+                      នាក់
+                    </span>
+                    <span className="mx-1">/</span>
+                    <span
+                      className="font-bold"
+                      style={{
+                        fontFamily: "'Khmer OS Bokor', 'Khmer OS Bokor', serif",
+                      }}
+                    >
+                      ស្រី៖{" "}
+                    </span>
+                    <span className="font-bold text-pink-700">
+                      {
+                        paginatedReports
+                          .flat()
+                          .filter(
+                            (r) =>
+                              r.average < 25 && r.student.gender === "female"
+                          ).length
+                      }{" "}
+                      នាក់
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="mb-12">{reportDate}</p>
-                <p className="font-bold">នាយកសាលា</p>
-                <p className="mt-2">{principalName}</p>
+
+              {/* Signatures */}
+              <div className="grid grid-cols-2 gap-16 mt-6">
+                {/* Principal */}
+                <div className="text-center">
+                  <p
+                    className="text-xs mb-1"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
+                    }}
+                  >
+                    {reportDate}
+                  </p>
+                  <p
+                    className="text-xs font-bold mb-1"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
+                    }}
+                  >
+                    បានឃើញ និងឯកភាព
+                  </p>
+                  <div className="h-12 print:h-16"></div>
+                  <div className="inline-block">
+                    <p
+                      className="text-xs font-bold border-t-2 border-black pt-1 px-8"
+                      style={{
+                        fontFamily:
+                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                      }}
+                    >
+                      {principalName}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Teacher */}
+                <div className="text-center">
+                  <p
+                    className="text-xs mb-1"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
+                    }}
+                  >
+                    {reportDate}
+                  </p>
+                  <p
+                    className="text-xs font-bold mb-1"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
+                    }}
+                  >
+                    គ្រូទទួលបន្ទុកថ្នាក់
+                  </p>
+                  <div className="h-12 print:h-16"></div>
+                  <div className="inline-block">
+                    <p
+                      className="text-xs font-bold border-t-2 border-black pt-1 px-8"
+                      style={{
+                        fontFamily:
+                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                      }}
+                    >
+                      {teacherName || "___________________"}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       ))}
