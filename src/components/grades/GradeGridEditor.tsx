@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { Loader2, Check, X, TrendingUp, ClipboardPaste } from "lucide-react";
 import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
 import { attendanceApi } from "@/lib/api/attendance";
+import { sortSubjectsByOrder, getOrderingMessage } from "@/lib/subjectOrder";
 
 interface GradeGridEditorProps {
   gridData: GradeGridData;
@@ -36,6 +37,75 @@ export default function GradeGridEditor({
   const [attendanceSummary, setAttendanceSummary] = useState<{
     [studentId: string]: { absent: number; permission: number };
   }>({});
+
+  // ✅ Sort subjects based on grade level
+  // ✅ Improved grade extraction with multiple formats support
+  const sortedSubjects = useMemo(() => {
+    // Try multiple patterns to extract grade number
+    const className = gridData.className || "";
+
+    console.log("🎯 Original className:", className);
+
+    let grade: number | undefined;
+
+    // Pattern 1: "7A", "8B", "9C" (number at start)
+    const pattern1 = className.match(/^(\d+)/);
+    if (pattern1) {
+      grade = parseInt(pattern1[1]);
+    }
+
+    // Pattern 2: "ថ្នាក់ទី៧", "ថ្នាក់ទី៨" (Khmer numerals)
+    if (!grade) {
+      const khmerNumerals: { [key: string]: number } = {
+        "១": 1,
+        "២": 2,
+        "៣": 3,
+        "៤": 4,
+        "៥": 5,
+        "៦": 6,
+        "៧": 7,
+        "៨": 8,
+        "៩": 9,
+        "០": 0,
+      };
+
+      const pattern2 = className.match(/[១២៣៤៥៦៧៨៩០]/);
+      if (pattern2) {
+        grade = khmerNumerals[pattern2[0]];
+      }
+    }
+
+    // Pattern 3: "Grade 7", "Class 8" (number after text)
+    if (!grade) {
+      const pattern3 = className.match(/(\d+)/);
+      if (pattern3) {
+        grade = parseInt(pattern3[1]);
+      }
+    }
+
+    console.log("🔢 Extracted grade:", grade);
+    // console.log("🎯 Should use custom order:", shouldUseCustomOrder(grade));
+
+    const sorted = sortSubjectsByOrder(gridData.subjects, grade);
+
+    console.log(
+      "📋 Original order:",
+      gridData.subjects.map((s) => s.nameKh || s.code)
+    );
+    console.log(
+      "✅ Sorted order:",
+      sorted.map((s) => s.nameKh || s.code)
+    );
+
+    return sorted;
+  }, [gridData.subjects, gridData.className]);
+
+  // ✅ Get ordering message
+  const orderingMessage = useMemo(() => {
+    const gradeMatch = gridData.className?.match(/^(\d+)/);
+    const grade = gradeMatch ? parseInt(gradeMatch[1]) : undefined;
+    return getOrderingMessage(grade);
+  }, [gridData.className]);
 
   // Initialize cells
   useEffect(() => {
@@ -207,7 +277,7 @@ export default function GradeGridEditor({
     }
   };
 
-  // 🎯 NEW: Handle Paste from Excel
+  // 🎯 Handle Paste from Excel
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
     startStudentIndex: number,
@@ -216,7 +286,6 @@ export default function GradeGridEditor({
     e.preventDefault();
 
     try {
-      // Get clipboard data
       const clipboardData = e.clipboardData.getData("text/plain");
 
       if (!clipboardData || clipboardData.trim() === "") {
@@ -224,13 +293,11 @@ export default function GradeGridEditor({
         return;
       }
 
-      // Parse clipboard data (Excel uses tab-separated values)
       const rows = clipboardData
         .split(/\r?\n/)
         .filter((row) => row.trim() !== "");
 
       const data: string[][] = rows.map((row) => {
-        // Split by tab (Excel default) or comma (CSV)
         return row.split(/\t|,/).map((cell) => cell.trim());
       });
 
@@ -243,11 +310,9 @@ export default function GradeGridEditor({
       let pastedCount = 0;
       let errorCount = 0;
 
-      // Apply data to grid
       data.forEach((row, rowOffset) => {
         const studentIndex = startStudentIndex + rowOffset;
 
-        // Check if student index is within bounds
         if (studentIndex >= gridData.students.length) {
           console.warn(`⚠️ Student index ${studentIndex} out of bounds`);
           return;
@@ -258,19 +323,17 @@ export default function GradeGridEditor({
         row.forEach((value, colOffset) => {
           const subjectIndex = startSubjectIndex + colOffset;
 
-          // Check if subject index is within bounds
-          if (subjectIndex >= gridData.subjects.length) {
+          // ✅ Use sortedSubjects for paste
+          if (subjectIndex >= sortedSubjects.length) {
             console.warn(`⚠️ Subject index ${subjectIndex} out of bounds`);
             return;
           }
 
-          const subject = gridData.subjects[subjectIndex];
+          const subject = sortedSubjects[subjectIndex];
           const cellKey = `${student.studentId}_${subject.id}`;
 
-          // Clean the value
           const cleanValue = value.replace(/[^\d.-]/g, "");
 
-          // Apply the change
           if (cleanValue !== "" || value === "") {
             handleCellChange(cellKey, cleanValue);
             pastedCount++;
@@ -280,7 +343,6 @@ export default function GradeGridEditor({
         });
       });
 
-      // Show feedback
       setPastePreview(
         `✅ បានបញ្ចូល ${pastedCount} cells${
           errorCount > 0 ? ` (${errorCount} errors)` : ""
@@ -301,14 +363,14 @@ export default function GradeGridEditor({
     studentIndex: number,
     subjectIndex: number
   ) => {
-    const totalSubjects = gridData.subjects.length;
+    const totalSubjects = sortedSubjects.length;
     const totalStudents = gridData.students.length;
 
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
       if (studentIndex < totalStudents - 1) {
         const nextKey = `${gridData.students[studentIndex + 1].studentId}_${
-          gridData.subjects[subjectIndex].id
+          sortedSubjects[subjectIndex].id
         }`;
         inputRefs.current[nextKey]?.focus();
       }
@@ -316,7 +378,7 @@ export default function GradeGridEditor({
       e.preventDefault();
       if (studentIndex > 0) {
         const prevKey = `${gridData.students[studentIndex - 1].studentId}_${
-          gridData.subjects[subjectIndex].id
+          sortedSubjects[subjectIndex].id
         }`;
         inputRefs.current[prevKey]?.focus();
       }
@@ -324,7 +386,7 @@ export default function GradeGridEditor({
       e.preventDefault();
       if (subjectIndex < totalSubjects - 1) {
         const nextKey = `${gridData.students[studentIndex].studentId}_${
-          gridData.subjects[subjectIndex + 1].id
+          sortedSubjects[subjectIndex + 1].id
         }`;
         inputRefs.current[nextKey]?.focus();
       }
@@ -332,28 +394,22 @@ export default function GradeGridEditor({
       e.preventDefault();
       if (subjectIndex > 0) {
         const prevKey = `${gridData.students[studentIndex].studentId}_${
-          gridData.subjects[subjectIndex - 1].id
+          sortedSubjects[subjectIndex - 1].id
         }`;
         inputRefs.current[prevKey]?.focus();
       }
     }
   };
 
-  // ✅ FIXED: Khmer display names with subject code mapping
+  // ✅ Khmer display names with subject code mapping
   const getKhmerShortName = (code: string): string => {
-    // Extract base code (before grade suffix)
     const baseCode = code.split("-")[0];
 
     const khmerNames: { [key: string]: string } = {
-      // ✅ Grade 7, 8, 9 - Khmer Language Components
-      WRITING: "តែង.  ក្តី",
-      WRITER: "ស.  អាន",
+      WRITING: "តែង. ក្តី",
+      WRITER: "ស. អាន",
       DICTATION: "ចំ. តាម",
-
-      // ✅ Grade 9+ - Full Khmer Language
       KHM: "ភាសាខ្មែរ",
-
-      // ✅ Core Subjects (All Grades)
       MATH: "គណិត",
       PHY: "រូប",
       CHEM: "គីមី",
@@ -363,17 +419,9 @@ export default function GradeGridEditor({
       GEO: "ភូមិ",
       HIST: "ប្រវត្តិ",
       ENG: "ភាសា",
-
-      // ✅ NEW: Health Education (All Grades)
       HLTH: "សុខភាព",
-
-      // ✅ NEW: Economics (Grades 9, 10, 11, 12)
       ECON: "សេដ្ឋកិច្ច",
-
-      // ✅ Homemaking (Grades 7, 8, 9)
       HE: "គេហ",
-
-      // ✅ Other Subjects
       SPORTS: "កីឡា",
       AGRI: "កសិកម្ម",
       ICT: "ICT",
@@ -382,22 +430,16 @@ export default function GradeGridEditor({
     return khmerNames[baseCode] || code;
   };
 
-  // ✅ FIXED: Color coding for subject categories
+  // ✅ Color coding for subject categories
   const getSubjectColor = (code: string): { header: string; cell: string } => {
-    // Extract base code
     const baseCode = code.split("-")[0];
 
     const colors: { [key: string]: { header: string; cell: string } } = {
-      // Khmer Language Components
       WRITING: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
       WRITER: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
       DICTATION: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
-
-      // Full Languages
       KHM: { header: "bg-sky-100 text-sky-800", cell: "bg-sky-50/30" },
       ENG: { header: "bg-cyan-100 text-cyan-800", cell: "bg-cyan-50/30" },
-
-      // Math & Sciences
       MATH: {
         header: "bg-purple-100 text-purple-800",
         cell: "bg-purple-50/30",
@@ -409,25 +451,17 @@ export default function GradeGridEditor({
       },
       BIO: { header: "bg-green-100 text-green-800", cell: "bg-green-50/30" },
       EARTH: { header: "bg-teal-100 text-teal-800", cell: "bg-teal-50/30" },
-
-      // Social Sciences
       MORAL: { header: "bg-amber-100 text-amber-800", cell: "bg-amber-50/30" },
       GEO: { header: "bg-orange-100 text-orange-800", cell: "bg-orange-50/30" },
       HIST: {
         header: "bg-yellow-100 text-yellow-800",
         cell: "bg-yellow-50/30",
       },
-
-      // ✅ NEW: Economics
       ECON: {
         header: "bg-emerald-100 text-emerald-800",
         cell: "bg-emerald-50/30",
       },
-
-      // ✅ NEW: Health Education
       HLTH: { header: "bg-rose-100 text-rose-800", cell: "bg-rose-50/30" },
-
-      // Others
       HE: { header: "bg-pink-100 text-pink-800", cell: "bg-pink-50/30" },
       SPORTS: { header: "bg-red-100 text-red-800", cell: "bg-red-50/30" },
       AGRI: { header: "bg-lime-100 text-lime-800", cell: "bg-lime-50/30" },
@@ -595,7 +629,16 @@ export default function GradeGridEditor({
         </div>
       </div>
 
-      {/* 🆕 Paste Preview Notification */}
+      {/* ✅ NEW: Ordering Message */}
+      {orderingMessage && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 px-6 py-2">
+          <p className="text-sm font-semibold text-blue-800">
+            {orderingMessage}
+          </p>
+        </div>
+      )}
+
+      {/* Paste Preview Notification */}
       {pastePreview && (
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-6 py-3">
           <div className="flex items-center gap-3">
@@ -630,8 +673,8 @@ export default function GradeGridEditor({
                 ភេទ
               </th>
 
-              {/* Colorful Subject Columns */}
-              {gridData.subjects.map((subject) => {
+              {/* ✅ Colorful Subject Columns - Using sortedSubjects */}
+              {sortedSubjects.map((subject) => {
                 const colors = getSubjectColor(subject.code);
                 const khmerName = getKhmerShortName(subject.code);
 
@@ -651,7 +694,7 @@ export default function GradeGridEditor({
                 សរុប
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-green-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-green-100">
-                ម. ភាគ
+                ម.ភាគ
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-yellow-800 border-b-2 border-r border-gray-300 min-w-[65px] bg-yellow-100">
                 និទ្ទេស
@@ -663,7 +706,7 @@ export default function GradeGridEditor({
                 អ.ច្បាប់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-orange-800 border-b-2 border-gray-300 w-12 bg-orange-100">
-                ម. ច្បាប់
+                ម.ច្បាប់
               </th>
             </tr>
           </thead>
@@ -688,7 +731,7 @@ export default function GradeGridEditor({
                     {student.studentName}
                   </td>
                   <td
-                    className={`sticky left-[220px] z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2. 5 text-center border-b border-r border-gray-200`}
+                    className={`sticky left-[220px] z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2.5 text-center border-b border-r border-gray-200`}
                   >
                     <span
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
@@ -701,8 +744,8 @@ export default function GradeGridEditor({
                     </span>
                   </td>
 
-                  {/* Colorful Grade Cells */}
-                  {gridData.subjects.map((subject, subjectIndex) => {
+                  {/* ✅ Colorful Grade Cells - Using sortedSubjects */}
+                  {sortedSubjects.map((subject, subjectIndex) => {
                     const cellKey = `${student.studentId}_${subject.id}`;
                     const cell = cells[cellKey];
                     const colors = getSubjectColor(subject.code);
@@ -795,8 +838,7 @@ export default function GradeGridEditor({
             <Check className="w-4 h-4 text-green-600" />
             <span>រក្សារួច</span>
           </div>
-          {/* 🆕 Paste Instruction */}
-          <div className="flex items-center gap-1. 5 ml-4 pl-4 border-l border-gray-300">
+          <div className="flex items-center gap-1.5 ml-4 pl-4 border-l border-gray-300">
             <ClipboardPaste className="w-4 h-4 text-purple-600" />
             <span className="text-purple-700 font-semibold">
               Ctrl+V ដើម្បី Paste ពី Excel

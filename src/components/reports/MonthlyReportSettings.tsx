@@ -1,6 +1,8 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Calendar, Edit3 } from "lucide-react";
+import { formatReportDate } from "@/lib/khmerDateUtils";
+import { useEffect } from "react";
 
 interface MonthlyReportSettingsProps {
   showSettings: boolean;
@@ -9,6 +11,8 @@ interface MonthlyReportSettingsProps {
   setProvince: (value: string) => void;
   examCenter: string;
   setExamCenter: (value: string) => void;
+  schoolName: string;
+  setSchoolName: (value: string) => void;
   roomNumber: string;
   setRoomNumber: (value: string) => void;
   reportTitle: string;
@@ -49,8 +53,13 @@ interface MonthlyReportSettingsProps {
   setShowClassName?: (value: boolean) => void;
   firstPageStudentCount?: number;
   setFirstPageStudentCount?: (value: number) => void;
+  secondPageStudentCount?: number;
+  setSecondPageStudentCount?: (value: number) => void;
   tableFontSize?: number;
   setTableFontSize?: (value: number) => void;
+  useAutoDate?: boolean;
+  setUseAutoDate?: (value: boolean) => void;
+  reportFormat?: string;
 }
 
 export default function MonthlyReportSettings({
@@ -60,6 +69,8 @@ export default function MonthlyReportSettings({
   setProvince,
   examCenter,
   setExamCenter,
+  schoolName,
+  setSchoolName,
   roomNumber,
   setRoomNumber,
   reportTitle,
@@ -100,9 +111,26 @@ export default function MonthlyReportSettings({
   setShowClassName = () => {},
   firstPageStudentCount = 20,
   setFirstPageStudentCount = () => {},
+  secondPageStudentCount = 35,
+  setSecondPageStudentCount = () => {},
   tableFontSize = 10,
   setTableFontSize = () => {},
+  useAutoDate = true,
+  setUseAutoDate = () => {},
+  reportFormat = "summary",
 }: MonthlyReportSettingsProps) {
+  // Auto-update date when useAutoDate or schoolName changes
+  useEffect(() => {
+    if (useAutoDate) {
+      setReportDate(formatReportDate(schoolName));
+    }
+  }, [useAutoDate, schoolName, setReportDate]);
+
+  // Generate today's date in Khmer format
+  const handleGenerateDate = () => {
+    setReportDate(formatReportDate(schoolName));
+  };
+
   return (
     <div className="border-t pt-4">
       <button
@@ -136,7 +164,7 @@ export default function MonthlyReportSettings({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                ឈ្មោះសាលា School Name
+                ឈ្មោះសាលា School Name (Full)
               </label>
               <input
                 type="text"
@@ -144,6 +172,20 @@ export default function MonthlyReportSettings({
                 onChange={(e) => setExamCenter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                 placeholder="វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ"
+              />
+            </div>
+
+            {/* School Name for Date Footer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ឈ្មោះសាលា (សម្រាប់កាលបរិច្ឆេទ) School Name (for Date)
+              </label>
+              <input
+                type="text"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                placeholder="ស្វាយធំ"
               />
             </div>
 
@@ -186,17 +228,49 @@ export default function MonthlyReportSettings({
               />
             </div>
 
-            <div>
+            {/* Enhanced Date Input with Auto-Generate */}
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 កាលបរិច្ឆេទ Date
               </label>
-              <input
-                type="text"
-                value={reportDate}
-                onChange={(e) => setReportDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                placeholder="ថ្ងៃទី.   ....    ខែ.  ....  ឆ្នាំ២០២៥"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={reportDate}
+                  onChange={(e) => {
+                    setReportDate(e.target.value);
+                    if (setUseAutoDate) setUseAutoDate(false);
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  placeholder="ស្វាយធំ ថ្ងៃទី០៨ ខែធ្នូ ឆ្នាំ២០២៥"
+                />
+                <button
+                  onClick={handleGenerateDate}
+                  className="px-4 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors flex items-center gap-2 text-sm font-semibold"
+                  title="បង្កើតកាលបរិច្ឆេទថ្ងៃនេះ"
+                >
+                  <Calendar className="w-4 h-4" />
+                  ថ្ងៃនេះ
+                </button>
+              </div>
+              <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useAutoDate}
+                  onChange={(e) => {
+                    if (setUseAutoDate) {
+                      setUseAutoDate(e.target.checked);
+                      if (e.target.checked) {
+                        setReportDate(formatReportDate(schoolName));
+                      }
+                    }
+                  }}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-xs text-gray-600">
+                  ធ្វើបច្ចុប្បន្នភាពស្វ័យប្រវត្តិ Auto-update to current date
+                </span>
+              </label>
             </div>
 
             <div>
@@ -226,12 +300,12 @@ export default function MonthlyReportSettings({
             </div>
           </div>
 
-          {/* ✅ Layout Settings */}
+          {/* Layout Settings */}
           <div className="p-4 bg-purple-50 rounded-lg">
             <label className="block text-sm font-bold text-gray-700 mb-3">
               ការកំណត់ Layout Settings
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Font Size Control */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -268,14 +342,13 @@ export default function MonthlyReportSettings({
               {/* First Page Student Count */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ចំនួនសិស្សទំព័រដំបូង First Page Students:{" "}
-                  {firstPageStudentCount}
+                  ចំនួនសិស្សទំព័រដំបូង First Page: {firstPageStudentCount}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
-                    min="15"
-                    max="30"
+                    min={reportFormat === "detailed" ? "30" : "15"}
+                    max={reportFormat === "detailed" ? "50" : "30"}
                     step="1"
                     value={firstPageStudentCount}
                     onChange={(e) =>
@@ -285,8 +358,8 @@ export default function MonthlyReportSettings({
                   />
                   <input
                     type="number"
-                    min="15"
-                    max="30"
+                    min={reportFormat === "detailed" ? "30" : "15"}
+                    max={reportFormat === "detailed" ? "50" : "30"}
                     value={firstPageStudentCount}
                     onChange={(e) =>
                       setFirstPageStudentCount(parseInt(e.target.value) || 20)
@@ -295,9 +368,58 @@ export default function MonthlyReportSettings({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>តិច (15)</span>
-                  <span>មធ្យម (20)</span>
-                  <span>ច្រើន (30)</span>
+                  <span>តិច ({reportFormat === "detailed" ? "30" : "15"})</span>
+                  <span>
+                    មធ្យម ({reportFormat === "detailed" ? "40" : "20"})
+                  </span>
+                  <span>
+                    ច្រើន ({reportFormat === "detailed" ? "50" : "30"})
+                  </span>
+                </div>
+              </div>
+
+              {/* ✅ Second Page Student Count - For BOTH formats */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ចំនួនសិស្សទំព័រទី២ Second Page: {secondPageStudentCount}
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={reportFormat === "detailed" ? "30" : "20"}
+                    max={reportFormat === "detailed" ? "55" : "40"}
+                    step="1"
+                    value={secondPageStudentCount}
+                    onChange={(e) =>
+                      setSecondPageStudentCount(parseInt(e.target.value))
+                    }
+                    className="flex-1 h-2 bg-purple-200 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <input
+                    type="number"
+                    min={reportFormat === "detailed" ? "30" : "20"}
+                    max={reportFormat === "detailed" ? "55" : "40"}
+                    value={secondPageStudentCount}
+                    onChange={(e) =>
+                      setSecondPageStudentCount(parseInt(e.target.value) || 20)
+                    }
+                    className="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  {reportFormat === "detailed" ? (
+                    <>
+                      <span>តិច (20)</span>
+                      <span>មធ្យម (30)</span>
+                      <span>ច្រើន (40)</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>តិច (20)</span>
+                      <span>មធ្យម (30)</span>
+                      <span>ច្រើន (40)</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -305,8 +427,10 @@ export default function MonthlyReportSettings({
             {/* Info Message */}
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-xs text-blue-800">
-                💡 <strong>ជំនួយ:</strong> ទំព័រដំបូងមាន header ធំ
-                ដូច្នេះត្រូវការសិស្សតិចជាង។ ទំព័របន្ទាប់ៗគឺ 22 សិស្ស/ទំព័រ។
+                💡 <strong>ជំនួយ:</strong>{" "}
+                {reportFormat === "detailed"
+                  ? "របាយការណ៍លម្អិតមុខវិជ្ជា៖ ទំព័រដំបូងមាន header ធំ ដូច្នេះត្រូវការសិស្សតិចជាង។ ទំព័របន្ទាប់ៗអាចដាក់បានច្រើនជាង។"
+                  : "របាយការណ៍សង្ខេប៖ ទំព័រដំបូងមាន header ធំ។ ទំព័របន្ទាប់ៗមិនមាន header អាចដាក់សិស្សបានច្រើនជាង។"}
               </p>
             </div>
           </div>
@@ -317,15 +441,17 @@ export default function MonthlyReportSettings({
               បង្ហាញ/លាក់ជួរឈរ Show/Hide Columns
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showSubjects}
-                  onChange={(e) => setShowSubjects(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                />
-                <span className="text-sm text-gray-700">បង្ហាញមុខវិជ្ជា</span>
-              </label>
+              {reportFormat === "summary" && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showSubjects}
+                    onChange={(e) => setShowSubjects(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-gray-700">បង្ហាញមុខវិជ្ជា</span>
+                </label>
+              )}
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -387,7 +513,6 @@ export default function MonthlyReportSettings({
                 <span className="text-sm text-gray-700">បន្ទប់ប្រឡង</span>
               </label>
 
-              {/* Show class name for grade-wide */}
               {setShowClassName !== (() => {}) && (
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input

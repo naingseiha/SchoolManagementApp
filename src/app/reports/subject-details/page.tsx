@@ -6,7 +6,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import Button from "@/components/ui/Button";
 import {
   Printer,
   FileSpreadsheet,
@@ -16,14 +15,11 @@ import {
   FileText,
   Users,
   BookOpen,
-  LayoutList,
 } from "lucide-react";
 import { reportsApi, type MonthlyReportData } from "@/lib/api/reports";
 import { formatReportDate } from "@/lib/khmerDateUtils";
-import { paginateReports } from "@/lib/reportPagination";
 
-// Import existing components
-import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
+// Import components
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
 import MonthlyReportSettings from "@/components/reports/MonthlyReportSettings";
 
@@ -34,7 +30,7 @@ import {
   getCurrentKhmerMonth,
 } from "@/lib/reportHelpers";
 
-export default function ReportsPage() {
+export default function SubjectDetailsReportPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { classes } = useData();
   const router = useRouter();
@@ -44,9 +40,6 @@ export default function ReportsPage() {
   // State management
   const [reportType, setReportType] = useState<"single" | "grade-wide">(
     "single"
-  );
-  const [reportFormat, setReportFormat] = useState<"summary" | "detailed">(
-    "summary"
   );
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
@@ -68,34 +61,35 @@ export default function ReportsPage() {
   const [examCenter, setExamCenter] = useState("វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ");
   const [schoolName, setSchoolName] = useState("ស្វាយធំ");
   const [roomNumber, setRoomNumber] = useState("01");
-  const [reportTitle, setReportTitle] = useState("តារាងលទ្ធផលប្រចាំខែ");
+  const [reportTitle, setReportTitle] = useState(
+    "តារាងលទ្ធផលប្រចាំខែ (បង្ហាញលម្អិតមុខវិជ្ជា)"
+  );
   const [examSession, setExamSession] = useState(
     "សប្តាហ៍ទី ១២៖ ខែមករា ២០២៥-២០២៦"
   );
   const [principalName, setPrincipalName] = useState("នាយកសាលា");
   const [teacherName, setTeacherName] = useState("គ្រូបន្ទុកថ្នាក់");
   const [reportDate, setReportDate] = useState(
-    "ថ្ងៃទី.    ....     ខែ.   ....   ឆ្នាំ២០២៥"
+    "ថ្ងៃទី.   ....    ខែ.  ....  ឆ្នាំ២០២៥"
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(28);
-  const [firstPageStudentCount, setFirstPageStudentCount] = useState(28);
-  const [secondPageStudentCount, setSecondPageStudentCount] = useState(40);
-  const [tableFontSize, setTableFontSize] = useState(10);
+  const [studentsPerPage] = useState(20);
+  const [firstPageStudentCount, setFirstPageStudentCount] = useState(38);
+  const [tableFontSize, setTableFontSize] = useState(8);
   const [useAutoDate, setUseAutoDate] = useState(true);
 
-  // Column visibility
-  const [showDateOfBirth, setShowDateOfBirth] = useState(false);
-  const [showGrade, setShowGrade] = useState(true);
-  const [showOther, setShowOther] = useState(true);
-  const [showSubjects, setShowSubjects] = useState(false);
+  // Column visibility - Force show subjects
+  const [showDateOfBirth] = useState(false);
+  const [showGrade] = useState(true);
+  const [showOther] = useState(true);
+  const [showSubjects] = useState(true); // ✅ Always true
   const [showAttendance, setShowAttendance] = useState(true);
   const [showTotal, setShowTotal] = useState(true);
   const [showAverage, setShowAverage] = useState(true);
   const [showGradeLevel, setShowGradeLevel] = useState(true);
   const [showRank, setShowRank] = useState(true);
-  const [showRoomNumber, setShowRoomNumber] = useState(true);
+  const [showRoomNumber, setShowRoomNumber] = useState(false);
   const [showClassName, setShowClassName] = useState(true);
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -158,23 +152,6 @@ export default function ReportsPage() {
       setReportDate(formatReportDate(schoolName));
     }
   }, [useAutoDate, schoolName]);
-
-  // Auto-adjust settings when report format changes
-  useEffect(() => {
-    if (reportFormat === "detailed") {
-      setShowSubjects(true);
-      setTableFontSize(8);
-      setFirstPageStudentCount(48);
-      setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
-    } else {
-      setShowSubjects(false);
-      setTableFontSize(10);
-      setFirstPageStudentCount(28);
-      setFirstPageStudentCount(29);
-      setSecondPageStudentCount(36);
-      setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
-    }
-  }, [reportFormat]);
 
   if (authLoading) {
     return (
@@ -261,6 +238,19 @@ export default function ReportsPage() {
     return sortOrder === "asc" ? comparison : -comparison;
   });
 
+  // Paginate reports
+  const paginatedReports = [];
+  if (sortedReports.length > 0) {
+    paginatedReports.push(sortedReports.slice(0, firstPageStudentCount));
+    for (
+      let i = firstPageStudentCount;
+      i < sortedReports.length;
+      i += studentsPerPage
+    ) {
+      paginatedReports.push(sortedReports.slice(i, i + studentsPerPage));
+    }
+  }
+
   // Transform subjects
   const subjects = reportData
     ? reportData.subjects.map((s) => ({
@@ -274,40 +264,6 @@ export default function ReportsPage() {
       }))
     : [];
 
-  // ✅ Dynamic pagination for BOTH formats
-  const paginatedReports =
-    reportFormat === "detailed"
-      ? paginateReports(
-          sortedReports,
-          {
-            subjectCount: subjects.length,
-            hasAttendance: showAttendance,
-            hasClassName: reportType === "grade-wide" && showClassName,
-            isFirstPage: true,
-            tableFontSize: tableFontSize,
-          },
-          firstPageStudentCount,
-          secondPageStudentCount
-        )
-      : (() => {
-          // ✅ Manual pagination for summary - NOW uses secondPageStudentCount
-          const pages = [];
-          if (sortedReports.length > 0) {
-            // First page
-            pages.push(sortedReports.slice(0, firstPageStudentCount));
-
-            // Subsequent pages - use secondPageStudentCount instead of studentsPerPage
-            for (
-              let i = firstPageStudentCount;
-              i < sortedReports.length;
-              i += secondPageStudentCount
-            ) {
-              pages.push(sortedReports.slice(i, i + secondPageStudentCount));
-            }
-          }
-          return pages;
-        })();
-
   const exportToExcel = () => {
     const data = sortedReports.map((report, index) => {
       const row: any = {
@@ -320,12 +276,10 @@ export default function ReportsPage() {
         row["ថ្នាក់"] = report.student.className;
       }
 
-      if (reportFormat === "detailed") {
-        subjects.forEach((subject) => {
-          const grade = report.grades.find((g) => g.subjectId === subject.id);
-          row[subject.name] = grade?.score || "-";
-        });
-      }
+      subjects.forEach((subject) => {
+        const grade = report.grades.find((g) => g.subjectId === subject.id);
+        row[subject.name] = grade?.score || "-";
+      });
 
       if (showAttendance) {
         row["អវត្តមានមានច្បាប់"] = report.permission;
@@ -356,8 +310,8 @@ export default function ReportsPage() {
 
     const fileName =
       reportType === "single"
-        ? `របាយការណ៍_${reportData?.className}_${selectedMonth}_${selectedYear}. csv`
-        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${selectedMonth}_${selectedYear}.csv`;
+        ? `របាយការណ៍លម្អិត_${reportData?.className}_${selectedMonth}_${selectedYear}.csv`
+        : `របាយការណ៍លម្អិត_ថ្នាក់ទី${reportData?.grade}_${selectedMonth}_${selectedYear}.csv`;
 
     link.setAttribute("download", fileName);
     link.style.visibility = "hidden";
@@ -375,8 +329,8 @@ export default function ReportsPage() {
       <style jsx global>{`
         @media print {
           @page {
-            size: A4;
-            margin: ${reportFormat === "detailed" ? "8mm" : "0"};
+            size: A4 portrait;
+            margin: 8mm;
           }
           body {
             print-color-adjust: exact;
@@ -396,56 +350,25 @@ export default function ReportsPage() {
           <Header />
         </div>
         <main className="p-6 animate-fadeIn">
-          {/* Professional Page Header */}
+          {/* Page Header */}
           <div className="mb-6 no-print">
             <div className="flex items-center gap-4 mb-2">
-              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                <FileText className="w-8 h-8 text-white" />
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-3 rounded-xl shadow-lg">
+                <BookOpen className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-black text-gray-900">
-                  របាយការណ៍ប្រចាំខែ
+                  របាយការណ៍លម្អិតមុខវិជ្ជា
                 </h1>
                 <p className="text-gray-600 font-medium">
-                  Monthly Report - Grade & Attendance Summary
+                  Subject Details Report - All Subjects Display
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Clean Controls Panel */}
+          {/* Controls Panel */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 no-print">
-            {/* Report Format Selector */}
-            <div className="mb-4 pb-4 border-b border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                ទម្រង់របាយការណ៍ Report Format
-              </label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setReportFormat("summary")}
-                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                    reportFormat === "summary"
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  <LayoutList className="w-4 h-4" />
-                  សង្ខេប (Summary)
-                </button>
-                <button
-                  onClick={() => setReportFormat("detailed")}
-                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                    reportFormat === "detailed"
-                      ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  លម្អិតមុខវិជ្ជា (Details)
-                </button>
-              </div>
-            </div>
-
             {/* Report Type Selector */}
             <div className="mb-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -456,7 +379,7 @@ export default function ReportsPage() {
                   onClick={() => setReportType("single")}
                   className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     reportType === "single"
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                      ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -467,7 +390,7 @@ export default function ReportsPage() {
                   onClick={() => setReportType("grade-wide")}
                   className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     reportType === "grade-wide"
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                      ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -487,7 +410,7 @@ export default function ReportsPage() {
                   <select
                     value={selectedClassId}
                     onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -504,7 +427,7 @@ export default function ReportsPage() {
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   >
                     {gradeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -522,7 +445,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {monthOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -539,7 +462,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedYear.toString()}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {yearOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -560,7 +483,7 @@ export default function ReportsPage() {
                     (reportType === "single" && !selectedClassId) ||
                     (reportType === "grade-wide" && !selectedGrade)
                   }
-                  className="w-full h-11 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
+                  className="w-full h-11 px-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -608,15 +531,13 @@ export default function ReportsPage() {
                     autoCircle={autoCircle}
                     setAutoCircle={setAutoCircle}
                     showDateOfBirth={showDateOfBirth}
-                    setShowDateOfBirth={setShowDateOfBirth}
+                    setShowDateOfBirth={() => {}}
                     showGrade={showGrade}
-                    setShowGrade={setShowGrade}
+                    setShowGrade={() => {}}
                     showOther={showOther}
-                    setShowOther={setShowOther}
+                    setShowOther={() => {}}
                     showSubjects={showSubjects}
-                    setShowSubjects={
-                      reportFormat === "summary" ? setShowSubjects : () => {}
-                    }
+                    setShowSubjects={() => {}} // Disabled - always true
                     showAttendance={showAttendance}
                     setShowAttendance={setShowAttendance}
                     showTotal={showTotal}
@@ -637,13 +558,10 @@ export default function ReportsPage() {
                     }
                     firstPageStudentCount={firstPageStudentCount}
                     setFirstPageStudentCount={setFirstPageStudentCount}
-                    secondPageStudentCount={secondPageStudentCount} // ✅ បន្ថែមបន្ទាត់នេះ
-                    setSecondPageStudentCount={setSecondPageStudentCount} // ✅ បន្ថែមបន្ទាត់នេះ
                     tableFontSize={tableFontSize}
                     setTableFontSize={setTableFontSize}
                     useAutoDate={useAutoDate}
                     setUseAutoDate={setUseAutoDate}
-                    reportFormat={reportFormat}
                   />
 
                   {/* Action Buttons */}
@@ -652,7 +570,7 @@ export default function ReportsPage() {
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value as any)}
-                        className="h-10 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        className="h-10 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                       >
                         <option value="rank">តម្រៀបតាមចំណាត់ថ្នាក់</option>
                         <option value="name">តម្រៀបតាមឈ្មោះ</option>
@@ -663,7 +581,7 @@ export default function ReportsPage() {
                         onClick={() =>
                           setSortOrder(sortOrder === "asc" ? "desc" : "asc")
                         }
-                        className="h-10 px-4 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-indigo-400 hover:bg-gray-50 transition-all flex items-center gap-2"
+                        className="h-10 px-4 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-blue-400 hover:bg-gray-50 transition-all flex items-center gap-2"
                       >
                         <ArrowUpDown className="w-4 h-4" />
                         {sortOrder === "asc" ? "ឡើង" : "ចុះ"}
@@ -673,7 +591,7 @@ export default function ReportsPage() {
                     <div className="flex gap-3">
                       <button
                         onClick={handlePrint}
-                        className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-indigo-400 hover:bg-gray-50 transition-all flex items-center gap-2"
+                        className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-blue-400 hover:bg-gray-50 transition-all flex items-center gap-2"
                       >
                         <Printer className="w-4 h-4" />
                         បោះពុម្ព
@@ -704,71 +622,35 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Conditional Report Display based on reportFormat */}
+          {/* Report Display */}
           {reportData && (
             <div ref={reportRef} className="animate-scaleIn">
-              {reportFormat === "summary" ? (
-                <KhmerMonthlyReport
-                  paginatedReports={paginatedReports}
-                  selectedClass={selectedClass}
-                  subjects={subjects}
-                  province={province}
-                  examCenter={examCenter}
-                  roomNumber={roomNumber}
-                  reportTitle={reportTitle}
-                  examSession={examSession}
-                  reportDate={reportDate}
-                  teacherName={teacherName}
-                  principalName={principalName}
-                  showCircles={showCircles}
-                  autoCircle={autoCircle}
-                  showDateOfBirth={showDateOfBirth}
-                  showGrade={showGrade}
-                  showOther={showOther}
-                  studentsPerPage={studentsPerPage}
-                  firstPageStudentCount={firstPageStudentCount}
-                  tableFontSize={tableFontSize}
-                  getSubjectAbbr={getSubjectAbbr}
-                  showSubjects={showSubjects}
-                  showAttendance={showAttendance}
-                  showTotal={showTotal}
-                  showAverage={showAverage}
-                  showGradeLevel={showGradeLevel}
-                  showRank={showRank}
-                  showRoomNumber={showRoomNumber}
-                  selectedYear={selectedYear}
-                  isGradeWide={reportType === "grade-wide"}
-                  showClassName={showClassName}
-                />
-              ) : (
-                <SubjectDetailsReport
-                  paginatedReports={paginatedReports}
-                  selectedClass={selectedClass}
-                  subjects={subjects}
-                  province={province}
-                  examCenter={examCenter}
-                  roomNumber={roomNumber}
-                  reportTitle={reportTitle}
-                  examSession={examSession}
-                  reportDate={reportDate}
-                  teacherName={teacherName}
-                  principalName={principalName}
-                  showCircles={showCircles}
-                  autoCircle={autoCircle}
-                  studentsPerPage={studentsPerPage}
-                  firstPageStudentCount={firstPageStudentCount}
-                  tableFontSize={tableFontSize}
-                  showAttendance={showAttendance}
-                  showTotal={showTotal}
-                  showAverage={showAverage}
-                  showGradeLevel={showGradeLevel}
-                  showRank={showRank}
-                  selectedYear={selectedYear}
-                  isGradeWide={reportType === "grade-wide"}
-                  showClassName={showClassName}
-                  selectedMonth={selectedMonth}
-                />
-              )}
+              <SubjectDetailsReport
+                paginatedReports={paginatedReports}
+                selectedClass={selectedClass}
+                subjects={subjects}
+                province={province}
+                examCenter={examCenter}
+                roomNumber={roomNumber}
+                reportTitle={reportTitle}
+                examSession={examSession}
+                reportDate={reportDate}
+                teacherName={teacherName}
+                principalName={principalName}
+                showCircles={showCircles}
+                autoCircle={autoCircle}
+                studentsPerPage={studentsPerPage}
+                firstPageStudentCount={firstPageStudentCount}
+                tableFontSize={tableFontSize}
+                showAttendance={showAttendance}
+                showTotal={showTotal}
+                showAverage={showAverage}
+                showGradeLevel={showGradeLevel}
+                showRank={showRank}
+                selectedYear={selectedYear}
+                isGradeWide={reportType === "grade-wide"}
+                showClassName={showClassName}
+              />
             </div>
           )}
 
@@ -779,7 +661,7 @@ export default function ReportsPage() {
           ) &&
             !loading && (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
-                <div className="text-6xl mb-4">📊</div>
+                <div className="text-6xl mb-4">📚</div>
                 <p className="text-xl font-semibold text-gray-700 mb-2">
                   សូមជ្រើសរើស
                   {reportType === "single" ? "ថ្នាក់" : "កម្រិតថ្នាក់"}
@@ -788,7 +670,7 @@ export default function ReportsPage() {
                 <p className="text-gray-500">
                   Please select a{" "}
                   {reportType === "single" ? "class" : "grade level"} to view
-                  the report
+                  the subject details report
                 </p>
               </div>
             )}
