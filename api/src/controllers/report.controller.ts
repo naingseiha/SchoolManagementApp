@@ -63,9 +63,7 @@ export class ReportController {
       const classData = await prisma.class.findUnique({
         where: { id: classId },
         include: {
-          students: {
-            orderBy: { khmerName: "asc" },
-          },
+          students: true, // ✅ Remove orderBy here, sort later
           teacher: true,
         },
       });
@@ -76,6 +74,13 @@ export class ReportController {
           message: "Class not found",
         });
       }
+
+      // ✅ Sort students Excel-style
+      const sortedStudents = [...classData.students].sort((a, b) => {
+        const nameA = a.khmerName || `${a.lastName} ${a.firstName}`;
+        const nameB = b.khmerName || `${b.lastName} ${b.firstName}`;
+        return nameA.localeCompare(nameB, "en-US");
+      });
 
       // ✅ FIXED: Filter subjects by grade AND track
       const whereClause: any = {
@@ -192,8 +197,8 @@ export class ReportController {
         `✅ Total coefficient for class: ${totalCoefficientForClass}`
       );
 
-      // ✅ FIXED: Calculate using filtered subjects only
-      const studentsData = classData.students.map((student) => {
+      // ✅ Use sorted students
+      const studentsData = sortedStudents.map((student) => {
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
         let gradeCount = 0;
@@ -254,7 +259,7 @@ export class ReportController {
           classId: classData.id,
           className: classData.name,
           grade: classData.grade,
-          track: classData.track || null, // ✅ Include track
+          track: classData.track || null,
           teacherName: classData.teacher
             ? `${classData.teacher.lastName} ${classData.teacher.firstName}`
             : null,
@@ -292,9 +297,7 @@ export class ReportController {
       const classes = await prisma.class.findMany({
         where: { grade: grade },
         include: {
-          students: {
-            orderBy: { khmerName: "asc" },
-          },
+          students: true, // ✅ Remove orderBy, sort later
         },
       });
 
@@ -310,9 +313,16 @@ export class ReportController {
           ...s,
           className: c.name,
           classId: c.id,
-          classTrack: c.track, // ✅ Include class track
+          classTrack: c.track,
         }))
       );
+
+      // ✅ Sort students Excel-style
+      const sortedStudents = [...allStudents].sort((a, b) => {
+        const nameA = a.khmerName || `${a.lastName} ${a.firstName}`;
+        const nameB = b.khmerName || `${b.lastName} ${b.firstName}`;
+        return nameA.localeCompare(nameB, "en-US");
+      });
 
       // ✅ FIXED: Get ALL subjects for this grade (all tracks)
       const subjects = await prisma.subject.findMany({
@@ -359,7 +369,7 @@ export class ReportController {
           ],
           year: parseInt(year as string),
           studentId: {
-            in: allStudents.map((s) => s.id),
+            in: sortedStudents.map((s) => s.id),
           },
         },
         include: {
@@ -382,7 +392,7 @@ export class ReportController {
         where: {
           date: { gte: startDate, lte: endDate },
           studentId: {
-            in: allStudents.map((s) => s.id),
+            in: sortedStudents.map((s) => s.id),
           },
         },
       });
@@ -402,8 +412,8 @@ export class ReportController {
         }
       });
 
-      // ✅ FIXED: Calculate per-student with their class track
-      const studentsData = allStudents.map((student) => {
+      // ✅ Use sorted students
+      const studentsData = sortedStudents.map((student) => {
         // ✅ Filter subjects for THIS student's class track
         const gradeNum = parseInt(grade);
         const studentSubjects =
@@ -495,7 +505,7 @@ export class ReportController {
             code: s.code,
             maxScore: s.maxScore,
             coefficient: s.coefficient,
-            track: s.track, // ✅ Include track info
+            track: s.track,
           })),
           students: finalData,
         },
@@ -508,9 +518,7 @@ export class ReportController {
       });
     }
   }
-  /**
-   * ✅ UPDATED: Get student tracking book with attendance data
-   */
+
   /**
    * ✅ FIXED: Get student tracking book - Filter subjects by track
    */
@@ -535,17 +543,7 @@ export class ReportController {
               lastName: true,
             },
           },
-          students: {
-            orderBy: { khmerName: "asc" },
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              khmerName: true,
-              gender: true,
-              dateOfBirth: true,
-            },
-          },
+          students: true, // ✅ Remove orderBy, sort later
         },
       });
 
@@ -556,8 +554,15 @@ export class ReportController {
         });
       }
 
+      // ✅ Sort students Excel-style
+      const sortedStudents = [...classInfo.students].sort((a, b) => {
+        const nameA = a.khmerName || `${a.lastName} ${a.firstName}`;
+        const nameB = b.khmerName || `${b.lastName} ${b.firstName}`;
+        return nameA.localeCompare(nameB, "en-US");
+      });
+
       console.log(`\n📚 Class: ${classInfo.name}`);
-      console.log(`👥 Students: ${classInfo.students.length}`);
+      console.log(`👥 Students: ${sortedStudents.length}`);
       console.log(`📊 Grade: ${classInfo.grade}`);
       console.log(`🎯 Track: ${classInfo.track || "N/A"}`);
 
@@ -575,9 +580,9 @@ export class ReportController {
         const gradeNum = parseInt(classInfo.grade);
         if ((gradeNum === 11 || gradeNum === 12) && classInfo.track) {
           subjectWhereClause.OR = [
-            { track: classInfo.track }, // Track-specific subjects
-            { track: null }, // Common subjects
-            { track: "common" }, // Explicitly common subjects
+            { track: classInfo.track },
+            { track: null },
+            { track: "common" },
           ];
 
           console.log(`🔍 Filtering subjects by track: ${classInfo.track}`);
@@ -594,7 +599,7 @@ export class ReportController {
           code: true,
           maxScore: true,
           coefficient: true,
-          track: true, // ✅ Include track
+          track: true,
         },
       });
 
@@ -608,10 +613,10 @@ export class ReportController {
         classId: classId,
         year: parseInt(year as string),
         studentId: {
-          in: classInfo.students.map((s) => s.id),
+          in: sortedStudents.map((s) => s.id),
         },
         subjectId: {
-          in: subjects.map((s) => s.id), // ✅ Only filtered subjects
+          in: subjects.map((s) => s.id),
         },
       };
 
@@ -668,7 +673,7 @@ export class ReportController {
       const attendanceWhereClause: any = {
         classId: classId,
         studentId: {
-          in: classInfo.students.map((s) => s.id),
+          in: sortedStudents.map((s) => s.id),
         },
       };
 
@@ -745,7 +750,7 @@ export class ReportController {
         };
       } = {};
 
-      classInfo.students.forEach((student) => {
+      sortedStudents.forEach((student) => {
         attendanceSummary[student.id] = {
           totalAbsent: 0,
           permission: 0,
@@ -771,6 +776,52 @@ export class ReportController {
         }
       });
 
+      // ✅ Helper function for subject grade level
+      const getSubjectGradeLevel = (
+        score: number | null,
+        maxScore: number
+      ): {
+        level: string;
+        levelKhmer: string;
+        percentage: number;
+      } => {
+        if (score === null || score === undefined) {
+          return {
+            level: "-",
+            levelKhmer: "-",
+            percentage: 0,
+          };
+        }
+
+        const percentage = (score / maxScore) * 100;
+
+        let level = "F";
+        let levelKhmer = "ខ្សោយ";
+
+        if (percentage >= 80) {
+          level = "A";
+          levelKhmer = "ល្អប្រសើរ";
+        } else if (percentage >= 70) {
+          level = "B";
+          levelKhmer = "ល្អណាស់";
+        } else if (percentage >= 60) {
+          level = "C";
+          levelKhmer = "ល្អ";
+        } else if (percentage >= 50) {
+          level = "D";
+          levelKhmer = "ល្អបង្គួរ";
+        } else if (percentage >= 40) {
+          level = "E";
+          levelKhmer = "មធ្យម";
+        }
+
+        return {
+          level,
+          levelKhmer,
+          percentage: parseFloat(percentage.toFixed(2)),
+        };
+      };
+
       // ✅ FIXED: Calculate total coefficient from filtered subjects
       const totalCoefficientForClass = subjects.reduce(
         (sum, s) => sum + s.coefficient,
@@ -779,15 +830,15 @@ export class ReportController {
 
       console.log(`\n📊 Total Coefficient: ${totalCoefficientForClass}`);
 
-      // Build student data
-      const studentsData = classInfo.students.map((student) => {
+      // Build student data with subject grade levels
+      const studentsData = sortedStudents.map((student) => {
         const subjectScores: {
           [subjectId: string]: {
             score: number | null;
             maxScore: number;
-            gradeLevel: string; // ✅ NEW
-            gradeLevelKhmer: string; // ✅ NEW
-            percentage: number; // ✅ NEW
+            gradeLevel: string;
+            gradeLevelKhmer: string;
+            percentage: number;
           };
         } = {};
 
@@ -894,13 +945,13 @@ export class ReportController {
           classId: classInfo.id,
           className: classInfo.name,
           grade: classInfo.grade,
-          track: classInfo.track || null, // ✅ Include track
+          track: classInfo.track || null,
           year: parseInt(year as string),
           month: (month as string) || null,
           teacherName: classInfo.teacher
             ? `${classInfo.teacher.lastName} ${classInfo.teacher.firstName}`
             : "",
-          totalCoefficient: totalCoefficientForClass, // ✅ Include total coefficient
+          totalCoefficient: totalCoefficientForClass,
           subjects: subjects.map((s) => ({
             id: s.id,
             nameKh: s.nameKh,
@@ -908,7 +959,7 @@ export class ReportController {
             code: s.code,
             maxScore: s.maxScore,
             coefficient: s.coefficient,
-            track: s.track, // ✅ Include track info
+            track: s.track,
           })),
           students: finalData,
         },

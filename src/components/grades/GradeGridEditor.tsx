@@ -39,9 +39,7 @@ export default function GradeGridEditor({
   }>({});
 
   // ✅ Sort subjects based on grade level
-  // ✅ Improved grade extraction with multiple formats support
   const sortedSubjects = useMemo(() => {
-    // Try multiple patterns to extract grade number
     const className = gridData.className || "";
 
     console.log("🎯 Original className:", className);
@@ -84,7 +82,6 @@ export default function GradeGridEditor({
     }
 
     console.log("🔢 Extracted grade:", grade);
-    // console.log("🎯 Should use custom order:", shouldUseCustomOrder(grade));
 
     const sorted = sortSubjectsByOrder(gridData.subjects, grade);
 
@@ -100,6 +97,22 @@ export default function GradeGridEditor({
     return sorted;
   }, [gridData.subjects, gridData.className]);
 
+  // ✅ NEW: Sort students Excel-style
+  const sortedStudents = useMemo(() => {
+    const students = [...gridData.students].sort((a, b) => {
+      const nameA = a.studentName || "";
+      const nameB = b.studentName || "";
+      return nameA.localeCompare(nameB, "en-US");
+    });
+
+    console.log(
+      "👥 Students sorted Excel-style:",
+      students.map((s) => s.studentName)
+    );
+
+    return students;
+  }, [gridData.students]);
+
   // ✅ Get ordering message
   const orderingMessage = useMemo(() => {
     const gradeMatch = gridData.className?.match(/^(\d+)/);
@@ -111,7 +124,8 @@ export default function GradeGridEditor({
   useEffect(() => {
     const initialCells: { [key: string]: CellState } = {};
 
-    gridData.students.forEach((student) => {
+    // ✅ Use sortedStudents instead of gridData.students
+    sortedStudents.forEach((student) => {
       gridData.subjects.forEach((subject) => {
         const cellKey = `${student.studentId}_${subject.id}`;
         const gradeData = student.grades[subject.id];
@@ -129,7 +143,7 @@ export default function GradeGridEditor({
     });
 
     setCells(initialCells);
-  }, [gridData]);
+  }, [gridData, sortedStudents]);
 
   // ✅ Fetch attendance summary when grid loads
   useEffect(() => {
@@ -313,17 +327,17 @@ export default function GradeGridEditor({
       data.forEach((row, rowOffset) => {
         const studentIndex = startStudentIndex + rowOffset;
 
-        if (studentIndex >= gridData.students.length) {
+        // ✅ Use sortedStudents
+        if (studentIndex >= sortedStudents.length) {
           console.warn(`⚠️ Student index ${studentIndex} out of bounds`);
           return;
         }
 
-        const student = gridData.students[studentIndex];
+        const student = sortedStudents[studentIndex];
 
         row.forEach((value, colOffset) => {
           const subjectIndex = startSubjectIndex + colOffset;
 
-          // ✅ Use sortedSubjects for paste
           if (subjectIndex >= sortedSubjects.length) {
             console.warn(`⚠️ Subject index ${subjectIndex} out of bounds`);
             return;
@@ -364,12 +378,12 @@ export default function GradeGridEditor({
     subjectIndex: number
   ) => {
     const totalSubjects = sortedSubjects.length;
-    const totalStudents = gridData.students.length;
+    const totalStudents = sortedStudents.length;
 
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
       if (studentIndex < totalStudents - 1) {
-        const nextKey = `${gridData.students[studentIndex + 1].studentId}_${
+        const nextKey = `${sortedStudents[studentIndex + 1].studentId}_${
           sortedSubjects[subjectIndex].id
         }`;
         inputRefs.current[nextKey]?.focus();
@@ -377,7 +391,7 @@ export default function GradeGridEditor({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       if (studentIndex > 0) {
-        const prevKey = `${gridData.students[studentIndex - 1].studentId}_${
+        const prevKey = `${sortedStudents[studentIndex - 1].studentId}_${
           sortedSubjects[subjectIndex].id
         }`;
         inputRefs.current[prevKey]?.focus();
@@ -385,7 +399,7 @@ export default function GradeGridEditor({
     } else if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
       if (subjectIndex < totalSubjects - 1) {
-        const nextKey = `${gridData.students[studentIndex].studentId}_${
+        const nextKey = `${sortedStudents[studentIndex].studentId}_${
           sortedSubjects[subjectIndex + 1].id
         }`;
         inputRefs.current[nextKey]?.focus();
@@ -393,7 +407,7 @@ export default function GradeGridEditor({
     } else if (e.key === "Tab" && e.shiftKey) {
       e.preventDefault();
       if (subjectIndex > 0) {
-        const prevKey = `${gridData.students[studentIndex].studentId}_${
+        const prevKey = `${sortedStudents[studentIndex].studentId}_${
           sortedSubjects[subjectIndex - 1].id
         }`;
         inputRefs.current[prevKey]?.focus();
@@ -406,8 +420,8 @@ export default function GradeGridEditor({
     const baseCode = code.split("-")[0];
 
     const khmerNames: { [key: string]: string } = {
-      WRITING: "តែង. ក្តី",
-      WRITER: "ស. អាន",
+      WRITING: "តែង.  ក្តី",
+      WRITER: "ស.  អាន",
       DICTATION: "ចំ. តាម",
       KHM: "ភាសាខ្មែរ",
       MATH: "គណិត",
@@ -488,9 +502,9 @@ export default function GradeGridEditor({
     );
   }, [gridData.subjects]);
 
-  // Real-time calculations
+  // Real-time calculations - ✅ Use sortedStudents
   const calculatedStudents = useMemo(() => {
-    return gridData.students.map((student) => {
+    return sortedStudents.map((student) => {
       let totalScore = 0;
       let totalMaxScore = 0;
 
@@ -528,7 +542,7 @@ export default function GradeGridEditor({
         gradeLevel,
       };
     });
-  }, [cells, gridData.students, gridData.subjects, totalCoefficientForClass]);
+  }, [cells, sortedStudents, gridData.subjects, totalCoefficientForClass]);
 
   // Calculate ranks and add attendance
   const rankedStudents = useMemo(() => {
@@ -609,7 +623,7 @@ export default function GradeGridEditor({
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
                   <span className="text-sm font-bold text-white">
-                    {gridData.students.length} សិស្ស
+                    {sortedStudents.length} សិស្ស
                   </span>
                 </div>
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
@@ -629,7 +643,7 @@ export default function GradeGridEditor({
         </div>
       </div>
 
-      {/* ✅ NEW: Ordering Message */}
+      {/* ✅ Ordering Message */}
       {orderingMessage && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 px-6 py-2">
           <p className="text-sm font-semibold text-blue-800">
@@ -700,7 +714,7 @@ export default function GradeGridEditor({
                 និទ្ទេស
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-indigo-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-indigo-100">
-                ចំ.ថ្នាក់
+                ចំ. ថ្នាក់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-red-800 border-b-2 border-r border-gray-300 w-12 bg-red-100">
                 អ.ច្បាប់
