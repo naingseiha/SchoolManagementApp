@@ -9,10 +9,10 @@ interface StudentTranscriptProps {
     placeOfBirth: string;
     gender: string;
     fatherName: string;
-    fatherOccupation?: string; // ✅ NEW: Optional field
+    fatherOccupation?: string;
     motherName: string;
-    motherOccupation?: string; // ✅ NEW: Optional field
-    guardianPhone?: string; // ✅ NEW: Optional field
+    motherOccupation?: string;
+    guardianPhone?: string;
     address: string;
     className: string;
     grade: string;
@@ -24,7 +24,13 @@ interface StudentTranscriptProps {
     maxScore: number;
   }>;
   subjectScores: {
-    [subjectId: string]: { score: number | null; maxScore: number };
+    [subjectId: string]: {
+      score: number | null;
+      maxScore: number;
+      gradeLevel?: string;
+      gradeLevelKhmer?: string;
+      percentage?: number;
+    };
   };
   summary: {
     totalScore: number;
@@ -34,7 +40,6 @@ interface StudentTranscriptProps {
     rank: number;
   };
   attendance?: {
-    // ✅ NEW: Optional attendance data
     totalAbsent: number;
     permission: number;
     withoutPermission: number;
@@ -60,7 +65,6 @@ export default function StudentTranscript({
   schoolName,
   province,
 }: StudentTranscriptProps) {
-  // ✅ Helper function to display value or N/A
   const displayValue = (
     value: string | number | null | undefined,
     suffix: string = ""
@@ -147,7 +151,7 @@ export default function StudentTranscript({
                   style={{
                     fontFamily: "'Khmer OS Muol Light', serif",
                     fontSize: "16px",
-                    lineHeight: "1.6",
+                    lineHeight: "1. 6",
                   }}
                 >
                   ជាតិ សាសនា ព្រះមហាក្សត្រ
@@ -190,7 +194,7 @@ export default function StudentTranscript({
             {/* Student Details */}
             <div
               className="space-y-2 flex-1"
-              style={{ fontSize: "11px", lineHeight: "1.8" }}
+              style={{ fontSize: "11px", lineHeight: "1. 8" }}
             >
               <div className="flex items-start">
                 <span className="text-red-600 font-bold">
@@ -215,7 +219,7 @@ export default function StudentTranscript({
                   ៖ {displayValue(studentData.studentName)}
                 </span>
                 <span style={{ fontSize: "10px", marginLeft: "auto" }}>
-                  ភេទ៖ {studentData.gender === "MALE" ? "ប្រុស" : "ស្រី"}
+                  ភេទ៖ {studentData.gender === "male" ? "ប្រុស" : "ស្រី"}
                 </span>
               </div>
 
@@ -233,7 +237,6 @@ export default function StudentTranscript({
                 <span>៖ {displayValue(studentData.placeOfBirth)}</span>
               </div>
 
-              {/* ✅ Father with dynamic occupation */}
               <div className="flex items-start">
                 <span className="font-bold" style={{ width: "105px" }}>
                   ឪពុក
@@ -246,7 +249,6 @@ export default function StudentTranscript({
                 </span>
               </div>
 
-              {/* ✅ Mother with dynamic occupation */}
               <div className="flex items-start">
                 <span className="font-bold" style={{ width: "105px" }}>
                   ម្តាយ
@@ -266,7 +268,6 @@ export default function StudentTranscript({
                 <span>៖ {displayValue(studentData.address)}</span>
               </div>
 
-              {/* ✅ Guardian phone with dynamic value */}
               <div className="flex items-start">
                 <span className="font-bold" style={{ width: "105px" }}>
                   ទូរសព្ទអាណាព្យាបាល
@@ -277,10 +278,9 @@ export default function StudentTranscript({
 
             {/* Footer Signatures */}
             <div className="mt-4 pt-3 border-t border-gray-300">
-              {/* ✅ Attendance with dynamic values */}
               <div
                 className="grid grid-cols-3 gap-1 text-center"
-                style={{ fontSize: "9px", lineHeight: "1.5" }}
+                style={{ fontSize: "9px", lineHeight: "1. 5" }}
               >
                 <div>
                   <p className="font-bold">
@@ -312,13 +312,13 @@ export default function StudentTranscript({
               >
                 <p>មតិឆ្លើយឆ្លងរបស់អាណាព្យាបាល៖</p>
                 <p>
-                  ................................................................................................................................................................................................
+                  .........................................................................................................................................................................................
                 </p>
                 <p>
-                  ................................................................................................................................................................................................
+                  .........................................................................................................................................................................................
                 </p>
                 <p>
-                  ................................................................................................................................................................................................
+                  .........................................................................................................................................................................................
                 </p>
               </div>
 
@@ -326,10 +326,13 @@ export default function StudentTranscript({
                 className="mt-4 text-center"
                 style={{ fontSize: "10px", lineHeight: "1. 6" }}
               >
-                <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស២៥៦៩</p>
+                <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព. ស២៥៦៩</p>
                 <p>ស្វាយធំ ថ្ងៃទី៣១ ខែឧសភា ឆ្នាំ២០២៥</p>
                 <p className="mt-2">បានឃើញ និងឯកភាព</p>
-                <p className="font-bold text-blue-700">
+                <p
+                  className="font-bold text-blue-700"
+                  style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                >
                   {principalName || "នាយកសាលា"}
                 </p>
               </div>
@@ -353,24 +356,39 @@ export default function StudentTranscript({
                   <th
                     rowSpan={2}
                     className="border border-black px-2 py-2"
-                    style={{ width: "7%" }}
+                    style={{
+                      width: "7%",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     ល.រ
                   </th>
                   <th
                     rowSpan={2}
                     className="border border-black px-2 py-2"
-                    style={{ width: "25%" }}
+                    style={{
+                      width: "25%",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     មុខវិជ្ជា
                   </th>
-                  <th colSpan={3} className="border border-black px-2 py-1">
+                  <th
+                    colSpan={3}
+                    className="border border-black px-2 py-1"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
+                  >
                     ពិន្ទុ
                   </th>
                   <th
                     rowSpan={2}
                     className="border border-black px-2 py-2"
-                    style={{ width: "15%" }}
+                    style={{
+                      width: "15%",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     ផ្សេងៗ
                   </th>
@@ -378,19 +396,28 @@ export default function StudentTranscript({
                 <tr style={{ backgroundColor: "#FFF9E6" }}>
                   <th
                     className="border border-black px-2 py-1"
-                    style={{ width: "12%" }}
+                    style={{
+                      width: "12%",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     អតិបរមា
                   </th>
                   <th
                     className="border border-black px-2 py-1"
-                    style={{ width: "15%" }}
+                    style={{
+                      width: "15%",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     ពិន្ទុបាន
                   </th>
                   <th
                     className="border border-black px-2 py-1"
-                    style={{ width: "12%" }}
+                    style={{
+                      width: "12%",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     និទ្ទេស
                   </th>
@@ -403,31 +430,51 @@ export default function StudentTranscript({
                   const score = scoreData?.score;
                   const maxScore = scoreData?.maxScore || subject.maxScore;
 
+                  // ✅ Use grade level from backend if available, otherwise calculate
                   let gradeLevel = "";
-                  if (score !== null && score !== undefined) {
+                  if (scoreData?.gradeLevelKhmer) {
+                    gradeLevel = scoreData.gradeLevelKhmer;
+                  } else if (score !== null && score !== undefined) {
                     const percentage = (score / maxScore) * 100;
-                    if (percentage >= 90) gradeLevel = "ល្អបំផុត";
-                    else if (percentage >= 80) gradeLevel = "ល្អ";
-                    else if (percentage >= 70) gradeLevel = "ល្អបុរេ";
-                    else if (percentage >= 60) gradeLevel = "មធ្យម";
-                    else if (percentage >= 50) gradeLevel = "ខ្សោយ";
-                    else gradeLevel = "";
+                    if (percentage >= 80) gradeLevel = "ល្អប្រសើរ";
+                    else if (percentage >= 70) gradeLevel = "ល្អណាស់";
+                    else if (percentage >= 60) gradeLevel = "ល្អ";
+                    else if (percentage >= 50) gradeLevel = "ល្អបង្គួរ";
+                    else if (percentage >= 40) gradeLevel = "មធ្យម";
+                    else gradeLevel = "ខ្សោយ";
                   }
 
                   return (
                     <tr key={subject.id}>
-                      <td className="border border-black px-2 py-1 text-center">
+                      <td
+                        className="border border-black px-2 py-1 text-center"
+                        style={{
+                          fontFamily: "'Time New Roman'",
+                          fontWeight: "bold",
+                        }}
+                      >
                         {index + 1}
                       </td>
                       <td className="border border-black px-2 py-1">
                         {subject.nameKh}
                       </td>
-                      <td className="border border-black px-2 py-1 text-center font-bold">
+                      <td
+                        className="border border-black px-2 py-1 text-center font-bold"
+                        style={{
+                          fontFamily: "'Time New Roman'",
+                          fontWeight: "bold",
+                        }}
+                      >
                         {maxScore}
                       </td>
                       <td
                         className="border border-black px-2 py-1 text-center font-bold"
-                        style={{ color: "#2563EB", fontSize: "11px" }}
+                        style={{
+                          color: "#2563EB",
+                          fontSize: "11px",
+                          fontFamily: "'Time New Roman'",
+                          fontWeight: "bold",
+                        }}
                       >
                         {score !== null && score !== undefined
                           ? Math.round(score)
@@ -436,17 +483,8 @@ export default function StudentTranscript({
                       <td className="border border-black px-2 py-1 text-center">
                         {gradeLevel || "N/A"}
                       </td>
-                      <td className="border border-black px-2 py-1 text-center font-bold text-blue-700">
-                        {score !== null &&
-                        score !== undefined &&
-                        score >= maxScore * 0.5
-                          ? "ល្អបំផុត"
-                          : score !== null &&
-                            score !== undefined &&
-                            score >= maxScore * 0.4
-                          ? "ល្អ"
-                          : "N/A"}
-                      </td>
+                      {/* ✅ Keep column but remove data */}
+                      <td className="border border-black px-2 py-1 text-center"></td>
                     </tr>
                   );
                 })}
@@ -470,26 +508,43 @@ export default function StudentTranscript({
                 {/* Summary Rows */}
                 <tr style={{ backgroundColor: "#EFF6FF" }}>
                   <td
-                    colSpan={2}
+                    colSpan={3}
                     className="border border-black px-2 py-2 text-center font-bold"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     ពិន្ទុសរុប
                   </td>
-                  <td className="border border-black px-2 py-2"></td>
+
                   <td
                     className="border border-black px-2 py-2 text-center font-bold"
-                    style={{ color: "#2563EB", fontSize: "13px" }}
+                    style={{
+                      color: "#2563EB",
+                      fontSize: "13px",
+                      fontFamily: "'Time New Roman'",
+                    }}
                   >
                     {summary.totalScore > 0
                       ? summary.totalScore.toFixed(0)
                       : "N/A"}
                   </td>
-                  <td className="border border-black px-2 py-2 text-center font-bold">
-                    ចំណាត់ថ្នាក់ចុង
+                  <td
+                    className="border border-black px-2 py-2 text-center font-bold"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
+                  >
+                    ចំណាត់ថ្នាក់
                   </td>
                   <td
                     className="border border-black px-2 py-2 text-center font-bold"
-                    style={{ color: "#DC2626", fontSize: "13px" }}
+                    style={{
+                      color: "#DC2626",
+                      fontSize: "13px",
+                      fontFamily: "'Time New Roman'",
+                      fontWeight: "bold",
+                    }}
                   >
                     {summary.rank > 0 ? summary.rank : "N/A"}
                   </td>
@@ -497,26 +552,42 @@ export default function StudentTranscript({
 
                 <tr style={{ backgroundColor: "#EFF6FF" }}>
                   <td
-                    colSpan={2}
+                    colSpan={3}
                     className="border border-black px-2 py-2 text-center font-bold"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     មធ្យមភាគ
                   </td>
-                  <td className="border border-black px-2 py-2"></td>
                   <td
                     className="border border-black px-2 py-2 text-center font-bold"
-                    style={{ color: "#2563EB", fontSize: "13px" }}
+                    style={{
+                      color: "#2563EB",
+                      fontSize: "13px",
+                      fontFamily: "'Time New Roman'",
+                      fontWeight: "bold",
+                    }}
                   >
                     {summary.averageScore > 0
                       ? summary.averageScore.toFixed(2)
                       : "N/A"}
                   </td>
-                  <td className="border border-black px-2 py-2 text-center font-bold">
+                  <td
+                    className="border border-black px-2 py-2 text-center font-bold"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
+                  >
                     និទ្ទេស
                   </td>
                   <td
                     className="border border-black px-2 py-2 text-center font-bold"
-                    style={{ color: "#2563EB", fontSize: "13px" }}
+                    style={{
+                      color: "#2563EB",
+                      fontSize: "13px",
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
                   >
                     {summary.gradeLevelKhmer || "N/A"}
                   </td>
@@ -528,7 +599,7 @@ export default function StudentTranscript({
             <div className="flex-1 flex flex-col justify-end p-3">
               <div
                 className="text-center space-y-1"
-                style={{ fontSize: "10px", lineHeight: "1. 6" }}
+                style={{ fontSize: "10px", lineHeight: "1.6" }}
               >
                 <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស២៥៦៩</p>
                 <p>ស្វាយធំ ថ្ងៃទី៣១ ខែឧសភា ឆ្នាំ២០២៥</p>

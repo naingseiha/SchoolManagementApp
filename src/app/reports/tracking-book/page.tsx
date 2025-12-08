@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { reportsApi, type StudentTrackingBookData } from "@/lib/api/reports";
 import StudentTranscript from "@/components/reports/StudentTranscript";
+import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 
 const getCurrentKhmerMonth = (): string => {
   const monthNames = [
@@ -54,6 +55,34 @@ export default function TrackingBookPage() {
 
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // ✅ Sort subjects based on grade level
+  const sortedTrackingData = useMemo(() => {
+    if (!trackingData) return null;
+
+    // Extract grade number from grade string
+    const gradeNum = parseInt(trackingData.grade);
+
+    console.log("📊 [Tracking Book] Sorting subjects for grade:", gradeNum);
+    console.log(
+      "📋 [Tracking Book] Original subjects:",
+      trackingData.subjects.map((s) => s.nameKh)
+    );
+
+    // Sort subjects
+    const sortedSubjects = sortSubjectsByOrder(trackingData.subjects, gradeNum);
+
+    console.log(
+      "✅ [Tracking Book] Sorted subjects:",
+      sortedSubjects.map((s) => s.nameKh)
+    );
+
+    // Return new tracking data with sorted subjects
+    return {
+      ...trackingData,
+      subjects: sortedSubjects,
+    };
+  }, [trackingData]);
+
   // ✅ Pass month parameter to API
   const fetchTrackingBook = async () => {
     if (!selectedClassId) return;
@@ -64,7 +93,7 @@ export default function TrackingBookPage() {
       const data = await reportsApi.getStudentTrackingBook(
         selectedClassId,
         selectedYear,
-        selectedMonth || undefined, // ✅ Pass selected month
+        selectedMonth || undefined,
         selectedSubjectId || undefined
       );
       setTrackingData(data);
@@ -95,107 +124,154 @@ export default function TrackingBookPage() {
     ...classes.map((c) => ({ value: c.id, label: c.name })),
   ];
 
+  const monthOptions = [
+    { value: "", label: "ទាំងអស់" },
+    { value: "មករា", label: "មករា" },
+    { value: "កុម្ភៈ", label: "កុម្ភៈ" },
+    { value: "មីនា", label: "មីនា" },
+    { value: "មេសា", label: "មេសា" },
+    { value: "ឧសភា", label: "ឧសភា" },
+    { value: "មិថុនា", label: "មិថុនា" },
+    { value: "កក្កដា", label: "កក្កដា" },
+    { value: "សីហា", label: "សីហា" },
+    { value: "កញ្ញា", label: "កញ្ញា" },
+    { value: "តុលា", label: "តុលា" },
+    { value: "វិច្ឆិកា", label: "វិច្ឆិកា" },
+    { value: "ធ្នូ", label: "ធ្នូ" },
+  ];
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => {
     const year = new Date().getFullYear() - 2 + i;
     return { value: year.toString(), label: year.toString() };
   });
 
-  const monthOptions = [
-    { value: "", label: "ទាំងអស់ (All Months)" },
-    { value: "មករា", label: "មករា (January)" },
-    { value: "កុម្ភៈ", label: "កុម្ភៈ (February)" },
-    { value: "មីនា", label: "មីនា (March)" },
-    { value: "មេសា", label: "មេសា (April)" },
-    { value: "ឧសភា", label: "ឧសភា (May)" },
-    { value: "មិថុនា", label: "មិថុនា (June)" },
-    { value: "កក្កដា", label: "កក្កដា (July)" },
-    { value: "សីហា", label: "សីហា (August)" },
-    { value: "កញ្ញា", label: "កញ្ញា (September)" },
-    { value: "តុលា", label: "តុលា (October)" },
-    { value: "វិច្ឆិកា", label: "វិច្ឆិកា (November)" },
-    { value: "ធ្នូ", label: "ធ្នូ (December)" },
-  ];
-
-  const selectedClass = classes.find((c) => c.id === selectedClassId);
-  const availableSubjects = selectedClass
-    ? allSubjects.filter((s) => s.grade === selectedClass.grade && s.isActive)
+  // ✅ Get subjects for selected class
+  const classSubjects = selectedClassId
+    ? allSubjects.filter((s) => {
+        const selectedClass = classes.find((c) => c.id === selectedClassId);
+        if (!selectedClass) return false;
+        return s.grade === selectedClass.grade;
+      })
     : [];
 
   const subjectOptions = [
-    { value: "", label: "ទាំងអស់មុខវិជ្ជា (All Subjects)" },
-    ...availableSubjects.map((s) => ({ value: s.id, label: s.nameKh })),
+    { value: "", label: "មុខវិជ្ជាទាំងអស់" },
+    ...classSubjects.map((s) => ({
+      value: s.id,
+      label: s.nameKh || s.name,
+    })),
   ];
+
+  // ✅ Transform data for StudentTranscript with sorted subjects
+  const transcriptData = sortedTrackingData
+    ? sortedTrackingData.students.map((student) => ({
+        studentData: {
+          // ✅ Wrap in studentData object
+          studentId: student.studentId,
+          studentName: student.studentName,
+          studentNumber: `${String(
+            sortedTrackingData.students.indexOf(student) + 1
+          ).padStart(4, "0")}`,
+          dateOfBirth: student.dateOfBirth || "01-01-2010",
+          placeOfBirth: "សៀមរាប",
+          gender: student.gender,
+          fatherName: "ឪពុក",
+          motherName: "ម្តាយ",
+          address: "សៀមរាប",
+          className: sortedTrackingData.className,
+          grade: sortedTrackingData.grade,
+        },
+        subjects: sortedTrackingData.subjects,
+        subjectScores: student.subjectScores,
+        summary: {
+          totalScore: parseFloat(student.totalScore),
+          averageScore: parseFloat(student.averageScore),
+          gradeLevel: student.gradeLevel,
+          gradeLevelKhmer: student.gradeLevelKhmer,
+          rank: student.rank,
+        },
+        attendance: student.attendance || {
+          totalAbsent: 0,
+          permission: 0,
+          withoutPermission: 0,
+        },
+        year: sortedTrackingData.year,
+        month: sortedTrackingData.month,
+        teacherName: sortedTrackingData.teacherName,
+        principalName: "នាយកសាលា",
+        schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
+        province: "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប", // ✅ Add province
+      }))
+    : [];
+
+  const currentStudent = transcriptData[selectedStudentIndex];
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleExport = () => {
-    if (!trackingData) return;
+    if (!sortedTrackingData) return;
 
-    const filename = selectedMonth
-      ? `សៀវភៅតាមដាន_${trackingData.className}_${selectedMonth}_${selectedYear}`
-      : `សៀវភៅតាមដាន_${trackingData.className}_${selectedYear}`;
+    const headers = [
+      "ល. រ",
+      "គោត្តនាម និងនាម",
+      "ភេទ",
+      ...sortedTrackingData.subjects.map((s) => s.nameKh),
+      "ពិន្ទុសរុប",
+      "មធ្យមភាគ",
+      "និទ្ទេស",
+      "ចំណាត់ថ្នាក់",
+      "អវត្តមានសរុប",
+    ];
 
-    reportsApi.exportToExcel("tracking-book", trackingData, filename);
+    const rows = sortedTrackingData.students.map((student, index) => {
+      const row = [
+        (index + 1).toString(),
+        student.studentName,
+        student.gender === "male" ? "ប្រុស" : "ស្រី",
+        ...sortedTrackingData.subjects.map((subject) => {
+          const score = student.subjectScores[subject.id];
+          return score?.score !== null && score?.score !== undefined
+            ? score.score.toString()
+            : "-";
+        }),
+        student.totalScore,
+        student.averageScore,
+        student.gradeLevel,
+        student.rank.toString(),
+        student.attendance.totalAbsent.toString(),
+      ];
+      return row;
+    });
+
+    const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join(
+      "\n"
+    );
+
+    const blob = new Blob(["\uFEFF" + csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `សៀវភៅតាមដាន_${sortedTrackingData.className}_${selectedYear}. csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
-
-  const currentStudent = trackingData?.students[selectedStudentIndex];
-
-  // ✅ Transform data for transcript (new structure)
-  const getTranscriptData = (student: any) => {
-    if (!trackingData) return null;
-
-    return {
-      studentData: {
-        studentId: student.studentId,
-        studentName: student.studentName,
-        studentNumber: `${String(
-          trackingData.students.indexOf(student) + 1
-        ).padStart(4, "0")}`,
-        dateOfBirth: student.dateOfBirth || "01-01-2010",
-        placeOfBirth: "ភ្នំពេញ - ក្រុងតាកែវ - ខេត្តស្វាយរៀង",
-        gender: student.gender,
-        fatherName: "ឪពុក",
-        motherName: "ម្តាយ",
-        address: "ភ្នំពេញ - ក្រុងតាកែវ - ខេត្តស្វាយរៀង",
-        className: trackingData.className,
-        grade: trackingData.grade,
-      },
-      subjects: trackingData.subjects,
-      subjectScores: student.subjectScores, // ✅ New structure
-      summary: {
-        totalScore: parseFloat(student.totalScore),
-        averageScore: parseFloat(student.averageScore),
-        gradeLevel: student.gradeLevel,
-        gradeLevelKhmer: student.gradeLevelKhmer,
-        rank: student.rank,
-      },
-      attendance: student.attendance || {
-        totalAbsent: 0,
-        permission: 0,
-        withoutPermission: 0,
-      },
-      year: trackingData.year,
-      month: trackingData.month,
-      teacherName: trackingData.teacherName,
-      principalName: "នាយកសាលា",
-      schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
-      province: "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប",
-    };
-  };
-
-  const transcriptData = currentStudent
-    ? getTranscriptData(currentStudent)
-    : null;
 
   return (
-    <div className="flex min-h-screen print-wrapper bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <style jsx global>{`
         @media print {
           @page {
             size: A4 landscape;
-            margin: 0;
+            margin: 10mm;
           }
           body {
             print-color-adjust: exact;
@@ -204,40 +280,39 @@ export default function TrackingBookPage() {
           .no-print {
             display: none !important;
           }
-          . print-page-break {
-            page-break-after: always;
-          }
-          .print-page-break:last-child {
-            page-break-after: auto;
-          }
         }
       `}</style>
 
       <div className="no-print">
         <Sidebar />
       </div>
+
       <div className="flex-1">
         <div className="no-print">
           <Header />
         </div>
-        <main className="p-6 animate-fadeIn">
+
+        <main className="p-6">
+          {/* Header */}
           <div className="mb-6 no-print">
             <div className="flex items-center gap-4 mb-2">
-              <div className="bg-gradient-to-br from-green-500 to-teal-600 p-3 rounded-xl shadow-lg">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-3 rounded-xl shadow-lg">
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h1 className="text-3xl font-black text-gray-900">
-                  សៀវភៅតាមដានសិស្ស
+                  សៀវភៅតាមដានការសិក្សា
                 </h1>
                 <p className="text-gray-600 font-medium">
-                  Student Tracking Book - Individual Transcript
+                  Student Tracking Book - Individual Progress Report
                 </p>
               </div>
             </div>
           </div>
 
+          {/* Controls Panel */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 no-print">
+            {/* Selection Row */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -247,30 +322,11 @@ export default function TrackingBookPage() {
                   value={selectedClassId}
                   onChange={(e) => {
                     setSelectedClassId(e.target.value);
-                    setSelectedSubjectId("");
                     setTrackingData(null);
                   }}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {classOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Calendar className="w-4 h-4 inline mr-1" />
-                  ខែ Month
-                </label>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                >
-                  {monthOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -285,9 +341,26 @@ export default function TrackingBookPage() {
                 <select
                   value={selectedYear.toString()}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {yearOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  ខែ Month
+                </label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  {monthOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -302,8 +375,7 @@ export default function TrackingBookPage() {
                 <select
                   value={selectedSubjectId}
                   onChange={(e) => setSelectedSubjectId(e.target.value)}
-                  disabled={!selectedClassId}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 >
                   {subjectOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -315,12 +387,12 @@ export default function TrackingBookPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  បង្កើតសៀវភៅ
+                  បង្កើតរបាយការណ៍
                 </label>
                 <button
                   onClick={fetchTrackingBook}
-                  disabled={loading || !selectedClassId || !selectedMonth}
-                  className="w-full h-11 px-6 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
+                  disabled={loading || !selectedClassId}
+                  className="w-full h-11 px-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -337,23 +409,10 @@ export default function TrackingBookPage() {
               </div>
             </div>
 
-            {selectedMonth && trackingData && (
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-lg mb-4">
-                <p className="text-sm text-blue-800">
-                  📅 <strong>កំពុងបង្ហាញ:</strong> ខែ{selectedMonth} ឆ្នាំ
-                  {selectedYear}
-                  {selectedSubjectId &&
-                    ` - មុខវិជ្ជា: ${
-                      availableSubjects.find((s) => s.id === selectedSubjectId)
-                        ?.nameKh
-                    }`}
-                </p>
-              </div>
-            )}
-
-            {trackingData && trackingData.students.length > 0 && (
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between mb-4">
+            {/* View Mode & Actions */}
+            {sortedTrackingData && (
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <label className="text-sm font-semibold text-gray-700">
                       របៀបមើល:
@@ -361,117 +420,94 @@ export default function TrackingBookPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setViewMode("single")}
-                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+                        className={`h-10 px-4 rounded-lg font-semibold transition-all ${
                           viewMode === "single"
-                            ? "bg-green-600 text-white shadow-md"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        <BookOpen className="w-4 h-4 inline mr-2" />
-                        ម្នាក់
-                      </button>
-                      <button
-                        onClick={() => setViewMode("all")}
-                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
-                          viewMode === "all"
-                            ? "bg-green-600 text-white shadow-md"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
+                            : "bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-400"
                         }`}
                       >
                         <Users className="w-4 h-4 inline mr-2" />
+                        មួយៗ
+                      </button>
+                      <button
+                        onClick={() => setViewMode("all")}
+                        className={`h-10 px-4 rounded-lg font-semibold transition-all ${
+                          viewMode === "all"
+                            ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
+                            : "bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-400"
+                        }`}
+                      >
+                        <Calendar className="w-4 h-4 inline mr-2" />
                         ទាំងអស់
                       </button>
                     </div>
                   </div>
 
-                  <div className="text-sm text-gray-600 bg-blue-50 px-4 py-2 rounded-lg">
-                    📊 សរុប:{" "}
-                    <span className="font-bold">
-                      {trackingData.students.length}
-                    </span>{" "}
-                    សិស្ស
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handlePrint}
+                      className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-blue-400 hover:bg-gray-50 transition-all flex items-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      បោះពុម្ព
+                    </button>
+                    <button
+                      onClick={handleExport}
+                      className="h-10 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" />
+                      Export Excel
+                    </button>
                   </div>
                 </div>
 
-                {viewMode === "single" && (
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <label className="text-sm font-semibold text-gray-700">
-                        ជ្រើសរើសសិស្ស:
-                      </label>
-                      <select
-                        value={selectedStudentIndex}
-                        onChange={(e) =>
-                          setSelectedStudentIndex(parseInt(e.target.value))
-                        }
-                        className="h-10 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                      >
-                        {trackingData.students.map((student, index) => (
-                          <option key={student.studentId} value={index}>
-                            {index + 1}. {student.studentName} (ចំណាត់ថ្នាក់: #
-                            {student.rank || "N/A"})
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-sm text-gray-600">
-                        ({selectedStudentIndex + 1} /{" "}
-                        {trackingData.students.length})
-                      </span>
+                {/* Student Navigation (Single View) */}
+                {viewMode === "single" && transcriptData.length > 0 && (
+                  <div className="flex items-center justify-center gap-4 pt-4 border-t">
+                    <button
+                      onClick={() =>
+                        setSelectedStudentIndex(
+                          Math.max(0, selectedStudentIndex - 1)
+                        )
+                      }
+                      disabled={selectedStudentIndex === 0}
+                      className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-blue-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      ← មុន
+                    </button>
+
+                    <div className="text-sm font-semibold text-gray-700">
+                      សិស្ស {selectedStudentIndex + 1} / {transcriptData.length}
+                      {currentStudent && (
+                        <span className="ml-2 text-blue-600">
+                          ({currentStudent.studentName})
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() =>
-                          setSelectedStudentIndex(
-                            Math.max(0, selectedStudentIndex - 1)
+                    <button
+                      onClick={() =>
+                        setSelectedStudentIndex(
+                          Math.min(
+                            transcriptData.length - 1,
+                            selectedStudentIndex + 1
                           )
-                        }
-                        disabled={selectedStudentIndex === 0}
-                        className="h-10 px-4 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-green-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        ← មុន
-                      </button>
-                      <button
-                        onClick={() =>
-                          setSelectedStudentIndex(
-                            Math.min(
-                              trackingData.students.length - 1,
-                              selectedStudentIndex + 1
-                            )
-                          )
-                        }
-                        disabled={
-                          selectedStudentIndex ===
-                          trackingData.students.length - 1
-                        }
-                        className="h-10 px-4 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-green-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        បន្ទាប់ →
-                      </button>
-                    </div>
+                        )
+                      }
+                      disabled={
+                        selectedStudentIndex === transcriptData.length - 1
+                      }
+                      className="h-10 px-6 bg-white border-2 border-gray-300 text-gray-700 text-sm font-semibold rounded-lg shadow-sm hover:border-blue-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      បន្ទាប់ →
+                    </button>
                   </div>
                 )}
-
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <button
-                    onClick={handlePrint}
-                    className="h-10 px-6 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-                  >
-                    <Printer className="w-4 h-4" />
-                    {viewMode === "all" ? "បោះពុម្ពទាំងអស់" : "បោះពុម្ព"}
-                  </button>
-                  <button
-                    onClick={handleExport}
-                    className="h-10 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-                  >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    Export Excel
-                  </button>
-                </div>
               </div>
             )}
           </div>
 
+          {/* Error Message */}
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 shadow-sm mb-6 no-print">
               <div className="flex items-start gap-3">
@@ -484,38 +520,22 @@ export default function TrackingBookPage() {
             </div>
           )}
 
-          {trackingData && (
+          {/* Report Display */}
+          {sortedTrackingData && (
             <div ref={reportRef}>
-              {viewMode === "single" ? (
-                transcriptData && (
-                  <div className="animate-scaleIn">
-                    <StudentTranscript {...transcriptData} />
-                  </div>
-                )
-              ) : (
+              {viewMode === "single" && currentStudent ? (
+                <StudentTranscript {...currentStudent} />
+              ) : viewMode === "all" ? (
                 <div className="space-y-8">
-                  {trackingData.students.map((student, index) => {
-                    const studentTranscriptData = getTranscriptData(student);
-                    if (!studentTranscriptData) return null;
-
-                    return (
-                      <div
-                        key={student.studentId}
-                        className={`animate-scaleIn ${
-                          index < trackingData.students.length - 1
-                            ? "print-page-break"
-                            : ""
-                        }`}
-                      >
-                        <StudentTranscript {...studentTranscriptData} />
-                      </div>
-                    );
-                  })}
+                  {transcriptData.map((student, index) => (
+                    <StudentTranscript key={index} {...student} />
+                  ))}
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
+          {/* Empty State */}
           {!selectedClassId && !loading && (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
               <div className="text-6xl mb-4">📚</div>
@@ -523,7 +543,7 @@ export default function TrackingBookPage() {
                 សូមជ្រើសរើសថ្នាក់ដើម្បីមើលសៀវភៅតាមដាន
               </p>
               <p className="text-gray-500">
-                Please select a class to view student tracking book
+                Please select a class to view tracking book
               </p>
             </div>
           )}
