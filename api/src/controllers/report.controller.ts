@@ -1,6 +1,51 @@
 import { Request, Response } from "express";
 import { prisma } from "../utils/db";
 
+function getSubjectGradeLevel(
+  score: number | null,
+  maxScore: number
+): {
+  level: string;
+  levelKhmer: string;
+  percentage: number;
+} {
+  if (score === null || score === undefined) {
+    return {
+      level: "-",
+      levelKhmer: "-",
+      percentage: 0,
+    };
+  }
+
+  const percentage = (score / maxScore) * 100;
+
+  let level = "F";
+  let levelKhmer = "ខ្សោយ";
+
+  if (percentage >= 80) {
+    level = "A";
+    levelKhmer = "ល្អប្រសើរ";
+  } else if (percentage >= 70) {
+    level = "B";
+    levelKhmer = "ល្អណាស់";
+  } else if (percentage >= 60) {
+    level = "C";
+    levelKhmer = "ល្អ";
+  } else if (percentage >= 50) {
+    level = "D";
+    levelKhmer = "ល្អបង្គួរ";
+  } else if (percentage >= 40) {
+    level = "E";
+    levelKhmer = "មធ្យម";
+  }
+
+  return {
+    level,
+    levelKhmer,
+    percentage: parseFloat(percentage.toFixed(2)),
+  };
+}
+
 export class ReportController {
   /**
    * Get monthly report for a class
@@ -737,7 +782,13 @@ export class ReportController {
       // Build student data
       const studentsData = classInfo.students.map((student) => {
         const subjectScores: {
-          [subjectId: string]: { score: number | null; maxScore: number };
+          [subjectId: string]: {
+            score: number | null;
+            maxScore: number;
+            gradeLevel: string; // ✅ NEW
+            gradeLevelKhmer: string; // ✅ NEW
+            percentage: number; // ✅ NEW
+          };
         } = {};
 
         let totalScore = 0;
@@ -749,10 +800,14 @@ export class ReportController {
           );
 
           const score = grade?.score ?? null;
+          const gradeInfo = getSubjectGradeLevel(score, subject.maxScore);
 
           subjectScores[subject.id] = {
             score: score,
             maxScore: subject.maxScore,
+            gradeLevel: gradeInfo.level,
+            gradeLevelKhmer: gradeInfo.levelKhmer,
+            percentage: gradeInfo.percentage,
           };
 
           if (score !== null) {

@@ -23,8 +23,14 @@ export interface StudentTrackingBookData {
     studentName: string;
     gender: string;
     dateOfBirth: string;
-    subjectMonthlyScores: {
-      [subjectId: string]: { [month: string]: number | null };
+    subjectScores: {
+      [subjectId: string]: {
+        score: number | null;
+        maxScore: number;
+        gradeLevel: string; // ✅ NEW
+        gradeLevelKhmer: string; // ✅ NEW
+        percentage: number; // ✅ NEW
+      };
     };
     totalScore: string;
     averageScore: string;
