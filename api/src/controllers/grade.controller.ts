@@ -426,271 +426,228 @@ export class GradeController {
     try {
       const { classId, month, year, grades } = req.body;
 
-      // ✅ Validation
-      if (!classId || !month || !year || !grades || !Array.isArray(grades)) {
+      console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🎯 Bulk Save Grades Started");
+      console.log("📊 Class:", classId);
+      console.log("📅 Period:", month, year);
+      console.log("📝 Total items:", grades.length);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+      if (!Array.isArray(grades) || grades.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "Invalid request data",
+          message: "No grades provided",
         });
       }
 
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("🎯 Bulk Save Grades Started");
-      console.log(`📊 Class: ${classId}`);
-      console.log(`📅 Period: ${month} ${year}`);
-      console.log(`📝 Total items: ${grades.length}`);
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      // ✅ Fetch subjects with maxScore
+      console.time("📚 Fetch Subjects");
+      const subjects = await prisma.subject.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          maxScore: true, // ✅ Include maxScore
+        },
+      });
+      console.timeEnd("📚 Fetch Subjects");
+      console.log(`✅ Found ${subjects.length} subjects\n`);
 
-      const monthNumber = GradeCalculationService.getMonthNumber(month) || 1;
+      const subjectMap = new Map(subjects.map((s) => [s.id, s]));
+
+      // ✅ Validate
+      console.time("🔨 Validate Data");
+      const validData: typeof grades = [];
       const errors: any[] = [];
 
-      console.time("⏱️  Total Save Time");
-
-      // ✅ Step 1: Fetch all subjects at once
-      console.time("📚 Fetch Subjects");
-      const subjectIds = [...new Set(grades.map((g: any) => g.subjectId))];
-      const subjects = await prisma.subject.findMany({
-        where: { id: { in: subjectIds } },
-        select: { id: true, maxScore: true, coefficient: true },
-      });
-      const subjectMap = new Map(subjects.map((s) => [s.id, s]));
-      console.timeEnd("📚 Fetch Subjects");
-      console.log(`✅ Found ${subjects.length} subjects`);
-
-      // ✅ Step 2: Validate and prepare data
-      console.time("🔨 Validate Data");
-      const validGrades: any[] = [];
-      const uniqueKeys = new Set<string>();
-
-      for (const gradeData of grades) {
-        const { studentId, subjectId, score } = gradeData;
-
-        // Prevent duplicates
-        const uniqueKey = `${studentId}_${subjectId}_${classId}_${month}_${year}`;
-        if (uniqueKeys.has(uniqueKey)) {
-          console.warn(`⚠️  Duplicate entry skipped: ${uniqueKey}`);
+      for (const item of grades) {
+        if (!item.studentId || !item.subjectId || item.score === undefined) {
+          errors.push({ item, reason: "Missing required fields" });
           continue;
         }
-        uniqueKeys.add(uniqueKey);
 
-        const subject = subjectMap.get(subjectId);
+        const subject = subjectMap.get(item.subjectId);
         if (!subject) {
-          errors.push({ studentId, subjectId, error: "Subject not found" });
+          errors.push({ item, reason: "Invalid subject ID" });
           continue;
         }
 
-        if (score !== null && (score < 0 || score > subject.maxScore)) {
+        if (
+          item.score !== null &&
+          (item.score < 0 || item.score > subject.maxScore)
+        ) {
           errors.push({
-            studentId,
-            subjectId,
-            error: `Score must be between 0 and ${subject.maxScore}`,
+            item,
+            reason: `Score out of range (0-${subject.maxScore})`,
           });
           continue;
         }
 
-        if (score === null) continue;
-
-        validGrades.push({
-          studentId,
-          subjectId,
-          classId,
-          month,
-          year: parseInt(year),
-          score,
-          maxScore: subject.maxScore,
-          monthNumber,
-          percentage: (score / subject.maxScore) * 100,
-          weightedScore: score * subject.coefficient,
-        });
+        validData.push(item);
       }
 
       console.timeEnd("🔨 Validate Data");
       console.log(
-        `✅ Validated: ${validGrades.length} valid, ${errors.length} errors`
+        `✅ Validated: ${validData.length} valid, ${errors.length} errors\n`
       );
 
-      let savedCount = 0;
-
-      if (validGrades.length > 0) {
-        // ✅ Step 3: Database operations
-        console.time("💾 Database Save");
-
-        try {
-          // Get existing grades to determine creates vs updates
-          const existingGrades = await prisma.grade.findMany({
-            where: {
-              classId,
-              month,
-              year: parseInt(year),
-              OR: validGrades.map((g) => ({
-                studentId: g.studentId,
-                subjectId: g.subjectId,
-              })),
-            },
-            select: {
-              studentId: true,
-              subjectId: true,
-              id: true,
-            },
-          });
-
-          const existingMap = new Map(
-            existingGrades.map((g) => [`${g.studentId}_${g.subjectId}`, g.id])
-          );
-
-          // Separate creates and updates
-          const toCreate: any[] = [];
-          const toUpdate: any[] = [];
-
-          validGrades.forEach((grade) => {
-            const key = `${grade.studentId}_${grade.subjectId}`;
-            const existingId = existingMap.get(key);
-
-            if (existingId) {
-              toUpdate.push({
-                where: { id: existingId },
-                data: {
-                  score: grade.score,
-                  maxScore: grade.maxScore,
-                  monthNumber: grade.monthNumber,
-                  percentage: grade.percentage,
-                  weightedScore: grade.weightedScore,
-                },
-              });
-            } else {
-              toCreate.push(grade);
-            }
-          });
-
-          console.log(
-            `📝 Operations: ${toCreate.length} creates, ${toUpdate.length} updates`
-          );
-
-          // Execute in single transaction with optimized timeout
-          await prisma.$transaction(
-            async (tx) => {
-              // Batch create
-              if (toCreate.length > 0) {
-                await tx.grade.createMany({
-                  data: toCreate,
-                  skipDuplicates: true,
-                });
-                savedCount += toCreate.length;
-                console.log(`✅ Created ${toCreate.length} grades`);
-              }
-
-              // Batch update in chunks
-              if (toUpdate.length > 0) {
-                const CHUNK_SIZE = 50;
-                for (let i = 0; i < toUpdate.length; i += CHUNK_SIZE) {
-                  const chunk = toUpdate.slice(i, i + CHUNK_SIZE);
-                  await Promise.all(
-                    chunk.map((update) => tx.grade.update(update))
-                  );
-                  savedCount += chunk.length;
-                }
-                console.log(`✅ Updated ${toUpdate.length} grades`);
-              }
-            },
-            {
-              maxWait: 10000, // 10 seconds max wait
-              timeout: 15000, // 15 seconds transaction timeout
-            }
-          );
-
-          console.timeEnd("💾 Database Save");
-        } catch (saveError: any) {
-          console.error("❌ Save error:", saveError.message);
-          throw saveError;
-        }
-      }
-
-      // ✅ Step 4: Calculate summaries (in parallel with controlled concurrency)
-      console.time("📊 Calculate Summaries");
-      const studentIds = [...new Set(grades.map((g: any) => g.studentId))];
-      console.log(`🧮 Calculating summaries for ${studentIds.length} students`);
-
-      // Process 10 students at a time to avoid overwhelming connection pool
-      const PARALLEL_LIMIT = 10;
-      let summaryCount = 0;
-
-      for (let i = 0; i < studentIds.length; i += PARALLEL_LIMIT) {
-        const batch = studentIds.slice(i, i + PARALLEL_LIMIT);
-        const results = await Promise.allSettled(
-          batch.map((studentId) =>
-            GradeCalculationService.calculateMonthlySummary(
-              studentId,
-              classId,
-              month,
-              monthNumber,
-              parseInt(year)
-            )
-          )
-        );
-
-        // Count successful calculations
-        results.forEach((result, index) => {
-          if (result.status === "fulfilled") {
-            summaryCount++;
-          } else {
-            console.error(
-              `⚠️  Summary failed for student ${batch[index]}:`,
-              result.reason?.message
-            );
-          }
+      if (validData.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No valid grades to save",
+          errors,
         });
       }
 
-      console.timeEnd("📊 Calculate Summaries");
-      console.log(
-        `✅ Calculated ${summaryCount}/${studentIds.length} summaries`
+      // ✅ Fetch existing grades
+      console.time("🔍 Fetch Existing Grades");
+      const existingGrades = await prisma.grade.findMany({
+        where: {
+          classId: classId,
+          year: year,
+          month: month,
+          OR: validData.map((item) => ({
+            studentId: item.studentId,
+            subjectId: item.subjectId,
+          })),
+        },
+        select: {
+          id: true,
+          studentId: true,
+          subjectId: true,
+          score: true,
+        },
+      });
+      console.timeEnd("🔍 Fetch Existing Grades");
+      console.log(`✅ Found ${existingGrades.length} existing grades\n`);
+
+      // ✅ Build lookup map
+      const existingMap = new Map(
+        existingGrades.map((g) => [`${g.studentId}_${g.subjectId}`, g])
       );
 
-      // ✅ Step 5: Calculate class ranks
-      console.time("🏆 Calculate Ranks");
-      try {
-        await GradeCalculationService.calculateClassRanks(
-          classId,
-          month,
-          parseInt(year)
-        );
-        console.log("✅ Class ranks calculated");
-      } catch (rankError: any) {
-        console.error("⚠️  Rank calculation failed:", rankError.message);
-      }
-      console.timeEnd("🏆 Calculate Ranks");
+      // ✅ Separate creates and updates
+      const toCreate: any[] = [];
+      const toUpdate: any[] = [];
 
-      console.timeEnd("⏱️  Total Save Time");
+      validData.forEach((item) => {
+        const key = `${item.studentId}_${item.subjectId}`;
+        const existing = existingMap.get(key);
+
+        // ✅ Get subject maxScore
+        const subject = subjectMap.get(item.subjectId);
+        if (!subject) {
+          console.warn(`⚠️ Subject not found: ${item.subjectId}`);
+          return;
+        }
+
+        if (existing) {
+          // Only update if score changed
+          if (existing.score !== item.score) {
+            toUpdate.push({
+              where: { id: existing.id },
+              data: {
+                score: item.score,
+                maxScore: subject.maxScore, // ✅ Update maxScore too
+                updatedAt: new Date(),
+              },
+            });
+          }
+        } else {
+          // ✅ Include maxScore in create
+          toCreate.push({
+            studentId: item.studentId,
+            subjectId: item.subjectId,
+            classId: classId,
+            score: item.score,
+            maxScore: subject.maxScore, // ✅ FIXED: Include maxScore
+            year: year,
+            month: month,
+          });
+        }
+      });
+
+      console.log(
+        `📝 Operations: ${toCreate.length} creates, ${toUpdate.length} updates\n`
+      );
+
+      // ✅ Execute bulk operations
+      console.time("💾 Database Save");
+
+      let created = 0;
+      let updated = 0;
+
+      // Create in bulk
+      if (toCreate.length > 0) {
+        console.time("  📥 Bulk Create");
+        const createResult = await prisma.grade.createMany({
+          data: toCreate,
+          skipDuplicates: true,
+        });
+        created = createResult.count;
+        console.timeEnd("  📥 Bulk Create");
+        console.log(`  ✅ Created ${created} records\n`);
+      }
+
+      // Update in batches
+      if (toUpdate.length > 0) {
+        const UPDATE_BATCH = 100;
+        const updateBatches = Math.ceil(toUpdate.length / UPDATE_BATCH);
+
+        console.log(`  📤 Updating in ${updateBatches} batches... `);
+        console.time("  📤 Bulk Update");
+
+        for (let i = 0; i < toUpdate.length; i += UPDATE_BATCH) {
+          const batch = toUpdate.slice(i, i + UPDATE_BATCH);
+
+          await prisma.$transaction(
+            batch.map((update) => prisma.grade.update(update)),
+            { timeout: 30000 }
+          );
+
+          updated += batch.length;
+
+          if (updateBatches > 1) {
+            console.log(`    Progress: ${updated}/${toUpdate.length}`);
+          }
+        }
+
+        console.timeEnd("  📤 Bulk Update");
+        console.log(`  ✅ Updated ${updated} records\n`);
+      }
+
+      console.timeEnd("💾 Database Save");
+
+      console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("✅ Bulk Save Completed");
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("✅ Bulk Save Completed Successfully");
-      console.log(`📊 Results: ${savedCount}/${validGrades.length} saved`);
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log(`📊 Created: ${created}`);
+      console.log(`📊 Updated: ${updated}`);
+      console.log(`📊 Skipped: ${validData.length - created - updated}`);
+      console.log(`📊 Total: ${created + updated}`);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
       return res.json({
-        success: errors.length === 0,
-        message: `Saved ${savedCount}/${validGrades.length} grades${
-          errors.length > 0 ? `, ${errors.length} errors` : ""
-        }`,
+        success: true,
+        message: "Grades saved successfully",
         data: {
-          savedCount,
-          errorCount: errors.length,
-          totalProcessed: validGrades.length,
-          summariesCalculated: summaryCount,
-          errors: errors.length > 0 ? errors.slice(0, 10) : undefined,
+          created,
+          updated,
+          skipped: validData.length - created - updated,
+          total: created + updated,
+          validationErrors: errors,
         },
       });
     } catch (error: any) {
-      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.error("❌ Bulk Save Error");
       console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.error("Message:", error.message);
       console.error("Stack:", error.stack);
-      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
       return res.status(500).json({
         success: false,
         message: error.message || "Failed to save grades",
-        error: process.env.NODE_ENV === "development" ? error.stack : undefined,
       });
     }
   }
