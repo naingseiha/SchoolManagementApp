@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { Loader2, Check, X, TrendingUp, ClipboardPaste } from "lucide-react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  Loader2,
+  Check,
+  X,
+  TrendingUp,
+  ClipboardPaste,
+  Save,
+} from "lucide-react";
 import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
 import { attendanceApi } from "@/lib/api/attendance";
 import { sortSubjectsByOrder, getOrderingMessage } from "@/lib/subjectOrder";
@@ -32,6 +39,15 @@ export default function GradeGridEditor({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
   const [pastePreview, setPastePreview] = useState<string | null>(null);
+
+  // ✅ Paste Mode States
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pastedCells, setPastedCells] = useState<Set<string>>(new Set());
+  const [editedCells, setEditedCells] = useState<Set<string>>(new Set());
+  const [allPendingChanges, setAllPendingChanges] = useState<
+    Map<string, BulkSaveGradeItem>
+  >(new Map());
+  const [saving, setSaving] = useState(false);
 
   // ✅ Attendance summary state
   const [attendanceSummary, setAttendanceSummary] = useState<{
@@ -97,7 +113,7 @@ export default function GradeGridEditor({
     return sorted;
   }, [gridData.subjects, gridData.className]);
 
-  // ✅ NEW: Sort students Excel-style
+  // ✅ Sort students Excel-style
   const sortedStudents = useMemo(() => {
     const students = [...gridData.students].sort((a, b) => {
       const nameA = a.studentName || "";
@@ -124,7 +140,6 @@ export default function GradeGridEditor({
   useEffect(() => {
     const initialCells: { [key: string]: CellState } = {};
 
-    // ✅ Use sortedStudents instead of gridData.students
     sortedStudents.forEach((student) => {
       gridData.subjects.forEach((subject) => {
         const cellKey = `${student.studentId}_${subject.id}`;
@@ -174,8 +189,14 @@ export default function GradeGridEditor({
     }
   }, [gridData.classId, gridData.month, gridData.year]);
 
-  // Auto-save pending changes
+  // ✅ Auto-save effect - DISABLED when in paste mode
   useEffect(() => {
+    // ⚠️ CRITICAL: Only auto-save if NOT in paste mode
+    if (pasteMode) {
+      console.log("🚫 Auto-save disabled - Paste mode active");
+      return;
+    }
+
     if (pendingChanges.size > 0) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -191,9 +212,10 @@ export default function GradeGridEditor({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [pendingChanges]);
+  }, [pendingChanges, pasteMode]);
 
-  const handleAutoSave = async () => {
+  // ✅ Auto-save handler
+  const handleAutoSave = useCallback(async () => {
     const changesToSave: BulkSaveGradeItem[] = [];
 
     pendingChanges.forEach((cellKey) => {
@@ -215,6 +237,8 @@ export default function GradeGridEditor({
 
     if (changesToSave.length === 0) return;
 
+    console.log("💾 Auto-saving", changesToSave.length, "changes");
+
     try {
       await onSave(changesToSave);
 
@@ -234,7 +258,9 @@ export default function GradeGridEditor({
       });
 
       setPendingChanges(new Set());
+      console.log("✅ Auto-save completed");
     } catch (error: any) {
+      console.error("❌ Auto-save failed:", error);
       setCells((prev) => {
         const updated = { ...prev };
         changesToSave.forEach((change) => {
@@ -248,8 +274,9 @@ export default function GradeGridEditor({
         return updated;
       });
     }
-  };
+  }, [pendingChanges, cells, onSave]);
 
+  // ✅ Handle cell change
   const handleCellChange = (cellKey: string, value: string) => {
     const cell = cells[cellKey];
     if (!cell) return;
@@ -280,18 +307,42 @@ export default function GradeGridEditor({
       },
     }));
 
-    if (isModified && !error) {
-      setPendingChanges((prev) => new Set(prev).add(cellKey));
-    } else {
-      setPendingChanges((prev) => {
-        const updated = new Set(prev);
-        updated.delete(cellKey);
+    if (pasteMode) {
+      // ✅ In paste mode: accumulate changes, no auto-save
+      console.log("📝 Edit in paste mode - accumulating change");
+
+      setEditedCells((prev) => new Set(prev).add(cellKey));
+
+      const numValue = value.trim() === "" ? null : parseFloat(value);
+
+      setAllPendingChanges((prev) => {
+        const updated = new Map(prev);
+        if (!error) {
+          updated.set(cellKey, {
+            studentId: cell.studentId,
+            subjectId: cell.subjectId,
+            score: numValue,
+          });
+        } else {
+          updated.delete(cellKey);
+        }
         return updated;
       });
+    } else {
+      // ✅ Normal mode: auto-save
+      if (isModified && !error) {
+        setPendingChanges((prev) => new Set(prev).add(cellKey));
+      } else {
+        setPendingChanges((prev) => {
+          const updated = new Set(prev);
+          updated.delete(cellKey);
+          return updated;
+        });
+      }
     }
   };
 
-  // 🎯 Handle Paste from Excel
+  // ✅ Handle Paste from Excel
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
     startStudentIndex: number,
@@ -321,13 +372,15 @@ export default function GradeGridEditor({
         data,
       });
 
+      const pastedCellKeys = new Set<string>();
+      const changes = new Map<string, BulkSaveGradeItem>();
+      const updatedCells: { [key: string]: CellState } = {};
       let pastedCount = 0;
       let errorCount = 0;
 
       data.forEach((row, rowOffset) => {
         const studentIndex = startStudentIndex + rowOffset;
 
-        // ✅ Use sortedStudents
         if (studentIndex >= sortedStudents.length) {
           console.warn(`⚠️ Student index ${studentIndex} out of bounds`);
           return;
@@ -345,24 +398,70 @@ export default function GradeGridEditor({
 
           const subject = sortedSubjects[subjectIndex];
           const cellKey = `${student.studentId}_${subject.id}`;
-
           const cleanValue = value.replace(/[^\d.-]/g, "");
 
           if (cleanValue !== "" || value === "") {
-            handleCellChange(cellKey, cleanValue);
-            pastedCount++;
-          } else {
-            errorCount++;
+            const numValue = cleanValue === "" ? null : parseFloat(cleanValue);
+
+            // ✅ Validate
+            let error: string | null = null;
+            if (numValue !== null) {
+              if (isNaN(numValue)) {
+                error = "Invalid";
+                errorCount++;
+              } else if (numValue < 0 || numValue > subject.maxScore) {
+                error = `Max ${subject.maxScore}`;
+                errorCount++;
+              }
+            }
+
+            if (!error) {
+              pastedCellKeys.add(cellKey);
+
+              changes.set(cellKey, {
+                studentId: student.studentId,
+                subjectId: subject.id,
+                score: numValue,
+              });
+
+              updatedCells[cellKey] = {
+                studentId: student.studentId,
+                subjectId: subject.id,
+                value: cleanValue,
+                originalValue: cells[cellKey]?.originalValue || null,
+                isModified: true,
+                isSaving: false,
+                error: null,
+              };
+
+              pastedCount++;
+            }
           }
         });
       });
 
+      // ✅ Update cells state
+      setCells((prev) => ({ ...prev, ...updatedCells }));
+
+      // ✅ Enter paste mode
+      setPasteMode(true);
+      setPastedCells(pastedCellKeys);
+      setAllPendingChanges(changes);
+
+      // ✅ Clear normal pending changes (prevent auto-save)
+      setPendingChanges(new Set());
+
       setPastePreview(
-        `✅ បានបញ្ចូល ${pastedCount} cells${
+        `📋 បានបញ្ចូល ${pastedCount} cells${
           errorCount > 0 ? ` (${errorCount} errors)` : ""
-        }`
+        } - សូមពិនិត្យ ហើយចុច "រក្សាទុក"`
       );
-      setTimeout(() => setPastePreview(null), 3000);
+
+      setTimeout(() => {
+        if (pasteMode) {
+          setPastePreview(null);
+        }
+      }, 5000);
 
       console.log("✅ Paste completed:", { pastedCount, errorCount });
     } catch (error) {
@@ -372,6 +471,90 @@ export default function GradeGridEditor({
     }
   };
 
+  // ✅ Save All Handler
+  const handleSaveAll = async () => {
+    if (allPendingChanges.size === 0) {
+      console.log("⚠️ No changes to save");
+      return;
+    }
+
+    try {
+      console.log(`💾 Saving ${allPendingChanges.size} changes... `);
+
+      const changesToSave = Array.from(allPendingChanges.values());
+
+      setSaving(true);
+
+      await onSave(changesToSave);
+
+      console.log("✅ Save all completed");
+
+      // ✅ Update cell states
+      setCells((prev) => {
+        const updated = { ...prev };
+        allPendingChanges.forEach((change, cellKey) => {
+          updated[cellKey] = {
+            ...updated[cellKey],
+            originalValue: change.score,
+            value: change.score !== null ? String(change.score) : "",
+            isModified: false,
+            isSaving: false,
+            error: null,
+          };
+        });
+        return updated;
+      });
+
+      // ✅ Exit paste mode
+      setPasteMode(false);
+      setPastedCells(new Set());
+      setEditedCells(new Set());
+      setAllPendingChanges(new Map());
+
+      setPastePreview(`✅ បានរក្សាទុក ${changesToSave.length} cells រួចរាល់`);
+      setTimeout(() => setPastePreview(null), 3000);
+    } catch (error: any) {
+      console.error("❌ Save all failed:", error);
+      setPastePreview(`❌ មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
+      setTimeout(() => setPastePreview(null), 5000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ✅ Cancel Paste Handler
+  const handleCancelPaste = () => {
+    console.log("🚫 Canceling paste mode");
+
+    // ✅ Revert to original values
+    setCells((prev) => {
+      const reverted = { ...prev };
+      allPendingChanges.forEach((_, cellKey) => {
+        const cell = prev[cellKey];
+        if (cell) {
+          reverted[cellKey] = {
+            ...cell,
+            value:
+              cell.originalValue !== null ? String(cell.originalValue) : "",
+            isModified: false,
+            error: null,
+          };
+        }
+      });
+      return reverted;
+    });
+
+    // ✅ Clear paste mode
+    setPasteMode(false);
+    setPastedCells(new Set());
+    setEditedCells(new Set());
+    setAllPendingChanges(new Map());
+
+    setPastePreview("🚫 បានបោះបង់ការផ្លាស់ប្តូរ");
+    setTimeout(() => setPastePreview(null), 2000);
+  };
+
+  // ✅ Keyboard navigation
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     studentIndex: number,
@@ -415,14 +598,14 @@ export default function GradeGridEditor({
     }
   };
 
-  // ✅ Khmer display names with subject code mapping
+  // ✅ Khmer display names
   const getKhmerShortName = (code: string): string => {
     const baseCode = code.split("-")[0];
 
     const khmerNames: { [key: string]: string } = {
-      WRITING: "តែង.  ក្តី",
-      WRITER: "ស.  អាន",
-      DICTATION: "ចំ. តាម",
+      WRITING: "តែង. ក្តី",
+      WRITER: "ស. អាន",
+      DICTATION: "ចំ.តាម",
       KHM: "ភាសាខ្មែរ",
       MATH: "គណិត",
       PHY: "រូប",
@@ -502,7 +685,7 @@ export default function GradeGridEditor({
     );
   }, [gridData.subjects]);
 
-  // Real-time calculations - ✅ Use sortedStudents
+  // Real-time calculations
   const calculatedStudents = useMemo(() => {
     return sortedStudents.map((student) => {
       let totalScore = 0;
@@ -566,10 +749,28 @@ export default function GradeGridEditor({
     });
   }, [calculatedStudents, attendanceSummary]);
 
-  const getCellClassName = (cell: CellState) => {
+  // ✅ Cell className with paste mode states
+  const getCellClassName = (cell: CellState, cellKey: string) => {
     const baseClass =
-      "w-16 h-9 px-2 text-center text-sm font-semibold border border-gray-300 rounded focus:outline-none focus:ring-2 transition-all";
+      "w-16 h-9 px-2 text-center text-sm font-semibold border rounded focus:outline-none focus:ring-2 transition-all";
 
+    // ✅ In paste mode
+    if (pasteMode) {
+      if (pastedCells.has(cellKey) && editedCells.has(cellKey)) {
+        // Pasted then edited
+        return `${baseClass} bg-orange-100 border-orange-400 font-bold text-orange-900 ring-2 ring-orange-300`;
+      }
+      if (pastedCells.has(cellKey)) {
+        // Just pasted
+        return `${baseClass} bg-yellow-100 border-yellow-400 font-bold text-yellow-900`;
+      }
+      if (editedCells.has(cellKey)) {
+        // Edited during paste mode
+        return `${baseClass} bg-blue-100 border-blue-400 font-bold text-blue-900`;
+      }
+    }
+
+    // ✅ Normal mode
     if (cell.error)
       return `${baseClass} bg-red-50 border-red-400 text-red-700 focus:ring-red-400`;
     if (cell.isSaving)
@@ -603,7 +804,7 @@ export default function GradeGridEditor({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200">
+    <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative">
       {/* Beautiful Header */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-6">
         <div className="flex items-center justify-between">
@@ -635,15 +836,21 @@ export default function GradeGridEditor({
             </div>
           </div>
           <div className="text-right">
-            <p className="text-sm font-bold text-white/90">Auto-Save ✓</p>
+            {pasteMode ? (
+              <p className="text-sm font-bold text-white/90">📋 Paste Mode</p>
+            ) : (
+              <p className="text-sm font-bold text-white/90">Auto-Save ✓</p>
+            )}
             <p className="text-xs text-white/70 mt-1">
-              រក្សាទុកស្វ័យប្រវត្តិ • គណនាលទ្ធផលភ្លាមៗ
+              {pasteMode
+                ? "កែសម្រួល ហើយចុច រក្សាទុក"
+                : "រក្សាទុកស្វ័យប្រវត្តិ • គណនាលទ្ធផលភ្លាមៗ"}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ✅ Ordering Message */}
+      {/* Ordering Message */}
       {orderingMessage && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200 px-6 py-2">
           <p className="text-sm font-semibold text-blue-800">
@@ -654,10 +861,34 @@ export default function GradeGridEditor({
 
       {/* Paste Preview Notification */}
       {pastePreview && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200 px-6 py-3">
+        <div
+          className={`border-b-2 px-6 py-3 ${
+            pastePreview.includes("❌")
+              ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-200"
+              : pastePreview.includes("✅")
+              ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-200"
+              : "bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200"
+          }`}
+        >
           <div className="flex items-center gap-3">
-            <ClipboardPaste className="w-5 h-5 text-green-600" />
-            <p className="text-sm font-semibold text-green-800">
+            <ClipboardPaste
+              className={`w-5 h-5 ${
+                pastePreview.includes("❌")
+                  ? "text-red-600"
+                  : pastePreview.includes("✅")
+                  ? "text-green-600"
+                  : "text-yellow-600"
+              }`}
+            />
+            <p
+              className={`text-sm font-semibold ${
+                pastePreview.includes("❌")
+                  ? "text-red-800"
+                  : pastePreview.includes("✅")
+                  ? "text-green-800"
+                  : "text-yellow-800"
+              }`}
+            >
               {pastePreview}
             </p>
           </div>
@@ -687,7 +918,7 @@ export default function GradeGridEditor({
                 ភេទ
               </th>
 
-              {/* ✅ Colorful Subject Columns - Using sortedSubjects */}
+              {/* Subject Columns */}
               {sortedSubjects.map((subject) => {
                 const colors = getSubjectColor(subject.code);
                 const khmerName = getKhmerShortName(subject.code);
@@ -714,7 +945,7 @@ export default function GradeGridEditor({
                 និទ្ទេស
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-indigo-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-indigo-100">
-                ចំ. ថ្នាក់
+                ចំ.ថ្នាក់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-red-800 border-b-2 border-r border-gray-300 w-12 bg-red-100">
                 អ.ច្បាប់
@@ -758,7 +989,7 @@ export default function GradeGridEditor({
                     </span>
                   </td>
 
-                  {/* ✅ Colorful Grade Cells - Using sortedSubjects */}
+                  {/* Grade Cells */}
                   {sortedSubjects.map((subject, subjectIndex) => {
                     const cellKey = `${student.studentId}_${subject.id}`;
                     const cell = cells[cellKey];
@@ -793,8 +1024,8 @@ export default function GradeGridEditor({
                             onPaste={(e) =>
                               handlePaste(e, studentIndex, subjectIndex)
                             }
-                            disabled={isLoading}
-                            className={getCellClassName(cell)}
+                            disabled={isLoading || saving}
+                            className={getCellClassName(cell, cellKey)}
                             placeholder="-"
                           />
                           <div className="w-3. 5 flex-shrink-0">
@@ -840,18 +1071,33 @@ export default function GradeGridEditor({
       {/* Footer */}
       <div className="bg-gradient-to-r from-gray-50 via-gray-100 to-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-5 text-xs font-medium text-gray-600">
-          <div className="flex items-center gap-1. 5">
-            <div className="w-5 h-5 bg-blue-50 border-2 border-blue-400 rounded" />
-            <span>កំពុងកែ</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
-            <span>កំពុងរក្សា</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-green-600" />
-            <span>រក្សារួច</span>
-          </div>
+          {pasteMode ? (
+            <>
+              <div className="flex items-center gap-1. 5">
+                <div className="w-5 h-5 bg-yellow-100 border-2 border-yellow-400 rounded" />
+                <span>បានបញ្ចូល</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 bg-orange-100 border-2 border-orange-400 rounded" />
+                <span>បានកែសម្រួល</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-1. 5">
+                <div className="w-5 h-5 bg-blue-50 border-2 border-blue-400 rounded" />
+                <span>កំពុងកែ</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
+                <span>កំពុងរក្សា</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-green-600" />
+                <span>រក្សារួច</span>
+              </div>
+            </>
+          )}
           <div className="flex items-center gap-1.5 ml-4 pl-4 border-l border-gray-300">
             <ClipboardPaste className="w-4 h-4 text-purple-600" />
             <span className="text-purple-700 font-semibold">
@@ -868,6 +1114,80 @@ export default function GradeGridEditor({
           <span className="text-red-800"> F (&lt;25)</span>
         </div>
       </div>
+
+      {/* ✅ Floating Save Panel - Only in Paste Mode */}
+      {pasteMode && allPendingChanges.size > 0 && (
+        <div className="fixed bottom-6 right-6 z-50 animate-slideUp">
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-2xl p-6 min-w-[420px]">
+            <div className="flex items-start justify-between mb-4">
+              <div className="text-white">
+                <p className="text-lg font-black flex items-center gap-2">
+                  📋 ទិន្នន័យរង់ចាំរក្សាទុក
+                  {saving && <Loader2 className="w-5 h-5 animate-spin" />}
+                </p>
+                <div className="mt-3 space-y-1. 5 text-sm">
+                  <p className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 bg-yellow-300 rounded"></span>
+                    បានបញ្ចូលពី Excel:{" "}
+                    <span className="font-bold">{pastedCells.size}</span> cells
+                  </p>
+                  {editedCells.size > 0 && (
+                    <p className="flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 bg-orange-300 rounded"></span>
+                      បានកែសម្រួល:{" "}
+                      <span className="font-bold">{editedCells.size}</span>{" "}
+                      cells
+                    </p>
+                  )}
+                  <p className="text-white/90 mt-3 pt-3 border-t border-white/30">
+                    សរុបទាំងអស់:{" "}
+                    <span className="font-black text-2xl">
+                      {allPendingChanges.size}
+                    </span>{" "}
+                    cells
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCancelPaste}
+                disabled={saving}
+                className="text-white/80 hover:text-white disabled:opacity-50 transition-colors"
+                title="បិទ"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handleCancelPaste}
+                disabled={saving}
+                className="flex-1 px-5 py-3. 5 bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-white font-semibold transition-all flex items-center justify-center gap-2"
+              >
+                <X className="w-5 h-5" />
+                បោះបង់
+              </button>
+              <button
+                onClick={handleSaveAll}
+                disabled={saving}
+                className="flex-1 px-6 py-3.5 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-blue-600 font-bold shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>កំពុងរក្សា...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    <span>រក្សាទុកទាំងអស់</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
