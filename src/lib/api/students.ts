@@ -34,6 +34,7 @@ export interface Student {
 }
 
 export interface CreateStudentData {
+  // ✅ Basic Info
   khmerName?: string;
   englishName?: string;
   firstName?: string;
@@ -46,9 +47,40 @@ export interface CreateStudentData {
   phoneNumber?: string;
   address?: string;
   phone?: string;
+  classId?: string;
+
+  // ✅ Parent Information
+  fatherName?: string;
+  motherName?: string;
+  parentPhone?: string;
+  parentOccupation?: string;
   guardianName?: string;
   guardianPhone?: string;
-  classId?: string;
+
+  // ✅ Academic History
+  previousGrade?: string;
+  previousSchool?: string;
+  repeatingGrade?: string;
+  transferredFrom?: string;
+
+  // ✅ Grade 9 Exam
+  grade9ExamSession?: string;
+  grade9ExamCenter?: string;
+  grade9ExamRoom?: string;
+  grade9ExamDesk?: string;
+  grade9PassStatus?: string;
+
+  // ✅ Grade 12 Exam
+  grade12ExamSession?: string;
+  grade12ExamCenter?: string;
+  grade12ExamRoom?: string;
+  grade12ExamDesk?: string;
+  grade12PassStatus?: string;
+  grade12Track?: string;
+
+  // ✅ General
+  remarks?: string;
+  photoUrl?: string;
 }
 
 export interface BulkStudentData {
@@ -137,19 +169,86 @@ const transformStudent = (backendStudent: any): Student => {
 };
 
 const transformToBackend = (frontendData: CreateStudentData): any => {
-  const payload = {
+  const payload: any = {
+    // ✅ Required fields
     firstName: frontendData.firstName?.trim() || "",
     lastName: frontendData.lastName?.trim() || "",
     khmerName:
       frontendData.khmerName?.trim() ||
       `${frontendData.firstName} ${frontendData.lastName}`,
-    email: frontendData.email?.trim() || undefined,
     gender: mapGenderToBackend(frontendData.gender),
     dateOfBirth: frontendData.dateOfBirth,
-    address: frontendData.address?.trim() || undefined,
-    phone: frontendData.phone?.trim() || undefined,
-    classId: frontendData.classId?.trim() || undefined,
   };
+
+  // ✅ Optional fields - only add if provided
+  if (frontendData.email) payload.email = frontendData.email.trim();
+  if (frontendData.englishName)
+    payload.englishName = frontendData.englishName.trim();
+  if (frontendData.placeOfBirth)
+    payload.placeOfBirth = frontendData.placeOfBirth.trim();
+  if (frontendData.currentAddress)
+    payload.currentAddress = frontendData.currentAddress.trim();
+  if (frontendData.phoneNumber)
+    payload.phoneNumber = frontendData.phoneNumber.trim();
+  if (frontendData.classId) payload.classId = frontendData.classId.trim();
+
+  // ✅ Parent Information
+  if (frontendData.fatherName)
+    payload.fatherName = frontendData.fatherName.trim();
+  if (frontendData.motherName)
+    payload.motherName = frontendData.motherName.trim();
+  if (frontendData.parentPhone)
+    payload.parentPhone = frontendData.parentPhone.trim();
+  if (frontendData.parentOccupation)
+    payload.parentOccupation = frontendData.parentOccupation.trim();
+
+  // ✅ Academic History
+  if (frontendData.previousGrade)
+    payload.previousGrade = frontendData.previousGrade.trim();
+  if (frontendData.previousSchool)
+    payload.previousSchool = frontendData.previousSchool.trim();
+  if (frontendData.repeatingGrade)
+    payload.repeatingGrade = frontendData.repeatingGrade.trim();
+  if (frontendData.transferredFrom)
+    payload.transferredFrom = frontendData.transferredFrom.trim();
+
+  // ✅ Grade 9 Exam
+  if (frontendData.grade9ExamSession)
+    payload.grade9ExamSession = frontendData.grade9ExamSession.trim();
+  if (frontendData.grade9ExamCenter)
+    payload.grade9ExamCenter = frontendData.grade9ExamCenter.trim();
+  if (frontendData.grade9ExamRoom)
+    payload.grade9ExamRoom = frontendData.grade9ExamRoom.trim();
+  if (frontendData.grade9ExamDesk)
+    payload.grade9ExamDesk = frontendData.grade9ExamDesk.trim();
+  if (frontendData.grade9PassStatus)
+    payload.grade9PassStatus = frontendData.grade9PassStatus.trim();
+
+  // ✅ Grade 12 Exam
+  if (frontendData.grade12ExamSession)
+    payload.grade12ExamSession = frontendData.grade12ExamSession.trim();
+  if (frontendData.grade12ExamCenter)
+    payload.grade12ExamCenter = frontendData.grade12ExamCenter.trim();
+  if (frontendData.grade12ExamRoom)
+    payload.grade12ExamRoom = frontendData.grade12ExamRoom.trim();
+  if (frontendData.grade12ExamDesk)
+    payload.grade12ExamDesk = frontendData.grade12ExamDesk.trim();
+  if (frontendData.grade12PassStatus)
+    payload.grade12PassStatus = frontendData.grade12PassStatus.trim();
+  if (frontendData.grade12Track)
+    payload.grade12Track = frontendData.grade12Track.trim();
+
+  // ✅ General
+  if (frontendData.remarks) payload.remarks = frontendData.remarks.trim();
+  if (frontendData.photoUrl) payload.photoUrl = frontendData.photoUrl.trim();
+
+  // ✅ Legacy fields
+  if (frontendData.address) payload.address = frontendData.address.trim();
+  if (frontendData.phone) payload.phone = frontendData.phone.trim();
+  if (frontendData.guardianName)
+    payload.guardianName = frontendData.guardianName.trim();
+  if (frontendData.guardianPhone)
+    payload.guardianPhone = frontendData.guardianPhone.trim();
 
   return payload;
 };

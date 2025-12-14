@@ -1,18 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { formatToKhmerDate } from "@/lib/utils/dateParser";
 import { Trash2 } from "lucide-react";
-
-interface StudentGridRowProps {
-  rowIndex: number;
-  data: StudentRowData;
-  grade: string;
-  onChange: (rowIndex: number, field: string, value: string) => void;
-  onDelete: (rowIndex: number) => void;
-  isExisting?: boolean;
-  columnHeaders: any[];
-}
+import { useRef, useEffect } from "react";
 
 export interface StudentRowData {
   no: number;
@@ -29,12 +18,76 @@ export interface StudentRowData {
   grade9ExamCenter?: string;
   grade9ExamRoom?: string;
   grade9ExamDesk?: string;
+  grade9PassStatus?: string;
   grade12ExamSession?: string;
   grade12ExamCenter?: string;
   grade12ExamRoom?: string;
   grade12ExamDesk?: string;
+  grade12PassStatus?: string;
   grade12Track?: string;
+  englishName?: string;
+  email?: string;
+  placeOfBirth?: string;
+  currentAddress?: string;
+  phoneNumber?: string;
+  fatherName?: string;
+  motherName?: string;
+  parentPhone?: string;
+  parentOccupation?: string;
+  photoUrl?: string;
 }
+
+interface StudentGridRowProps {
+  rowIndex: number;
+  data: StudentRowData;
+  grade: string;
+  onChange: (rowIndex: number, field: string, value: string) => void;
+  onDelete: (rowIndex: number) => void;
+  isExisting?: boolean;
+  columnHeaders: any[];
+  inputRefs?: React.MutableRefObject<{
+    [key: string]: HTMLInputElement | null;
+  }>;
+  totalRows: number;
+}
+
+// ✅ Column colors (soft pastels)
+const getColumnColor = (key: string): string => {
+  const colors: { [key: string]: string } = {
+    no: "bg-slate-50",
+    name: "bg-rose-50",
+    gender: "bg-sky-50",
+    dateOfBirth: "bg-amber-50",
+    previousGrade: "bg-emerald-50",
+    previousSchool: "bg-violet-50",
+    repeatingGrade: "bg-orange-50",
+    transferredFrom: "bg-cyan-50",
+    grade9ExamSession: "bg-pink-50",
+    grade9ExamCenter: "bg-fuchsia-50",
+    grade9ExamRoom: "bg-purple-50",
+    grade9ExamDesk: "bg-indigo-50",
+    grade9PassStatus: "bg-rose-50",
+    grade12ExamSession: "bg-lime-50",
+    grade12ExamCenter: "bg-teal-50",
+    grade12ExamRoom: "bg-blue-50",
+    grade12ExamDesk: "bg-slate-50",
+    grade12PassStatus: "bg-red-50",
+    grade12Track: "bg-zinc-50",
+    remarks: "bg-gray-50",
+    englishName: "bg-blue-50",
+    email: "bg-cyan-50",
+    placeOfBirth: "bg-green-50",
+    currentAddress: "bg-teal-50",
+    phoneNumber: "bg-indigo-50",
+    fatherName: "bg-purple-50",
+    motherName: "bg-pink-50",
+    parentPhone: "bg-fuchsia-50",
+    parentOccupation: "bg-violet-50",
+    photoUrl: "bg-slate-50",
+    actions: "bg-slate-50",
+  };
+  return colors[key] || "bg-white";
+};
 
 export default function StudentGridRow({
   rowIndex,
@@ -42,232 +95,130 @@ export default function StudentGridRow({
   grade,
   onChange,
   onDelete,
-  isExisting = false,
+  isExisting,
   columnHeaders,
+  inputRefs,
+  totalRows,
 }: StudentGridRowProps) {
-  const [localData, setLocalData] = useState(data);
-  const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const localInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const refs = inputRefs || localInputRefs;
 
-  useEffect(() => {
-    setLocalData(data);
-  }, [data]);
-
-  const handleChange = (field: string, value: string) => {
-    setLocalData((prev) => ({ ...prev, [field]: value }));
-    onChange(rowIndex, field, value);
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: string
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const nextRow = rowIndex + 1;
+      if (nextRow < totalRows) {
+        const nextInputKey = `${nextRow}-${field}`;
+        const nextInput = refs.current[nextInputKey];
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      }
+    }
   };
 
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
-    startField: string
+    field: string
   ) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text");
-    const rows = pastedData.split("\n").filter((row) => row.trim() !== "");
+    const pasteData = e.clipboardData.getData("text");
 
-    if (rows.length === 0) return;
+    if (pasteData.includes("\n") || pasteData.includes("\t")) {
+      e.preventDefault();
 
-    const cells = rows[0].split("\t");
-    const fields = getFieldOrder(grade);
-    const startIndex = fields.indexOf(startField);
+      const rows = pasteData.split("\n").map((row) => row.split("\t"));
 
-    if (startIndex === -1) return;
-
-    cells.forEach((cell, i) => {
-      const fieldIndex = startIndex + i;
-      if (fieldIndex < fields.length) {
-        const field = fields[fieldIndex];
-        handleChange(field, cell.trim());
-      }
-    });
-
-    if (rows.length > 1) {
-      const allData = rows.map((row) =>
-        row.split("\t").map((cell) => cell.trim())
-      );
       window.dispatchEvent(
         new CustomEvent("multiRowPaste", {
           detail: {
             startRow: rowIndex,
-            startField: startField,
-            data: allData,
+            startField: field,
+            data: rows,
           },
         })
       );
     }
   };
 
-  const getFieldOrder = (grade: string): string[] => {
-    const baseFields = [
-      "name",
-      "gender",
-      "dateOfBirth",
-      "previousGrade",
-      "previousSchool",
-      "repeatingGrade",
-      "transferredFrom",
-    ];
-
-    const gradeNum = parseInt(grade);
-
-    if (gradeNum >= 9) {
-      baseFields.push(
-        "grade9ExamSession",
-        "grade9ExamCenter",
-        "grade9ExamRoom",
-        "grade9ExamDesk"
-      );
-    }
-
-    if (gradeNum >= 12) {
-      baseFields.push(
-        "grade12ExamSession",
-        "grade12ExamCenter",
-        "grade12ExamRoom",
-        "grade12ExamDesk",
-        "grade12Track"
-      );
-    }
-
-    baseFields.push("remarks");
-
-    return baseFields;
-  };
-
-  const getColumnColor = (field: string): string => {
-    const header = columnHeaders.find((h) => h.key === field);
-    return header?.color || "bg-white";
-  };
-
-  // ✅ Cleaner cell styling - minimal borders, subtle colors
-  const getCellClassName = (field: string, value: string) => {
-    const isRequired = ["name", "gender", "dateOfBirth"].includes(field);
-    const isEmpty = !value || value.trim() === "";
-    const baseColor = getColumnColor(field);
-
-    let className =
-      "h-10 px-3 border-r border-b border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-400 transition-all text-sm font-medium ";
-
-    // Required field empty
-    if (isRequired && isEmpty) {
-      className += "bg-yellow-100 text-gray-500 ";
-    }
-    // Existing student with data
-    else if (isExisting && !isEmpty) {
-      className += "bg-blue-100 text-gray-900 ";
-    }
-    // New student with data
-    else if (!isEmpty) {
-      className += `${baseColor} text-gray-900 `;
-    }
-    // Empty cell
-    else {
-      className += `${baseColor} opacity-50 text-gray-400 `;
-    }
-
-    className += "hover:ring-1 hover:ring-blue-300 ";
-
-    return className;
-  };
-
-  const renderCell = (field: string, width: string = "w-32") => {
-    let displayValue = localData[field as keyof StudentRowData] || "";
-
-    if (field === "dateOfBirth" && displayValue) {
-      try {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(displayValue as string)) {
-          displayValue = formatToKhmerDate(displayValue as string);
-        }
-      } catch (e) {
-        // Keep original
-      }
-    }
-
-    const header = columnHeaders.find((h) => h.key === field);
-    const placeholder = header?.label || field;
+  const renderCell = (key: string, header: any) => {
+    const value = (data as any)[key] || "";
+    const inputKey = `${rowIndex}-${key}`;
+    const columnColor = getColumnColor(key);
 
     return (
-      <input
-        ref={(el) => (inputRefs.current[field] = el)}
-        type="text"
-        value={displayValue}
-        onChange={(e) => handleChange(field, e.target.value)}
-        onPaste={(e) => handlePaste(e, field)}
-        onKeyDown={(e) => {
-          if (e.key === "Tab") {
-            const fields = getFieldOrder(grade);
-            const currentIndex = fields.indexOf(field);
-
-            if (!e.shiftKey && currentIndex < fields.length - 1) {
-              const nextField = fields[currentIndex + 1];
-              const nextInput = inputRefs.current[nextField];
-              if (nextInput) {
-                e.preventDefault();
-                nextInput.focus();
-              }
-            } else if (e.shiftKey && currentIndex > 0) {
-              const prevField = fields[currentIndex - 1];
-              const prevInput = inputRefs.current[prevField];
-              if (prevInput) {
-                e.preventDefault();
-                prevInput.focus();
-              }
-            }
-          }
+      <td
+        key={key}
+        style={{
+          width: `${header.width}px`,
+          minWidth: `${header.width}px`,
         }}
-        placeholder={`${placeholder}...`}
-        className={`${width} ${getCellClassName(
-          field,
-          displayValue as string
-        )}`}
-        title={
-          field === "dateOfBirth"
-            ? "ទម្រង់: DD/MM/YY ឬ DD/MM/YYYY (ឧ. 7/5/12)"
-            : isExisting
-            ? "សិស្សដែលមានរួច - Click ដើម្បីកែប្រែ"
-            : ""
-        }
-      />
+        className={`
+          border border-gray-300 p-0
+          ${columnColor}
+          ${header.sticky && key === "no" ? "sticky left-0 z-10" : ""}
+          ${header.sticky && key === "actions" ? "sticky right-0 z-10" : ""}
+        `}
+      >
+        {key === "no" ? (
+          <div className="px-3 py-2 text-center">
+            <span
+              className={
+                isExisting
+                  ? "text-blue-700 font-semibold"
+                  : "text-gray-700 font-semibold"
+              }
+            >
+              {String(data.no).padStart(2, "0")}
+            </span>
+          </div>
+        ) : key === "actions" ? (
+          <div className="flex items-center justify-center h-full py-2">
+            <button
+              onClick={() => onDelete(rowIndex)}
+              className="text-red-500 hover:text-red-700 transition-colors p-1"
+              title="Delete row"
+            >
+              <Trash2 size={18} />
+            </button>
+          </div>
+        ) : (
+          <input
+            ref={(el) => (refs.current[inputKey] = el)}
+            type="text"
+            value={value}
+            onChange={(e) => onChange(rowIndex, key, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, key)}
+            onPaste={(e) => handlePaste(e, key)}
+            className={`
+              w-full h-full px-3 py-2
+              bg-transparent
+              border-0 
+              focus:outline-none 
+              focus:ring-2 focus:ring-blue-400 focus:ring-inset
+              hover:bg-white hover:bg-opacity-50
+              transition-all
+              ${
+                key === "gender" ||
+                key === "previousGrade" ||
+                key === "repeatingGrade"
+                  ? "text-center"
+                  : ""
+              }
+            `}
+            placeholder=""
+          />
+        )}
+      </td>
     );
   };
 
   return (
-    <tr className="group hover:bg-gray-50 transition-colors">
-      {/* ✅ Row Number - Clean Sticky */}
-      <td
-        className={`
-        sticky left-0 z-10
-        h-10 px-3
-        text-center text-sm font-bold
-        border-r-2 border-b border-gray-300
-        ${isExisting ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}
-      `}
-      >
-        <div className="flex items-center justify-center gap-1">
-          {isExisting && <span className="text-xs">📌</span>}
-          <span>{localData.no}</span>
-        </div>
-      </td>
-
-      {/* Dynamic Cells */}
-      {columnHeaders
-        .filter((h) => h.key !== "no" && h.key !== "actions")
-        .map((header) => (
-          <td key={header.key} className="p-0">
-            {renderCell(header.key, header.width)}
-          </td>
-        ))}
-
-      {/* ✅ Actions - Clean Sticky */}
-      <td className="sticky right-0 z-10 h-10 px-3 text-center bg-slate-100 border-l-2 border-b border-gray-300">
-        <button
-          onClick={() => onDelete(rowIndex)}
-          className="h-8 w-8 inline-flex items-center justify-center text-red-600 hover:text-white hover:bg-red-600 rounded transition-all"
-          title={isExisting ? "លុបសិស្សដែលមានរួច" : "លុបជួរ"}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </td>
+    <tr className="hover:bg-gray-50 transition-colors">
+      {columnHeaders.map((header) => renderCell(header.key, header))}
     </tr>
   );
 }

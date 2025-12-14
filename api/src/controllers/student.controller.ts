@@ -387,79 +387,181 @@ export const bulkCreateStudents = async (req: Request, res: Response) => {
 
 export const updateStudent = async (req: Request, res: Response) => {
   try {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📝 UPDATE STUDENT REQUEST");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     const { id } = req.params;
+    console.log(`📌 Student ID: ${id}`);
+    console.log("📦 Request body:", JSON.stringify(req.body, null, 2));
+
     const {
       firstName,
       lastName,
       khmerName,
       englishName,
-      email,
-      dateOfBirth,
       gender,
+      dateOfBirth,
       placeOfBirth,
       currentAddress,
       phoneNumber,
+      email,
       classId,
       fatherName,
       motherName,
       parentPhone,
       parentOccupation,
+      previousGrade,
+      previousSchool,
+      repeatingGrade,
+      transferredFrom,
+      grade9ExamSession,
+      grade9ExamCenter,
+      grade9ExamRoom,
+      grade9ExamDesk,
+      grade9PassStatus,
+      grade12ExamSession,
+      grade12ExamCenter,
+      grade12ExamRoom,
+      grade12ExamDesk,
+      grade12PassStatus,
+      grade12Track,
       remarks,
+      photoUrl,
     } = req.body;
 
-    console.log("📝 UPDATE STUDENT:", id);
-
-    if (classId && classId.trim() !== "") {
-      const classExists = await prisma.class.findUnique({
-        where: { id: classId },
-      });
-
-      if (!classExists) {
-        return res.status(400).json({
-          success: false,
-          message: "រកមិនឃើញថ្នាក់នេះទេ (Class not found)",
-        });
-      }
-    }
-
-    if (gender && gender !== "MALE" && gender !== "FEMALE") {
-      return res.status(400).json({
-        success: false,
-        message: "ភេទត្រូវតែជា MALE ឬ FEMALE",
-      });
-    }
-
+    // ✅ Build update data - FIXED: Handle empty strings properly
     const updateData: any = {};
 
-    if (firstName !== undefined) updateData.firstName = firstName.trim();
-    if (lastName !== undefined) updateData.lastName = lastName.trim();
-    if (khmerName !== undefined) updateData.khmerName = khmerName.trim();
-    if (englishName !== undefined)
-      updateData.englishName = englishName?.trim() || null;
-    if (email !== undefined) updateData.email = email?.trim() || null;
+    // ✅ Required fields
+    if (firstName !== undefined) updateData.firstName = firstName?.trim() || "";
+    if (lastName !== undefined) updateData.lastName = lastName?.trim() || "";
+    if (khmerName !== undefined) updateData.khmerName = khmerName?.trim() || "";
+    if (gender !== undefined) updateData.gender = gender;
     if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
-    if (gender !== undefined) updateData.gender = gender as Gender;
-    if (placeOfBirth !== undefined)
-      updateData.placeOfBirth = placeOfBirth?.trim() || null;
-    if (currentAddress !== undefined)
-      updateData.currentAddress = currentAddress?.trim() || null;
-    if (phoneNumber !== undefined)
-      updateData.phoneNumber = phoneNumber?.trim() || null;
-    if (fatherName !== undefined)
-      updateData.fatherName = fatherName?.trim() || null;
-    if (motherName !== undefined)
-      updateData.motherName = motherName?.trim() || null;
-    if (parentPhone !== undefined)
-      updateData.parentPhone = parentPhone?.trim() || null;
-    if (parentOccupation !== undefined)
-      updateData.parentOccupation = parentOccupation?.trim() || null;
-    if (remarks !== undefined) updateData.remarks = remarks?.trim() || null;
+
+    // ✅ Optional fields - accept empty string as valid value
+    if (englishName !== undefined) {
+      updateData.englishName =
+        englishName?.trim() === "" ? null : englishName?.trim();
+    }
+    if (email !== undefined) {
+      updateData.email = email?.trim() === "" ? null : email?.trim();
+    }
+    if (placeOfBirth !== undefined) {
+      updateData.placeOfBirth =
+        placeOfBirth?.trim() === "" ? null : placeOfBirth?.trim();
+    }
+    if (currentAddress !== undefined) {
+      updateData.currentAddress =
+        currentAddress?.trim() === "" ? null : currentAddress?.trim();
+    }
+    if (phoneNumber !== undefined) {
+      updateData.phoneNumber =
+        phoneNumber?.trim() === "" ? null : phoneNumber?.trim();
+    }
     if (classId !== undefined) {
-      updateData.classId = classId && classId.trim() !== "" ? classId : null;
+      updateData.classId = classId?.trim() === "" ? null : classId?.trim();
     }
 
-    console.log("💾 Updating student.. .");
+    // ✅ Parent Information
+    if (fatherName !== undefined) {
+      updateData.fatherName =
+        fatherName?.trim() === "" ? null : fatherName?.trim();
+    }
+    if (motherName !== undefined) {
+      updateData.motherName =
+        motherName?.trim() === "" ? null : motherName?.trim();
+    }
+    if (parentPhone !== undefined) {
+      updateData.parentPhone =
+        parentPhone?.trim() === "" ? null : parentPhone?.trim();
+    }
+    if (parentOccupation !== undefined) {
+      updateData.parentOccupation =
+        parentOccupation?.trim() === "" ? null : parentOccupation?.trim();
+    }
 
+    // ✅ Academic History
+    if (previousGrade !== undefined) {
+      updateData.previousGrade =
+        previousGrade?.trim() === "" ? null : previousGrade?.trim();
+    }
+    if (previousSchool !== undefined) {
+      updateData.previousSchool =
+        previousSchool?.trim() === "" ? null : previousSchool?.trim();
+    }
+    if (repeatingGrade !== undefined) {
+      updateData.repeatingGrade =
+        repeatingGrade?.trim() === "" ? null : repeatingGrade?.trim();
+    }
+    if (transferredFrom !== undefined) {
+      updateData.transferredFrom =
+        transferredFrom?.trim() === "" ? null : transferredFrom?.trim();
+    }
+
+    // ✅ Grade 9 Exam
+    if (grade9ExamSession !== undefined) {
+      updateData.grade9ExamSession =
+        grade9ExamSession?.trim() === "" ? null : grade9ExamSession?.trim();
+    }
+    if (grade9ExamCenter !== undefined) {
+      updateData.grade9ExamCenter =
+        grade9ExamCenter?.trim() === "" ? null : grade9ExamCenter?.trim();
+    }
+    if (grade9ExamRoom !== undefined) {
+      updateData.grade9ExamRoom =
+        grade9ExamRoom?.trim() === "" ? null : grade9ExamRoom?.trim();
+    }
+    if (grade9ExamDesk !== undefined) {
+      updateData.grade9ExamDesk =
+        grade9ExamDesk?.trim() === "" ? null : grade9ExamDesk?.trim();
+    }
+    if (grade9PassStatus !== undefined) {
+      updateData.grade9PassStatus =
+        grade9PassStatus?.trim() === "" ? null : grade9PassStatus?.trim();
+    }
+
+    // ✅ Grade 12 Exam
+    if (grade12ExamSession !== undefined) {
+      updateData.grade12ExamSession =
+        grade12ExamSession?.trim() === "" ? null : grade12ExamSession?.trim();
+    }
+    if (grade12ExamCenter !== undefined) {
+      updateData.grade12ExamCenter =
+        grade12ExamCenter?.trim() === "" ? null : grade12ExamCenter?.trim();
+    }
+    if (grade12ExamRoom !== undefined) {
+      updateData.grade12ExamRoom =
+        grade12ExamRoom?.trim() === "" ? null : grade12ExamRoom?.trim();
+    }
+    if (grade12ExamDesk !== undefined) {
+      updateData.grade12ExamDesk =
+        grade12ExamDesk?.trim() === "" ? null : grade12ExamDesk?.trim();
+    }
+    if (grade12PassStatus !== undefined) {
+      updateData.grade12PassStatus =
+        grade12PassStatus?.trim() === "" ? null : grade12PassStatus?.trim();
+    }
+    if (grade12Track !== undefined) {
+      updateData.grade12Track =
+        grade12Track?.trim() === "" ? null : grade12Track?.trim();
+    }
+
+    // ✅ General
+    if (remarks !== undefined) {
+      updateData.remarks = remarks?.trim() === "" ? null : remarks?.trim();
+    }
+    if (photoUrl !== undefined) {
+      updateData.photoUrl = photoUrl?.trim() === "" ? null : photoUrl?.trim();
+    }
+
+    console.log(
+      "💾 Update data to be saved:",
+      JSON.stringify(updateData, null, 2)
+    );
+
+    // ✅ Perform the update
     const student = await prisma.student.update({
       where: { id },
       data: updateData,
@@ -468,18 +570,24 @@ export const updateStudent = async (req: Request, res: Response) => {
       },
     });
 
-    console.log("✅ Student updated successfully");
+    console.log("✅ Student updated successfully in database!");
+    console.log("📊 Updated student:", JSON.stringify(student, null, 2));
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     res.json({
       success: true,
-      message: "កែប្រែសិស្សបានជោគជ័យ (Student updated successfully)",
       data: student,
+      message: "Student updated successfully",
     });
   } catch (error: any) {
-    console.error("❌ Error updating student:", error);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("❌ UPDATE STUDENT ERROR:");
+    console.error(error);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
     res.status(500).json({
       success: false,
-      message: "មានបញ្ហាក្នុងការកែប្រែសិស្ស (Error updating student)",
+      message: "Error updating student",
       error: error.message,
     });
   }
