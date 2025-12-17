@@ -1,7 +1,13 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
-// Type Definitions
+// ================================
+// TYPE DEFINITIONS
+// ================================
+
+/**
+ * Student Tracking Book Data
+ */
 export interface StudentTrackingBookData {
   classId: string;
   className: string;
@@ -27,9 +33,9 @@ export interface StudentTrackingBookData {
       [subjectId: string]: {
         score: number | null;
         maxScore: number;
-        gradeLevel: string; // ✅ NEW
-        gradeLevelKhmer: string; // ✅ NEW
-        percentage: number; // ✅ NEW
+        gradeLevel: string;
+        gradeLevelKhmer: string;
+        percentage: number;
       };
     };
     totalScore: string;
@@ -46,6 +52,9 @@ export interface StudentTrackingBookData {
   }>;
 }
 
+/**
+ * Monthly Report Data
+ */
 export interface MonthlyReportData {
   classId?: string;
   className?: string;
@@ -79,6 +88,78 @@ export interface MonthlyReportData {
   }>;
 }
 
+/**
+ * ✅ NEW: Monthly Statistics Data with Gender Breakdown
+ */
+export interface MonthlyStatisticsData {
+  classId: string;
+  className: string;
+  grade: string;
+  track: string | null;
+  month: string;
+  year: number;
+  teacherName: string | null;
+  totalCoefficient: number;
+  subjects: Array<{
+    id: string;
+    nameKh: string;
+    nameEn: string;
+    code: string;
+    maxScore: number;
+    coefficient: number;
+  }>;
+  statistics: {
+    // Summary Statistics
+    totalStudents: number;
+    femaleStudents: number;
+    maleStudents: number;
+
+    // Pass/Fail Statistics (Pass = Average >= 25)
+    totalPassed: number;
+    femalePassed: number;
+    malePassed: number;
+    totalFailed: number;
+    femaleFailed: number;
+    maleFailed: number;
+
+    // Overall Grade Distribution (A-F)
+    gradeDistribution: {
+      A: { total: number; female: number; male: number };
+      B: { total: number; female: number; male: number };
+      C: { total: number; female: number; male: number };
+      D: { total: number; female: number; male: number };
+      E: { total: number; female: number; male: number };
+      F: { total: number; female: number; male: number };
+    };
+
+    // Subject-wise Statistics
+    subjectStatistics: {
+      [subjectId: string]: {
+        subjectId: string;
+        subjectName: string;
+        subjectCode: string;
+        gradeDistribution: {
+          A: { total: number; female: number; male: number };
+          B: { total: number; female: number; male: number };
+          C: { total: number; female: number; male: number };
+          D: { total: number; female: number; male: number };
+          E: { total: number; female: number; male: number };
+          F: { total: number; female: number; male: number };
+        };
+        averageScore: number;
+        femaleAverageScore: number;
+        maleAverageScore: number;
+        totalScored: number;
+        femaleScored: number;
+        maleScored: number;
+      };
+    };
+  };
+}
+
+/**
+ * API Response Wrapper
+ */
 interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -86,6 +167,13 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+// ================================
+// HELPER FUNCTIONS
+// ================================
+
+/**
+ * Handle API response and extract data
+ */
 async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error: ApiResponse<T> = await response.json();
@@ -101,9 +189,17 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
   return result.data;
 }
 
+// ================================
+// REPORTS API
+// ================================
+
 export const reportsApi = {
   /**
    * Get monthly report for a specific class
+   * @param classId - Class ID
+   * @param month - Month name in Khmer (e.g., "មករា", "កុម្ភៈ")
+   * @param year - Year (e.g., 2025)
+   * @returns Monthly report data
    */
   async getMonthlyReport(
     classId: string,
@@ -135,7 +231,11 @@ export const reportsApi = {
   },
 
   /**
-   * Get grade-wide report
+   * Get grade-wide report (all classes in a grade combined)
+   * @param grade - Grade level (e.g., "7", "8", "9", "10", "11", "12")
+   * @param month - Month name in Khmer
+   * @param year - Year
+   * @returns Grade-wide monthly report data
    */
   async getGradeWideReport(
     grade: string,
@@ -167,7 +267,12 @@ export const reportsApi = {
   },
 
   /**
-   * Get student tracking book
+   * Get student tracking book (all months combined)
+   * @param classId - Class ID
+   * @param year - Academic year
+   * @param month - Optional:  specific month to filter
+   * @param subjectId - Optional: specific subject to filter
+   * @returns Student tracking book data
    */
   async getStudentTrackingBook(
     classId: string,
@@ -176,23 +281,20 @@ export const reportsApi = {
     subjectId?: string
   ): Promise<StudentTrackingBookData> {
     try {
-      // ✅ FIXED: Build params without spread operator
-      const params = new URLSearchParams();
-      params.append("year", year.toString());
+      let url = `${API_BASE_URL}/reports/tracking-book/${classId}? year=${year}`;
 
       if (month) {
-        params.append("month", month); // ✅ Add month to query
+        url += `&month=${encodeURIComponent(month.trim())}`;
       }
 
       if (subjectId) {
-        params.append("subjectId", subjectId);
+        url += `&subjectId=${subjectId}`;
       }
 
-      const url = `${API_BASE_URL}/reports/tracking-book/${classId}?${params.toString()}`;
-
-      console.log("📡 Fetching student tracking book:", {
+      console.log("📡 Fetching tracking book:", {
         classId,
         year,
+        month,
         subjectId,
         url,
       });
@@ -200,130 +302,212 @@ export const reportsApi = {
       const response = await fetch(url);
       const data = await handleApiResponse<StudentTrackingBookData>(response);
 
-      console.log("✅ Student tracking book received:", data);
+      console.log("✅ Tracking book received:", data);
       return data;
     } catch (error) {
-      console.error("❌ Get student tracking book error:", error);
+      console.error("❌ Get tracking book error:", error);
       throw error;
     }
   },
 
   /**
-   * Export report to Excel/CSV
+   * ✅ NEW: Get monthly statistics with gender breakdown
+   * @param classId - Class ID
+   * @param month - Month name in Khmer
+   * @param year - Year
+   * @returns Detailed statistics with gender breakdown
    */
-  exportToExcel(
-    reportType: "monthly" | "grade-wide" | "tracking-book",
-    reportData: any,
-    filename: string
-  ): void {
+  async getMonthlyStatistics(
+    classId: string,
+    month: string,
+    year: number
+  ): Promise<MonthlyStatisticsData> {
     try {
-      let csvContent = "";
-      let headers: string[] = [];
-      let rows: string[][] = [];
+      const cleanMonth = month.trim();
+      const url = `${API_BASE_URL}/reports/monthly-statistics/${classId}?month=${encodeURIComponent(
+        cleanMonth
+      )}&year=${year}`;
 
-      if (reportType === "monthly" || reportType === "grade-wide") {
-        const data = reportData as MonthlyReportData;
-
-        headers = ["ល.រ", "គោត្តនាម និងនាម", "ភេទ"];
-
-        if (reportType === "grade-wide") {
-          headers.push("ថ្នាក់");
-        }
-
-        headers.push(
-          "អវត្តមាន(ច)",
-          "អវត្តមាន(អ)",
-          "អវត្តមានសរុប",
-          "ពិន្ទុសរុប",
-          "មធ្យមភាគ",
-          "ចំណាត់ថ្នាក់",
-          "និទ្ទេស"
-        );
-
-        rows = data.students.map((student, index) => {
-          const row = [
-            (index + 1).toString(),
-            student.studentName,
-            student.gender === "MALE" ? "ប្រុស" : "ស្រី",
-          ];
-
-          if (reportType === "grade-wide") {
-            row.push(student.className || "");
-          }
-
-          row.push(
-            student.permission.toString(),
-            student.absent.toString(),
-            (student.permission + student.absent).toString(),
-            student.totalScore,
-            student.average,
-            student.rank.toString(),
-            student.gradeLevel
-          );
-
-          return row;
-        });
-      } else if (reportType === "tracking-book") {
-        const data = reportData as StudentTrackingBookData;
-
-        headers = ["ល.រ", "គោត្តនាម និងនាម", "ភេទ"];
-
-        data.subjects.forEach((s) => {
-          headers.push(s.nameKh);
-        });
-
-        headers.push("ពិន្ទុសរុប", "មធ្យមភាគ", "ចំណាត់ថ្នាក់", "និទ្ទេស");
-
-        rows = data.students.map((student, index) => {
-          const subjectAverages = data.subjects.map((subject) => {
-            const monthlyScores =
-              student.subjectMonthlyScores[subject.id] || {};
-            const scores = Object.values(monthlyScores).filter(
-              (s) => s !== null
-            ) as number[];
-            const avg =
-              scores.length > 0
-                ? scores.reduce((sum, s) => sum + s, 0) / scores.length
-                : 0;
-            return avg > 0 ? avg.toFixed(1) : "-";
-          });
-
-          return [
-            (index + 1).toString(),
-            student.studentName,
-            student.gender === "MALE" ? "ប្រុស" : "ស្រី",
-            ...subjectAverages,
-            student.totalScore,
-            student.averageScore,
-            student.rank.toString(),
-            student.gradeLevel,
-          ];
-        });
-      }
-
-      // Build CSV
-      csvContent = [
-        headers.join(","),
-        ...rows.map((row) => row.join(",")),
-      ].join("\n");
-
-      // Download
-      const blob = new Blob(["\uFEFF" + csvContent], {
-        type: "text/csv;charset=utf-8;",
+      console.log("📡 Fetching monthly statistics:", {
+        classId,
+        month: cleanMonth,
+        year,
+        url,
       });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `${filename}.csv`);
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
 
-      console.log("✅ Exported to Excel:", filename);
+      const response = await fetch(url);
+      const data = await handleApiResponse<MonthlyStatisticsData>(response);
+
+      console.log("✅ Monthly statistics received:", data);
+      console.log("   📊 Total Students:", data.statistics.totalStudents);
+      console.log("   👩 Female Students:", data.statistics.femaleStudents);
+      console.log("   ✅ Total Passed:", data.statistics.totalPassed);
+      console.log("   ✅ Female Passed:", data.statistics.femalePassed);
+
+      return data;
     } catch (error) {
-      console.error("❌ Export to Excel error:", error);
+      console.error("❌ Get monthly statistics error:", error);
       throw error;
     }
   },
 };
+
+// ================================
+// HELPER CONSTANTS
+// ================================
+
+/**
+ * Khmer month names
+ */
+export const KHMER_MONTHS = [
+  "មករា",
+  "កុម្ភៈ",
+  "មីនា",
+  "មេសា",
+  "ឧសភា",
+  "មិថុនា",
+  "កក្កដា",
+  "សីហា",
+  "កញ្ញា",
+  "តុលា",
+  "វិច្ឆិកា",
+  "ធ្នូ",
+];
+
+/**
+ * Grade level labels (Khmer)
+ */
+export const GRADE_LEVEL_LABELS_KH: { [key: string]: string } = {
+  A: "ល្អប្រសើរ",
+  B: "ល្អណាស់",
+  C: "ល្អ",
+  D: "ល្អបង្គួរ",
+  E: "មធ្យម",
+  F: "ខ្សោយ",
+};
+
+/**
+ * Grade level labels (English)
+ */
+export const GRADE_LEVEL_LABELS_EN: { [key: string]: string } = {
+  A: "Excellent",
+  B: "Very Good",
+  C: "Good",
+  D: "Fair",
+  E: "Average",
+  F: "Weak",
+};
+
+/**
+ * Grade level colors for UI
+ */
+export const GRADE_LEVEL_COLORS: { [key: string]: string } = {
+  A: "bg-green-600",
+  B: "bg-blue-600",
+  C: "bg-yellow-600",
+  D: "bg-orange-600",
+  E: "bg-red-500",
+  F: "bg-red-700",
+};
+
+/**
+ * Grade level text colors
+ */
+export const GRADE_LEVEL_TEXT_COLORS: { [key: string]: string } = {
+  A: "text-green-700",
+  B: "text-blue-700",
+  C: "text-yellow-700",
+  D: "text-orange-700",
+  E: "text-red-600",
+  F: "text-red-800",
+};
+
+/**
+ * Grade level background colors (light)
+ */
+export const GRADE_LEVEL_BG_COLORS: { [key: string]: string } = {
+  A: "bg-green-100",
+  B: "bg-blue-100",
+  C: "bg-yellow-100",
+  D: "bg-orange-100",
+  E: "bg-red-100",
+  F: "bg-red-200",
+};
+
+// ================================
+// UTILITY FUNCTIONS
+// ================================
+
+/**
+ * Get grade level label in Khmer
+ */
+export function getGradeLevelLabelKh(level: string): string {
+  return GRADE_LEVEL_LABELS_KH[level] || level;
+}
+
+/**
+ * Get grade level label in English
+ */
+export function getGradeLevelLabelEn(level: string): string {
+  return GRADE_LEVEL_LABELS_EN[level] || level;
+}
+
+/**
+ * Get grade level color class
+ */
+export function getGradeLevelColor(level: string): string {
+  return GRADE_LEVEL_COLORS[level] || "bg-gray-600";
+}
+
+/**
+ * Get grade level text color class
+ */
+export function getGradeLevelTextColor(level: string): string {
+  return GRADE_LEVEL_TEXT_COLORS[level] || "text-gray-700";
+}
+
+/**
+ * Get grade level background color class (light)
+ */
+export function getGradeLevelBgColor(level: string): string {
+  return GRADE_LEVEL_BG_COLORS[level] || "bg-gray-100";
+}
+
+/**
+ * Calculate percentage
+ */
+export function calculatePercentage(value: number, total: number): number {
+  if (total === 0) return 0;
+  return parseFloat(((value / total) * 100).toFixed(2));
+}
+
+/**
+ * Format percentage for display
+ */
+export function formatPercentage(value: number, total: number): string {
+  const percentage = calculatePercentage(value, total);
+  return `${percentage.toFixed(1)}%`;
+}
+
+/**
+ * Get month index from Khmer month name (1-based)
+ */
+export function getMonthNumber(monthName: string): number {
+  const index = KHMER_MONTHS.indexOf(monthName.trim());
+  return index >= 0 ? index + 1 : 0;
+}
+
+/**
+ * Get Khmer month name from month number (1-based)
+ */
+export function getKhmerMonthName(monthNumber: number): string {
+  if (monthNumber < 1 || monthNumber > 12) return "";
+  return KHMER_MONTHS[monthNumber - 1];
+}
+
+/**
+ * Validate month name
+ */
+export function isValidKhmerMonth(monthName: string): boolean {
+  return KHMER_MONTHS.includes(monthName.trim());
+}

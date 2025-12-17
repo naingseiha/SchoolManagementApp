@@ -972,4 +972,334 @@ export class ReportController {
       });
     }
   }
+
+  /**
+   * ✅ NEW: Get monthly statistics with gender breakdown
+   */
+  static async getMonthlyStatistics(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      console.log(
+        `📊 Statistics request: classId=${classId}, month=${month}, year=${year}`
+      );
+
+      // ✅ Get class data
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          students: true,
+          teacher: true,
+        },
+      });
+
+      if (!classData) {
+        return res.status(404).json({
+          success: false,
+          message: "Class not found",
+        });
+      }
+
+      // ✅ Sort students
+      const sortedStudents = [...classData.students].sort((a, b) => {
+        const nameA = a.khmerName || `${a.lastName} ${a.firstName}`;
+        const nameB = b.khmerName || `${b.lastName} ${b.firstName}`;
+        return nameA.localeCompare(nameB, "en-US");
+      });
+
+      // ✅ Get subjects (with track filtering)
+      const whereClause: any = {
+        grade: classData.grade,
+        isActive: true,
+      };
+
+      const gradeNum = parseInt(classData.grade);
+      if ((gradeNum === 11 || gradeNum === 12) && classData.track) {
+        whereClause.OR = [
+          { track: classData.track },
+          { track: null },
+          { track: "common" },
+        ];
+      }
+
+      const subjects = await prisma.subject.findMany({
+        where: whereClause,
+        orderBy: { code: "asc" },
+      });
+
+      console.log(`✅ Found ${subjects.length} subjects for statistics`);
+
+      // ✅ Get month number
+      const monthNames = [
+        "មករា",
+        "កុម្ភៈ",
+        "មីនា",
+        "មេសា",
+        "ឧសភា",
+        "មិថុនា",
+        "កក្កដា",
+        "សីហា",
+        "កញ្ញា",
+        "តុលា",
+        "វិច្ឆិកា",
+        "ធ្នូ",
+      ];
+      const monthNumber = monthNames.indexOf(month as string) + 1;
+
+      if (monthNumber === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid month name",
+        });
+      }
+
+      // ✅ Get grades
+      const grades = await prisma.grade.findMany({
+        where: {
+          classId,
+          OR: [
+            { month: month as string },
+            { month: monthNumber.toString() },
+            { monthNumber: monthNumber },
+          ],
+          year: parseInt(year as string),
+        },
+        include: {
+          subject: true,
+          student: true,
+        },
+      });
+
+      console.log(`✅ Found ${grades.length} grade records`);
+
+      // ✅ Calculate total coefficient
+      const totalCoefficient = subjects.reduce(
+        (sum, s) => sum + s.coefficient,
+        0
+      );
+
+      // ✅ Initialize statistics structure
+      const statistics = {
+        totalStudents: sortedStudents.length,
+        femaleStudents: sortedStudents.filter((s) => s.gender === "FEMALE")
+          .length,
+        maleStudents: sortedStudents.filter((s) => s.gender === "MALE").length,
+
+        // Overall Pass/Fail (Average >= 25 = Pass)
+        totalPassed: 0,
+        femalePassed: 0,
+        malePassed: 0,
+        totalFailed: 0,
+        femaleFailed: 0,
+        maleFailed: 0,
+
+        // Overall Grade Distribution
+        gradeDistribution: {
+          A: { total: 0, female: 0, male: 0 },
+          B: { total: 0, female: 0, male: 0 },
+          C: { total: 0, female: 0, male: 0 },
+          D: { total: 0, female: 0, male: 0 },
+          E: { total: 0, female: 0, male: 0 },
+          F: { total: 0, female: 0, male: 0 },
+        },
+
+        // Subject-wise Statistics
+        subjectStatistics: {} as {
+          [subjectId: string]: {
+            subjectId: string;
+            subjectName: string;
+            subjectCode: string;
+            gradeDistribution: {
+              A: { total: number; female: number; male: number };
+              B: { total: number; female: number; male: number };
+              C: { total: number; female: number; male: number };
+              D: { total: number; female: number; male: number };
+              E: { total: number; female: number; male: number };
+              F: { total: number; female: number; male: number };
+            };
+            averageScore: number;
+            femaleAverageScore: number;
+            maleAverageScore: number;
+            totalScored: number;
+            femaleScored: number;
+            maleScored: number;
+          };
+        },
+      };
+
+      // ✅ Initialize subject statistics
+      subjects.forEach((subject) => {
+        statistics.subjectStatistics[subject.id] = {
+          subjectId: subject.id,
+          subjectName: subject.nameKh,
+          subjectCode: subject.code,
+          gradeDistribution: {
+            A: { total: 0, female: 0, male: 0 },
+            B: { total: 0, female: 0, male: 0 },
+            C: { total: 0, female: 0, male: 0 },
+            D: { total: 0, female: 0, male: 0 },
+            E: { total: 0, female: 0, male: 0 },
+            F: { total: 0, female: 0, male: 0 },
+          },
+          averageScore: 0,
+          femaleAverageScore: 0,
+          maleAverageScore: 0,
+          totalScored: 0,
+          femaleScored: 0,
+          maleScored: 0,
+        };
+      });
+
+      // ✅ Process each student
+      sortedStudents.forEach((student) => {
+        const studentGrades: { [subjectId: string]: number | null } = {};
+        let totalScore = 0;
+        let gradeCount = 0;
+
+        // Calculate student's total score and overall average
+        subjects.forEach((subject) => {
+          const grade = grades.find(
+            (g) => g.studentId === student.id && g.subjectId === subject.id
+          );
+
+          const score = grade?.score ?? null;
+          studentGrades[subject.id] = score;
+
+          if (score !== null) {
+            totalScore += score;
+            gradeCount++;
+
+            // ✅ Calculate subject grade level
+            const subjectGradeInfo = getSubjectGradeLevel(
+              score,
+              subject.maxScore
+            );
+
+            // ✅ Update subject statistics
+            const subjectStats = statistics.subjectStatistics[subject.id];
+            const gradeLevel =
+              subjectGradeInfo.level as keyof typeof subjectStats.gradeDistribution;
+
+            if (subjectStats.gradeDistribution[gradeLevel]) {
+              subjectStats.gradeDistribution[gradeLevel].total++;
+              if (student.gender === "FEMALE") {
+                subjectStats.gradeDistribution[gradeLevel].female++;
+              } else {
+                subjectStats.gradeDistribution[gradeLevel].male++;
+              }
+            }
+
+            // ✅ Update subject average scores
+            subjectStats.totalScored++;
+            subjectStats.averageScore += score;
+            if (student.gender === "FEMALE") {
+              subjectStats.femaleScored++;
+              subjectStats.femaleAverageScore += score;
+            } else {
+              subjectStats.maleScored++;
+              subjectStats.maleAverageScore += score;
+            }
+          }
+        });
+
+        // ✅ Calculate student's overall average
+        const average =
+          totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+
+        // ✅ Determine overall grade level (same thresholds as monthly report)
+        let overallGradeLevel = "F";
+        if (average >= 45) overallGradeLevel = "A";
+        else if (average >= 40) overallGradeLevel = "B";
+        else if (average >= 35) overallGradeLevel = "C";
+        else if (average >= 30) overallGradeLevel = "D";
+        else if (average >= 25) overallGradeLevel = "E";
+
+        // ✅ Update overall grade distribution
+        const gradeLevelKey =
+          overallGradeLevel as keyof typeof statistics.gradeDistribution;
+        statistics.gradeDistribution[gradeLevelKey].total++;
+        if (student.gender === "FEMALE") {
+          statistics.gradeDistribution[gradeLevelKey].female++;
+        } else {
+          statistics.gradeDistribution[gradeLevelKey].male++;
+        }
+
+        // ✅ Update pass/fail statistics (Pass = Average >= 25)
+        if (average >= 25) {
+          statistics.totalPassed++;
+          if (student.gender === "FEMALE") {
+            statistics.femalePassed++;
+          } else {
+            statistics.malePassed++;
+          }
+        } else {
+          statistics.totalFailed++;
+          if (student.gender === "FEMALE") {
+            statistics.femaleFailed++;
+          } else {
+            statistics.maleFailed++;
+          }
+        }
+      });
+
+      // ✅ Calculate final subject averages
+      Object.values(statistics.subjectStatistics).forEach((subjectStat) => {
+        if (subjectStat.totalScored > 0) {
+          subjectStat.averageScore = parseFloat(
+            (subjectStat.averageScore / subjectStat.totalScored).toFixed(2)
+          );
+        }
+        if (subjectStat.femaleScored > 0) {
+          subjectStat.femaleAverageScore = parseFloat(
+            (subjectStat.femaleAverageScore / subjectStat.femaleScored).toFixed(
+              2
+            )
+          );
+        }
+        if (subjectStat.maleScored > 0) {
+          subjectStat.maleAverageScore = parseFloat(
+            (subjectStat.maleAverageScore / subjectStat.maleScored).toFixed(2)
+          );
+        }
+      });
+
+      console.log(`✅ Statistics calculated successfully`);
+      console.log(`   Total Students: ${statistics.totalStudents}`);
+      console.log(`   Female Students: ${statistics.femaleStudents}`);
+      console.log(`   Total Passed: ${statistics.totalPassed}`);
+      console.log(`   Female Passed: ${statistics.femalePassed}`);
+
+      return res.json({
+        success: true,
+        data: {
+          classId: classData.id,
+          className: classData.name,
+          grade: classData.grade,
+          track: classData.track || null,
+          month: month as string,
+          year: parseInt(year as string),
+          teacherName: classData.teacher
+            ? `${classData.teacher.lastName} ${classData.teacher.firstName}`
+            : null,
+          totalCoefficient: totalCoefficient,
+          subjects: subjects.map((s) => ({
+            id: s.id,
+            nameKh: s.nameKh,
+            nameEn: s.nameEn,
+            code: s.code,
+            maxScore: s.maxScore,
+            coefficient: s.coefficient,
+          })),
+          statistics: statistics,
+        },
+      });
+    } catch (error: any) {
+      console.error("❌ Get monthly statistics error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get monthly statistics",
+      });
+    }
+  }
 }
