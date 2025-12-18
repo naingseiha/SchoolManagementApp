@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import AwardReport from "@/components/reports/AwardReport";
+import HonorCertificate from "@/components/reports/HonorCertificate"; // ✅ New import
 import {
   Printer,
   Loader2,
@@ -14,11 +14,14 @@ import {
   Users,
   FileText,
   Sparkles,
+  Download,
 } from "lucide-react";
 import {
   calculateTopStudentsByClass,
   calculateTopStudentsByGrade,
 } from "@/lib/utils/topStudentsCalculator";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const monthNames = [
   "មករា",
@@ -43,12 +46,13 @@ export default function AwardReportPage() {
   const [reportType, setReportType] = useState<"class" | "grade">("class");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("ធ្នូ"); // December
+  const [selectedMonth, setSelectedMonth] = useState("ធ្នូ");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [summaries, setSummaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reportGenerated, setReportGenerated] = useState(false); // ✅ Track if report is generated
+  const [reportGenerated, setReportGenerated] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const academicYear = `${selectedYear}-${selectedYear + 1}`;
 
@@ -71,7 +75,6 @@ export default function AwardReportPage() {
     }
   }, [classes, grades, reportType]);
 
-  // ✅ Don't auto-fetch, only fetch when user clicks Generate
   const fetchSummaries = async () => {
     if (reportType === "class" && !selectedClassId) {
       setError("សូមជ្រើសរើសថ្នាក់");
@@ -97,19 +100,11 @@ export default function AwardReportPage() {
           throw new Error("Selected class not found");
         }
         gradeValue = selectedClass.grade;
-
-        // ✅ NO SPACES after ?
         url = `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClassId}?month=${selectedMonth}&year=${selectedYear}`;
       } else {
         gradeValue = selectedGrade;
-
-        // ✅ NO SPACES after ?
         url = `${process.env.NEXT_PUBLIC_API_URL}/reports/grade-wide/${selectedGrade}?month=${selectedMonth}&year=${selectedYear}`;
       }
-
-      console.log("📡 Fetching from:", url);
-      console.log("📅 Month:", selectedMonth);
-      console.log("📅 Year:", selectedYear);
 
       const response = await fetch(url, {
         headers: {
@@ -126,12 +121,10 @@ export default function AwardReportPage() {
       }
 
       const responseData = await response.json();
-      console.log("📊 Response:", responseData);
-
       const data = responseData.success ? responseData.data : responseData;
 
       if (!data.students || !Array.isArray(data.students)) {
-        throw new Error("Invalid response: missing students array");
+        throw new Error("Invalid response:  missing students array");
       }
 
       const transformedSummaries = data.students.map((student: any) => ({
@@ -150,8 +143,6 @@ export default function AwardReportPage() {
         },
         averageScore: parseFloat(student.average) || 0,
       }));
-
-      console.log(`✅ Transformed ${transformedSummaries.length} students`);
 
       if (transformedSummaries.length === 0) {
         setError("មិនមានទិន្នន័យសម្រាប់ខែនេះទេ");
@@ -185,7 +176,71 @@ export default function AwardReportPage() {
     window.print();
   };
 
-  // ✅ Reset report when selections change
+  // ✅ Export to PDF function
+  // ✅ ស្វែងរក function exportToPDF នៅក្នុង file page.tsx ហើយកែដូចខាងក្រោម:
+
+  const exportToPDF = async () => {
+    const element = document.getElementById("honor-certificate");
+    if (!element) return;
+
+    setIsExporting(true);
+    try {
+      // ✅ High Quality Settings
+      const canvas = await html2canvas(element, {
+        scale: 3, // ✅ បន្ថែមពី 2 ទៅ 3 (ស្អាតជាង)
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff", // ✅ Force white background
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        imageTimeout: 0, // ✅ Wait for all images
+        removeContainer: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png", 1.0); // ✅ Quality 100%
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: false, // ✅ Don't compress
+        precision: 16, // ✅ High precision
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+      // ✅ Center the image
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 0;
+
+      pdf.addImage(
+        imgData,
+        "PNG",
+        imgX,
+        imgY,
+        imgWidth * ratio,
+        imgHeight * ratio,
+        undefined,
+        "FAST" // ✅ or "SLOW" for better quality
+      );
+
+      const fileName = `តារាងកិត្តិយស_${
+        reportType === "class" ? selectedClass?.name : `Grade_${selectedGrade}`
+      }_${academicYear}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      alert("មានបញ្ហាក្នុងការនាំចេញ PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   useEffect(() => {
     setReportGenerated(false);
     setSummaries([]);
@@ -297,8 +352,7 @@ export default function AwardReportPage() {
             </div>
 
             {/* Selections */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Class or Grade */}
+            <div className="grid grid-cols-1 md: grid-cols-4 gap-4">
               {reportType === "class" ? (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -324,7 +378,7 @@ export default function AwardReportPage() {
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus: ring-2 focus:ring-yellow-500"
                   >
                     {gradeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -335,7 +389,6 @@ export default function AwardReportPage() {
                 </div>
               )}
 
-              {/* ✅ Month Selector */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ខែ
@@ -353,7 +406,6 @@ export default function AwardReportPage() {
                 </select>
               </div>
 
-              {/* Year */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ឆ្នាំសិក្សា
@@ -371,7 +423,6 @@ export default function AwardReportPage() {
                 </select>
               </div>
 
-              {/* ✅ Generate Button */}
               <div className="flex items-end">
                 <button
                   onClick={fetchSummaries}
@@ -380,7 +431,7 @@ export default function AwardReportPage() {
                     (reportType === "class" && !selectedClassId) ||
                     (reportType === "grade" && !selectedGrade)
                   }
-                  className="w-full h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                  className="w-full h-11 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -397,7 +448,7 @@ export default function AwardReportPage() {
               </div>
             </div>
 
-            {/* Info Card - Show after selection */}
+            {/* Info Card */}
             {((reportType === "class" && selectedClassId) ||
               (reportType === "grade" && selectedGrade)) && (
               <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl">
@@ -429,15 +480,32 @@ export default function AwardReportPage() {
               </div>
             )}
 
-            {/* ✅ Print Button - Show only after report generated */}
+            {/* Action Buttons */}
             {reportGenerated && topStudents.length > 0 && (
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex gap-3 justify-end">
+                <button
+                  onClick={exportToPDF}
+                  disabled={isExporting}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      កំពុងនាំចេញ...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      នាំចេញ PDF
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={handlePrint}
                   className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2"
                 >
                   <Printer className="w-4 h-4" />
-                  បោះពុម្ពតារាងកិត្តិយស
+                  បោះពុម្ពតារាង
                 </button>
               </div>
             )}
@@ -464,17 +532,20 @@ export default function AwardReportPage() {
             </div>
           )}
 
-          {/* Award Report Display - Only show after generation */}
+          {/* Certificate Display */}
           {!loading && reportGenerated && (
-            <AwardReport
-              topStudents={topStudents}
-              reportType={reportType}
-              className={
-                reportType === "class" ? selectedClass?.name : undefined
-              }
-              grade={reportType === "grade" ? selectedGrade : undefined}
-              academicYear={academicYear}
-            />
+            <div id="honor-certificate">
+              <HonorCertificate
+                topStudents={topStudents}
+                reportType={reportType}
+                className={
+                  reportType === "class" ? selectedClass?.name : undefined
+                }
+                grade={reportType === "grade" ? selectedGrade : undefined}
+                academicYear={academicYear}
+                month={selectedMonth}
+              />
+            </div>
           )}
 
           {/* Initial Empty State */}
