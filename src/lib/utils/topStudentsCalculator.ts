@@ -8,6 +8,7 @@ interface StudentScore {
   khmerName: string;
   className: string;
   averageScore: number;
+  letterGrade?: string;
 }
 
 interface TopStudent {
@@ -16,6 +17,7 @@ interface TopStudent {
   khmerName: string;
   className: string;
   averageScore: number;
+  letterGrade: string;
   tied?: boolean;
 }
 
@@ -60,6 +62,7 @@ export function calculateTopStudents(
       khmerName: student.khmerName,
       className: student.className,
       averageScore: student.averageScore,
+      letterGrade: student.letterGrade || "F",
       tied,
     });
 
@@ -87,6 +90,7 @@ export function calculateTopStudentsByClass(
         "",
       className: s.student?.class?.name || "",
       averageScore: s.averageScore,
+      letterGrade: s.letterGrade || "F",
     }));
 
   return calculateTopStudents(classStudents);
@@ -109,6 +113,7 @@ export function calculateTopStudentsByGrade(
         "",
       className: s.student?.class?.name || "",
       averageScore: s.averageScore,
+      letterGrade: s.letterGrade || "F",
     }));
 
   return calculateTopStudents(gradeStudents);

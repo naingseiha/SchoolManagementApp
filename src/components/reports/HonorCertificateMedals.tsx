@@ -8,7 +8,7 @@ interface TopStudent {
   khmerName: string;
   className: string;
   averageScore: number;
-  letterGrade: string; // A, B, C, D, E, F from API
+  letterGrade: string;
   tied?: boolean;
 }
 
@@ -29,7 +29,6 @@ export default function HonorCertificate({
   academicYear,
   month,
 }: HonorCertificateProps) {
-  // Get rank image path
   const getRankImage = (rank: number): string => {
     const images = [
       "/images/awards/number1.png",
@@ -41,7 +40,6 @@ export default function HonorCertificate({
     return images[rank - 1] || "/images/awards/number5.png";
   };
 
-  // Get current date in Khmer format
   const getCurrentDate = () => {
     const months = [
       "មករា",
@@ -64,26 +62,30 @@ export default function HonorCertificate({
     return `ថ្ងៃទី${day < 10 ? "0" + day : day} ខែ${khmerMonth} ឆ្នាំ${year}`;
   };
 
-  // ✅ Get grade badge color - Fixed undefined handling
-  const getGradeColor = (letterGrade?: string) => {
-    if (!letterGrade) return "#6B7280"; // Gray if undefined
-
-    switch (letterGrade.toUpperCase()) {
+  const getGradeColor = (letterGrade?: string): string => {
+    if (!letterGrade || letterGrade === "undefined") return "#6B7280";
+    const grade = letterGrade.toUpperCase().trim();
+    switch (grade) {
       case "A":
-        return "#10B981"; // Green
+        return "#10B981";
       case "B":
-        return "#3B82F6"; // Blue
+        return "#3B82F6";
       case "C":
-        return "#F59E0B"; // Amber
+        return "#F59E0B";
       case "D":
-        return "#F97316"; // Orange
+        return "#F97316";
       case "E":
-        return "#EF4444"; // Red
+        return "#EF4444";
       case "F":
-        return "#DC2626"; // Dark Red
+        return "#DC2626";
       default:
-        return "#6B7280"; // Gray
+        return "#6B7280";
     }
+  };
+
+  const displayGrade = (letterGrade?: string): string => {
+    if (!letterGrade || letterGrade === "undefined") return "N/A";
+    return letterGrade.toUpperCase().trim();
   };
 
   return (
@@ -98,7 +100,6 @@ export default function HonorCertificate({
     >
       {/* Abstract Background */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Hexagon Pattern */}
         <svg
           className="absolute inset-0 w-full h-full"
           style={{ opacity: 0.04 }}
@@ -129,7 +130,6 @@ export default function HonorCertificate({
           <rect width="100%" height="100%" fill="url(#hexPattern)" />
         </svg>
 
-        {/* Education Tree */}
         <div className="absolute bottom-10 right-10 opacity-[0.035]">
           <svg width="300" height="400" viewBox="0 0 300 400">
             <line
@@ -154,7 +154,7 @@ export default function HonorCertificate({
               x2="200"
               y2="200"
               stroke="#3B82F6"
-              strokeWidth="2.5"
+              strokeWidth="2. 5"
             />
             <line
               x1="150"
@@ -214,105 +214,26 @@ export default function HonorCertificate({
             />
 
             <circle cx="150" cy="100" r="25" fill="#06B6D4" />
-            <text
-              x="150"
-              y="110"
-              fontSize="20"
-              textAnchor="middle"
-              fill="white"
-            >
-              🎓
-            </text>
             <circle cx="70" cy="160" r="18" fill="#8B5CF6" />
-            <text x="70" y="167" fontSize="16" textAnchor="middle" fill="white">
-              📚
-            </text>
             <circle cx="230" cy="160" r="18" fill="#8B5CF6" />
-            <text
-              x="230"
-              y="167"
-              fontSize="16"
-              textAnchor="middle"
-              fill="white"
-            >
-              📖
-            </text>
             <circle cx="130" cy="160" r="18" fill="#10B981" />
-            <text
-              x="130"
-              y="167"
-              fontSize="16"
-              textAnchor="middle"
-              fill="white"
-            >
-              ✏️
-            </text>
             <circle cx="170" cy="160" r="18" fill="#F59E0B" />
-            <text
-              x="170"
-              y="167"
-              fontSize="16"
-              textAnchor="middle"
-              fill="white"
-            >
-              🔢
-            </text>
             <circle cx="120" cy="130" r="16" fill="#3B82F6" />
-            <text
-              x="120"
-              y="137"
-              fontSize="14"
-              textAnchor="middle"
-              fill="white"
-            >
-              🔬
-            </text>
             <circle cx="180" cy="130" r="16" fill="#06B6D4" />
-            <text
-              x="180"
-              y="137"
-              fontSize="14"
-              textAnchor="middle"
-              fill="white"
-            >
-              🌍
-            </text>
             <circle cx="100" cy="200" r="20" fill="#EC4899" />
-            <text
-              x="100"
-              y="208"
-              fontSize="18"
-              textAnchor="middle"
-              fill="white"
-            >
-              👨‍🏫
-            </text>
             <circle cx="200" cy="200" r="20" fill="#EC4899" />
-            <text
-              x="200"
-              y="208"
-              fontSize="18"
-              textAnchor="middle"
-              fill="white"
-            >
-              👩‍🎓
-            </text>
             <circle cx="150" cy="250" r="5" fill="#3B82F6" />
-            <circle cx="150" cy="180" r="4" fill="#10B981" />
-            <circle cx="100" cy="200" r="4" fill="#10B981" />
-            <circle cx="200" cy="200" r="4" fill="#10B981" />
           </svg>
         </div>
 
-        {/* Decorations */}
         <div className="absolute top-1/4 left-12 opacity-[0.02]">
           <svg width="80" height="80" viewBox="0 0 24 24" fill="#EC4899">
-            <path d="M5 13. 18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+            <path d="M5 13. 18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4. 91V17h2V9L12 3z" />
           </svg>
         </div>
         <div className="absolute bottom-1/3 left-1/4 opacity-[0.02]">
           <svg width="70" height="70" viewBox="0 0 24 24" fill="#3B82F6">
-            <path d="M21 5c-1.11-. 35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 . 25.25.5.5.5. 1 0 .15-. 05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-. 6-.45-1.25-. 75-2-1zm0 13. 5c-1.1-. 35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-. 85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
+            <path d="M21 5c-1.11-. 35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 . 25.25.5.5.5. 1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-. 85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-. 6-. 45-1.25-.75-2-1zm0 13.5c-1.1-. 35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-. 85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
           </svg>
         </div>
         <div className="absolute top-1/3 right-1/3 text-pink-400 opacity-[0.025] text-4xl">
@@ -322,7 +243,6 @@ export default function HonorCertificate({
           ✨
         </div>
 
-        {/* Border */}
         <div
           className="absolute inset-4 border-2 border-pink-200 opacity-[0.1] rounded-xl pointer-events-none"
           style={{ borderStyle: "double" }}
@@ -334,7 +254,6 @@ export default function HonorCertificate({
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
         <div className="mb-2">
-          {/* Royal Motto */}
           <div className="text-center">
             <div
               style={{
@@ -358,7 +277,6 @@ export default function HonorCertificate({
             </div>
           </div>
 
-          {/* ✅ Logo & School Name - Fixed Alignment */}
           <div
             style={{
               marginTop: "-30px",
@@ -393,7 +311,6 @@ export default function HonorCertificate({
             </div>
           </div>
 
-          {/* Title */}
           <div className="text-center mb-3">
             <h1
               className="text-red-600 text-2xl font-black mb-1"
@@ -403,7 +320,6 @@ export default function HonorCertificate({
             </h1>
           </div>
 
-          {/* Academic Info */}
           <div
             className="text-center space-y-0. 5"
             style={{ fontFamily: "Khmer OS Muol Light", fontSize: "11pt" }}
@@ -488,24 +404,25 @@ export default function HonorCertificate({
                       />
                     </div>
 
-                    {/* ✅ Fixed Grade Badge - Centered Text */}
+                    {/* ✅ PDF-COMPATIBLE:  Calculated positioning instead of transform */}
                     <div
                       style={{
                         position: "absolute",
                         bottom: "-12px",
-                        left: "50%",
-                        transform: "translateX(-50%)",
+                        left: "48px", // ✅ (144 - 48) / 2 = 48px
                         zIndex: 10,
+                        width: "48px",
+                        height: "48px",
                       }}
                     >
                       <div
                         style={{
+                          width: "100%",
+                          height: "100%",
                           backgroundColor: getGradeColor(
                             topStudents[0].letterGrade
                           ),
                           color: "white",
-                          width: "48px",
-                          height: "48px",
                           borderRadius: "50%",
                           display: "flex",
                           alignItems: "center",
@@ -519,13 +436,10 @@ export default function HonorCertificate({
                           style={{
                             fontSize: "20px",
                             fontWeight: 900,
-                            lineHeight: "1",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
+                            fontFamily: "Arial, sans-serif",
                           }}
                         >
-                          {topStudents[0].letterGrade || "A"}
+                          {displayGrade(topStudents[0].letterGrade)}
                         </span>
                       </div>
                     </div>
@@ -613,22 +527,23 @@ export default function HonorCertificate({
                         />
                       </div>
 
-                      {/* ✅ Fixed Grade Badge */}
+                      {/* ✅ PDF-COMPATIBLE */}
                       <div
                         style={{
                           position: "absolute",
                           bottom: "-12px",
-                          left: "50%",
-                          transform: "translateX(-50%)",
+                          left: "48px", // ✅ Calculated
                           zIndex: 10,
+                          width: "48px",
+                          height: "48px",
                         }}
                       >
                         <div
                           style={{
+                            width: "100%",
+                            height: "100%",
                             backgroundColor: getGradeColor(student.letterGrade),
                             color: "white",
-                            width: "48px",
-                            height: "48px",
                             borderRadius: "50%",
                             display: "flex",
                             alignItems: "center",
@@ -642,13 +557,10 @@ export default function HonorCertificate({
                             style={{
                               fontSize: "20px",
                               fontWeight: 900,
-                              lineHeight: "1",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                              fontFamily: "Arial, sans-serif",
                             }}
                           >
-                            {student.letterGrade || "A"}
+                            {displayGrade(student.letterGrade)}
                           </span>
                         </div>
                       </div>
@@ -735,24 +647,25 @@ export default function HonorCertificate({
                           />
                         </div>
 
-                        {/* ✅ Fixed Grade Badge */}
+                        {/* ✅ PDF-COMPATIBLE */}
                         <div
                           style={{
                             position: "absolute",
                             bottom: "-12px",
-                            left: "50%",
-                            transform: "translateX(-50%)",
+                            left: "48px", // ✅ Calculated
                             zIndex: 10,
+                            width: "48px",
+                            height: "48px",
                           }}
                         >
                           <div
                             style={{
+                              width: "100%",
+                              height: "100%",
                               backgroundColor: getGradeColor(
                                 student.letterGrade
                               ),
                               color: "white",
-                              width: "48px",
-                              height: "48px",
                               borderRadius: "50%",
                               display: "flex",
                               alignItems: "center",
@@ -766,13 +679,10 @@ export default function HonorCertificate({
                               style={{
                                 fontSize: "20px",
                                 fontWeight: 900,
-                                lineHeight: "1",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
+                                fontFamily: "Arial, sans-serif",
                               }}
                             >
-                              {student.letterGrade || "A"}
+                              {displayGrade(student.letterGrade)}
                             </span>
                           </div>
                         </div>
@@ -834,7 +744,7 @@ export default function HonorCertificate({
                 className="text-xs font-bold mb-1"
                 style={{ fontFamily: "Khmer OS Battambang" }}
               >
-                ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស.២៥៦៩
+                ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩
               </p>
               <p
                 className="text-xs font-bold mb-1"
