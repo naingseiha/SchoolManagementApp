@@ -1,45 +1,79 @@
-// Teachers API Service
+// Teachers API Service - Connected to Backend
 
 import { apiClient } from "./client";
 
 export interface Teacher {
   id: string;
+  teacherId?: string;
   firstName: string;
   lastName: string;
+  name?: string;
+  khmerName?: string;
+  englishName?: string;
   email: string;
   phone?: string;
-  subject?: string;
+  phoneNumber?: string;
   employeeId?: string;
+
+  // ✅ NEW FIELDS
+  role: "TEACHER" | "INSTRUCTOR";
+  gender?: "MALE" | "FEMALE";
+  dateOfBirth?: string;
+  hireDate?: string;
+  address?: string;
+  position?: string;
+
+  // ✅ Homeroom (for INSTRUCTOR)
+  homeroomClassId?: string;
+  homeroomClass?: {
+    id: string;
+    name: string;
+    grade: string;
+    section?: string;
+    track?: string;
+    _count?: {
+      students: number;
+    };
+  };
+
+  // ✅ Teaching classes (many-to-many)
+  teachingClassIds?: string[];
+  teachingClasses?: Array<{
+    id: string;
+    name: string;
+    grade: string;
+    section?: string;
+    track?: string;
+    _count?: {
+      students: number;
+    };
+  }>;
+
+  // ✅ Subjects
+  subjectIds?: string[];
+  subjects?: Array<{
+    id: string;
+    name: string;
+    nameKh: string; // ✅ Use nameKh
+    code: string;
+    grade: string;
+    track?: string;
+  }>;
+
+  subject?: string;
   classes?: any[];
-  subjectAssignments?: any[]; // ✅ KEEP THIS
+
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface CreateTeacherData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  subject?: string;
-  employeeId?: string;
-}
-
-export interface TeachersResponse {
-  success: boolean;
-  data: Teacher[];
-}
-
-export interface TeacherResponse {
-  success: boolean;
-  data: Teacher;
-  message?: string;
-}
-
 export const teachersApi = {
+  /**
+   * Get all teachers
+   */
   async getAll(): Promise<Teacher[]> {
     try {
-      // ✅ Response is already the array
+      console.log("👨‍🏫 Fetching all teachers from API...");
       const teachers = await apiClient.get<Teacher[]>("/teachers");
 
       if (!Array.isArray(teachers)) {
@@ -47,6 +81,7 @@ export const teachersApi = {
         return [];
       }
 
+      console.log(`✅ Fetched ${teachers.length} teachers from database`);
       return teachers;
     } catch (error) {
       console.error("❌ teachersApi.getAll error:", error);
@@ -54,9 +89,14 @@ export const teachersApi = {
     }
   },
 
+  /**
+   * Get teacher by ID
+   */
   async getById(id: string): Promise<Teacher | null> {
     try {
+      console.log(`👨‍🏫 Fetching teacher ${id}...`);
       const teacher = await apiClient.get<Teacher>(`/teachers/${id}`);
+      console.log("✅ Teacher fetched");
       return teacher;
     } catch (error) {
       console.error("❌ teachersApi.getById error:", error);
@@ -64,17 +104,103 @@ export const teachersApi = {
     }
   },
 
-  async create(teacher: Omit<Teacher, "id">): Promise<Teacher> {
-    const data = await apiClient.post<Teacher>("/teachers", teacher);
-    return data;
+  /**
+   * Create new teacher
+   */
+  async create(teacherData: any): Promise<Teacher> {
+    try {
+      console.log("➕ Creating teacher:", teacherData);
+      const teacher = await apiClient.post<Teacher>("/teachers", teacherData);
+
+      if (!teacher || !teacher.id) {
+        throw new Error(
+          "Invalid response from server - no teacher ID returned"
+        );
+      }
+
+      console.log("✅ Teacher created:", teacher.id);
+      return teacher;
+    } catch (error: any) {
+      console.error("❌ teachersApi. create error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to create teacher"
+      );
+    }
   },
 
-  async update(id: string, teacher: Partial<Teacher>): Promise<Teacher> {
-    const data = await apiClient.put<Teacher>(`/teachers/${id}`, teacher);
-    return data;
+  /**
+   * Update existing teacher
+   */
+  async update(id: string, teacherData: any): Promise<Teacher> {
+    try {
+      console.log(`✏️ Updating teacher ${id}:`, teacherData);
+
+      if (!id || id.trim() === "") {
+        throw new Error("Teacher ID is required for update");
+      }
+
+      const teacher = await apiClient.put<Teacher>(
+        `/teachers/${id}`,
+        teacherData
+      );
+
+      if (!teacher) {
+        throw new Error("No response from server");
+      }
+
+      if (!teacher.id) {
+        console.error("❌ Invalid response structure:", teacher);
+        throw new Error("Invalid response from server - missing teacher ID");
+      }
+
+      console.log("✅ Teacher updated:", teacher.id);
+      return teacher;
+    } catch (error: any) {
+      console.error("❌ teachersApi.update error:", error);
+      throw new Error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update teacher"
+      );
+    }
   },
 
+  /**
+   * Delete teacher
+   */
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/teachers/${id}`);
+    try {
+      console.log(`🗑️ Deleting teacher ${id}...`);
+      await apiClient.delete(`/teachers/${id}`);
+      console.log("✅ Teacher deleted");
+    } catch (error: any) {
+      console.error("❌ teachersApi.delete error:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to delete teacher"
+      );
+    }
+  },
+
+  /**
+   * Search teachers (client-side)
+   */
+  async search(query: string): Promise<Teacher[]> {
+    try {
+      const allTeachers = await teachersApi.getAll();
+      const lowerQuery = query.toLowerCase();
+
+      return allTeachers.filter(
+        (teacher: any) =>
+          teacher.firstName?.toLowerCase().includes(lowerQuery) ||
+          teacher.lastName?.toLowerCase().includes(lowerQuery) ||
+          teacher.khmerName?.toLowerCase().includes(lowerQuery) ||
+          teacher.email?.toLowerCase().includes(lowerQuery) ||
+          teacher.phoneNumber?.includes(query) ||
+          teacher.employeeId?.includes(query)
+      );
+    } catch (error) {
+      console.error("❌ Error searching teachers:", error);
+      return [];
+    }
   },
 };

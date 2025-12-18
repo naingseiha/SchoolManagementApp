@@ -270,6 +270,74 @@ export const getSubjectById = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * ✅ GET subjects by grade (with optional track filter)
+ */
+export const getSubjectsByGrade = async (req: Request, res: Response) => {
+  try {
+    const { grade } = req.params;
+    const { track } = req.query; // Optional:   "science" | "social"
+
+    console.log(
+      `📚 GET SUBJECTS BY GRADE:  ${grade}`,
+      track ? `(${track})` : ""
+    );
+
+    const whereClause: any = {
+      grade: grade.toString(),
+      isActive: true,
+    };
+
+    // ✅ Filter by track for grades 11-12
+    if (track) {
+      whereClause.track = track.toString();
+    }
+
+    const subjects = await prisma.subject.findMany({
+      where: whereClause,
+      include: {
+        teacherAssignments: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                khmerName: true,
+                englishName: true,
+                role: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            grades: true,
+            teacherAssignments: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    console.log(`✅ Found ${subjects.length} subjects`);
+
+    res.json({
+      success: true,
+      data: subjects,
+    });
+  } catch (error: any) {
+    console.error("❌ Error getting subjects by grade:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching subjects",
+      error: error.message,
+    });
+  }
+};
+
 export const deleteSubject = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

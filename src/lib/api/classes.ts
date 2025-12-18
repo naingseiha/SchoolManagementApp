@@ -173,4 +173,27 @@ export const classesApi = {
       );
     }
   },
+  async getByGrade(grade: string, track?: string): Promise<Class[]> {
+    try {
+      const url = track
+        ? `/classes/grade/${grade}?track=${track}`
+        : `/classes/grade/${grade}`;
+
+      console.log(
+        `📚 Fetching classes for grade ${grade}${track ? ` (${track})` : ""}...`
+      );
+      const classes = await apiClient.get<Class[]>(url);
+
+      if (!Array.isArray(classes)) {
+        console.error("❌ Expected array but got:", typeof classes);
+        return [];
+      }
+
+      console.log(`✅ Fetched ${classes.length} classes`);
+      return classes;
+    } catch (error) {
+      console.error("❌ classesApi.getByGrade error:", error);
+      return [];
+    }
+  },
 };

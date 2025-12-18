@@ -204,4 +204,29 @@ export const subjectsApi = {
       );
     }
   },
+  async getByGrade(grade: string, track?: string): Promise<Subject[]> {
+    try {
+      const url = track
+        ? `/subjects/grade/${grade}?track=${track}`
+        : `/subjects/grade/${grade}`;
+
+      console.log(
+        `📚 Fetching subjects for grade ${grade}${
+          track ? ` (${track})` : ""
+        }...`
+      );
+      const subjects = await apiClient.get<Subject[]>(url);
+
+      if (!Array.isArray(subjects)) {
+        console.error("❌ Expected array but got:", typeof subjects);
+        return [];
+      }
+
+      console.log(`✅ Fetched ${subjects.length} subjects`);
+      return subjects;
+    } catch (error) {
+      console.error("❌ subjectsApi.getByGrade error:", error);
+      return [];
+    }
+  },
 };

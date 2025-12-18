@@ -1,10 +1,15 @@
 export interface Teacher {
   id: string;
   name: string;
-  phone?: string;
+  khmerName: string;
+  gender: "male" | "female";
+  dateOfBirth?: string;
+  phoneNumber: string;
   email?: string;
-  subjects?: string[];
-  classes?: string[];
-  isClassTeacher: boolean;
-  classTeacherOf?: string;
+  address?: string;
+  subjectIds?: string[];
+  hireDate?: string;
+  status?: "active" | "inactive";
+  createdAt?: string;
+  updatedAt?: string;
 }

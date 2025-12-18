@@ -21,142 +21,173 @@ model User {
 }
 
 model Student {
-  id             String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // ✅ Auto-generated Student ID (8-digit: YYCCNNNN)
-  studentId      String?     @unique
-  
+  studentId String? @unique
+
   // ✅ Basic Info - Required Fields
-  firstName      String                    
-  lastName       String                    
-  khmerName      String                    
-  dateOfBirth    String                    
-  gender         Gender                    
-  
+  firstName   String
+  lastName    String
+  khmerName   String
+  dateOfBirth String
+  gender      Gender
+
   // ✅ Optional Fields with Defaults
-  englishName    String?  
-  email          String?   @unique
-  placeOfBirth   String?   @default("ភ្នំពេញ")
-  currentAddress String?   @default("ភ្នំពេញ")
-  phoneNumber    String?  
-  classId        String?  
-  
+  englishName    String?
+  email          String? @unique
+  placeOfBirth   String? @default("ភ្នំពេញ")
+  currentAddress String? @default("ភ្នំពេញ")
+  phoneNumber    String?
+  classId        String?
+
   // ✅ Parent Information (Optional with Defaults)
-  fatherName       String?  @default("ឪពុក")
-  motherName       String?  @default("ម្តាយ")
-  parentPhone      String?  
-  parentOccupation String?  @default("កសិករ")
-  
+  fatherName       String? @default("ឪពុក")
+  motherName       String? @default("ម្តាយ")
+  parentPhone      String?
+  parentOccupation String? @default("កសិករ")
+
   // ✅ Academic History Fields (Optional)
-  previousGrade     String?  // ឡើងពីថ្នាក់ (ex: "៦ក")
-  previousSchool    String?  // មកពីសាលា
-  repeatingGrade    String?  // ត្រួតថ្នាក់ទី (ex: "៧ខ")
-  transferredFrom   String?  // ផ្ទេរមកពី (province)
-  
+  previousGrade   String? // ឡើងពីថ្នាក់ (ex: "៦ក")
+  previousSchool  String? // មកពីសាលា
+  repeatingGrade  String? // ត្រួតថ្នាក់ទី (ex: "៧ខ")
+  transferredFrom String? // ផ្ទេរមកពី (province)
+
   // ✅ NEW: Grade 9 Exam (សញ្ញាបត្រមធ្យមសិក្សាបឋមភូមិ)
-  grade9ExamSession   String?  // សម័យប្រឡងទី៩ (ex: "២០២៤", "២០២៥")
-  grade9ExamCenter    String?  // មណ្ឌលប្រឡងទី៩
-  grade9ExamRoom      String?  // បន្ទប់ប្រឡងទី៩
-  grade9ExamDesk      String?  // លេខតុប្រឡងទី៩
-  grade9PassStatus    String?  // ស្ថានភាពប្រលងទី៩ (ex: "ជាប់", "ធ្លាក់", "មិនប្រលង")
-  
+  grade9ExamSession String? // សម័យប្រឡងទី៩ (ex: "២០២៤", "២០២៥")
+  grade9ExamCenter  String? // មណ្ឌលប្រឡងទី៩
+  grade9ExamRoom    String? // បន្ទប់ប្រឡងទី៩
+  grade9ExamDesk    String? // លេខតុប្រឡងទី៩
+  grade9PassStatus  String? // ស្ថានភាពប្រលងទី៩ (ex: "ជាប់", "ធ្លាក់", "មិនប្រលង")
+
   // ✅ NEW: Grade 12 Exam (សញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ - Baccalaureate)
-  grade12ExamSession  String?   // សម័យប្រឡងទី១២ (ex: "២០២៧", "២០២៨")
-  grade12ExamCenter   String?  // មណ្ឌលប្រឡងទី១២
-  grade12ExamRoom     String?  // បន្ទប់ប្រឡងទី១២
-  grade12ExamDesk     String?  // លេខតុប្រឡងទី១២
-  grade12PassStatus   String?  // ស្ថានភាពប្រលងទី១២ (ex: "ជាប់", "ធ្លាក់", "មិនប្រលង")
-  grade12Track        String?  // ផ្លូវ (ex: "វិទ្យាសាស្ត្រ", "សង្គម")
-  
+  grade12ExamSession String? // សម័យប្រឡងទី១២ (ex: "២០២៧", "២០២៨")
+  grade12ExamCenter  String? // មណ្ឌលប្រឡងទី១២
+  grade12ExamRoom    String? // បន្ទប់ប្រឡងទី១២
+  grade12ExamDesk    String? // លេខតុប្រឡងទី១២
+  grade12PassStatus  String? // ស្ថានភាពប្រលងទី១២ (ex: "ជាប់", "ធ្លាក់", "មិនប្រលង")
+  grade12Track       String? // ផ្លូវ (ex: "វិទ្យាសាស្ត្រ", "សង្គម")
+
   // ✅ General remarks
-  remarks        String?  
-  
+  remarks String?
+
   // ✅ Photo (Optional - for future)
-  photoUrl       String?  
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
+  photoUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  attendance     Attendance[]
-  grades         Grade[]
-  summaries      StudentMonthlySummary[]
-  class          Class?   @relation(fields: [classId], references: [id])
-  
+  attendance Attendance[]
+  grades     Grade[]
+  summaries  StudentMonthlySummary[]
+  class      Class?                  @relation(fields: [classId], references: [id])
+
   @@map("students")
 }
 
 // ✅ Updated Gender Enum (Simplified)
 enum Gender {
-  MALE      // ប្រុស (0 in code)
-  FEMALE    // ស្រី (1 in code)
+  MALE // ប្រុស (0 in code)
+  FEMALE // ស្រី (1 in code)
 }
 
 model Teacher {
-  id          String    @id @default(cuid())
-  teacherId   String?    @unique
-  firstName   String
-  lastName    String
-  khmerName   String? 
+  id         String  @id @default(cuid())
+  teacherId  String? @unique
+  firstName  String
+  lastName   String
+  khmerName  String?
   englishName String?
-  email       String    @unique
-  phone       String?
-  phoneNumber String?
-  subject     String? 
-  employeeId  String?   @unique
-  gender      Gender? 
-  dateOfBirth DateTime?
-  position    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  email      String?  @unique
+  phone      String?
+  employeeId String? @unique
 
-  classes            Class[]
+  // ✅ NEW: Role field
+  role TeacherRole @default(TEACHER)
+
+  // ✅ Personal info
+  gender      Gender?
+  dateOfBirth String?
+  hireDate    String?
+  address     String?
+  position    String?
+
+  // ✅ NEW: Homeroom class
+  homeroomClassId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  homeroomClass      Class?           @relation("HomeroomTeacher", fields: [homeroomClassId], references: [id])
+  teachingClasses    TeacherClass[]   @relation("TeachingClasses")
   subjectAssignments SubjectTeacher[]
 
   @@map("teachers")
 }
 
+enum TeacherRole {
+  TEACHER
+  INSTRUCTOR
+}
+
 model Class {
-  id           String   @id @default(cuid())
-  classId      String?  @unique
+  id           String  @id @default(cuid())
+  classId      String? @unique
   name         String
   grade        String
-  section      String? 
-  
-  // ✅ NEW: Track field for Grade 11 & 12 (វិទ្យាសាស្ត្រ / សង្គម)
-  track        String?  // "science" | "social" | null (for grades 7-10)
-  
-  academicYear String   @default("2024-2025")
+  section      String?
+  track        String? // "science" | "social" | null
+  academicYear String  @default("2024-2025")
   capacity     Int?
-  teacherId    String? 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 
-  teacher    Teacher?                 @relation(fields: [teacherId], references: [id])
-  students   Student[]
-  attendance Attendance[]
-  grades     Grade[]
-  summaries  StudentMonthlySummary[]
+  // ✅ UPDATED: Homeroom teacher (one-to-one with INSTRUCTOR)
+  homeroomTeacherId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ✅ Relations
+  homeroomTeacher  Teacher?                @relation("HomeroomTeacher")
+  teachingTeachers TeacherClass[]          @relation("ClassTeachers")
+  students         Student[]
+  attendance       Attendance[]
+  grades           Grade[]
+  summaries        StudentMonthlySummary[]
 
   @@map("classes")
+}
+
+model TeacherClass {
+  id        String   @id @default(cuid())
+  teacherId String
+  classId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher Teacher @relation("TeachingClasses", fields: [teacherId], references: [id], onDelete: Cascade)
+  class   Class   @relation("ClassTeachers", fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId])
+  @@map("teacher_classes")
 }
 
 model Subject {
   id          String  @id @default(cuid())
   name        String
   nameKh      String
-  nameEn      String? 
+  nameEn      String?
   code        String  @unique
-  description String? 
+  description String?
   grade       String
-  
+
   // ✅ Track: "science" | "social" | "common" (common = for both tracks)
-  track       String? 
-  
+  track String?
+
   category    String // "social" | "science"
-  weeklyHours Float   @default(0)
-  annualHours Int     @default(0)
-  maxScore    Int     @default(100)
+  weeklyHours Float  @default(0)
+  annualHours Int    @default(0)
+  maxScore    Int    @default(100)
 
   // ✅ Coefficient for grade calculation
   coefficient Float @default(1.0)
@@ -196,13 +227,13 @@ model Grade {
   maxScore Float
 
   // Monthly tracking
-  month       String? 
+  month       String?
   monthNumber Int?
-  year        Int? 
+  year        Int?
 
   // Calculated fields
-  percentage    Float? 
-  weightedScore Float? 
+  percentage    Float?
+  weightedScore Float?
 
   remarks   String?
   createdAt DateTime @default(now())
@@ -233,7 +264,7 @@ model StudentMonthlySummary {
 
   // Average & Rank
   average    Float
-  classRank  Int? 
+  classRank  Int?
   gradeLevel String?
 
   createdAt DateTime @default(now())
@@ -248,17 +279,17 @@ model StudentMonthlySummary {
 }
 
 model Attendance {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   studentId String
-  classId   String?  
+  classId   String?
   date      DateTime // Full date (year-month-day)
   status    AttendanceStatus
   remarks   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class   Class?   @relation(fields: [classId], references: [id])
+  class   Class?  @relation(fields: [classId], references: [id])
 
   @@unique([studentId, classId, date]) // One record per student per day
   @@index([classId, date])
@@ -266,11 +297,11 @@ model Attendance {
 }
 
 enum AttendanceStatus {
-  PRESENT   // វត្តមាន
-  ABSENT    // អវត្តមានអត់ច្បាប់ (A)
+  PRESENT // វត្តមាន
+  ABSENT // អវត្តមានអត់ច្បាប់ (A)
   PERMISSION // អវត្តមានមានច្បាប់ (P)
-  LATE      // យឺត (optional)
-  EXCUSED   // (optional, same as PERMISSION)
+  LATE // យឺត (optional)
+  EXCUSED // (optional, same as PERMISSION)
 }
 
 enum Role {
