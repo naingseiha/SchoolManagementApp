@@ -67,19 +67,19 @@ export default function HonorCertificate({
     const grade = letterGrade.toUpperCase().trim();
     switch (grade) {
       case "A":
-        return "#10B981";
+        return "#10B981"; // Green
       case "B":
-        return "#3B82F6";
+        return "#3B82F6"; // Blue
       case "C":
-        return "#F59E0B";
+        return "#F59E0B"; // Orange
       case "D":
-        return "#F97316";
+        return "#F97316"; // Orange-Red
       case "E":
-        return "#EF4444";
+        return "#EF4444"; // Red
       case "F":
-        return "#DC2626";
+        return "#DC2626"; // Dark Red
       default:
-        return "#6B7280";
+        return "#6B7280"; // Gray
     }
   };
 
@@ -154,7 +154,7 @@ export default function HonorCertificate({
               x2="200"
               y2="200"
               stroke="#3B82F6"
-              strokeWidth="2. 5"
+              strokeWidth="2.5"
             />
             <line
               x1="150"
@@ -228,12 +228,12 @@ export default function HonorCertificate({
 
         <div className="absolute top-1/4 left-12 opacity-[0.02]">
           <svg width="80" height="80" viewBox="0 0 24 24" fill="#EC4899">
-            <path d="M5 13. 18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4. 91V17h2V9L12 3z" />
+            <path d="M5 13. 18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
           </svg>
         </div>
         <div className="absolute bottom-1/3 left-1/4 opacity-[0.02]">
           <svg width="70" height="70" viewBox="0 0 24 24" fill="#3B82F6">
-            <path d="M21 5c-1.11-. 35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 . 25.25.5.5.5. 1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-. 85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-. 6-. 45-1.25-.75-2-1zm0 13.5c-1.1-. 35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-. 85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
+            <path d="M21 5c-1.11-. 35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14. 65c0 . 25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05. 25 0 .5-.25.5-.5V6c-. 6-.45-1.25-.75-2-1zm0 13. 5c-1.1-. 35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-. 85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
           </svg>
         </div>
         <div className="absolute top-1/3 right-1/3 text-pink-400 opacity-[0.025] text-4xl">
@@ -253,7 +253,7 @@ export default function HonorCertificate({
       {/* Main Content */}
       <div className="relative z-10 h-full flex flex-col">
         {/* Header */}
-        <div className="mb-2">
+        <div className="mb-0">
           <div className="text-center">
             <div
               style={{
@@ -314,7 +314,11 @@ export default function HonorCertificate({
           <div className="text-center mb-3">
             <h1
               className="text-red-600 text-2xl font-black mb-1"
-              style={{ fontFamily: "Khmer OS Muol Light", lineHeight: "1.1" }}
+              style={{
+                fontFamily: "Khmer OS Muol Light",
+                lineHeight: "1.1",
+                marginTop: "-30px",
+              }}
             >
               តារាងកិត្តិយស
             </h1>
@@ -403,60 +407,59 @@ export default function HonorCertificate({
                         }}
                       />
                     </div>
-
-                    {/* ✅ PDF-COMPATIBLE:  Calculated positioning instead of transform */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: "-12px",
-                        left: "48px", // ✅ (144 - 48) / 2 = 48px
-                        zIndex: 10,
-                        width: "48px",
-                        height: "48px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          backgroundColor: getGradeColor(
-                            topStudents[0].letterGrade
-                          ),
-                          color: "white",
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow:
-                            "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                          border: "3px solid white",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "20px",
-                            fontWeight: 900,
-                            fontFamily: "Arial, sans-serif",
-                          }}
-                        >
-                          {displayGrade(topStudents[0].letterGrade)}
-                        </span>
-                      </div>
-                    </div>
                   </div>
 
-                  <div className="mt-6 text-center">
-                    <div className="text-xs text-orange-700 font-bold mb-1">
+                  <div className="mt-2 text-center">
+                    {/* ✅ Grade Letter as Text */}
+                    <div
+                      style={{
+                        fontSize: "36px",
+                        fontWeight: 900,
+                        fontFamily: "Arial, sans-serif",
+                        color: getGradeColor(topStudents[0].letterGrade),
+                        lineHeight: "1",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      {displayGrade(topStudents[0].letterGrade)}
+                    </div>
+
+                    {/* Average Score */}
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        color: "#C2410C",
+                        fontFamily: "Khmer OS Battambang",
+                        marginBottom: "4px",
+                      }}
+                    >
                       មធ្យមភាគ {topStudents[0].averageScore.toFixed(2)}
                     </div>
+
+                    {/* Student Name */}
                     <div
-                      className="text-md font-black text-gray-900"
-                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: 900,
+                        color: "#111827",
+                        fontFamily: "Khmer OS Muol Light",
+                      }}
                     >
                       {topStudents[0].khmerName}
                     </div>
+
+                    {/* Class Name (for grade report) */}
                     {reportType === "grade" && (
-                      <div className="text-sm text-gray-600 mt-1 font-semibold">
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#4B5563",
+                          fontFamily: "Khmer OS Battambang",
+                          marginTop: "4px",
+                        }}
+                      >
                         ថ្នាក់ {topStudents[0].className}
                       </div>
                     )}
@@ -467,7 +470,7 @@ export default function HonorCertificate({
               {/* Ranks 2-3 */}
               <div
                 className="grid grid-cols-2 gap-16 max-w-4xl mx-auto px-4"
-                style={{ marginTop: "-88px" }}
+                style={{ marginTop: "-138px" }}
               >
                 {topStudents.slice(1, 3).map((student) => (
                   <div
@@ -526,58 +529,59 @@ export default function HonorCertificate({
                           }}
                         />
                       </div>
-
-                      {/* ✅ PDF-COMPATIBLE */}
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "-12px",
-                          left: "48px", // ✅ Calculated
-                          zIndex: 10,
-                          width: "48px",
-                          height: "48px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            backgroundColor: getGradeColor(student.letterGrade),
-                            color: "white",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            boxShadow:
-                              "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                            border: "3px solid white",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "20px",
-                              fontWeight: 900,
-                              fontFamily: "Arial, sans-serif",
-                            }}
-                          >
-                            {displayGrade(student.letterGrade)}
-                          </span>
-                        </div>
-                      </div>
                     </div>
 
-                    <div className="mt-6 text-center">
-                      <div className="text-xs text-orange-700 font-bold mb-1">
+                    <div className="mt-2 text-center">
+                      {/* ✅ Grade Letter as Text */}
+                      <div
+                        style={{
+                          fontSize: "36px",
+                          fontWeight: 900,
+                          fontFamily: "Arial, sans-serif",
+                          color: getGradeColor(student.letterGrade),
+                          lineHeight: "1",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        {displayGrade(student.letterGrade)}
+                      </div>
+
+                      {/* Average Score */}
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: "bold",
+                          color: "#C2410C",
+                          fontFamily: "Khmer OS Battambang",
+                          marginBottom: "4px",
+                        }}
+                      >
                         មធ្យមភាគ {student.averageScore.toFixed(2)}
                       </div>
+
+                      {/* Student Name */}
                       <div
-                        className="text-md font-black text-gray-900"
-                        style={{ fontFamily: "Khmer OS Muol Light" }}
+                        style={{
+                          fontSize: "16px",
+                          fontWeight: 900,
+                          color: "#111827",
+                          fontFamily: "Khmer OS Muol Light",
+                        }}
                       >
                         {student.khmerName}
                       </div>
+
+                      {/* Class Name (for grade report) */}
                       {reportType === "grade" && (
-                        <div className="text-sm text-gray-600 mt-1 font-semibold">
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#4B5563",
+                            fontFamily: "Khmer OS Battambang",
+                            marginTop: "4px",
+                          }}
+                        >
                           ថ្នាក់ {student.className}
                         </div>
                       )}
@@ -646,60 +650,59 @@ export default function HonorCertificate({
                             }}
                           />
                         </div>
-
-                        {/* ✅ PDF-COMPATIBLE */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: "-12px",
-                            left: "48px", // ✅ Calculated
-                            zIndex: 10,
-                            width: "48px",
-                            height: "48px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              backgroundColor: getGradeColor(
-                                student.letterGrade
-                              ),
-                              color: "white",
-                              borderRadius: "50%",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              boxShadow:
-                                "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                              border: "3px solid white",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "20px",
-                                fontWeight: 900,
-                                fontFamily: "Arial, sans-serif",
-                              }}
-                            >
-                              {displayGrade(student.letterGrade)}
-                            </span>
-                          </div>
-                        </div>
                       </div>
 
-                      <div className="mt-6 text-center">
-                        <div className="text-xs text-orange-700 font-bold mb-1">
+                      <div className="mt-2 text-center">
+                        {/* ✅ Grade Letter as Text */}
+                        <div
+                          style={{
+                            fontSize: "36px",
+                            fontWeight: 900,
+                            fontFamily: "Arial, sans-serif",
+                            color: getGradeColor(student.letterGrade),
+                            lineHeight: "1",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          {displayGrade(student.letterGrade)}
+                        </div>
+
+                        {/* Average Score */}
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "bold",
+                            color: "#C2410C",
+                            fontFamily: "Khmer OS Battambang",
+                            marginBottom: "4px",
+                          }}
+                        >
                           មធ្យមភាគ {student.averageScore.toFixed(2)}
                         </div>
+
+                        {/* Student Name */}
                         <div
-                          className="text-md font-black text-gray-900"
-                          style={{ fontFamily: "Khmer OS Muol Light" }}
+                          style={{
+                            fontSize: "16px",
+                            fontWeight: 900,
+                            color: "#111827",
+                            fontFamily: "Khmer OS Muol Light",
+                          }}
                         >
                           {student.khmerName}
                         </div>
+
+                        {/* Class Name (for grade report) */}
                         {reportType === "grade" && (
-                          <div className="text-sm text-gray-600 mt-1 font-semibold">
+                          <div
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#4B5563",
+                              fontFamily: "Khmer OS Battambang",
+                              marginTop: "4px",
+                            }}
+                          >
                             ថ្នាក់ {student.className}
                           </div>
                         )}

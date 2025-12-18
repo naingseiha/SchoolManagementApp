@@ -313,7 +313,7 @@ export default function HonorCertificateTrophies({
 
           <div className="text-center">
             <h1
-              className="text-red-600 text-2xl font-black mb-1"
+              className="text-red-600 text-2xl font-black mb-2"
               style={{
                 fontFamily: "Khmer OS Muol Light",
                 lineHeight: "1.1",
@@ -325,7 +325,7 @@ export default function HonorCertificateTrophies({
           </div>
 
           <div
-            className="text-center space-y-0. 5"
+            className="text-center space-y-0.5"
             style={{ fontFamily: "Khmer OS Muol Light", fontSize: "11pt" }}
           >
             <div className="font-bold text-gray-800">
@@ -343,7 +343,7 @@ export default function HonorCertificateTrophies({
         </div>
 
         {/* Top 5 Students - Trophy Layout */}
-        <div className="flex-1 flex flex-col justify-center">
+        <div className="flex-1 flex flex-col">
           {topStudents.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-3">🏆</div>
@@ -388,7 +388,7 @@ export default function HonorCertificateTrophies({
                   {/* ✅ Grade Text Below Trophy (No circle) */}
                   <div
                     style={{
-                      marginTop: "8px",
+                      marginTop: "2px",
                       fontSize: "32px",
                       fontWeight: 900,
                       fontFamily: "Arial, sans-serif",
@@ -399,7 +399,7 @@ export default function HonorCertificateTrophies({
                     {displayGrade(topStudents[0].letterGrade)}
                   </div>
 
-                  <div className="mt-3 text-center">
+                  <div className="mt-1 text-center">
                     <div className="text-sm text-orange-700 font-bold mb-1">
                       មធ្យមភាគ {topStudents[0].averageScore.toFixed(2)}
                     </div>
@@ -421,7 +421,7 @@ export default function HonorCertificateTrophies({
               {/* Ranks 2-3 - Side by Side */}
               <div
                 className="grid grid-cols-2 gap-12 max-w-4xl mx-auto px-4"
-                style={{ marginTop: "-230px" }}
+                style={{ marginTop: "-190px" }}
               >
                 {topStudents.slice(1, 3).map((student) => (
                   <div
@@ -465,7 +465,7 @@ export default function HonorCertificateTrophies({
                     {/* ✅ Grade Text Below Trophy */}
                     <div
                       style={{
-                        marginTop: "8px",
+                        marginTop: "2px",
                         fontSize: "28px",
                         fontWeight: 900,
                         fontFamily: "Arial, sans-serif",
@@ -476,7 +476,7 @@ export default function HonorCertificateTrophies({
                       {displayGrade(student.letterGrade)}
                     </div>
 
-                    <div className="mt-3 text-center">
+                    <div className="mt-1 text-center">
                       <div className="text-xs text-orange-700 font-bold mb-1">
                         មធ្យមភាគ {student.averageScore.toFixed(2)}
                       </div>
@@ -525,7 +525,7 @@ export default function HonorCertificateTrophies({
                       {/* ✅ Grade Text Below Trophy */}
                       <div
                         style={{
-                          marginTop: "8px",
+                          marginTop: "2px",
                           fontSize: "28px",
                           fontWeight: 900,
                           fontFamily: "Arial, sans-serif",
@@ -536,7 +536,7 @@ export default function HonorCertificateTrophies({
                         {displayGrade(student.letterGrade)}
                       </div>
 
-                      <div className="mt-3 text-center">
+                      <div className="mt-1 text-center">
                         <div className="text-xs text-orange-700 font-bold mb-1">
                           មធ្យមភាគ {student.averageScore.toFixed(2)}
                         </div>
