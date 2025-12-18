@@ -3,31 +3,48 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { GraduationCap, Mail, Lock, AlertCircle, Loader2 } from "lucide-react";
+import {
+  GraduationCap,
+  User,
+  Lock,
+  AlertCircle,
+  Loader2,
+  Phone,
+  Mail,
+} from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, error: authError } = useAuth(); // ✅ Get error from context
   const [rememberMe, setRememberMe] = useState(false);
 
   const [formData, setFormData] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
-  const [error, setError] = useState("");
+
+  const [error, setError] = useState(""); // ✅ Local error state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(""); // ✅ Clear previous errors
     setIsSubmitting(true);
 
     try {
-      // ✅ FIX: Destructure from formData
-      const { email, password } = formData;
-      await login({ email, password, rememberMe });
+      const { identifier, password } = formData;
+
+      // ✅ Validate inputs
+      if (!identifier || !password) {
+        setError("សូមបំពេញលេខទូរស័ព្ទ និងពាក្យសម្ងាត់");
+        setIsSubmitting(false);
+        return;
+      }
+
+      await login({ identifier, password, rememberMe });
       // Redirect is handled by AuthContext
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
@@ -39,37 +56,45 @@ export default function LoginPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    // Clear error when user types
+    if (error) setError("");
   };
 
-  // Demo credentials for quick login
-  const fillDemoCredentials = (role: "admin" | "teacher" | "student") => {
+  // ✅ Updated demo credentials
+  const fillDemoCredentials = (role: "admin" | "teacher") => {
     const credentials = {
-      admin: { email: "admin@school.com", password: "Admin123!" },
-      teacher: { email: "teacher@school.com", password: "Teacher123!" },
-      student: { email: "student@school.com", password: "Student123!" },
+      admin: { identifier: "admin@school.edu. kh", password: "admin123" },
+      teacher: { identifier: "012123456", password: "012123456" },
     };
 
     setFormData(credentials[role]);
+    setError(""); // Clear errors when filling demo
   };
 
+  // ✅ Detect input type (phone or email)
+  const inputType = formData.identifier.includes("@") ? "email" : "phone";
+
+  // ✅ Use local error or auth context error
+  const displayError = error || authError;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 py-12 px-4 sm:px-6 lg: px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-full shadow-lg">
+            <div className="bg-gradient-to-r from-green-600 to-blue-600 p-4 rounded-full shadow-lg">
               <GraduationCap className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <h2 className="mt-6 text-3xl font-extrabold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
             School Management System
           </h2>
           <p className="mt-2 text-lg font-semibold text-gray-700">
             ប្រព័ន្ធគ្រប់គ្រងសាលា
           </p>
           <p className="mt-2 text-sm text-gray-500">
-            Sign in to access your account
+            ចូលប្រើប្រាស់ប្រព័ន្ធ • Sign in to access your account
           </p>
         </div>
 
@@ -77,46 +102,53 @@ export default function LoginPage() {
         <div className="mt-8 bg-white py-8 px-4 shadow-xl rounded-xl sm:px-10 border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 flex items-start animate-shake">
+            {displayError && (
+              <div className="bg-red-50 border-2 border-red-200 text-red-800 rounded-lg p-4 flex items-start">
                 <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <span className="text-sm">{error}</span>
+                <span className="text-sm font-semibold">{displayError}</span>
               </div>
             )}
 
-            {/* Email Field */}
+            {/* Identifier Field (Phone or Email) */}
             <div>
               <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="identifier"
+                className="block text-sm font-bold text-gray-700 mb-2"
               >
-                អ៊ីមែល • Email Address
+                លេខទូរស័ព្ទ ឬអ៊ីមែល • Phone or Email
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  {inputType === "email" ? (
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Phone className="h-5 w-5 text-gray-400" />
+                  )}
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={formData.email}
+                  value={formData.identifier}
                   onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition english-modern"
-                  placeholder="Enter your email"
+                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus: ring-2 focus:ring-green-500 focus:border-transparent transition font-semibold"
+                  placeholder="012345678 or admin@school.edu.kh"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500 font-semibold">
+                គ្រូប្រើលេខទូរស័ព្ទ • Admin ប្រើអ៊ីមែល
+              </p>
             </div>
 
             {/* Password Field */}
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-bold text-gray-700 mb-2"
               >
-                លេខសម្ងាត់ • Password
+                ពាក្យសម្ងាត់ • Password
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -130,13 +162,16 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition font-semibold"
                   placeholder="Enter your password"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500 font-semibold">
+                គ្រូ: ពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នានឹងលេខទូរស័ព្ទ
+              </p>
             </div>
 
-            {/* Remember Me & Forgot Password */}
+            {/* Remember Me */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -144,24 +179,17 @@ export default function LoginPage() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 cursor-pointer"
                 />
                 <label
                   htmlFor="rememberMe"
-                  className="ml-2 text-sm text-gray-700 cursor-pointer select-none"
+                  className="ml-2 text-sm text-gray-700 cursor-pointer select-none font-semibold"
                 >
                   ចងចាំខ្ញុំ • Remember me
-                  <span className="text-xs text-gray-500 ml-1">(7 days)</span>
+                  <span className="text-xs text-gray-500 ml-1 font-normal">
+                    (7 days)
+                  </span>
                 </label>
-              </div>
-
-              <div className="text-sm">
-                <a
-                  href="#"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-                >
-                  Forgot password?
-                </a>
               </div>
             </div>
 
@@ -170,17 +198,17 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || isLoading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-gradient-to-r from-green-600 to-blue-600 hover: from-green-700 hover: to-blue-700 focus: outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSubmitting || isLoading ? (
                   <>
                     <Loader2 className="animate-spin h-5 w-5 mr-2" />
-                    Signing in...
+                    កំពុងចូល...
                   </>
                 ) : (
                   <>
                     <Lock className="h-5 w-5 mr-2" />
-                    Sign in
+                    ចូលប្រព័ន្ធ • Sign in
                   </>
                 )}
               </button>
@@ -200,49 +228,47 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => fillDemoCredentials("admin")}
-                className="group px-3 py-2.5 border-2 border-blue-200 rounded-lg text-xs font-medium text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="group px-4 py-3 border-2 border-blue-200 rounded-lg text-sm font-semibold text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
-                <span className="block">👨‍💼</span>
+                <span className="block text-2xl">👨‍💼</span>
                 <span className="block mt-1">Admin</span>
+                <span className="block text-xs text-blue-600 mt-0.5">
+                  អ៊ីមែល
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => fillDemoCredentials("teacher")}
-                className="group px-3 py-2.5 border-2 border-green-200 rounded-lg text-xs font-medium text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
+                className="group px-4 py-3 border-2 border-green-200 rounded-lg text-sm font-semibold text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
               >
-                <span className="block">👨‍🏫</span>
+                <span className="block text-2xl">👨‍🏫</span>
                 <span className="block mt-1">Teacher</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials("student")}
-                className="group px-3 py-2.5 border-2 border-purple-200 rounded-lg text-xs font-medium text-purple-700 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
-              >
-                <span className="block">👨‍🎓</span>
-                <span className="block mt-1">Student</span>
+                <span className="block text-xs text-green-600 mt-0.5">
+                  លេខទូរស័ព្ទ
+                </span>
               </button>
             </div>
 
-            <div className="mt-4 text-xs text-center text-gray-500">
-              <p>Click any role above to auto-fill credentials</p>
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-center text-blue-800 font-semibold mb-2">
+                📝 ការណែនាំ
+              </p>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>
+                  • <strong>Admin:</strong> ប្រើអ៊ីមែល + ពាក្យសម្ងាត់
+                </li>
+                <li>
+                  • <strong>គ្រូ:</strong> ប្រើលេខទូរស័ព្ទ
+                  (ពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នា)
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <a
-            href="/register"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-          >
-            Register here
-          </a>
-        </p>
 
         {/* Copyright */}
         <p className="text-center text-xs text-gray-400">

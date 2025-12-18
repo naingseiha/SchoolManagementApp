@@ -8,152 +8,131 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  firstName String
-  lastName  String
-  role      Role     @default(SUBJECT_TEACHER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String    @id @default(cuid())
+  email          String?   @unique
+  password       String
+  firstName      String
+  lastName       String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  failedAttempts Int       @default(0)
+  isActive       Boolean   @default(true)
+  lastLogin      DateTime?
+  lockedUntil    DateTime?
+  loginCount     Int       @default(0)
+  permissions    Json?     @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone          String?   @unique
+  studentId      String?   @unique
+  teacherId      String?   @unique
+  role           UserRole  @default(TEACHER)
+  student        Student?  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher        Teacher?  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@map("users")
 }
 
-model Student {
-  id String @id @default(cuid())
-
-  // ✅ Auto-generated Student ID (8-digit: YYCCNNNN)
-  studentId String? @unique
-
-  // ✅ Basic Info - Required Fields
-  firstName   String
-  lastName    String
-  khmerName   String
-  dateOfBirth String
-  gender      Gender
-
-  // ✅ Optional Fields with Defaults
-  englishName    String?
-  email          String? @unique
-  placeOfBirth   String? @default("ភ្នំពេញ")
-  currentAddress String? @default("ភ្នំពេញ")
-  phoneNumber    String?
-  classId        String?
-
-  // ✅ Parent Information (Optional with Defaults)
-  fatherName       String? @default("ឪពុក")
-  motherName       String? @default("ម្តាយ")
-  parentPhone      String?
-  parentOccupation String? @default("កសិករ")
-
-  // ✅ Academic History Fields (Optional)
-  previousGrade   String? // ឡើងពីថ្នាក់ (ex: "៦ក")
-  previousSchool  String? // មកពីសាលា
-  repeatingGrade  String? // ត្រួតថ្នាក់ទី (ex: "៧ខ")
-  transferredFrom String? // ផ្ទេរមកពី (province)
-
-  // ✅ NEW: Grade 9 Exam (សញ្ញាបត្រមធ្យមសិក្សាបឋមភូមិ)
-  grade9ExamSession String? // សម័យប្រឡងទី៩ (ex: "២០២៤", "២០២៥")
-  grade9ExamCenter  String? // មណ្ឌលប្រឡងទី៩
-  grade9ExamRoom    String? // បន្ទប់ប្រឡងទី៩
-  grade9ExamDesk    String? // លេខតុប្រឡងទី៩
-  grade9PassStatus  String? // ស្ថានភាពប្រលងទី៩ (ex: "ជាប់", "ធ្លាក់", "មិនប្រលង")
-
-  // ✅ NEW: Grade 12 Exam (សញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ - Baccalaureate)
-  grade12ExamSession String? // សម័យប្រឡងទី១២ (ex: "២០២៧", "២០២៨")
-  grade12ExamCenter  String? // មណ្ឌលប្រឡងទី១២
-  grade12ExamRoom    String? // បន្ទប់ប្រឡងទី១២
-  grade12ExamDesk    String? // លេខតុប្រឡងទី១២
-  grade12PassStatus  String? // ស្ថានភាពប្រលងទី១២ (ex: "ជាប់", "ធ្លាក់", "មិនប្រលង")
-  grade12Track       String? // ផ្លូវ (ex: "វិទ្យាសាស្ត្រ", "សង្គម")
-
-  // ✅ General remarks
-  remarks String?
-
-  // ✅ Photo (Optional - for future)
-  photoUrl String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  attendance Attendance[]
-  grades     Grade[]
-  summaries  StudentMonthlySummary[]
-  class      Class?                  @relation(fields: [classId], references: [id])
-
-  @@map("students")
-}
-
-// ✅ Updated Gender Enum (Simplified)
-enum Gender {
-  MALE // ប្រុស (0 in code)
-  FEMALE // ស្រី (1 in code)
-}
-
 model Teacher {
-  id         String  @id @default(cuid())
-  teacherId  String? @unique
-  firstName  String
-  lastName   String
-  khmerName  String?
-  englishName String?
-  email      String?  @unique
-  phone      String?
-  employeeId String? @unique
-
-  // ✅ NEW: Role field
-  role TeacherRole @default(TEACHER)
-
-  // ✅ Personal info
-  gender      Gender?
-  dateOfBirth String?
-  hireDate    String?
-  address     String?
-  position    String?
-
-  // ✅ NEW: Homeroom class
-  homeroomClassId String? @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  homeroomClass      Class?           @relation("HomeroomTeacher", fields: [homeroomClassId], references: [id])
-  teachingClasses    TeacherClass[]   @relation("TeachingClasses")
+  id                 String           @id @default(cuid())
+  teacherId          String?          @unique
+  firstName          String
+  lastName           String
+  khmerName          String?
+  email              String?          @unique
+  phone              String           @unique
+  employeeId         String?          @unique
+  gender             Gender?
+  dateOfBirth        String?
+  position           String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  address            String?
+  hireDate           String?
+  homeroomClassId    String?          @unique
+  role               TeacherRole      @default(TEACHER)
+  englishName        String?
+  degree             DegreeLevel?
+  emergencyContact   String?
+  emergencyPhone     String?
+  idCard             String?
+  major1             String?
+  major2             String?
+  nationality        String?
+  passport           String?
+  phoneNumber        String?
+  salaryRange        String?
+  workingLevel       WorkingLevel?
   subjectAssignments SubjectTeacher[]
+  teachingClasses    TeacherClass[]   @relation("TeachingClasses")
+  homeroomClass      Class?           @relation("HomeroomTeacher", fields: [homeroomClassId], references: [id])
+  user               User?
 
   @@map("teachers")
 }
 
-enum TeacherRole {
-  TEACHER
-  INSTRUCTOR
+model Student {
+  id                 String                  @id @default(cuid())
+  studentId          String?                 @unique
+  firstName          String
+  lastName           String
+  khmerName          String
+  dateOfBirth        String
+  gender             Gender
+  englishName        String?
+  email              String?                 @unique
+  placeOfBirth       String?                 @default("ភ្នំពេញ")
+  currentAddress     String?                 @default("ភ្នំពេញ")
+  phoneNumber        String?
+  classId            String?
+  fatherName         String?                 @default("ឪពុក")
+  motherName         String?                 @default("ម្តាយ")
+  parentPhone        String?
+  parentOccupation   String?                 @default("កសិករ")
+  previousGrade      String?
+  remarks            String?
+  photoUrl           String?
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  grade12ExamCenter  String?
+  grade12ExamDesk    String?
+  grade12ExamRoom    String?
+  grade12ExamSession String?
+  grade12PassStatus  String?
+  grade12Track       String?
+  grade9ExamCenter   String?
+  grade9ExamDesk     String?
+  grade9ExamRoom     String?
+  grade9ExamSession  String?
+  grade9PassStatus   String?
+  previousSchool     String?
+  repeatingGrade     String?
+  transferredFrom    String?
+  attendance         Attendance[]
+  grades             Grade[]
+  summaries          StudentMonthlySummary[]
+  class              Class?                  @relation(fields: [classId], references: [id])
+  user               User?
+
+  @@map("students")
 }
 
 model Class {
-  id           String  @id @default(cuid())
-  classId      String? @unique
-  name         String
-  grade        String
-  section      String?
-  track        String? // "science" | "social" | null
-  academicYear String  @default("2024-2025")
-  capacity     Int?
-
-  // ✅ UPDATED: Homeroom teacher (one-to-one with INSTRUCTOR)
-  homeroomTeacherId String? @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // ✅ Relations
-  homeroomTeacher  Teacher?                @relation("HomeroomTeacher")
-  teachingTeachers TeacherClass[]          @relation("ClassTeachers")
-  students         Student[]
-  attendance       Attendance[]
-  grades           Grade[]
-  summaries        StudentMonthlySummary[]
+  id                String                  @id @default(cuid())
+  classId           String?                 @unique
+  name              String
+  grade             String
+  section           String?
+  academicYear      String                  @default("2024-2025")
+  capacity          Int?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  track             String?
+  homeroomTeacherId String?                 @unique
+  attendance        Attendance[]
+  grades            Grade[]
+  summaries         StudentMonthlySummary[]
+  students          Student[]
+  teachingTeachers  TeacherClass[]          @relation("ClassTeachers")
+  homeroomTeacher   Teacher?                @relation("HomeroomTeacher")
 
   @@map("classes")
 }
@@ -164,42 +143,11 @@ model TeacherClass {
   classId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  teacher Teacher @relation("TeachingClasses", fields: [teacherId], references: [id], onDelete: Cascade)
-  class   Class   @relation("ClassTeachers", fields: [classId], references: [id], onDelete: Cascade)
+  class     Class    @relation("ClassTeachers", fields: [classId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation("TeachingClasses", fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([teacherId, classId])
   @@map("teacher_classes")
-}
-
-model Subject {
-  id          String  @id @default(cuid())
-  name        String
-  nameKh      String
-  nameEn      String?
-  code        String  @unique
-  description String?
-  grade       String
-
-  // ✅ Track: "science" | "social" | "common" (common = for both tracks)
-  track String?
-
-  category    String // "social" | "science"
-  weeklyHours Float  @default(0)
-  annualHours Int    @default(0)
-  maxScore    Int    @default(100)
-
-  // ✅ Coefficient for grade calculation
-  coefficient Float @default(1.0)
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  teacherAssignments SubjectTeacher[]
-  grades             Grade[]
-
-  @@map("subjects")
 }
 
 model SubjectTeacher {
@@ -208,104 +156,140 @@ model SubjectTeacher {
   teacherId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@unique([subjectId, teacherId])
   @@map("subject_teachers")
 }
 
+model Subject {
+  id                 String           @id @default(cuid())
+  name               String
+  nameKh             String
+  nameEn             String?
+  code               String           @unique
+  description        String?
+  grade              String
+  track              String?
+  category           String
+  weeklyHours        Float            @default(0)
+  annualHours        Int              @default(0)
+  maxScore           Int              @default(100)
+  coefficient        Float            @default(1.0)
+  isActive           Boolean          @default(true)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  grades             Grade[]
+  teacherAssignments SubjectTeacher[]
+
+  @@map("subjects")
+}
+
 model Grade {
-  id        String @id @default(cuid())
-  studentId String
-  subjectId String
-  classId   String
-
-  // Scores
-  score    Float
-  maxScore Float
-
-  // Monthly tracking
-  month       String?
-  monthNumber Int?
-  year        Int?
-
-  // Calculated fields
+  id            String   @id @default(cuid())
+  studentId     String
+  subjectId     String
+  classId       String
+  score         Float
+  maxScore      Float
+  month         String?
+  monthNumber   Int?
+  year          Int?
   percentage    Float?
   weightedScore Float?
-
-  remarks   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, subjectId, classId, month, year])
   @@index([classId, month, year])
   @@map("grades")
 }
 
-model StudentMonthlySummary {
-  id          String @id @default(cuid())
-  studentId   String
-  classId     String
-  month       String
-  monthNumber Int
-  year        Int
+model Attendance {
+  id        String           @id @default(cuid())
+  studentId String
+  classId   String?
+  date      DateTime
+  status    AttendanceStatus
+  remarks   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  class     Class?           @relation(fields: [classId], references: [id])
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  // Calculated totals
+  @@unique([studentId, classId, date])
+  @@index([classId, date])
+  @@map("attendance")
+}
+
+model StudentMonthlySummary {
+  id                 String   @id @default(cuid())
+  studentId          String
+  classId            String
+  month              String
+  monthNumber        Int
+  year               Int
   totalScore         Float
   totalMaxScore      Float
   totalWeightedScore Float
   totalCoefficient   Float
-
-  // Average & Rank
-  average    Float
-  classRank  Int?
-  gradeLevel String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  average            Float
+  classRank          Int?
+  gradeLevel         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  class              Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, classId, month, year])
   @@index([classId, month, year])
   @@map("student_monthly_summaries")
 }
 
-model Attendance {
-  id        String           @id @default(cuid())
-  studentId String
-  classId   String?
-  date      DateTime // Full date (year-month-day)
-  status    AttendanceStatus
-  remarks   String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+  STAFF
+}
 
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class   Class?  @relation(fields: [classId], references: [id])
+enum TeacherRole {
+  TEACHER
+  INSTRUCTOR
+}
 
-  @@unique([studentId, classId, date]) // One record per student per day
-  @@index([classId, date])
-  @@map("attendance")
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum WorkingLevel {
+  FRAMEWORK_A
+  FRAMEWORK_B
+  FRAMEWORK_C
+  CONTRACT
+  PROBATION
+}
+
+enum DegreeLevel {
+  CERTIFICATE
+  ASSOCIATE
+  BACHELOR
+  MASTER
+  DOCTORATE
+  OTHER
 }
 
 enum AttendanceStatus {
-  PRESENT // វត្តមាន
-  ABSENT // អវត្តមានអត់ច្បាប់ (A)
-  PERMISSION // អវត្តមានមានច្បាប់ (P)
-  LATE // យឺត (optional)
-  EXCUSED // (optional, same as PERMISSION)
-}
-
-enum Role {
-  ADMIN
-  CLASS_TEACHER
-  SUBJECT_TEACHER
+  PRESENT
+  ABSENT
+  PERMISSION
+  LATE
+  EXCUSED
 }

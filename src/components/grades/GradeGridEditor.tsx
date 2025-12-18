@@ -8,6 +8,8 @@ import {
   TrendingUp,
   ClipboardPaste,
   Save,
+  Lock,
+  Eye,
 } from "lucide-react";
 import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
 import { attendanceApi } from "@/lib/api/attendance";
@@ -17,6 +19,7 @@ interface GradeGridEditorProps {
   gridData: GradeGridData;
   onSave: (grades: BulkSaveGradeItem[]) => Promise<void>;
   isLoading?: boolean;
+  currentUser?: any; // ✅ ADDED:  Current user for permissions
 }
 
 interface CellState {
@@ -27,12 +30,14 @@ interface CellState {
   isModified: boolean;
   isSaving: boolean;
   error: string | null;
+  isEditable?: boolean; // ✅ ADDED:  Permission flag
 }
 
 export default function GradeGridEditor({
   gridData,
   onSave,
   isLoading = false,
+  currentUser, // ✅ ADDED
 }: GradeGridEditorProps) {
   const [cells, setCells] = useState<{ [key: string]: CellState }>({});
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
@@ -40,7 +45,7 @@ export default function GradeGridEditor({
   const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
   const [pastePreview, setPastePreview] = useState<string | null>(null);
 
-  // ✅ Paste Mode States
+  // Paste Mode States
   const [pasteMode, setPasteMode] = useState(false);
   const [pastedCells, setPastedCells] = useState<Set<string>>(new Set());
   const [editedCells, setEditedCells] = useState<Set<string>>(new Set());
@@ -49,26 +54,41 @@ export default function GradeGridEditor({
   >(new Map());
   const [saving, setSaving] = useState(false);
 
-  // ✅ Attendance summary state
+  // Attendance summary state
   const [attendanceSummary, setAttendanceSummary] = useState<{
     [studentId: string]: { absent: number; permission: number };
   }>({});
 
-  // ✅ Sort subjects based on grade level
+  // ✅ NEW: Check if subject is editable by current user
+  const isSubjectEditable = useCallback(
+    (subjectId: string) => {
+      if (currentUser?.role === "ADMIN") return true;
+
+      if (currentUser?.role === "TEACHER") {
+        const teacherSubjectIds =
+          currentUser.teacher?.subjectAssignments?.map(
+            (sa: any) => sa.subjectId
+          ) || [];
+        return teacherSubjectIds.includes(subjectId);
+      }
+
+      return false;
+    },
+    [currentUser]
+  );
+
+  // Around line 75-130, replace the entire sortedSubjects useMemo with:
   const sortedSubjects = useMemo(() => {
     const className = gridData.className || "";
-
     console.log("🎯 Original className:", className);
 
     let grade: number | undefined;
 
-    // Pattern 1: "7A", "8B", "9C" (number at start)
     const pattern1 = className.match(/^(\d+)/);
     if (pattern1) {
       grade = parseInt(pattern1[1]);
     }
 
-    // Pattern 2: "ថ្នាក់ទី៧", "ថ្នាក់ទី៨" (Khmer numerals)
     if (!grade) {
       const khmerNumerals: { [key: string]: number } = {
         "១": 1,
@@ -89,7 +109,6 @@ export default function GradeGridEditor({
       }
     }
 
-    // Pattern 3: "Grade 7", "Class 8" (number after text)
     if (!grade) {
       const pattern3 = className.match(/(\d+)/);
       if (pattern3) {
@@ -99,21 +118,37 @@ export default function GradeGridEditor({
 
     console.log("🔢 Extracted grade:", grade);
 
+    // ✅ BEFORE sorting, log original isEditable
+    console.log("📋 BEFORE sort - isEditable values:");
+    gridData.subjects.forEach((s, i) => {
+      console.log(`  ${i + 1}. ${s.nameKh}:  isEditable =`, s.isEditable);
+    });
+
     const sorted = sortSubjectsByOrder(gridData.subjects, grade);
 
-    console.log(
-      "📋 Original order:",
-      gridData.subjects.map((s) => s.nameKh || s.code)
-    );
-    console.log(
-      "✅ Sorted order:",
-      sorted.map((s) => s.nameKh || s.code)
-    );
+    console.log("📋 AFTER sort - isEditable values:");
+    sorted.forEach((s, i) => {
+      console.log(`  ${i + 1}. ${s.nameKh}: isEditable =`, s.isEditable);
+    });
 
-    return sorted;
+    // ✅ FIX:   Re-apply isEditable from original gridData after sorting
+    const sortedWithPermissions = sorted.map((sortedSubject) => {
+      const original = gridData.subjects.find((s) => s.id === sortedSubject.id);
+      return {
+        ...sortedSubject,
+        isEditable: original?.isEditable ?? false,
+      };
+    });
+
+    console.log("✅ FINAL - After re-applying isEditable:");
+    sortedWithPermissions.forEach((s, i) => {
+      console.log(`  ${i + 1}. ${s.nameKh}: isEditable =`, s.isEditable);
+    });
+
+    return sortedWithPermissions;
   }, [gridData.subjects, gridData.className]);
 
-  // ✅ Sort students Excel-style
+  // Sort students Excel-style
   const sortedStudents = useMemo(() => {
     const students = [...gridData.students].sort((a, b) => {
       const nameA = a.studentName || "";
@@ -129,7 +164,7 @@ export default function GradeGridEditor({
     return students;
   }, [gridData.students]);
 
-  // ✅ Get ordering message
+  // Get ordering message
   const orderingMessage = useMemo(() => {
     const gradeMatch = gridData.className?.match(/^(\d+)/);
     const grade = gradeMatch ? parseInt(gradeMatch[1]) : undefined;
@@ -141,7 +176,7 @@ export default function GradeGridEditor({
     const initialCells: { [key: string]: CellState } = {};
 
     sortedStudents.forEach((student) => {
-      gridData.subjects.forEach((subject) => {
+      sortedSubjects.forEach((subject) => {
         const cellKey = `${student.studentId}_${subject.id}`;
         const gradeData = student.grades[subject.id];
 
@@ -153,14 +188,15 @@ export default function GradeGridEditor({
           isModified: false,
           isSaving: false,
           error: null,
+          isEditable: subject.isEditable, // ✅ ADDED
         };
       });
     });
 
     setCells(initialCells);
-  }, [gridData, sortedStudents]);
+  }, [gridData, sortedStudents, sortedSubjects]);
 
-  // ✅ Fetch attendance summary when grid loads
+  // Fetch attendance summary
   useEffect(() => {
     const fetchAttendanceSummary = async () => {
       try {
@@ -189,9 +225,8 @@ export default function GradeGridEditor({
     }
   }, [gridData.classId, gridData.month, gridData.year]);
 
-  // ✅ Auto-save effect - DISABLED when in paste mode
+  // Auto-save effect
   useEffect(() => {
-    // ⚠️ CRITICAL: Only auto-save if NOT in paste mode
     if (pasteMode) {
       console.log("🚫 Auto-save disabled - Paste mode active");
       return;
@@ -214,13 +249,14 @@ export default function GradeGridEditor({
     };
   }, [pendingChanges, pasteMode]);
 
-  // ✅ Auto-save handler
+  // Auto-save handler
   const handleAutoSave = useCallback(async () => {
     const changesToSave: BulkSaveGradeItem[] = [];
 
     pendingChanges.forEach((cellKey) => {
       const cell = cells[cellKey];
-      if (cell && cell.isModified && !cell.error) {
+      // ✅ Only save editable cells
+      if (cell && cell.isModified && !cell.error && cell.isEditable) {
         const score = cell.value.trim() === "" ? null : parseFloat(cell.value);
         changesToSave.push({
           studentId: cell.studentId,
@@ -276,12 +312,18 @@ export default function GradeGridEditor({
     }
   }, [pendingChanges, cells, onSave]);
 
-  // ✅ Handle cell change
+  // Handle cell change
   const handleCellChange = (cellKey: string, value: string) => {
     const cell = cells[cellKey];
     if (!cell) return;
 
-    const subject = gridData.subjects.find((s) => s.id === cell.subjectId);
+    // ✅ Prevent editing non-editable cells
+    if (!cell.isEditable) {
+      console.log("🚫 Cannot edit this subject");
+      return;
+    }
+
+    const subject = sortedSubjects.find((s) => s.id === cell.subjectId);
     if (!subject) return;
 
     let error: string | null = null;
@@ -308,7 +350,6 @@ export default function GradeGridEditor({
     }));
 
     if (pasteMode) {
-      // ✅ In paste mode: accumulate changes, no auto-save
       console.log("📝 Edit in paste mode - accumulating change");
 
       setEditedCells((prev) => new Set(prev).add(cellKey));
@@ -329,7 +370,6 @@ export default function GradeGridEditor({
         return updated;
       });
     } else {
-      // ✅ Normal mode: auto-save
       if (isModified && !error) {
         setPendingChanges((prev) => new Set(prev).add(cellKey));
       } else {
@@ -342,7 +382,7 @@ export default function GradeGridEditor({
     }
   };
 
-  // ✅ Handle Paste from Excel
+  // Handle Paste from Excel
   const handlePaste = (
     e: React.ClipboardEvent<HTMLInputElement>,
     startStudentIndex: number,
@@ -398,12 +438,18 @@ export default function GradeGridEditor({
 
           const subject = sortedSubjects[subjectIndex];
           const cellKey = `${student.studentId}_${subject.id}`;
+
+          // ✅ Check if subject is editable
+          if (!subject.isEditable) {
+            console.log(`🚫 Skipping non-editable subject: ${subject.nameKh}`);
+            return;
+          }
+
           const cleanValue = value.replace(/[^\d.-]/g, "");
 
           if (cleanValue !== "" || value === "") {
             const numValue = cleanValue === "" ? null : parseFloat(cleanValue);
 
-            // ✅ Validate
             let error: string | null = null;
             if (numValue !== null) {
               if (isNaN(numValue)) {
@@ -432,6 +478,7 @@ export default function GradeGridEditor({
                 isModified: true,
                 isSaving: false,
                 error: null,
+                isEditable: true,
               };
 
               pastedCount++;
@@ -440,15 +487,12 @@ export default function GradeGridEditor({
         });
       });
 
-      // ✅ Update cells state
       setCells((prev) => ({ ...prev, ...updatedCells }));
 
-      // ✅ Enter paste mode
       setPasteMode(true);
       setPastedCells(pastedCellKeys);
       setAllPendingChanges(changes);
 
-      // ✅ Clear normal pending changes (prevent auto-save)
       setPendingChanges(new Set());
 
       setPastePreview(
@@ -471,7 +515,7 @@ export default function GradeGridEditor({
     }
   };
 
-  // ✅ Save All Handler
+  // Save All Handler
   const handleSaveAll = async () => {
     if (allPendingChanges.size === 0) {
       console.log("⚠️ No changes to save");
@@ -479,7 +523,7 @@ export default function GradeGridEditor({
     }
 
     try {
-      console.log(`💾 Saving ${allPendingChanges.size} changes... `);
+      console.log(`💾 Saving ${allPendingChanges.size} changes...  `);
 
       const changesToSave = Array.from(allPendingChanges.values());
 
@@ -489,7 +533,6 @@ export default function GradeGridEditor({
 
       console.log("✅ Save all completed");
 
-      // ✅ Update cell states
       setCells((prev) => {
         const updated = { ...prev };
         allPendingChanges.forEach((change, cellKey) => {
@@ -505,7 +548,6 @@ export default function GradeGridEditor({
         return updated;
       });
 
-      // ✅ Exit paste mode
       setPasteMode(false);
       setPastedCells(new Set());
       setEditedCells(new Set());
@@ -515,18 +557,17 @@ export default function GradeGridEditor({
       setTimeout(() => setPastePreview(null), 3000);
     } catch (error: any) {
       console.error("❌ Save all failed:", error);
-      setPastePreview(`❌ មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
+      setPastePreview(`❌ មានបញ្ហាក្នុងការរក្សាទុក:  ${error.message}`);
       setTimeout(() => setPastePreview(null), 5000);
     } finally {
       setSaving(false);
     }
   };
 
-  // ✅ Cancel Paste Handler
+  // Cancel Paste Handler
   const handleCancelPaste = () => {
     console.log("🚫 Canceling paste mode");
 
-    // ✅ Revert to original values
     setCells((prev) => {
       const reverted = { ...prev };
       allPendingChanges.forEach((_, cellKey) => {
@@ -544,7 +585,6 @@ export default function GradeGridEditor({
       return reverted;
     });
 
-    // ✅ Clear paste mode
     setPasteMode(false);
     setPastedCells(new Set());
     setEditedCells(new Set());
@@ -554,7 +594,7 @@ export default function GradeGridEditor({
     setTimeout(() => setPastePreview(null), 2000);
   };
 
-  // ✅ Keyboard navigation
+  // Keyboard navigation
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     studentIndex: number,
@@ -598,14 +638,14 @@ export default function GradeGridEditor({
     }
   };
 
-  // ✅ Khmer display names
+  // Khmer display names
   const getKhmerShortName = (code: string): string => {
     const baseCode = code.split("-")[0];
 
     const khmerNames: { [key: string]: string } = {
-      WRITING: "តែង. ក្តី",
-      WRITER: "ស. អាន",
-      DICTATION: "ចំ.តាម",
+      WRITING: "តែង.  ក្តី",
+      WRITER: "ស.  អាន",
+      DICTATION: "ចំ. តាម",
       KHM: "ភាសាខ្មែរ",
       MATH: "គណិត",
       PHY: "រូប",
@@ -627,9 +667,20 @@ export default function GradeGridEditor({
     return khmerNames[baseCode] || code;
   };
 
-  // ✅ Color coding for subject categories
-  const getSubjectColor = (code: string): { header: string; cell: string } => {
+  // Color coding for subject categories
+  const getSubjectColor = (
+    code: string,
+    isEditable: boolean
+  ): { header: string; cell: string } => {
     const baseCode = code.split("-")[0];
+
+    // ✅ If not editable, use gray
+    if (!isEditable) {
+      return {
+        header: "bg-gray-200 text-gray-600",
+        cell: "bg-gray-100/50",
+      };
+    }
 
     const colors: { [key: string]: { header: string; cell: string } } = {
       WRITING: { header: "bg-blue-100 text-blue-800", cell: "bg-blue-50/30" },
@@ -749,28 +800,30 @@ export default function GradeGridEditor({
     });
   }, [calculatedStudents, attendanceSummary]);
 
-  // ✅ Cell className with paste mode states
+  // Cell className with paste mode states
   const getCellClassName = (cell: CellState, cellKey: string) => {
     const baseClass =
       "w-16 h-9 px-2 text-center text-sm font-semibold border rounded focus:outline-none focus:ring-2 transition-all";
 
-    // ✅ In paste mode
+    // ✅ If not editable
+    if (!cell.isEditable) {
+      return `${baseClass} bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed`;
+    }
+
+    // In paste mode
     if (pasteMode) {
       if (pastedCells.has(cellKey) && editedCells.has(cellKey)) {
-        // Pasted then edited
         return `${baseClass} bg-orange-100 border-orange-400 font-bold text-orange-900 ring-2 ring-orange-300`;
       }
       if (pastedCells.has(cellKey)) {
-        // Just pasted
         return `${baseClass} bg-yellow-100 border-yellow-400 font-bold text-yellow-900`;
       }
       if (editedCells.has(cellKey)) {
-        // Edited during paste mode
         return `${baseClass} bg-blue-100 border-blue-400 font-bold text-blue-900`;
       }
     }
 
-    // ✅ Normal mode
+    // Normal mode
     if (cell.error)
       return `${baseClass} bg-red-50 border-red-400 text-red-700 focus:ring-red-400`;
     if (cell.isSaving)
@@ -795,6 +848,11 @@ export default function GradeGridEditor({
   };
 
   const getStatusIcon = (cell: CellState) => {
+    // ✅ Show lock icon for non-editable cells
+    if (!cell.isEditable) {
+      return <Lock className="w-3. 5 h-3.5 text-gray-400" />;
+    }
+
     if (cell.isSaving)
       return <Loader2 className="w-3. 5 h-3.5 text-amber-600 animate-spin" />;
     if (cell.error) return <X className="w-3.5 h-3.5 text-red-600" />;
@@ -802,6 +860,13 @@ export default function GradeGridEditor({
       return <Check className="w-3.5 h-3.5 text-green-600" />;
     return null;
   };
+
+  // ✅ Count editable vs view-only subjects
+  const subjectStats = useMemo(() => {
+    const editable = sortedSubjects.filter((s) => s.isEditable).length;
+    const viewOnly = sortedSubjects.length - editable;
+    return { editable, viewOnly, total: sortedSubjects.length };
+  }, [sortedSubjects]);
 
   return (
     <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative">
@@ -832,6 +897,15 @@ export default function GradeGridEditor({
                     Coef: {totalCoefficientForClass}
                   </span>
                 </div>
+                {/* ✅ Show edit permissions for teachers */}
+                {currentUser?.role === "TEACHER" && (
+                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg">
+                    <Eye className="w-4 h-4 text-white" />
+                    <span className="text-sm font-bold text-white">
+                      {subjectStats.editable}/{subjectStats.total} កែបាន
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -920,16 +994,27 @@ export default function GradeGridEditor({
 
               {/* Subject Columns */}
               {sortedSubjects.map((subject) => {
-                const colors = getSubjectColor(subject.code);
+                const colors = getSubjectColor(
+                  subject.code,
+                  subject.isEditable || false
+                );
                 const khmerName = getKhmerShortName(subject.code);
 
                 return (
                   <th
                     key={subject.id}
                     className={`px-3 py-3 text-center text-sm font-bold border-b-2 border-r border-gray-300 min-w-[70px] ${colors.header}`}
-                    title={`${subject.nameKh} (Max: ${subject.maxScore}, Coefficient: ${subject.coefficient})`}
+                    title={`${subject.nameKh} (Max: ${
+                      subject.maxScore
+                    }, Coefficient: ${subject.coefficient})${
+                      !subject.isEditable ? " - មើលប៉ុណ្ណោះ" : ""
+                    }`}
                   >
-                    {khmerName}
+                    <div className="flex items-center justify-center gap-1">
+                      {/* ✅ Show lock icon for view-only subjects */}
+                      {!subject.isEditable && <Lock className="w-3 h-3" />}
+                      <span>{khmerName}</span>
+                    </div>
                   </th>
                 );
               })}
@@ -939,16 +1024,16 @@ export default function GradeGridEditor({
                 សរុប
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-green-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-green-100">
-                ម.ភាគ
+                ម. ភាគ
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-yellow-800 border-b-2 border-r border-gray-300 min-w-[65px] bg-yellow-100">
                 និទ្ទេស
               </th>
               <th className="px-3 py-3 text-center text-sm font-bold text-indigo-800 border-b-2 border-r border-gray-300 min-w-[70px] bg-indigo-100">
-                ចំ.ថ្នាក់
+                ចំ. ថ្នាក់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-red-800 border-b-2 border-r border-gray-300 w-12 bg-red-100">
-                អ.ច្បាប់
+                អ. ច្បាប់
               </th>
               <th className="px-3 py-3 text-center text-xs font-bold text-orange-800 border-b-2 border-gray-300 w-12 bg-orange-100">
                 ម.ច្បាប់
@@ -966,12 +1051,12 @@ export default function GradeGridEditor({
                 >
                   {/* Fixed Columns */}
                   <td
-                    className={`sticky left-0 z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2. 5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
+                    className={`sticky left-0 z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2.  5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
                   >
                     {studentIndex + 1}
                   </td>
                   <td
-                    className={`sticky left-12 z-10 ${rowBg} hover:bg-indigo-50/50 px-4 py-2.5 text-sm font-semibold text-gray-800 border-b border-r border-gray-200`}
+                    className={`sticky left-12 z-10 ${rowBg} hover: bg-indigo-50/50 px-4 py-2. 5 text-sm font-semibold text-gray-800 border-b border-r border-gray-200`}
                   >
                     {student.studentName}
                   </td>
@@ -993,7 +1078,10 @@ export default function GradeGridEditor({
                   {sortedSubjects.map((subject, subjectIndex) => {
                     const cellKey = `${student.studentId}_${subject.id}`;
                     const cell = cells[cellKey];
-                    const colors = getSubjectColor(subject.code);
+                    const colors = getSubjectColor(
+                      subject.code,
+                      subject.isEditable || false
+                    );
 
                     if (!cell)
                       return (
@@ -1024,11 +1112,16 @@ export default function GradeGridEditor({
                             onPaste={(e) =>
                               handlePaste(e, studentIndex, subjectIndex)
                             }
-                            disabled={isLoading || saving}
+                            disabled={isLoading || saving || !cell.isEditable} // ✅ ADDED:  Disable non-editable
                             className={getCellClassName(cell, cellKey)}
                             placeholder="-"
+                            title={
+                              !cell.isEditable
+                                ? "មើលប៉ុណ្ណោះ - អ្នកមិនអាចកែមុខវិជ្ជានេះបានទេ"
+                                : ""
+                            }
                           />
-                          <div className="w-3. 5 flex-shrink-0">
+                          <div className="w-3.  5 flex-shrink-0">
                             {getStatusIcon(cell)}
                           </div>
                         </div>
@@ -1037,7 +1130,7 @@ export default function GradeGridEditor({
                   })}
 
                   {/* Summary Columns */}
-                  <td className="px-3 py-2.5 text-center text-sm font-bold border-b border-r border-gray-200 bg-blue-50/50 text-blue-700">
+                  <td className="px-3 py-2. 5 text-center text-sm font-bold border-b border-r border-gray-200 bg-blue-50/50 text-blue-700">
                     {student.totalScore}
                   </td>
                   <td className="px-3 py-2.5 text-center text-base font-bold border-b border-r border-gray-200 bg-green-50/50 text-green-700">
@@ -1073,7 +1166,7 @@ export default function GradeGridEditor({
         <div className="flex items-center gap-5 text-xs font-medium text-gray-600">
           {pasteMode ? (
             <>
-              <div className="flex items-center gap-1. 5">
+              <div className="flex items-center gap-1.  5">
                 <div className="w-5 h-5 bg-yellow-100 border-2 border-yellow-400 rounded" />
                 <span>បានបញ្ចូល</span>
               </div>
@@ -1084,6 +1177,13 @@ export default function GradeGridEditor({
             </>
           ) : (
             <>
+              {/* ✅ ADDED: Legend for non-editable */}
+              {currentUser?.role === "TEACHER" && (
+                <div className="flex items-center gap-1.5">
+                  <Lock className="w-4 h-4 text-gray-500" />
+                  <span>មើលប៉ុណ្ណោះ</span>
+                </div>
+              )}
               <div className="flex items-center gap-1. 5">
                 <div className="w-5 h-5 bg-blue-50 border-2 border-blue-400 rounded" />
                 <span>កំពុងកែ</span>
@@ -1115,7 +1215,7 @@ export default function GradeGridEditor({
         </div>
       </div>
 
-      {/* ✅ Floating Save Panel - Only in Paste Mode */}
+      {/* Floating Save Panel - Only in Paste Mode */}
       {pasteMode && allPendingChanges.size > 0 && (
         <div className="fixed bottom-6 right-6 z-50 animate-slideUp">
           <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-2xl p-6 min-w-[420px]">
@@ -1125,7 +1225,7 @@ export default function GradeGridEditor({
                   📋 ទិន្នន័យរង់ចាំរក្សាទុក
                   {saving && <Loader2 className="w-5 h-5 animate-spin" />}
                 </p>
-                <div className="mt-3 space-y-1. 5 text-sm">
+                <div className="mt-3 space-y-1.  5 text-sm">
                   <p className="flex items-center gap-2">
                     <span className="inline-block w-3 h-3 bg-yellow-300 rounded"></span>
                     បានបញ្ចូលពី Excel:{" "}
@@ -1175,7 +1275,7 @@ export default function GradeGridEditor({
                 {saving ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>កំពុងរក្សា...</span>
+                    <span>កំពុងរក្សា... </span>
                   </>
                 ) : (
                   <>
