@@ -10,13 +10,16 @@ export const getAllClasses = async (req: Request, res: Response) => {
 
     const classes = await prisma.class.findMany({
       include: {
-        teacher: {
+        homeroomTeacher: {
+          // ✅ CHANGED: teacher → homeroomTeacher
           select: {
             id: true,
             khmerName: true,
+            englishName: true, // ✅ ADDED
             firstName: true,
             lastName: true,
             email: true,
+            role: true, // ✅ ADDED
           },
         },
         students: {
@@ -58,7 +61,7 @@ export const getClassById = async (req: Request, res: Response) => {
     const classData = await prisma.class.findUnique({
       where: { id },
       include: {
-        teacher: true,
+        homeroomTeacher: true, // ✅ CHANGED: teacher → homeroomTeacher
         students: {
           orderBy: {
             khmerName: "asc",
@@ -94,8 +97,17 @@ export const getClassById = async (req: Request, res: Response) => {
 // Create class
 export const createClass = async (req: Request, res: Response) => {
   try {
-    const { classId, name, grade, section, academicYear, capacity, teacherId } =
-      req.body;
+    const {
+      classId,
+      name,
+      grade,
+      section,
+      track, // ✅ ADDED
+      academicYear,
+      capacity,
+      teacherId, // ⚠️ Keep for backward compatibility
+      homeroomTeacherId, // ✅ ADDED
+    } = req.body;
 
     console.log("➕ CREATE CLASS:", { classId, name, grade });
 
@@ -103,6 +115,14 @@ export const createClass = async (req: Request, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Name, grade, and academicYear are required",
+      });
+    }
+
+    // ✅ Validate track for grades 11-12
+    if ((grade === "11" || grade === "12") && !track) {
+      return res.status(400).json({
+        success: false,
+        message: "Track (science/social) is required for grades 11-12",
       });
     }
 
@@ -120,18 +140,22 @@ export const createClass = async (req: Request, res: Response) => {
       }
     }
 
+    // ✅ Use homeroomTeacherId if provided, fallback to teacherId for backward compatibility
+    const finalTeacherId = homeroomTeacherId || teacherId || null;
+
     const classData = await prisma.class.create({
       data: {
         classId: classId || `G${grade}-${section || "A"}`,
         name,
         grade,
         section: section || null,
+        track: track || null, // ✅ ADDED
         academicYear,
         capacity: capacity ? parseInt(capacity) : null,
-        teacherId: teacherId || null,
+        homeroomTeacherId: finalTeacherId, // ✅ CHANGED: teacherId → homeroomTeacherId
       },
       include: {
-        teacher: true,
+        homeroomTeacher: true, // ✅ CHANGED:  teacher → homeroomTeacher
         _count: {
           select: {
             students: true,
@@ -171,16 +195,30 @@ export const updateClass = async (req: Request, res: Response) => {
       });
     }
 
+    // ✅ Handle both teacherId (old) and homeroomTeacherId (new)
+    const finalTeacherId =
+      updateData.homeroomTeacherId !== undefined
+        ? updateData.homeroomTeacherId
+        : updateData.teacherId !== undefined
+        ? updateData.teacherId
+        : undefined;
+
     const classData = await prisma.class.update({
       where: { id },
       data: {
-        ...updateData,
+        classId: updateData.classId,
+        name: updateData.name,
+        grade: updateData.grade,
+        section: updateData.section,
+        track: updateData.track, // ✅ ADDED
+        academicYear: updateData.academicYear,
         capacity: updateData.capacity
           ? parseInt(updateData.capacity)
           : existing.capacity,
+        homeroomTeacherId: finalTeacherId, // ✅ CHANGED
       },
       include: {
-        teacher: true,
+        homeroomTeacher: true, // ✅ CHANGED: teacher → homeroomTeacher
         _count: {
           select: {
             students: true,
@@ -201,7 +239,6 @@ export const updateClass = async (req: Request, res: Response) => {
   }
 };
 
-// Delete class
 // Delete class
 export const deleteClass = async (req: Request, res: Response) => {
   try {
@@ -349,6 +386,71 @@ export const removeStudentFromClass = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Error removing student",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET classes by grade (with optional track filter)
+ */
+export const getClassesByGrade = async (req: Request, res: Response) => {
+  try {
+    const { grade } = req.params;
+    const { track } = req.query; // Optional: "science" | "social"
+
+    console.log(`📚 GET CLASSES BY GRADE: ${grade}`, track ? `(${track})` : "");
+
+    const whereClause: any = {
+      grade: grade.toString(),
+    };
+
+    // ✅ Filter by track for grades 11-12
+    if (track) {
+      whereClause.track = track.toString();
+    }
+
+    const classes = await prisma.class.findMany({
+      where: whereClause,
+      include: {
+        homeroomTeacher: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
+            englishName: true,
+            role: true,
+          },
+        },
+        students: {
+          select: {
+            id: true,
+            khmerName: true,
+            firstName: true,
+            lastName: true,
+            gender: true,
+          },
+        },
+        _count: {
+          select: {
+            students: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+
+    console.log(`✅ Found ${classes.length} classes`);
+
+    res.json(classes); // ✅ Return array directly (to match existing format)
+  } catch (error: any) {
+    console.error("❌ Error getting classes by grade:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching classes",
       error: error.message,
     });
   }

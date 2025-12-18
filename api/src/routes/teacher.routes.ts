@@ -1,19 +1,23 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   getAllTeachers,
   getTeacherById,
   createTeacher,
   updateTeacher,
   deleteTeacher,
-} from '../controllers/teacher.controller';
-import { authenticate, authorize } from '../middleware/auth';
+} from "../controllers/teacher.controller";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.get('/', authenticate, getAllTeachers);
-router.get('/:id', authenticate, getTeacherById);
-router.post('/', authenticate, authorize('ADMIN'), createTeacher);
-router.put('/:id', authenticate, authorize('ADMIN'), updateTeacher);
-router.delete('/:id', authenticate, authorize('ADMIN'), deleteTeacher);
+// ✅ Apply authentication middleware to all routes
+router.use(authMiddleware);
+
+// ✅ Teacher routes
+router.get("/", getAllTeachers); // GET all teachers
+router.get("/:id", getTeacherById); // GET single teacher
+router.post("/", createTeacher); // CREATE teacher
+router.put("/:id", updateTeacher); // UPDATE teacher
+router.delete("/:id", deleteTeacher); // DELETE teacher
 
 export default router;

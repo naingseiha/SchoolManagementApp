@@ -35,21 +35,35 @@ export interface Student {
 // Teacher Type (matching Prisma schema)
 export interface Teacher {
   id: string;
-  teacherId?: string; // Auto-generated ID from backend
+  teacherId?: string;
+  firstName: string;
+  lastName: string;
+  name?: string;
   khmerName?: string;
   englishName?: string;
-  // For backward compatibility
-  firstName?: string;
-  lastName?: string;
-  gender: Gender;
-  dateOfBirth?: string;
+  email: string;
+  phone?: string;
   phoneNumber?: string;
-  email?: string;
+  employeeId?: string;
+
+  // ✅ NEW FIELDS
+  role: "TEACHER" | "INSTRUCTOR";
+  gender?: "MALE" | "FEMALE";
+  dateOfBirth?: string;
+  hireDate?: string;
+  address?: string;
   position?: string;
-  // Relations
-  userId?: string;
-  subjects?: Subject[];
-  classes?: Class[];
+
+  // ✅ Relations
+  homeroomClassId?: string;
+  homeroomClass?: any;
+  teachingClassIds?: string[];
+  teachingClasses?: any[];
+  subjectIds?: string[];
+  subjects?: any[];
+  subject?: string;
+  classes?: any[];
+
   createdAt?: string;
   updatedAt?: string;
 }

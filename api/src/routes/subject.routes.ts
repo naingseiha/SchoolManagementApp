@@ -7,6 +7,7 @@ import {
   deleteSubject,
   assignTeachersToSubject,
   removeTeacherFromSubject,
+  getSubjectsByGrade,
 } from "../controllers/subject.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -17,6 +18,7 @@ router.use(authMiddleware);
 
 // Subject CRUD routes
 router.get("/", getAllSubjects);
+router.get("/grade/:grade", getSubjectsByGrade);
 router.get("/:id", getSubjectById);
 router.post("/", createSubject);
 router.put("/:id", updateSubject);
