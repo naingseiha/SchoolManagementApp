@@ -6,7 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import HonorCertificate from "@/components/reports/HonorCertificate"; // ✅ New import
+import HonorCertificateMedals from "@/components/reports/HonorCertificateMedals";
+import HonorCertificateTrophies from "@/components/reports/HonorCertificateTrophies";
 import {
   Printer,
   Loader2,
@@ -15,6 +16,7 @@ import {
   FileText,
   Sparkles,
   Download,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   calculateTopStudentsByClass,
@@ -48,6 +50,9 @@ export default function AwardReportPage() {
   const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("ធ្នូ");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [templateType, setTemplateType] = useState<"medals" | "trophies">(
+    "medals"
+  );
   const [summaries, setSummaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +147,7 @@ export default function AwardReportPage() {
           },
         },
         averageScore: parseFloat(student.average) || 0,
+        letterGrade: student.gradeLevel || "F",
       }));
 
       if (transformedSummaries.length === 0) {
@@ -176,36 +182,39 @@ export default function AwardReportPage() {
     window.print();
   };
 
-  // ✅ Export to PDF function
-  // ✅ ស្វែងរក function exportToPDF នៅក្នុង file page.tsx ហើយកែដូចខាងក្រោម:
-
   const exportToPDF = async () => {
     const element = document.getElementById("honor-certificate");
-    if (!element) return;
+    if (!element) {
+      alert("រកមិនឃើញតារាងកិត្តិយស");
+      return;
+    }
 
     setIsExporting(true);
     try {
-      // ✅ High Quality Settings
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const canvas = await html2canvas(element, {
-        scale: 3, // ✅ បន្ថែមពី 2 ទៅ 3 (ស្អាតជាង)
+        scale: 3,
         logging: false,
         useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#ffffff", // ✅ Force white background
+        allowTaint: false,
+        backgroundColor: "#ffffff",
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
-        imageTimeout: 0, // ✅ Wait for all images
+        imageTimeout: 15000,
         removeContainer: false,
+        letterRendering: true,
+        foreignObjectRendering: false,
       });
 
-      const imgData = canvas.toDataURL("image/png", 1.0); // ✅ Quality 100%
+      const imgData = canvas.toDataURL("image/png", 1.0);
 
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
-        compress: false, // ✅ Don't compress
-        precision: 16, // ✅ High precision
+        compress: true,
+        precision: 16,
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -214,7 +223,6 @@ export default function AwardReportPage() {
       const imgHeight = canvas.height;
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
 
-      // ✅ Center the image
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
       const imgY = 0;
 
@@ -226,17 +234,86 @@ export default function AwardReportPage() {
         imgWidth * ratio,
         imgHeight * ratio,
         undefined,
-        "FAST" // ✅ or "SLOW" for better quality
+        "FAST"
       );
 
       const fileName = `តារាងកិត្តិយស_${
         reportType === "class" ? selectedClass?.name : `Grade_${selectedGrade}`
-      }_${academicYear}.pdf`;
+      }_${selectedMonth}_${academicYear}.pdf`;
+
       pdf.save(fileName);
+
+      console.log("✅ PDF exported successfully!");
     } catch (error) {
-      console.error("Error exporting PDF:", error);
-      alert("មានបញ្ហាក្នុងការនាំចេញ PDF");
+      console.error("❌ Error exporting PDF:", error);
+      alert("មានបញ្ហាក្នុងការនាំចេញ PDF។ សូមព្យាយាមម្តងទៀត។");
     } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // ✅ NEW: Export as Image (PNG)
+  const exportToImage = async () => {
+    const element = document.getElementById("honor-certificate");
+    if (!element) {
+      alert("រកមិនឃើញតារាងកិត្តិយស");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Wait for fonts and images to load
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // High-quality canvas
+      const canvas = await html2canvas(element, {
+        scale: 4, // ✅ Very high quality (4x resolution)
+        logging: false,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        imageTimeout: 15000,
+        removeContainer: false,
+        letterRendering: true,
+        foreignObjectRendering: false,
+      });
+
+      // Convert to PNG blob
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            alert("មានបញ្ហាក្នុងការបង្កើតរូបភាព");
+            setIsExporting(false);
+            return;
+          }
+
+          // Create download link
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          const fileName = `តារាងកិត្តិយស_${
+            reportType === "class"
+              ? selectedClass?.name
+              : `Grade_${selectedGrade}`
+          }_${selectedMonth}_${academicYear}.png`;
+
+          link.href = url;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+          console.log("✅ Image exported successfully!");
+          setIsExporting(false);
+        },
+        "image/png",
+        1.0 // Maximum quality
+      );
+    } catch (error) {
+      console.error("❌ Error exporting image:", error);
+      alert("មានបញ្ហាក្នុងការនាំចេញរូបភាព។ សូមព្យាយាមម្តងទៀត។");
       setIsExporting(false);
     }
   };
@@ -285,7 +362,7 @@ export default function AwardReportPage() {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
           }
-          .no-print {
+          . no-print {
             display: none !important;
           }
         }
@@ -351,8 +428,25 @@ export default function AwardReportPage() {
               </div>
             </div>
 
+            {/* Template Selector */}
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                ជ្រើសរើសម៉ូដតារាងកិត្តិយស
+              </label>
+              <select
+                value={templateType}
+                onChange={(e) =>
+                  setTemplateType(e.target.value as "medals" | "trophies")
+                }
+                className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
+              >
+                <option value="medals">🥇 ម៉ូតមេដាយ (Medals Style)</option>
+                <option value="trophies">🏆 ម៉ូតពាន (Trophies Style)</option>
+              </select>
+            </div>
+
             {/* Selections */}
-            <div className="grid grid-cols-1 md: grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {reportType === "class" ? (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -378,7 +472,7 @@ export default function AwardReportPage() {
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus: ring-2 focus:ring-yellow-500"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
                   >
                     {gradeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -463,7 +557,8 @@ export default function AwardReportPage() {
                         : `ថ្នាក់ទី ${selectedGrade}`}
                     </div>
                     <div className="text-xs text-gray-600">
-                      ខែ{selectedMonth} • ឆ្នាំសិក្សា {academicYear}
+                      ខែ{selectedMonth} • ឆ្នាំសិក្សា {academicYear} •{" "}
+                      {templateType === "medals" ? "🥇 Medals" : "🏆 Trophies"}
                     </div>
                   </div>
                   {reportGenerated && (
@@ -480,9 +575,26 @@ export default function AwardReportPage() {
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* ✅ Action Buttons with Image Export */}
             {reportGenerated && topStudents.length > 0 && (
-              <div className="mt-4 flex gap-3 justify-end">
+              <div className="mt-4 flex gap-3 justify-end flex-wrap">
+                <button
+                  onClick={exportToImage}
+                  disabled={isExporting}
+                  className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-xl shadow-lg transition-all flex items-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      កំពុងនាំចេញ...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4" />
+                      នាំចេញរូបភាព PNG
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={exportToPDF}
                   disabled={isExporting}
@@ -526,7 +638,7 @@ export default function AwardReportPage() {
               <div className="text-center">
                 <Loader2 className="w-12 h-12 animate-spin text-yellow-600 mx-auto mb-4" />
                 <p className="text-gray-600 font-medium">
-                  កំពុងផ្ទុកទិន្នន័យ...
+                  កំពុងផ្ទុកទិន្នន័យ...{" "}
                 </p>
               </div>
             </div>
@@ -535,16 +647,29 @@ export default function AwardReportPage() {
           {/* Certificate Display */}
           {!loading && reportGenerated && (
             <div id="honor-certificate">
-              <HonorCertificate
-                topStudents={topStudents}
-                reportType={reportType}
-                className={
-                  reportType === "class" ? selectedClass?.name : undefined
-                }
-                grade={reportType === "grade" ? selectedGrade : undefined}
-                academicYear={academicYear}
-                month={selectedMonth}
-              />
+              {templateType === "medals" ? (
+                <HonorCertificateMedals
+                  topStudents={topStudents}
+                  reportType={reportType}
+                  className={
+                    reportType === "class" ? selectedClass?.name : undefined
+                  }
+                  grade={reportType === "grade" ? selectedGrade : undefined}
+                  academicYear={academicYear}
+                  month={selectedMonth}
+                />
+              ) : (
+                <HonorCertificateTrophies
+                  topStudents={topStudents}
+                  reportType={reportType}
+                  className={
+                    reportType === "class" ? selectedClass?.name : undefined
+                  }
+                  grade={reportType === "grade" ? selectedGrade : undefined}
+                  academicYear={academicYear}
+                  month={selectedMonth}
+                />
+              )}
             </div>
           )}
 
