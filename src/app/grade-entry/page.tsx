@@ -7,6 +7,7 @@ import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import GradeGridEditor from "@/components/grades/GradeGridEditor";
+import Toast, { ToastType } from "@/components/ui/Toast";
 import {
   Download,
   Loader2,
@@ -58,6 +59,12 @@ export default function GradeEntryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ Toast state
+  const [toast, setToast] = useState<{
+    message: string;
+    type: ToastType;
+  } | null>(null);
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -68,7 +75,7 @@ export default function GradeEntryPage() {
   // ✅ Filter classes based on role
   const availableClasses = useMemo(() => {
     if (!currentUser) {
-      console.log("⏸️ Waiting for currentUser to load...");
+      console.log("⏸️ Waiting for currentUser to load.. .");
       return [];
     }
 
@@ -125,6 +132,8 @@ export default function GradeEntryPage() {
       console.log("👨‍🏫 Teacher subject assignments (by CODE):", {
         count: assignments.length,
         subjectCodes,
+        homeroomClassId: currentUser.teacher?.homeroomClassId,
+        homeroomClassName: currentUser.teacher?.homeroomClass?.name,
         assignments: assignments.map((sa: any) => ({
           subjectCode: sa.subject?.code,
           baseCode: sa.subject?.code?.split("-")[0],
@@ -139,188 +148,253 @@ export default function GradeEntryPage() {
     return new Set<string>();
   }, [currentUser]);
 
-  // ✅ Load grid data when class/month/year changes
-  useEffect(() => {
-    const loadGridData = async () => {
-      if (!selectedClassId || !currentUser) {
-        console.log("⏸️ Cannot load grid:  missing classId or currentUser");
-        return;
+  // ✅ NEW: Get homeroom class ID
+  const teacherHomeroomClassId = useMemo(() => {
+    if (currentUser?.role === "TEACHER") {
+      const homeroomClassId = currentUser.teacher?.homeroomClassId || null;
+      console.log("🏠 Teacher Homeroom Class ID:", homeroomClassId);
+      return homeroomClassId;
+    }
+    return null;
+  }, [currentUser]);
+
+  // ✅ Manual load function with Toast notifications
+  const handleLoadData = async () => {
+    if (!selectedClassId || !currentUser) {
+      setToast({
+        message: "សូមជ្រើសរើសថ្នាក់សិន",
+        type: "warning",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setGridData(null);
+
+    try {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📥 FETCHING GRID DATA");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📊 Request Info:", {
+        classId: selectedClassId,
+        month: selectedMonth,
+        year: selectedYear,
+        teacherHomeroomClassId,
+      });
+      console.log("👤 Current User Info:", {
+        role: currentUser.role,
+        email: currentUser.email,
+        phone: currentUser.phone,
+        hasTeacherData: !!currentUser.teacher,
+      });
+
+      if (currentUser.role === "TEACHER") {
+        console.log("👨‍🏫 Teacher Details:", {
+          teacherId: currentUser.teacher?.id,
+          homeroomClassId: currentUser.teacher?.homeroomClassId,
+          homeroomClassName: currentUser.teacher?.homeroomClass?.name,
+          subjectAssignments: currentUser.teacher?.subjectAssignments,
+          assignmentCount: currentUser.teacher?.subjectAssignments?.length,
+        });
+
+        console.log("📋 Teacher Subject CODES:");
+        currentUser.teacher?.subjectAssignments?.forEach(
+          (sa: any, index: number) => {
+            console.log(
+              `  ${index + 1}. Code: ${sa.subject?.code} → Base: ${
+                sa.subject?.code?.split("-")[0]
+              }`,
+              {
+                subjectName: sa.subject?.nameKh || sa.subject?.name,
+                fullCode: sa.subject?.code,
+              }
+            );
+          }
+        );
       }
 
-      setLoading(true);
-      setError(null);
+      console.log("🔍 teacherEditableSubjects Set (by CODE):", {
+        size: teacherEditableSubjects.size,
+        values: Array.from(teacherEditableSubjects),
+      });
 
-      try {
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log("📥 FETCHING GRID DATA");
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log("📊 Request Info:", {
-          classId: selectedClassId,
-          month: selectedMonth,
-          year: selectedYear,
+      const data = await gradeApi.getGradesGrid(
+        selectedClassId,
+        selectedMonth,
+        selectedYear
+      );
+
+      console.log("✅ Grid data received from API:", {
+        className: data.className,
+        subjectCount: data.subjects?.length,
+      });
+
+      console.log("📚 Subjects from API:");
+      data.subjects?.forEach((subject, index) => {
+        console.log(`  ${index + 1}. ${subject.nameKh || subject.name}`, {
+          code: subject.code,
+          baseCode: subject.code?.split("-")[0],
         });
-        console.log("👤 Current User Info:", {
-          role: currentUser.role,
-          email: currentUser.email,
-          phone: currentUser.phone,
-          hasTeacherData: !!currentUser.teacher,
-        });
+      });
 
-        if (currentUser.role === "TEACHER") {
-          console.log("👨‍🏫 Teacher Details:", {
-            teacherId: currentUser.teacher?.id,
-            subjectAssignments: currentUser.teacher?.subjectAssignments,
-            assignmentCount: currentUser.teacher?.subjectAssignments?.length,
-          });
+      // ✅ Mark subjects as editable based on role
+      if (currentUser.role === "ADMIN") {
+        console.log("🔓 ADMIN MODE: Marking all subjects as editable");
 
-          console.log("📋 Teacher Subject CODES:");
-          currentUser.teacher?.subjectAssignments?.forEach(
-            (sa: any, index: number) => {
-              console.log(
-                `  ${index + 1}. Code: ${sa.subject?.code} → Base: ${
-                  sa.subject?.code?.split("-")[0]
-                }`,
-                {
-                  subjectName: sa.subject?.nameKh || sa.subject?.name,
-                  fullCode: sa.subject?.code,
-                }
-              );
-            }
-          );
-        }
+        data.subjects = data.subjects.map((subject) => ({
+          ...subject,
+          isEditable: true,
+        }));
 
-        console.log("🔍 teacherEditableSubjects Set (by CODE):", {
-          size: teacherEditableSubjects.size,
-          values: Array.from(teacherEditableSubjects),
-        });
+        console.log("✅ All subjects marked as editable for admin");
+      } else if (currentUser.role === "TEACHER") {
+        console.log("👨‍🏫 TEACHER MODE: Checking subject permissions by CODE");
 
-        const data = await gradeApi.getGradesGrid(
+        // ✅ NEW: Check if this is the teacher's homeroom class
+        const isHomeroomClass = teacherHomeroomClassId === selectedClassId;
+
+        console.log("🏠 Homeroom Check:", {
+          teacherHomeroomClassId,
           selectedClassId,
-          selectedMonth,
-          selectedYear
-        );
-
-        console.log("✅ Grid data received from API:", {
-          className: data.className,
-          subjectCount: data.subjects?.length,
+          isHomeroomClass: isHomeroomClass ? "✅ YES - INSTRUCTOR" : "❌ NO",
         });
 
-        console.log("📚 Subjects from API:");
-        data.subjects?.forEach((subject, index) => {
-          console.log(`  ${index + 1}. ${subject.nameKh || subject.name}`, {
-            code: subject.code,
-            baseCode: subject.code?.split("-")[0],
-          });
-        });
-
-        // ✅ Mark subjects as editable based on role
-        if (currentUser.role === "ADMIN") {
-          console.log("🔓 ADMIN MODE:  Marking all subjects as editable");
-
-          data.subjects = data.subjects.map((subject) => ({
-            ...subject,
-            isEditable: true,
-          }));
-
-          console.log("✅ All subjects marked as editable for admin");
-        } else if (currentUser.role === "TEACHER") {
-          console.log("👨‍🏫 TEACHER MODE: Checking subject permissions by CODE");
-
-          data.subjects = data.subjects.map((subject) => {
-            // ✅ FIXED: Extract base code and compare by CODE not ID
-            const baseCode = subject.code?.split("-")[0];
-            const isEditable = baseCode
-              ? teacherEditableSubjects.has(baseCode)
-              : false;
-
-            console.log(`  Checking ${subject.nameKh}:  `, {
-              subjectCode: subject.code,
-              baseCode: baseCode,
-              inEditableSet: isEditable,
-              editableSetContains: Array.from(teacherEditableSubjects),
-            });
-
-            return {
-              ...subject,
-              isEditable,
-            };
-          });
-
-          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-          console.log("📊 FINAL SUBJECT PERMISSIONS (by CODE):");
-          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-          data.subjects.forEach((s, index) => {
-            const baseCode = s.code?.split("-")[0];
-            console.log(`  ${index + 1}. ${s.nameKh}:  `, {
-              code: s.code,
-              baseCode: baseCode,
-              isEditable: s.isEditable ? "✅ EDITABLE" : "❌ VIEW-ONLY",
-            });
-          });
-
-          const editableCount = data.subjects.filter(
-            (s) => s.isEditable
-          ).length;
-          const viewOnlyCount = data.subjects.length - editableCount;
-
-          console.log("📈 Summary:", {
-            total: data.subjects.length,
-            editable: editableCount,
-            viewOnly: viewOnlyCount,
-          });
-          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        }
-
-        // ✅ Final verification by CODE
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log("🔍 FINAL VERIFICATION (by CODE):");
-        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        console.log(
-          "Teacher can edit (codes):",
-          Array.from(teacherEditableSubjects)
-        );
-        console.log("\nGrid subjects:");
-        data.subjects.forEach((subject, i) => {
+        data.subjects = data.subjects.map((subject) => {
+          // ✅ Extract base code and compare by CODE not ID
           const baseCode = subject.code?.split("-")[0];
-          const match = baseCode
+
+          // ✅ NEW: If homeroom class (INSTRUCTOR), all subjects editable
+          // Otherwise, only assigned subjects editable
+          const isEditable = isHomeroomClass
+            ? true // INSTRUCTOR can edit all subjects
+            : baseCode
             ? teacherEditableSubjects.has(baseCode)
             : false;
-          console.log(`${i + 1}. ${subject.nameKh}`, {
-            code: subject.code,
+
+          console.log(`  Checking ${subject.nameKh}: `, {
+            subjectCode: subject.code,
             baseCode: baseCode,
-            isEditable: subject.isEditable,
-            matchesTeacherSet: match,
+            isHomeroomClass,
+            inAssignedSubjects: baseCode
+              ? teacherEditableSubjects.has(baseCode)
+              : false,
+            finalIsEditable: isEditable,
+            reason: isHomeroomClass
+              ? "🏠 HOMEROOM INSTRUCTOR"
+              : isEditable
+              ? "📚 ASSIGNED SUBJECT"
+              : "🚫 NOT ASSIGNED",
+          });
+
+          return {
+            ...subject,
+            isEditable,
+          };
+        });
+
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("📊 FINAL SUBJECT PERMISSIONS:");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log(
+          `🏠 Homeroom Class: ${isHomeroomClass ? "✅ YES" : "❌ NO"}`
+        );
+        console.log(
+          `📚 Assigned Subjects: ${Array.from(teacherEditableSubjects).join(
+            ", "
+          )}`
+        );
+        console.log("");
+        data.subjects.forEach((s, index) => {
+          const baseCode = s.code?.split("-")[0];
+          console.log(`  ${index + 1}. ${s.nameKh}:`, {
+            code: s.code,
+            baseCode: baseCode,
+            isEditable: s.isEditable ? "✅ EDITABLE" : "❌ VIEW-ONLY",
           });
         });
+
+        const editableCount = data.subjects.filter((s) => s.isEditable).length;
+        const viewOnlyCount = data.subjects.length - editableCount;
+
+        console.log("");
+        console.log("📈 Summary:", {
+          total: data.subjects.length,
+          editable: editableCount,
+          viewOnly: viewOnlyCount,
+          mode: isHomeroomClass
+            ? "🏠 HOMEROOM INSTRUCTOR"
+            : "📚 SUBJECT TEACHER",
+        });
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-        setGridData(data);
-      } catch (err: any) {
-        console.error("❌ Error fetching grid data:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
       }
-    };
 
-    loadGridData();
-  }, [
-    selectedClassId,
-    selectedMonth,
-    selectedYear,
-    currentUser,
-    teacherEditableSubjects,
-  ]);
+      // ✅ Final verification by CODE
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🔍 FINAL VERIFICATION (by CODE):");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log(
+        "Teacher can edit (codes):",
+        Array.from(teacherEditableSubjects)
+      );
+      console.log("\nGrid subjects:");
+      data.subjects.forEach((subject, i) => {
+        const baseCode = subject.code?.split("-")[0];
+        const match = baseCode ? teacherEditableSubjects.has(baseCode) : false;
+        console.log(`${i + 1}. ${subject.nameKh}`, {
+          code: subject.code,
+          baseCode: baseCode,
+          isEditable: subject.isEditable,
+          matchesTeacherSet: match,
+        });
+      });
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-  // Handle save grades
-  const handleSaveGrades = async (grades: BulkSaveGradeItem[]) => {
+      setGridData(data);
+
+      // ✅ Show success toast
+      setToast({
+        message: `✅ ផ្ទុកទិន្នន័យបានជោគជ័យ • ${
+          data.subjects?.length || 0
+        } មុខវិជ្ជា • ${data.students?.length || 0} សិស្ស`,
+        type: "success",
+      });
+
+      console.log("✅ Data loaded successfully!");
+    } catch (err: any) {
+      console.error("❌ Error fetching grid data:", err);
+
+      // ✅ Show error toast
+      setToast({
+        message: `❌ មានបញ្ហាក្នុងការទាញយកទិន្នន័យ:  ${err.message}`,
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle save grades with silent auto-save
+  const handleSaveGrades = async (
+    grades: BulkSaveGradeItem[],
+    isAutoSave: boolean = false
+  ) => {
     try {
       if (grades.length === 0) {
-        setError("សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ");
+        if (!isAutoSave) {
+          setToast({
+            message: "សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ",
+            type: "warning",
+          });
+        }
         return;
       }
 
-      console.log(`💾 Saving ${grades.length} grades`);
+      console.log(
+        `💾 Saving ${grades.length} grades${
+          isAutoSave ? " (AUTO-SAVE - SILENT)" : " (MANUAL)"
+        }`
+      );
 
       const result = await gradeApi.bulkSaveGrades(
         selectedClassId,
@@ -329,23 +403,50 @@ export default function GradeEntryPage() {
         grades
       );
 
-      if (result.errorCount > 0) {
-        setError(
-          `រក្សាទុក ${result.savedCount} ជោគជ័យ, ${result.errorCount} មានកំហុស`
-        );
+      // ✅ Safe access to result properties with fallback
+      const savedCount = result?.savedCount ?? result?.saved ?? grades.length;
+      const errorCount = result?.errorCount ?? result?.errors ?? 0;
+
+      console.log(`✅ Save result: ${savedCount} saved, ${errorCount} errors`);
+
+      // ✅ Only show toast for MANUAL saves (not auto-save)
+      if (!isAutoSave) {
+        if (errorCount > 0) {
+          setToast({
+            message: `⚠️ រក្សាទុក ${savedCount} ជោគជ័យ, ${errorCount} មានកំហុស`,
+            type: "warning",
+          });
+        } else {
+          setToast({
+            message: `✅ រក្សាទុកបានជោគជ័យ ${savedCount} ពិន្ទុ`,
+            type: "success",
+          });
+        }
       } else {
-        setError(null);
-        alert(`✅ រក្សាទុកបានជោគជ័យ ${result.savedCount} ពិន្ទុ`);
+        // Silent auto-save (no toast, just console log)
+        console.log(`🔇 Auto-saved ${savedCount} grades silently (no toast)`);
       }
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      console.error(`❌ Save failed (isAutoSave:  ${isAutoSave}):`, err);
+
+      // ✅ Only show error toast for MANUAL saves
+      if (!isAutoSave) {
+        setToast({
+          message: `❌ មានបញ្ហាក្នុងការរក្សាទុក:  ${
+            err.message || "Unknown error"
+          }`,
+          type: "error",
+        });
+        throw err;
+      } else {
+        // Silent fail for auto-save
+        console.error("🔇 Auto-save failed silently (no toast shown)");
+      }
     }
   };
 
-  // ✅ FIXED: Count editable vs view-only subjects - Hook ALWAYS called
+  // ✅ Count editable vs view-only subjects
   const subjectStats = useMemo(() => {
-    // All conditions INSIDE the hook
     if (!gridData) return null;
     if (!currentUser) return null;
     if (currentUser.role === "ADMIN") return null;
@@ -482,8 +583,12 @@ export default function GradeEntryPage() {
                   </label>
                   <select
                     value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setSelectedClassId(e.target.value);
+                      setGridData(null);
+                      setError(null);
+                    }}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus: ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -506,8 +611,12 @@ export default function GradeEntryPage() {
                   </label>
                   <select
                     value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setSelectedMonth(e.target.value);
+                      setGridData(null);
+                      setError(null);
+                    }}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {monthOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -523,8 +632,12 @@ export default function GradeEntryPage() {
                   </label>
                   <select
                     value={selectedYear.toString()}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setSelectedYear(parseInt(e.target.value));
+                      setGridData(null);
+                      setError(null);
+                    }}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {yearOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -539,11 +652,7 @@ export default function GradeEntryPage() {
                     ផ្ទុកទិន្នន័យ
                   </label>
                   <button
-                    onClick={() => {
-                      if (selectedClassId) {
-                        setLoading(true);
-                      }
-                    }}
+                    onClick={handleLoadData}
                     disabled={!selectedClassId || loading}
                     className="w-full h-11 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
                   >
@@ -595,28 +704,41 @@ export default function GradeEntryPage() {
                 isLoading={loading}
                 currentUser={currentUser}
               />
-            ) : selectedClassId ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-                <div className="text-center">
-                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-sm font-medium text-gray-600">
-                    កំពុងរង់ចាំទិន្នន័យ...
-                  </p>
-                </div>
-              </div>
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
                 <div className="text-center">
                   <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-sm font-medium text-gray-600">
-                    សូមជ្រើសរើសថ្នាក់ដើម្បីចាប់ផ្តើម
+                  <p className="text-sm font-medium text-gray-600 mb-2">
+                    {selectedClassId
+                      ? "សូមចុច 'ផ្ទុកទិន្នន័យ' ដើម្បីចាប់ផ្តើម"
+                      : "សូមជ្រើសរើសថ្នាក់ សិនទើបចុច 'ផ្ទុកទិន្នន័យ'"}
                   </p>
+                  {selectedClassId && (
+                    <p className="text-xs text-gray-500">
+                      ថ្នាក់:{" "}
+                      {
+                        classOptions.find((c) => c.value === selectedClassId)
+                          ?.label
+                      }{" "}
+                      • ខែ: {selectedMonth} • ឆ្នាំ: {selectedYear}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
           </div>
         </main>
       </div>
+
+      {/* ✅ TOAST NOTIFICATION */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={4000}
+        />
+      )}
     </div>
   );
 }

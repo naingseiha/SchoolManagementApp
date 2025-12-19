@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, UserCheck, Loader2 } from "lucide-react";
 import { teachersApi } from "@/lib/api/teachers";
 import { subjectsApi } from "@/lib/api/subjects";
 import { classesApi } from "@/lib/api/classes";
+import Toast, { ToastType } from "@/components/ui/Toast"; // ✅ ADD THIS
 import TeacherBasicInfoForm from "./forms/TeacherBasicInfoForm";
 import TeacherHomeroomClassSelector from "./forms/TeacherHomeroomClassSelector";
 import TeacherSubjectsSelector from "./forms/TeacherSubjectsSelector";
@@ -55,6 +56,12 @@ export default function TeacherEditModal({
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
+  // ✅ ADD Toast state
+  const [toast, setToast] = useState<{
+    message: string;
+    type: ToastType;
+  } | null>(null);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -75,7 +82,6 @@ export default function TeacherEditModal({
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // ✅ Store all subjects & classes for display
   const [allSubjects, setAllSubjects] = useState<any[]>([]);
   const [allClasses, setAllClasses] = useState<any[]>([]);
 
@@ -97,7 +103,6 @@ export default function TeacherEditModal({
     { value: "12-social", label: "កម្រិតទី១២ - សង្គម • Grade 12 Social" },
   ];
 
-  // ✅ Load all data when modal opens
   useEffect(() => {
     if (isOpen && teacher) {
       loadInitialData();
@@ -112,7 +117,6 @@ export default function TeacherEditModal({
       console.log("Teacher ID:", teacher.id);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      // ✅ Load ALL subjects and classes in parallel
       const [fetchedSubjects, fetchedClasses] = await Promise.all([
         subjectsApi.getAll(),
         classesApi.getAll(),
@@ -124,25 +128,26 @@ export default function TeacherEditModal({
       setAllSubjects(fetchedSubjects);
       setAllClasses(fetchedClasses);
 
-      // ✅ Extract IDs from teacher data (multiple fallback paths)
       const subjectIds =
         teacher.subjectIds || teacher.subjects?.map((s) => s.id) || [];
 
-      const teachingClassIds =
-        teacher.teachingClassIds ||
-        teacher.classIds ||
-        teacher.classes?.map((c) => c.id) ||
-        teacher.teachingClasses
-          ?.map((tc) => tc.id || tc.class?.id)
-          .filter(Boolean) ||
-        [];
+      const teachingClassIds = Array.from(
+        new Set(
+          teacher.teachingClassIds ||
+            teacher.classIds ||
+            teacher.classes?.map((c) => c.id) ||
+            teacher.teachingClasses
+              ?.map((tc) => tc.id || tc.class?.id || tc.classId)
+              .filter(Boolean) ||
+            []
+        )
+      );
 
       console.log("📋 Extracted data:");
       console.log("  - Subject IDs:", subjectIds);
-      console.log("  - Teaching class IDs:", teachingClassIds);
+      console.log("  - Teaching class IDs (UNIQUE):", teachingClassIds);
       console.log("  - Homeroom class ID:", teacher.homeroomClassId);
 
-      // ✅ Populate form with teacher data
       setFormData({
         firstName: teacher.firstName || "",
         lastName: teacher.lastName || "",
@@ -165,26 +170,36 @@ export default function TeacherEditModal({
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     } catch (error) {
       console.error("❌ Error loading teacher data:", error);
-      alert("បរាជ័យក្នុងការទាញយកទិន្នន័យ!\nFailed to load data!");
+      // ✅ CHANGED: Use toast instead of alert
+      setToast({
+        message: "❌ បរាជ័យក្នុងការទាញយកទិន្នន័យ! ",
+        type: "error",
+      });
     } finally {
       setInitialLoading(false);
     }
   };
 
-  // ✅ Auto-close and reset when modal closes
   useEffect(() => {
     if (!isOpen) {
       setFormErrors({});
       setInitialLoading(true);
+      setToast(null); // ✅ Clear toast on close
     }
   }, [isOpen]);
+
+  const uniqueTeachingClasses = useMemo(() => {
+    const uniqueIds = Array.from(new Set(formData.selectedTeachingClasses));
+    return uniqueIds
+      .map((classId) => allClasses.find((c) => c.id === classId))
+      .filter((c): c is NonNullable<typeof c> => c !== undefined);
+  }, [formData.selectedTeachingClasses, allClasses]);
 
   if (!isOpen) return null;
 
   const handleFieldChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Clear error when user types
     if (formErrors[field]) {
       setFormErrors((prev) => {
         const newErrors = { ...prev };
@@ -193,12 +208,10 @@ export default function TeacherEditModal({
       });
     }
 
-    // ✅ Clear homeroom if switching to TEACHER
     if (field === "role" && value === "TEACHER") {
       setFormData((prev) => ({ ...prev, homeroomClassId: "" }));
     }
 
-    // ✅ Auto-add homeroom to teaching classes if INSTRUCTOR
     if (field === "role" && value === "INSTRUCTOR") {
       const currentHomeroom = formData.homeroomClassId;
       if (
@@ -226,36 +239,40 @@ export default function TeacherEditModal({
   };
 
   const toggleTeachingClass = (classId: string) => {
-    // ✅ Prevent removing homeroom class
     if (classId === formData.homeroomClassId) {
       return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      selectedTeachingClasses: prev.selectedTeachingClasses.includes(classId)
-        ? prev.selectedTeachingClasses.filter((id) => id !== classId)
-        : [...prev.selectedTeachingClasses, classId],
-    }));
+    setFormData((prev) => {
+      const currentClasses = prev.selectedTeachingClasses;
+      const newClasses = currentClasses.includes(classId)
+        ? currentClasses.filter((id) => id !== classId)
+        : [...currentClasses, classId];
+
+      return {
+        ...prev,
+        selectedTeachingClasses: Array.from(new Set(newClasses)),
+      };
+    });
   };
 
   const handleHomeroomChange = (classId: string) => {
     setFormData((prev) => {
       const newTeachingClasses = [...prev.selectedTeachingClasses];
 
-      // ✅ Add new homeroom to teaching classes if not already there
       if (classId && !newTeachingClasses.includes(classId)) {
         newTeachingClasses.push(classId);
       }
 
+      const uniqueClasses = Array.from(new Set(newTeachingClasses));
+
       return {
         ...prev,
         homeroomClassId: classId,
-        selectedTeachingClasses: newTeachingClasses,
+        selectedTeachingClasses: uniqueClasses,
       };
     });
 
-    // Clear error
     if (formErrors.homeroomClass) {
       setFormErrors((prev) => {
         const newErrors = { ...prev };
@@ -292,13 +309,21 @@ export default function TeacherEditModal({
     e.preventDefault();
 
     if (!validateForm()) {
-      alert("សូមបំពេញព័ត៌មានដែលត្រូវការ!\nPlease fill in required fields!");
+      // ✅ CHANGED: Use toast instead of alert
+      setToast({
+        message: "សូមបំពេញព័ត៌មានដែលត្រូវការ! ",
+        type: "warning",
+      });
       return;
     }
 
     setLoading(true);
 
     try {
+      const uniqueTeachingClassIds = Array.from(
+        new Set(formData.selectedTeachingClasses)
+      );
+
       const teacherData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -315,29 +340,41 @@ export default function TeacherEditModal({
         subjectIds: formData.selectedSubjects,
         homeroomClassId:
           formData.role === "INSTRUCTOR" ? formData.homeroomClassId : null,
-        teachingClassIds: formData.selectedTeachingClasses,
+        teachingClassIds: uniqueTeachingClassIds,
       };
 
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log("📤 Updating teacher:");
       console.log("Teacher ID:", teacher.id);
       console.log("Data:", JSON.stringify(teacherData, null, 2));
+      console.log("Unique Teaching Classes:", uniqueTeachingClassIds);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       await teachersApi.update(teacher.id, teacherData);
 
       console.log("✅ Teacher updated successfully");
-      alert("✅ បានកែប្រែគ្រូបង្រៀនដោយជោគជ័យ!\nTeacher updated successfully!");
 
-      onSuccess();
-      onClose();
+      // ✅ CHANGED: Use toast instead of alert
+      setToast({
+        message: "✅ បានកែប្រែគ្រូបង្រៀនដោយជោគជ័យ!",
+        type: "success",
+      });
+
+      // ✅ Close modal after 1. 5 seconds to show toast
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
     } catch (error: any) {
       console.error("❌ Error updating teacher:", error);
-      alert(
-        `❌ បរាជ័យក្នុងការកែប្រែគ្រូបង្រៀន!\nError: ${
+
+      // ✅ CHANGED: Use toast instead of alert
+      setToast({
+        message: `❌ បរាជ័យក្នុងការកែប្រែគ្រូបង្រៀន:  ${
           error.message || "Unknown error"
-        }`
-      );
+        }`,
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -373,14 +410,12 @@ export default function TeacherEditModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Basic Information */}
             <TeacherBasicInfoForm
               formData={formData}
               formErrors={formErrors}
               onChange={handleFieldChange}
             />
 
-            {/* Homeroom Class (only for INSTRUCTOR) */}
             {formData.role === "INSTRUCTOR" && (
               <TeacherHomeroomClassSelector
                 selectedClassId={formData.homeroomClassId}
@@ -390,27 +425,25 @@ export default function TeacherEditModal({
               />
             )}
 
-            {/* Teaching Subjects */}
             <TeacherSubjectsSelector
               selectedSubjects={formData.selectedSubjects}
               onToggle={toggleSubject}
               gradeOptions={gradeOptions}
-              preloadedSubjects={allSubjects} // ✅ PASS PRELOADED DATA
+              preloadedSubjects={allSubjects}
             />
 
-            {/* Teaching Classes */}
             <TeacherClassesSelector
               selectedClasses={formData.selectedTeachingClasses}
               homeroomClassId={formData.homeroomClassId}
               onToggle={toggleTeachingClass}
               gradeOptions={gradeOptions}
-              preloadedClasses={allClasses} // ✅ PASS PRELOADED DATA
+              preloadedClasses={allClasses}
             />
 
             {/* Summary Info */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
               <h4 className="font-bold text-blue-900 mb-2">
-                📊 សង្ខេប Summary:{" "}
+                📊 សង្ខេប Summary:
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div className="bg-white rounded-lg p-3 border border-blue-200">
@@ -432,18 +465,36 @@ export default function TeacherEditModal({
                     ថ្នាក់បង្រៀន • Classes:
                   </p>
                   <p className="font-black text-green-900">
-                    {formData.selectedTeachingClasses.length} ថ្នាក់
+                    {uniqueTeachingClasses.length} ថ្នាក់
                   </p>
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-amber-200">
                   <p className="text-gray-600 text-xs">
-                    ថ្នាក់ប្រចាំ • Homeroom:{" "}
+                    ថ្នាក់ប្រចាំ • Homeroom:
                   </p>
                   <p className="font-black text-amber-900">
                     {formData.homeroomClassId ? "✓ មាន" : "✗ គ្មាន"}
                   </p>
                 </div>
               </div>
+
+              {uniqueTeachingClasses.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-blue-200">
+                  <p className="text-xs text-gray-600 mb-2">
+                    ថ្នាក់ដែលបានជ្រើសរើស:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {uniqueTeachingClasses.map((classData) => (
+                      <span
+                        key={classData.id}
+                        className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold"
+                      >
+                        {classData.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -477,6 +528,16 @@ export default function TeacherEditModal({
           </form>
         )}
       </div>
+
+      {/* ✅ ADDED: Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+          duration={3000}
+        />
+      )}
     </div>
   );
 }
