@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard,
@@ -19,12 +19,16 @@ import {
   ChevronRight,
   UserCheck,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
-export default function Sidebar() {
+function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentUser } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [targetPath, setTargetPath] = useState<string | null>(null);
 
   // ✅ Get user role (from User table)
   const userRole = currentUser?.role; // "ADMIN" or "TEACHER"
@@ -167,9 +171,38 @@ export default function Sidebar() {
 
   const roleInfo = getRoleDisplay(userRole, teacherRole);
 
+  // ✅ Handle navigation with loading state
+  const handleNavigation = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+      if (href === pathname) return; // Already on this page
+
+      e.preventDefault();
+      setIsNavigating(true);
+      setTargetPath(href);
+
+      // Start navigation
+      router.push(href);
+    },
+    [pathname, router]
+  );
+
+  // ✅ Reset navigation state when pathname changes
+  useEffect(() => {
+    setIsNavigating(false);
+    setTargetPath(null);
+  }, [pathname]);
+
+  // ✅ Prefetch routes on hover for faster navigation
+  const handleMouseEnter = useCallback(
+    (href: string) => {
+      router.prefetch(href);
+    },
+    [router]
+  );
+
   return (
     <aside
-      className={`bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 shadow-xl transition-all duration-500 ease-in-out ${
+      className={`bg-gradient-to-b from-white via-gray-50 to-white border-r border-gray-200 shadow-xl transition-all duration-300 ease-in-out ${
         isCollapsed ? "w-20" : "w-72"
       } relative flex flex-col h-screen`}
     >
@@ -177,20 +210,20 @@ export default function Sidebar() {
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
 
       {/* Sidebar Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 bg-white/80 backdrop-blur-sm">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 bg-white/90 backdrop-blur-md">
         {!isCollapsed && (
-          <div className="flex items-center gap-3 group">
+          <div className="flex items-center gap-3 group cursor-pointer">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                <GraduationCap className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md transform group-hover:scale-105 group-hover:-rotate-3 transition-all duration-200">
+                <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-lg font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 School MS
               </h1>
-              <p className="text-[10px] text-gray-500 -mt-0.5 english-modern">
+              <p className="text-[9px] text-gray-500 -mt-0.5 font-medium english-modern">
                 Management System
               </p>
             </div>
@@ -198,13 +231,13 @@ export default function Sidebar() {
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 group"
+          className="p-2 rounded-lg hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50 transition-all duration-200 group border border-transparent hover:border-indigo-100"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
-            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+            <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
           ) : (
-            <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-indigo-600 transition-colors" />
+            <ChevronLeft className="w-4 h-4 text-gray-600 group-hover:text-indigo-600 transition-colors" />
           )}
         </button>
       </div>
@@ -248,39 +281,51 @@ export default function Sidebar() {
           filteredMenuItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
+            const isLoadingThis = isNavigating && targetPath === item.href;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden
+                onClick={(e) => handleNavigation(e, item.href)}
+                onMouseEnter={() => handleMouseEnter(item.href)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden
                   ${
                     isActive
                       ? "bg-gradient-to-r " +
                         item.gradient +
-                        " text-white shadow-lg scale-105"
-                      : "text-gray-700 hover:bg-gradient-to-r hover: from-gray-50 hover:to-gray-100 hover:shadow-md"
+                        " text-white shadow-lg scale-[1.02]"
+                      : "text-gray-700 hover:bg-gradient-to-r hover:from-gray-100 hover:to-gray-50 hover:shadow-md hover:scale-[1.01]"
                   }
+                  ${isLoadingThis ? "opacity-75 cursor-wait" : ""}
                 `}
                 style={{
-                  animationDelay: `${index * 50}ms`,
-                  animation: "slideIn 0.3s ease-out forwards",
+                  animationDelay: `${index * 30}ms`,
+                  animation: "slideIn 0.2s ease-out forwards",
                 }}
               >
                 {/* Animated background effect */}
                 {isActive && (
-                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-white/10 animate-pulse"></div>
                 )}
 
                 {/* Icon */}
-                <div className="relative z-10">
-                  <Icon
-                    className={`w-5 h-5 transition-all duration-300 ${
-                      isActive
-                        ? "text-white drop-shadow-md"
-                        : "text-gray-600 group-hover:text-indigo-600 group-hover:scale-110"
-                    }`}
-                  />
+                <div className="relative z-10 flex items-center justify-center">
+                  {isLoadingThis ? (
+                    <Loader2
+                      className={`w-5 h-5 animate-spin ${
+                        isActive ? "text-white" : "text-indigo-600"
+                      }`}
+                    />
+                  ) : (
+                    <Icon
+                      className={`w-5 h-5 transition-all duration-200 ${
+                        isActive
+                          ? "text-white drop-shadow-md"
+                          : "text-gray-600 group-hover:text-indigo-600 group-hover:scale-110"
+                      }`}
+                    />
+                  )}
                 </div>
 
                 {/* Labels */}
@@ -321,7 +366,7 @@ export default function Sidebar() {
       {/* User Info at Bottom */}
       {currentUser && (
         <div
-          className={`border-t border-gray-200 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 backdrop-blur-sm transition-all duration-500 ${
+          className={`border-t border-gray-200 bg-gradient-to-br from-indigo-50/50 via-purple-50/50 to-pink-50/50 backdrop-blur-md transition-all duration-300 ${
             isCollapsed ? "p-3" : "p-4"
           }`}
         >
@@ -332,30 +377,30 @@ export default function Sidebar() {
           >
             {/* Avatar */}
             <div className="relative group">
-              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md transform group-hover:scale-105 transition-transform duration-200">
                 {currentUser.firstName?.charAt(0).toUpperCase() || "U"}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-md">
-                <div className="w-full h-full bg-green-500 rounded-full animate-ping"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white shadow-sm">
+                <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75"></div>
               </div>
             </div>
 
             {/* User Details */}
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate english-modern mb-0.5">
+                <p className="text-xs font-bold text-gray-900 truncate english-modern mb-1">
                   {currentUser.firstName} {currentUser.lastName}
                 </p>
-                <div className="flex items-center gap-1. 5">
+                <div className="flex items-center gap-1.5">
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${roleInfo.bg} ${roleInfo.color}`}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold ${roleInfo.bg} ${roleInfo.color}`}
                   >
-                    <Sparkles className="w-2. 5 h-2.5 mr-1" />
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
                     {roleInfo.label}
                   </span>
                 </div>
                 {/* Show Khmer role name */}
-                <p className="text-[10px] text-gray-500 mt-0.5">
+                <p className="text-[9px] text-gray-500 mt-0.5 font-medium">
                   {roleInfo.khmerLabel}
                 </p>
               </div>
@@ -376,7 +421,7 @@ export default function Sidebar() {
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
-        . custom-scrollbar::-webkit-scrollbar-track {
+        .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -390,7 +435,7 @@ export default function Sidebar() {
         @keyframes slideIn {
           from {
             opacity: 0;
-            transform: translateX(-20px);
+            transform: translateX(-10px);
           }
           to {
             opacity: 1;
@@ -401,3 +446,6 @@ export default function Sidebar() {
     </aside>
   );
 }
+
+// ✅ Memoize to prevent unnecessary re-renders
+export default memo(Sidebar);

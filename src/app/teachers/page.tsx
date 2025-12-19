@@ -29,9 +29,8 @@ export default function TeachersPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // ✅ REMOVED:  Auto-load on mount
-
   // ✅ Manual load function (using lightweight endpoint for speed)
+  // ✅ REMOVED auto-load - user must click "Load Data" button
   const loadTeachers = async () => {
     try {
       setLoading(true);
@@ -79,77 +78,82 @@ export default function TeachersPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
 
-        <main className="flex-1 p-6 space-y-4 overflow-x-hidden">
-          {/* ✅ Clean Header Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="bg-blue-600 p-3 rounded-lg">
-                  <UserCheck className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    គ្រប់គ្រងគ្រូបង្រៀន
-                  </h1>
-                  <p className="text-sm text-gray-600 font-medium">
-                    Teacher Management System
-                  </p>
-                </div>
-              </div>
+        <main className="flex-1 p-6 space-y-5 overflow-x-hidden">
+          {/* ✅ Modern Header Section with Gradient */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-50 border border-blue-100 rounded-2xl shadow-sm">
+            {/* Decorative background */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500 rounded-full blur-3xl"></div>
+            </div>
 
-              {/* Stats */}
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-black text-blue-600">
-                    {isDataLoaded ? teachers.length : contextTeachers.length}
+            <div className="relative z-10 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-3.5 rounded-2xl shadow-lg">
+                      <UserCheck className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
                   </div>
-                  <div className="text-xs text-gray-600 font-semibold">
-                    សរុប
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-black text-pink-600">
-                    {isDataLoaded
-                      ? teachers.filter(
-                          (t: any) =>
-                            t.gender === "FEMALE" || t.gender === "female"
-                        ).length
-                      : contextTeachers.filter(
-                          (t: any) =>
-                            t.gender === "FEMALE" || t.gender === "female"
-                        ).length}
-                  </div>
-                  <div className="text-xs text-gray-600 font-semibold">
-                    ស្រី
+                  <div>
+                    <h1 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      គ្រប់គ្រងគ្រូបង្រៀន
+                    </h1>
+                    <p className="text-sm text-gray-600 font-semibold">
+                      Teacher Management System
+                    </p>
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-black text-indigo-600">
-                    {isDataLoaded
-                      ? teachers.filter(
-                          (t: any) => t.gender === "MALE" || t.gender === "male"
-                        ).length
-                      : contextTeachers.filter(
-                          (t: any) => t.gender === "MALE" || t.gender === "male"
-                        ).length}
+
+                {/* Enhanced Stats */}
+                <div className="flex items-center gap-4">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="text-2xl font-black bg-gradient-to-br from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                      {isDataLoaded ? teachers.length : contextTeachers.length}
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold">សរុប</div>
                   </div>
-                  <div className="text-xs text-gray-600 font-semibold">
-                    ប្រុស
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 border border-pink-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="text-2xl font-black bg-gradient-to-br from-pink-600 to-pink-700 bg-clip-text text-transparent">
+                      {isDataLoaded
+                        ? teachers.filter(
+                            (t: any) =>
+                              t.gender === "FEMALE" || t.gender === "female"
+                          ).length
+                        : contextTeachers.filter(
+                            (t: any) =>
+                              t.gender === "FEMALE" || t.gender === "female"
+                          ).length}
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold">ស្រី</div>
+                  </div>
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 border border-indigo-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="text-2xl font-black bg-gradient-to-br from-indigo-600 to-indigo-700 bg-clip-text text-transparent">
+                      {isDataLoaded
+                        ? teachers.filter(
+                            (t: any) => t.gender === "MALE" || t.gender === "male"
+                          ).length
+                        : contextTeachers.filter(
+                            (t: any) => t.gender === "MALE" || t.gender === "male"
+                          ).length}
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold">ប្រុស</div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ✅ Clean Tabs */}
-          <div className="bg-white border border-gray-200 rounded-lg p-2">
+          {/* ✅ Modern Tabs with Gradient */}
+          <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-2 shadow-sm">
             <div className="flex gap-2">
               <button
                 onClick={() => setActiveTab("list")}
-                className={`flex-1 h-11 flex items-center justify-center gap-2 px-6 rounded-lg font-bold text-sm transition-all ${
+                className={`flex-1 h-12 flex items-center justify-center gap-2.5 px-6 rounded-xl font-bold text-sm transition-all duration-200 ${
                   activeTab === "list"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-blue-500/50 scale-[1.02]"
+                    : "text-gray-700 hover:bg-gray-100 hover:scale-[1.01]"
                 }`}
               >
                 <UserCheck className="w-4 h-4" />
@@ -157,10 +161,10 @@ export default function TeachersPage() {
               </button>
               <button
                 onClick={() => setActiveTab("bulk-import")}
-                className={`flex-1 h-11 flex items-center justify-center gap-2 px-6 rounded-lg font-bold text-sm transition-all ${
+                className={`flex-1 h-12 flex items-center justify-center gap-2.5 px-6 rounded-xl font-bold text-sm transition-all duration-200 ${
                   activeTab === "bulk-import"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-blue-500/50 scale-[1.02]"
+                    : "text-gray-700 hover:bg-gray-100 hover:scale-[1.01]"
                 }`}
               >
                 <Upload className="w-4 h-4" />

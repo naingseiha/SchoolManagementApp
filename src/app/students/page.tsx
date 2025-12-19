@@ -29,6 +29,13 @@ export default function StudentsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // ✅ Load students on mount when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !isDataLoaded) {
+      loadStudents();
+    }
+  }, [isAuthenticated, authLoading, isDataLoaded]);
+
   const loadStudents = async () => {
     try {
       setLoading(true);

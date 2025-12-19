@@ -102,39 +102,87 @@ export default function TeacherListView({
     return matchesSearch && matchesRole && matchesGrade;
   });
 
-  // ✅ Show empty state if not loaded
+  // ✅ Show beautiful empty state if not loaded
   if (!isDataLoaded) {
     return (
-      <div className="border-2 border-dashed border-gray-300 rounded-2xl p-16 bg-white">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Database className="w-12 h-12 text-blue-600" />
+      <div className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 rounded-2xl border-2 border-dashed border-gray-200 shadow-sm">
+        {/* Decorative background */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-blue-500 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-32 h-32 bg-indigo-500 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative z-10 text-center px-8 py-20">
+          {/* Icon */}
+          <div className="mb-8 inline-flex">
+            <div className="relative">
+              <div className="w-28 h-28 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-xl transform hover:scale-105 transition-transform duration-300">
+                <Database className="w-14 h-14 text-white" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                <span className="text-xl">✨</span>
+              </div>
+            </div>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">
-            ទិន្នន័យមិនទាន់បានផ្ទុកឡើយ
+
+          {/* Title */}
+          <h3 className="text-3xl font-black text-gray-900 mb-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            រៀបចំជាស្រេច!
           </h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            ចុចប៊ូតុងខាងក្រោមដើម្បីផ្ទុកទិន្នន័យគ្រូបង្រៀនទាំងអស់
+          <p className="text-lg font-semibold text-gray-700 mb-2">
+            Ready to Load Teacher Data
           </p>
+
+          {/* Description */}
+          <p className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
+            ចុចប៊ូតុង <span className="font-bold text-blue-600">"ផ្ទុកទិន្នន័យ"</span> ខាងក្រោម ដើម្បីទាញយកបញ្ជីគ្រូបង្រៀនទាំងអស់ពីប្រព័ន្ធ។ ទិន្នន័យនឹងត្រូវបានផ្ទុកយ៉ាងលឿន និងប្រកបដោយប្រសិទ្ធភាព។
+          </p>
+
+          {/* Load Button */}
           <button
             onClick={onLoadData}
             disabled={loading}
-            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-3"
+            className="group relative px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-2xl font-black text-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none inline-flex items-center gap-4"
           >
+            {/* Animated glow effect */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
+
             {loading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                កំពុងផ្ទុក...
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>កំពុងផ្ទុក...</span>
               </>
             ) : (
               <>
-                <Database className="w-5 h-5" />
-                ផ្ទុកទិន្នន័យគ្រូបង្រៀន
+                <Database className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                <span>ផ្ទុកទិន្នន័យគ្រូបង្រៀន</span>
               </>
             )}
           </button>
-          <p className="text-xs text-gray-500 mt-4">
-            💡 ការផ្ទុកទិន្នន័យអាចចំណាយពេលមួយរយៈ
+
+          {/* Info cards */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-blue-600 text-2xl mb-2">⚡</div>
+              <p className="text-sm font-bold text-gray-900 mb-1">ផ្ទុកលឿន</p>
+              <p className="text-xs text-gray-600">Optimized loading</p>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-indigo-600 text-2xl mb-2">🔄</div>
+              <p className="text-sm font-bold text-gray-900 mb-1">Real-time</p>
+              <p className="text-xs text-gray-600">ទិន្នន័យថ្មីបំផុត</p>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-purple-600 text-2xl mb-2">✅</div>
+              <p className="text-sm font-bold text-gray-900 mb-1">ប្រកបដោយសុវត្ថិភាព</p>
+              <p className="text-xs text-gray-600">Secure & reliable</p>
+            </div>
+          </div>
+
+          {/* Tip */}
+          <p className="text-xs text-gray-500 mt-8 flex items-center justify-center gap-2">
+            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+            💡 អ្នកអាចទាញយកទិន្នន័យជាថ្មីនៅពេលណាក៏បាន
           </p>
         </div>
       </div>
@@ -144,19 +192,19 @@ export default function TeacherListView({
   // ✅ Show full interface after loaded
   return (
     <>
-      {/* Filters and Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row gap-4">
+      {/* Filters and Actions - Modern Design */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 p-5">
+        <div className="flex flex-col lg:flex-row gap-3">
           {/* Search */}
           <div className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="ស្វែងរកគ្រូបង្រៀន...  (ឈ្មោះ, អ៊ីមែល, ទូរស័ព្ទ)"
+                placeholder="ស្វែងរកគ្រូបង្រៀន... (ឈ្មោះ, អ៊ីមែល, ទូរស័ព្ទ)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
+                className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-medium"
               />
             </div>
           </div>
@@ -165,7 +213,7 @@ export default function TeacherListView({
           <select
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
-            className="px-4 py-3 border-2 border-gray-200 rounded-lg font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="px-4 py-3 border-2 border-gray-200 rounded-xl font-bold focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all bg-white hover:border-gray-300"
           >
             <option value="all">តួនាទីទាំងអស់</option>
             <option value="TEACHER">គ្រូបង្រៀន</option>
@@ -176,7 +224,7 @@ export default function TeacherListView({
           <select
             value={filterGrade}
             onChange={(e) => setFilterGrade(e.target.value)}
-            className="px-4 py-3 border-2 border-gray-200 rounded-lg font-semibold focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="px-4 py-3 border-2 border-gray-200 rounded-xl font-bold focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all bg-white hover:border-gray-300"
           >
             <option value="all">កម្រិតទាំងអស់</option>
             <option value="ថ្នាក់ទី៧">ថ្នាក់ទី៧</option>
@@ -188,11 +236,13 @@ export default function TeacherListView({
           </select>
 
           {/* View Toggle */}
-          <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+          <div className="flex gap-1.5 bg-gray-100 p-1.5 rounded-xl border border-gray-200">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-2 rounded transition-colors ${
-                viewMode === "grid" ? "bg-white shadow-sm" : "hover:bg-gray-200"
+              className={`p-2.5 rounded-lg transition-all ${
+                viewMode === "grid"
+                  ? "bg-white shadow-md scale-105"
+                  : "hover:bg-gray-200 hover:scale-105"
               }`}
               title="ប្រូក្រឡា"
             >
@@ -200,8 +250,10 @@ export default function TeacherListView({
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-2 rounded transition-colors ${
-                viewMode === "list" ? "bg-white shadow-sm" : "hover:bg-gray-200"
+              className={`p-2.5 rounded-lg transition-all ${
+                viewMode === "list"
+                  ? "bg-white shadow-md scale-105"
+                  : "hover:bg-gray-200 hover:scale-105"
               }`}
               title="តារាង"
             >
@@ -213,17 +265,17 @@ export default function TeacherListView({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-5 py-3 bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 border-2 border-gray-300 rounded-xl font-bold transition-all disabled:opacity-50 flex items-center gap-2.5 hover:scale-105 active:scale-95"
             title="ផ្ទុកឡើងវិញ"
           >
             <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
-            ផ្ទុកឡើងវិញ
+            <span className="hidden sm:inline">ផ្ទុកឡើងវិញ</span>
           </button>
 
           {/* Add New */}
           <button
             onClick={() => setCreateModalOpen(true)}
-            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-black shadow-lg hover:shadow-xl transition-all flex items-center gap-2.5 hover:scale-105 active:scale-95"
           >
             <Plus className="w-5 h-5" />
             បន្ថែមគ្រូ

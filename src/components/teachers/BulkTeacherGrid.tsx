@@ -275,56 +275,124 @@ export default function BulkTeacherGrid({
       return value?.trim() || "";
     };
 
-    const newRows = pastedRows.map((cells) => {
-      const [
-        lastName = "",
-        firstName = "",
-        khmerName = "",
-        englishName = "",
-        phone = "",
-        email = "",
-        gender = "",
-        role = "",
-        dateOfBirth = "",
-        subjects = "",
-        teachingClasses = "",
-        homeroomClass = "",
-      ] = cells;
+    // ✅ Define column order
+    const columnOrder: (keyof TeacherRowData)[] = [
+      "lastName",
+      "firstName",
+      "khmerName",
+      "englishName",
+      "phone",
+      "email",
+      "gender",
+      "role",
+      "dateOfBirth",
+      "subjects",
+      "teachingClasses",
+      "homeroomClass",
+    ];
 
-      let parsedGender: TeacherRowData["gender"] = "";
-      const g = safeTrim(gender).toUpperCase();
-      if (["ប", "ប្រុស", "MALE", "M"].includes(g)) parsedGender = "ប";
-      else if (["ស", "ស្រី", "FEMALE", "F"].includes(g)) parsedGender = "ស";
-
-      let parsedRole: TeacherRowData["role"] = "";
-      const r = safeTrim(role).toUpperCase();
-      if (r.includes("INSTRUCTOR") || r.includes("ប្រចាំថ្នាក់")) {
-        parsedRole = "INSTRUCTOR";
-      } else if (r.includes("TEACHER") || r.includes("បង្រៀន")) {
-        parsedRole = "TEACHER";
+    // ✅ Get the currently focused cell to determine starting column
+    let startColumnIndex = 0;
+    const activeElement = document.activeElement as HTMLInputElement;
+    if (activeElement && activeElement.dataset?.field) {
+      const focusedField = activeElement.dataset.field;
+      const focusedIndex = columnOrder.indexOf(focusedField as keyof TeacherRowData);
+      if (focusedIndex !== -1) {
+        startColumnIndex = focusedIndex;
+        console.log(`📍 Pasting from column: ${focusedField} (index ${startColumnIndex})`);
       }
+    }
 
+    // ✅ Get the starting row index from focused cell
+    let startRowIndex = 0;
+    if (activeElement && activeElement.dataset?.row) {
+      startRowIndex = parseInt(activeElement.dataset.row, 10) || 0;
+      console.log(`📍 Pasting from row: ${startRowIndex}`);
+    }
+
+    const newRows = pastedRows.map((cells, pastedRowIdx) => {
+      // ✅ Create a row with default values
       const row: TeacherRowData = {
         id: uuidv4(),
-        lastName: safeTrim(lastName),
-        firstName: safeTrim(firstName),
-        khmerName: safeTrim(khmerName),
-        englishName: safeTrim(englishName),
-        email: safeTrim(email),
-        phone: safeTrim(phone),
-        gender: parsedGender,
-        role: parsedRole,
-        dateOfBirth: safeTrim(dateOfBirth),
+        lastName: "",
+        firstName: "",
+        khmerName: "",
+        englishName: "",
+        email: "",
+        phone: "",
+        gender: "",
+        role: "",
+        dateOfBirth: "",
         hireDate: "",
         address: "",
         position: "",
-        subjects: safeTrim(subjects),
-        teachingClasses: safeTrim(teachingClasses),
-        homeroomClass: safeTrim(homeroomClass),
+        subjects: "",
+        teachingClasses: "",
+        homeroomClass: "",
         isValid: false,
         isExisting: false,
         hasChanges: false,
       };
+
+      // ✅ Check if we're updating an existing row
+      const targetRowIndex = startRowIndex + pastedRowIdx;
+      if (targetRowIndex < rows.length) {
+        const existingRow = rows[targetRowIndex];
+        // Copy existing row data
+        Object.assign(row, {
+          id: existingRow.id,
+          lastName: existingRow.lastName,
+          firstName: existingRow.firstName,
+          khmerName: existingRow.khmerName,
+          englishName: existingRow.englishName,
+          email: existingRow.email,
+          phone: existingRow.phone,
+          gender: existingRow.gender,
+          role: existingRow.role,
+          dateOfBirth: existingRow.dateOfBirth,
+          hireDate: existingRow.hireDate,
+          address: existingRow.address,
+          position: existingRow.position,
+          subjects: existingRow.subjects,
+          teachingClasses: existingRow.teachingClasses,
+          homeroomClass: existingRow.homeroomClass,
+          isExisting: existingRow.isExisting,
+          hasChanges: existingRow.hasChanges,
+        });
+      }
+
+      // ✅ Fill columns starting from the focused column
+      cells.forEach((cellValue, cellIndex) => {
+        const targetColumnIndex = startColumnIndex + cellIndex;
+        if (targetColumnIndex < columnOrder.length) {
+          const fieldName = columnOrder[targetColumnIndex];
+
+          // Parse special fields
+          if (fieldName === "gender") {
+            let parsedGender: TeacherRowData["gender"] = "";
+            const g = safeTrim(cellValue).toUpperCase();
+            if (["ប", "ប្រុស", "MALE", "M"].includes(g)) parsedGender = "ប";
+            else if (["ស", "ស្រី", "FEMALE", "F"].includes(g)) parsedGender = "ស";
+            row[fieldName] = parsedGender;
+          } else if (fieldName === "role") {
+            let parsedRole: TeacherRowData["role"] = "";
+            const r = safeTrim(cellValue).toUpperCase();
+            if (r.includes("INSTRUCTOR") || r.includes("ប្រចាំថ្នាក់")) {
+              parsedRole = "INSTRUCTOR";
+            } else if (r.includes("TEACHER") || r.includes("បង្រៀន")) {
+              parsedRole = "TEACHER";
+            }
+            row[fieldName] = parsedRole;
+          } else {
+            (row[fieldName] as string) = safeTrim(cellValue);
+          }
+        }
+      });
+
+      // Mark as modified if updating existing row
+      if (row.isExisting) {
+        row.hasChanges = true;
+      }
 
       return validateRow(row);
     });
@@ -332,24 +400,19 @@ export default function BulkTeacherGrid({
     success(`📋 Paste បានជោគជ័យ ${newRows.length} ជួរ!`);
 
     setRows((prev) => {
-      const emptyRows = prev.filter(
-        (r) =>
-          !r.isExisting &&
-          !r.lastName &&
-          !r.firstName &&
-          !r.khmerName &&
-          !r.phone
-      );
-      const filledRows = prev.filter(
-        (r) =>
-          r.isExisting || r.lastName || r.firstName || r.khmerName || r.phone
-      );
+      const updatedRows = [...prev];
 
-      if (emptyRows.length >= newRows.length) {
-        return [...filledRows, ...newRows, ...emptyRows.slice(newRows.length)];
-      } else {
-        return [...filledRows, ...newRows];
-      }
+      // ✅ Update or replace rows starting from the focused row
+      newRows.forEach((newRow, idx) => {
+        const targetIdx = startRowIndex + idx;
+        if (targetIdx < updatedRows.length) {
+          updatedRows[targetIdx] = newRow;
+        } else {
+          updatedRows.push(newRow);
+        }
+      });
+
+      return updatedRows;
     });
   };
 
