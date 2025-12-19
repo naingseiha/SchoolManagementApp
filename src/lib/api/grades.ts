@@ -52,6 +52,7 @@ export interface GradeGridData {
     maxScore: number;
     coefficient: number;
     order: number;
+    isEditable?: boolean;
   }>;
   students: Array<{
     studentId: string;

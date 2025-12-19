@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
-import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
 import GradeGridEditor from "@/components/grades/GradeGridEditor";
-import { Download, Loader2, AlertCircle, BookOpen } from "lucide-react";
+import {
+  Download,
+  Loader2,
+  AlertCircle,
+  BookOpen,
+  Info,
+  Lock,
+  Eye,
+} from "lucide-react";
 import {
   gradeApi,
   type GradeGridData,
@@ -42,7 +48,7 @@ const getCurrentYear = () => {
 
 export default function GradeEntryPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes } = useData();
 
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -52,38 +58,270 @@ export default function GradeEntryPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Redirect if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, authLoading, router]);
 
-  useEffect(() => {
-    if (selectedClassId) {
-      fetchGridData();
+  // ✅ Filter classes based on role
+  const availableClasses = useMemo(() => {
+    if (!currentUser) {
+      console.log("⏸️ Waiting for currentUser to load...");
+      return [];
     }
-  }, [selectedClassId, selectedMonth, selectedYear]);
 
-  const fetchGridData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await gradeApi.getGradesGrid(
-        selectedClassId,
-        selectedMonth,
-        selectedYear
+    if (currentUser.role === "ADMIN") {
+      console.log("✅ Admin:  All classes available");
+      return classes;
+    }
+
+    if (currentUser.role === "TEACHER") {
+      const teacherClassIds =
+        currentUser.teacher?.teachingClasses?.map((tc) => tc.classId) || [];
+
+      console.log("👨‍🏫 Teacher assigned classes:", teacherClassIds);
+
+      const filteredClasses = classes.filter((c) =>
+        teacherClassIds.includes(c.id)
       );
-      setGridData(data);
-    } catch (err: any) {
-      console.error("Error fetching grid data:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
+      console.log("✅ Filtered classes for teacher:", filteredClasses.length);
+
+      return filteredClasses;
+    }
+
+    return [];
+  }, [currentUser, classes]);
+
+  // ✅ Get teacher's editable subjects by CODE (not ID)
+  const teacherEditableSubjects = useMemo(() => {
+    if (!currentUser) {
+      console.log("⏸️ Waiting for currentUser to load (subjects)...");
+      return new Set<string>();
+    }
+
+    console.log("🔍 Calculating editable subjects for:", currentUser.role);
+
+    if (currentUser.role === "ADMIN") {
+      console.log("✅ Admin mode: All subjects editable");
+      return new Set<string>();
+    }
+
+    if (currentUser.role === "TEACHER") {
+      const assignments = currentUser.teacher?.subjectAssignments || [];
+
+      // ✅ Extract subject CODES instead of IDs
+      const subjectCodes = assignments
+        .map((sa: any) => {
+          const code = sa.subject?.code;
+          // Extract base code (before grade suffix)
+          // E.g., "MATH-G11-SCIENCE" → "MATH"
+          return code ? code.split("-")[0] : null;
+        })
+        .filter((code): code is string => code !== null);
+
+      console.log("👨‍🏫 Teacher subject assignments (by CODE):", {
+        count: assignments.length,
+        subjectCodes,
+        assignments: assignments.map((sa: any) => ({
+          subjectCode: sa.subject?.code,
+          baseCode: sa.subject?.code?.split("-")[0],
+          subjectName: sa.subject?.nameKh || sa.subject?.name,
+        })),
+      });
+
+      return new Set(subjectCodes);
+    }
+
+    console.log("⚠️ Unknown role, no editable subjects");
+    return new Set<string>();
+  }, [currentUser]);
+
+  // ✅ Load grid data when class/month/year changes
+  useEffect(() => {
+    const loadGridData = async () => {
+      if (!selectedClassId || !currentUser) {
+        console.log("⏸️ Cannot load grid:  missing classId or currentUser");
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("📥 FETCHING GRID DATA");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("📊 Request Info:", {
+          classId: selectedClassId,
+          month: selectedMonth,
+          year: selectedYear,
+        });
+        console.log("👤 Current User Info:", {
+          role: currentUser.role,
+          email: currentUser.email,
+          phone: currentUser.phone,
+          hasTeacherData: !!currentUser.teacher,
+        });
+
+        if (currentUser.role === "TEACHER") {
+          console.log("👨‍🏫 Teacher Details:", {
+            teacherId: currentUser.teacher?.id,
+            subjectAssignments: currentUser.teacher?.subjectAssignments,
+            assignmentCount: currentUser.teacher?.subjectAssignments?.length,
+          });
+
+          console.log("📋 Teacher Subject CODES:");
+          currentUser.teacher?.subjectAssignments?.forEach(
+            (sa: any, index: number) => {
+              console.log(
+                `  ${index + 1}. Code: ${sa.subject?.code} → Base: ${
+                  sa.subject?.code?.split("-")[0]
+                }`,
+                {
+                  subjectName: sa.subject?.nameKh || sa.subject?.name,
+                  fullCode: sa.subject?.code,
+                }
+              );
+            }
+          );
+        }
+
+        console.log("🔍 teacherEditableSubjects Set (by CODE):", {
+          size: teacherEditableSubjects.size,
+          values: Array.from(teacherEditableSubjects),
+        });
+
+        const data = await gradeApi.getGradesGrid(
+          selectedClassId,
+          selectedMonth,
+          selectedYear
+        );
+
+        console.log("✅ Grid data received from API:", {
+          className: data.className,
+          subjectCount: data.subjects?.length,
+        });
+
+        console.log("📚 Subjects from API:");
+        data.subjects?.forEach((subject, index) => {
+          console.log(`  ${index + 1}. ${subject.nameKh || subject.name}`, {
+            code: subject.code,
+            baseCode: subject.code?.split("-")[0],
+          });
+        });
+
+        // ✅ Mark subjects as editable based on role
+        if (currentUser.role === "ADMIN") {
+          console.log("🔓 ADMIN MODE:  Marking all subjects as editable");
+
+          data.subjects = data.subjects.map((subject) => ({
+            ...subject,
+            isEditable: true,
+          }));
+
+          console.log("✅ All subjects marked as editable for admin");
+        } else if (currentUser.role === "TEACHER") {
+          console.log("👨‍🏫 TEACHER MODE: Checking subject permissions by CODE");
+
+          data.subjects = data.subjects.map((subject) => {
+            // ✅ FIXED: Extract base code and compare by CODE not ID
+            const baseCode = subject.code?.split("-")[0];
+            const isEditable = baseCode
+              ? teacherEditableSubjects.has(baseCode)
+              : false;
+
+            console.log(`  Checking ${subject.nameKh}:  `, {
+              subjectCode: subject.code,
+              baseCode: baseCode,
+              inEditableSet: isEditable,
+              editableSetContains: Array.from(teacherEditableSubjects),
+            });
+
+            return {
+              ...subject,
+              isEditable,
+            };
+          });
+
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          console.log("📊 FINAL SUBJECT PERMISSIONS (by CODE):");
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          data.subjects.forEach((s, index) => {
+            const baseCode = s.code?.split("-")[0];
+            console.log(`  ${index + 1}. ${s.nameKh}:  `, {
+              code: s.code,
+              baseCode: baseCode,
+              isEditable: s.isEditable ? "✅ EDITABLE" : "❌ VIEW-ONLY",
+            });
+          });
+
+          const editableCount = data.subjects.filter(
+            (s) => s.isEditable
+          ).length;
+          const viewOnlyCount = data.subjects.length - editableCount;
+
+          console.log("📈 Summary:", {
+            total: data.subjects.length,
+            editable: editableCount,
+            viewOnly: viewOnlyCount,
+          });
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        }
+
+        // ✅ Final verification by CODE
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("🔍 FINAL VERIFICATION (by CODE):");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log(
+          "Teacher can edit (codes):",
+          Array.from(teacherEditableSubjects)
+        );
+        console.log("\nGrid subjects:");
+        data.subjects.forEach((subject, i) => {
+          const baseCode = subject.code?.split("-")[0];
+          const match = baseCode
+            ? teacherEditableSubjects.has(baseCode)
+            : false;
+          console.log(`${i + 1}. ${subject.nameKh}`, {
+            code: subject.code,
+            baseCode: baseCode,
+            isEditable: subject.isEditable,
+            matchesTeacherSet: match,
+          });
+        });
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+        setGridData(data);
+      } catch (err: any) {
+        console.error("❌ Error fetching grid data:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGridData();
+  }, [
+    selectedClassId,
+    selectedMonth,
+    selectedYear,
+    currentUser,
+    teacherEditableSubjects,
+  ]);
+
+  // Handle save grades
   const handleSaveGrades = async (grades: BulkSaveGradeItem[]) => {
     try {
+      if (grades.length === 0) {
+        setError("សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ");
+        return;
+      }
+
+      console.log(`💾 Saving ${grades.length} grades`);
+
       const result = await gradeApi.bulkSaveGrades(
         selectedClassId,
         selectedMonth,
@@ -95,6 +333,9 @@ export default function GradeEntryPage() {
         setError(
           `រក្សាទុក ${result.savedCount} ជោគជ័យ, ${result.errorCount} មានកំហុស`
         );
+      } else {
+        setError(null);
+        alert(`✅ រក្សាទុកបានជោគជ័យ ${result.savedCount} ពិន្ទុ`);
       }
     } catch (err: any) {
       setError(err.message);
@@ -102,7 +343,21 @@ export default function GradeEntryPage() {
     }
   };
 
-  if (authLoading) {
+  // ✅ FIXED: Count editable vs view-only subjects - Hook ALWAYS called
+  const subjectStats = useMemo(() => {
+    // All conditions INSIDE the hook
+    if (!gridData) return null;
+    if (!currentUser) return null;
+    if (currentUser.role === "ADMIN") return null;
+
+    const editable = gridData.subjects?.filter((s) => s.isEditable).length || 0;
+    const viewOnly = (gridData.subjects?.length || 0) - editable;
+
+    return { editable, viewOnly, total: gridData.subjects?.length || 0 };
+  }, [gridData, currentUser]);
+
+  // Show loading while auth is checking
+  if (authLoading || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
@@ -117,7 +372,7 @@ export default function GradeEntryPage() {
 
   const classOptions = [
     { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
+    ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
   ];
 
   const monthOptions = MONTHS.map((m) => ({
@@ -143,13 +398,56 @@ export default function GradeEntryPage() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1600px] mx-auto p-6 space-y-6">
+            {/* ✅ TEACHER INFO BOX */}
+            {currentUser.role === "TEACHER" && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900 mb-2">
+                      ព័ត៌មានគ្រូបង្រៀន • Teacher Information
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-blue-800">
+                      <div>
+                        <p>
+                          <strong>ថ្នាក់រៀន:</strong> {availableClasses.length}{" "}
+                          ថ្នាក់
+                        </p>
+                        <p>
+                          <strong>មុខវិជ្ជា:</strong>{" "}
+                          {currentUser.teacher?.subjectAssignments?.length || 0}{" "}
+                          មុខ
+                        </p>
+                      </div>
+                      <div>
+                        {currentUser.teacher?.homeroomClass && (
+                          <p>
+                            <strong>ថ្នាក់ប្រចាំ:</strong>{" "}
+                            {currentUser.teacher.homeroomClass.name}
+                          </p>
+                        )}
+                        {subjectStats && (
+                          <p className="mt-1">
+                            <Eye className="w-3 h-3 inline mr-1" />
+                            <strong>មើលបាន:</strong> {subjectStats.total} មុខ •{" "}
+                            <strong className="text-green-700">កែបាន:</strong>{" "}
+                            {subjectStats.editable} មុខ
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ✅ CLEAN PROFESSIONAL HEADER */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-4 mb-6">
                 <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                   <BookOpen className="w-7 h-7 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-900">
                     បញ្ចូលពិន្ទុប្រចាំខែ
                   </h1>
@@ -157,10 +455,27 @@ export default function GradeEntryPage() {
                     រក្សាទុកស្វ័យប្រវត្តិ • គណនាលទ្ធផលភ្លាមៗ
                   </p>
                 </div>
+                {/* ✅ Legend for teachers */}
+                {currentUser.role === "TEACHER" && gridData && (
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="w-3 h-3 bg-green-500 rounded"></div>
+                      <span className="font-semibold text-green-800">
+                        អាចកែបាន
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg">
+                      <Lock className="w-3 h-3 text-gray-500" />
+                      <span className="font-semibold text-gray-600">
+                        មើលប៉ុណ្ណោះ
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ✅ CLEAN FILTERS WITH EQUAL HEIGHT */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md: grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ថ្នាក់
@@ -176,6 +491,13 @@ export default function GradeEntryPage() {
                       </option>
                     ))}
                   </select>
+                  {currentUser.role === "TEACHER" &&
+                    availableClasses.length === 0 && (
+                      <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        អ្នកមិនទាន់មានថ្នាក់ដែលបានចាត់តាំងទេ
+                      </p>
+                    )}
                 </div>
 
                 <div>
@@ -185,7 +507,7 @@ export default function GradeEntryPage() {
                   <select
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {monthOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -202,7 +524,7 @@ export default function GradeEntryPage() {
                   <select
                     value={selectedYear.toString()}
                     onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {yearOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -217,7 +539,11 @@ export default function GradeEntryPage() {
                     ផ្ទុកទិន្នន័យ
                   </label>
                   <button
-                    onClick={fetchGridData}
+                    onClick={() => {
+                      if (selectedClassId) {
+                        setLoading(true);
+                      }
+                    }}
                     disabled={!selectedClassId || loading}
                     className="w-full h-11 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
                   >
@@ -258,7 +584,7 @@ export default function GradeEntryPage() {
                 <div className="flex flex-col items-center justify-center">
                   <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
                   <p className="text-sm font-medium text-gray-600">
-                    កំពុងផ្ទុកទិន្នន័យ...{" "}
+                    កំពុងផ្ទុកទិន្នន័យ...
                   </p>
                 </div>
               </div>
@@ -267,13 +593,14 @@ export default function GradeEntryPage() {
                 gridData={gridData}
                 onSave={handleSaveGrades}
                 isLoading={loading}
+                currentUser={currentUser}
               />
             ) : selectedClassId ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
                 <div className="text-center">
                   <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-sm font-medium text-gray-600">
-                    ចុច "ផ្ទុកទិន្នន័យ" ដើម្បីចាប់ផ្តើម
+                    កំពុងរង់ចាំទិន្នន័យ...
                   </p>
                 </div>
               </div>

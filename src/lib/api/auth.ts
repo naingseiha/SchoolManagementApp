@@ -1,20 +1,23 @@
 import { apiClient } from "./client";
 
 export interface LoginCredentials {
-  email: string;
+  identifier: string; // ✅ Phone or Email
   password: string;
   rememberMe?: boolean;
 }
 
 export interface User {
   id: string;
-  email: string;
+  phone?: string;
+  email?: string;
   firstName: string;
   lastName: string;
   role: string;
+  teacher?: any;
+  student?: any;
+  permissions?: any;
 }
 
-// ✅ This matches backend response structure
 interface LoginResponseData {
   token: string;
   expiresIn: string;
@@ -28,12 +31,9 @@ export const authApi = {
     try {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log("📤 Calling login API...");
-      console.log("  - Email:", credentials.email);
+      console.log("  - Identifier:", credentials.identifier);
       console.log("  - Remember me:", credentials.rememberMe);
 
-      // ✅ apiClient.post will extract response.data
-      // Backend returns: { success: true, data: { token, user, expiresIn } }
-      // apiClient.post returns: { token, user, expiresIn }
       const data = await apiClient.post<LoginResponseData>(
         "/auth/login",
         credentials
@@ -42,7 +42,8 @@ export const authApi = {
       console.log("✅ Login API response received:");
       console.log("  - Token:", data.token ? "Present" : "Missing");
       console.log("  - Token length:", data.token?.length || 0);
-      console.log("  - User:", data.user?.email);
+      console.log("  - User:", data.user?.email || data.user?.phone);
+      console.log("  - Role:", data.user?.role);
       console.log("  - Expires in:", data.expiresIn);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
@@ -69,7 +70,7 @@ export const authApi = {
     try {
       console.log("📤 Getting current user...");
       const user = await apiClient.get<User>("/auth/me");
-      console.log("✅ Current user:", user.email);
+      console.log("✅ Current user:", user.email || user.phone);
       return user;
     } catch (error: any) {
       console.error("❌ Get current user error:", error);
@@ -79,14 +80,42 @@ export const authApi = {
 
   async refreshToken(): Promise<string> {
     try {
-      console.log("🔄 Refreshing token...");
+      console.log("🔄 Refreshing token.. .");
       const data = await apiClient.post<{ token: string; expiresIn: string }>(
-        "/auth/refresh"
+        "/auth/refresh-token"
       );
       console.log("✅ Token refreshed");
       return data.token;
     } catch (error: any) {
       console.error("❌ Refresh token error:", error);
+      throw error;
+    }
+  },
+
+  async changePassword(
+    oldPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    try {
+      console.log("🔐 Changing password.. .");
+      await apiClient.post("/auth/change-password", {
+        oldPassword,
+        newPassword,
+      });
+      console.log("✅ Password changed");
+    } catch (error: any) {
+      console.error("❌ Change password error:", error);
+      throw error;
+    }
+  },
+
+  async logout(): Promise<void> {
+    try {
+      console.log("👋 Logging out...");
+      await apiClient.post("/auth/logout", {});
+      console.log("✅ Logged out");
+    } catch (error: any) {
+      console.error("❌ Logout error:", error);
       throw error;
     }
   },

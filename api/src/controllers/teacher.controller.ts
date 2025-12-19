@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -53,13 +54,23 @@ export const getAllTeachers = async (req: Request, res: Response) => {
               select: {
                 id: true,
                 name: true,
-                nameKh: true, // ✅ Keep nameKh
-                nameEn: true, // ✅ Keep nameEn
+                nameKh: true,
+                nameEn: true,
                 code: true,
                 grade: true,
                 track: true,
               },
             },
+          },
+        },
+        // ✅ User account (for login status)
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+            isActive: true,
+            lastLogin: true,
           },
         },
       },
@@ -79,10 +90,14 @@ export const getAllTeachers = async (req: Request, res: Response) => {
       subjects: teacher.subjectAssignments.map((sa) => sa.subject),
       teachingClasses: teacher.teachingClasses.map((tc) => tc.class),
 
-      // Create subject string for display (keep for backward compatibility)
+      // Create subject string for display
       subject: teacher.subjectAssignments
         .map((sa) => sa.subject.nameKh || sa.subject.name)
         .join(", "),
+
+      // ✅ Login status
+      hasLoginAccount: !!teacher.user,
+      canLogin: teacher.user?.isActive || false,
     }));
 
     console.log(`✅ Found ${transformedTeachers.length} teachers`);
@@ -112,7 +127,6 @@ export const getTeacherById = async (req: Request, res: Response) => {
     const teacher = await prisma.teacher.findUnique({
       where: { id },
       include: {
-        // ✅ Homeroom class with students
         homeroomClass: {
           include: {
             students: {
@@ -132,7 +146,6 @@ export const getTeacherById = async (req: Request, res: Response) => {
             },
           },
         },
-        // ✅ Teaching classes with students
         teachingClasses: {
           include: {
             class: {
@@ -156,21 +169,31 @@ export const getTeacherById = async (req: Request, res: Response) => {
             },
           },
         },
-        // ✅ Subject assignments
         subjectAssignments: {
           include: {
             subject: {
               select: {
                 id: true,
                 name: true,
-                nameKh: true, // ✅ Keep nameKh
-                nameEn: true, // ✅ Keep nameEn
+                nameKh: true,
+                nameEn: true,
                 code: true,
                 grade: true,
                 track: true,
                 category: true,
               },
             },
+          },
+        },
+        // ✅ User account
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            email: true,
+            isActive: true,
+            lastLogin: true,
+            loginCount: true,
           },
         },
       },
@@ -183,7 +206,7 @@ export const getTeacherById = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Transform data for frontend
+    // ✅ Transform data
     const transformedTeacher = {
       ...teacher,
       subjectIds: teacher.subjectAssignments.map((sa) => sa.subjectId),
@@ -193,6 +216,8 @@ export const getTeacherById = async (req: Request, res: Response) => {
       subject: teacher.subjectAssignments
         .map((sa) => sa.subject.nameKh || sa.subject.name)
         .join(", "),
+      hasLoginAccount: !!teacher.user,
+      canLogin: teacher.user?.isActive || false,
     };
 
     console.log("✅ Teacher found");
@@ -212,7 +237,10 @@ export const getTeacherById = async (req: Request, res: Response) => {
 };
 
 /**
- * ✅ CREATE new teacher with all relations
+ * ✅ CREATE new teacher with User account
+ */
+/**
+ * ✅ CREATE new teacher with User account
  */
 export const createTeacher = async (req: Request, res: Response) => {
   try {
@@ -225,11 +253,12 @@ export const createTeacher = async (req: Request, res: Response) => {
       firstName,
       lastName,
       khmerName,
+      englishName,
       email,
       phone,
       gender,
       role,
-      employeeId,
+      employeeId, // Can be null - will auto-generate
       position,
       address,
       dateOfBirth,
@@ -237,6 +266,17 @@ export const createTeacher = async (req: Request, res: Response) => {
       homeroomClassId,
       subjectIds,
       teachingClassIds,
+      // Additional fields
+      workingLevel,
+      salaryRange,
+      major1,
+      major2,
+      degree,
+      nationality,
+      idCard,
+      passport,
+      emergencyContact,
+      emergencyPhone,
     } = req.body;
 
     // ✅ Validate required fields
@@ -254,20 +294,32 @@ export const createTeacher = async (req: Request, res: Response) => {
       });
     }
 
-    if (!email || email.trim() === "") {
+    // ✅ Phone is REQUIRED for login
+    if (!phone || phone.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: "Email is required",
+        message: "Phone number is required (used for login)",
       });
     }
 
-    // ✅ Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
+    // ✅ Validate phone format
+    const phoneRegex = /^[0-9]{8,15}$/;
+    if (!phoneRegex.test(phone.trim().replace(/\s/g, ""))) {
       return res.status(400).json({
         success: false,
-        message: "Invalid email format",
+        message: "Invalid phone number format",
       });
+    }
+
+    // ✅ Email format validation (if provided)
+    if (email && email.trim() !== "") {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid email format",
+        });
+      }
     }
 
     // ✅ Validate INSTRUCTOR must have homeroom class
@@ -278,19 +330,45 @@ export const createTeacher = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Check email uniqueness
-    const existingEmail = await prisma.teacher.findUnique({
-      where: { email: email.trim() },
+    // ✅ Check phone uniqueness (Teacher table)
+    const existingPhone = await prisma.teacher.findUnique({
+      where: { phone: phone.trim() },
     });
 
-    if (existingEmail) {
+    if (existingPhone) {
       return res.status(400).json({
         success: false,
-        message: "Email already exists.  Please use a different email.",
+        message: "Phone number already exists",
       });
     }
 
-    // ✅ Check employee ID uniqueness if provided
+    // ✅ Check phone uniqueness (User table)
+    const existingUserPhone = await prisma.user.findUnique({
+      where: { phone: phone.trim() },
+    });
+
+    if (existingUserPhone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number already registered",
+      });
+    }
+
+    // ✅ Check email uniqueness (if provided)
+    if (email && email.trim() !== "") {
+      const existingEmail = await prisma.teacher.findUnique({
+        where: { email: email.trim() },
+      });
+
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+    }
+
+    // ✅ Check employee ID uniqueness (if provided)
     if (employeeId && employeeId.trim() !== "") {
       const existingEmployeeId = await prisma.teacher.findUnique({
         where: { employeeId: employeeId.trim() },
@@ -299,7 +377,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       if (existingEmployeeId) {
         return res.status(400).json({
           success: false,
-          message: "Employee ID already exists. Please use a different ID.",
+          message: "Employee ID already exists",
         });
       }
     }
@@ -321,121 +399,143 @@ export const createTeacher = async (req: Request, res: Response) => {
       if (classWithTeacher.homeroomTeacher) {
         return res.status(400).json({
           success: false,
-          message: `Class ${classWithTeacher.name} already has a homeroom teacher (${classWithTeacher.homeroomTeacher.firstName} ${classWithTeacher.homeroomTeacher.lastName})`,
+          message: `Class ${classWithTeacher.name} already has a homeroom teacher`,
         });
       }
     }
 
-    // ✅ Validate subject IDs if provided
-    if (subjectIds && Array.isArray(subjectIds) && subjectIds.length > 0) {
-      const validSubjects = await prisma.subject.findMany({
-        where: { id: { in: subjectIds } },
+    // ✅ AUTO-GENERATE Employee ID if not provided
+    let finalEmployeeId = employeeId?.trim() || null;
+
+    if (!finalEmployeeId) {
+      // Get current year
+      const year = new Date().getFullYear().toString().slice(-2); // "25" for 2025
+
+      // Get count of teachers created this year
+      const teacherCount = await prisma.teacher.count({
+        where: {
+          createdAt: {
+            gte: new Date(`${new Date().getFullYear()}-01-01`),
+          },
+        },
       });
 
-      if (validSubjects.length !== subjectIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Some subject IDs are invalid",
-        });
-      }
+      // Generate:  T + YY + 4-digit sequence
+      // Example: T2500001, T2500002, etc.
+      const sequence = (teacherCount + 1).toString().padStart(5, "0");
+      finalEmployeeId = `T${year}${sequence}`;
+
+      console.log(`🆔 Auto-generated Employee ID: ${finalEmployeeId}`);
     }
 
-    // ✅ Validate teaching class IDs if provided
-    if (
-      teachingClassIds &&
-      Array.isArray(teachingClassIds) &&
-      teachingClassIds.length > 0
-    ) {
-      const validClasses = await prisma.class.findMany({
-        where: { id: { in: teachingClassIds } },
-      });
+    // ✅ Create teacher + User account in transaction with LONGER timeout
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // 1. Create Teacher
+        const teacher = await tx.teacher.create({
+          data: {
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            khmerName: khmerName?.trim() || null,
+            englishName: englishName?.trim() || null,
+            email: email?.trim() || null,
+            phone: phone.trim(),
+            gender: gender || null,
+            role: role || "TEACHER",
+            employeeId: finalEmployeeId, // ✅ Auto-generated or provided
+            position: position?.trim() || null,
+            address: address?.trim() || null,
+            dateOfBirth: dateOfBirth || null,
+            hireDate: hireDate || null,
 
-      if (validClasses.length !== teachingClassIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Some class IDs are invalid",
+            // New fields
+            workingLevel: workingLevel || null,
+            salaryRange: salaryRange?.trim() || null,
+            major1: major1?.trim() || null,
+            major2: major2?.trim() || null,
+            degree: degree || null,
+            nationality: nationality?.trim() || null,
+            idCard: idCard?.trim() || null,
+            passport: passport?.trim() || null,
+            emergencyContact: emergencyContact?.trim() || null,
+            emergencyPhone: emergencyPhone?.trim() || null,
+
+            homeroomClassId: homeroomClassId || null,
+
+            // Subject assignments
+            subjectAssignments: {
+              create: (subjectIds || []).map((subjectId: string) => ({
+                subjectId,
+              })),
+            },
+
+            // Teaching class assignments
+            teachingClasses: {
+              create: (teachingClassIds || []).map((classId: string) => ({
+                classId,
+              })),
+            },
+          },
+          include: {
+            homeroomClass: true,
+            teachingClasses: {
+              include: { class: true },
+            },
+            subjectAssignments: {
+              include: { subject: true },
+            },
+          },
         });
+
+        // 2. Create User account (phone login)
+        // ✅ Default password = phone number
+        const hashedPassword = await bcrypt.hash(phone.trim(), 10);
+
+        const user = await tx.user.create({
+          data: {
+            phone: phone.trim(),
+            email: email?.trim() || null,
+            password: hashedPassword,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            role: "TEACHER",
+            teacherId: teacher.id,
+            permissions: {
+              canEnterGrades: true,
+              canMarkAttendance: true,
+              canViewReports: true,
+              canUpdateStudents: false,
+              canManageClasses: false,
+            },
+          },
+        });
+
+        return { teacher, user, defaultPassword: phone.trim() };
+      },
+      {
+        maxWait: 15000, // ✅ Wait up to 15 seconds to acquire transaction
+        timeout: 20000, // ✅ Transaction can run up to 20 seconds
       }
-    }
+    );
 
-    // ✅ Create teacher with all relations
-    const teacher = await prisma.teacher.create({
-      data: {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        khmerName: khmerName?.trim() || null,
-        email: email.trim(),
-        phone: phone?.trim() || null,
-        gender: gender || null,
-        role: role || "TEACHER",
-        employeeId: employeeId?.trim() || null,
-        position: position?.trim() || null,
-        address: address?.trim() || null,
-        dateOfBirth: dateOfBirth || null,
-        hireDate: hireDate || null,
-        homeroomClassId: homeroomClassId || null,
-
-        // ✅ Create subject assignments
-        subjectAssignments: {
-          create: (subjectIds || []).map((subjectId: string) => ({
-            subjectId,
-          })),
-        },
-
-        // ✅ Create teaching class assignments
-        teachingClasses: {
-          create: (teachingClassIds || []).map((classId: string) => ({
-            classId,
-          })),
-        },
-      },
-      include: {
-        homeroomClass: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-            section: true,
-            track: true,
-          },
-        },
-        teachingClasses: {
-          include: {
-            class: {
-              select: {
-                id: true,
-                name: true,
-                grade: true,
-                section: true,
-                track: true,
-              },
-            },
-          },
-        },
-        subjectAssignments: {
-          include: {
-            subject: {
-              select: {
-                id: true,
-                name: true,
-                nameKh: true, // ✅ Keep nameKh
-                nameEn: true, // ✅ Keep nameEn
-                code: true,
-                grade: true,
-                track: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    console.log(`✅ Teacher created successfully:  ${teacher.id}`);
+    console.log("✅ Teacher created successfully:", result.teacher.id);
+    console.log("✅ Employee ID:", result.teacher.employeeId);
+    console.log("✅ User account created");
+    console.log("📱 Phone (Username):", result.user.phone);
+    console.log("🔑 Default Password:", result.defaultPassword);
 
     res.status(201).json({
       success: true,
-      message: "Teacher created successfully",
-      data: teacher,
+      message: "Teacher created successfully with login account",
+      data: result.teacher,
+      loginInfo: {
+        phone: result.user.phone,
+        email: result.user.email,
+        employeeId: result.teacher.employeeId, // ✅ Include in response
+        defaultPassword: result.defaultPassword,
+        message:
+          "លេខទូរស័ព្ទ = ឈ្មោះប្រើប្រាស់\nពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នានឹងលេខទូរស័ព្ទ\nអាចប្តូរពាក្យសម្ងាត់នៅពេលក្រោយ",
+      },
     });
   } catch (error: any) {
     console.error("❌ Error creating teacher:", error);
@@ -448,13 +548,13 @@ export const createTeacher = async (req: Request, res: Response) => {
 };
 
 /**
- * ✅ UPDATE teacher with all relations
+ * ✅ UPDATE teacher (preserves User account)
  */
 export const updateTeacher = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log(`📝 UPDATE TEACHER: ${id}`);
+    console.log(`📝 UPDATE TEACHER:  ${id}`);
     console.log("📥 Request body:");
     console.log(JSON.stringify(req.body, null, 2));
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -477,10 +577,11 @@ export const updateTeacher = async (req: Request, res: Response) => {
       teachingClassIds,
     } = req.body;
 
-    // ✅ Check if teacher exists FIRST (outside transaction)
+    // ✅ Check if teacher exists
     const existingTeacher = await prisma.teacher.findUnique({
       where: { id },
       include: {
+        user: true,
         homeroomClass: true,
         teachingClasses: true,
         subjectAssignments: true,
@@ -494,7 +595,7 @@ export const updateTeacher = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Validate required fields
+    // ✅ Validate fields
     if (firstName !== undefined && firstName.trim() === "") {
       return res.status(400).json({
         success: false,
@@ -509,10 +610,10 @@ export const updateTeacher = async (req: Request, res: Response) => {
       });
     }
 
-    if (email !== undefined && email.trim() === "") {
+    if (phone !== undefined && phone.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: "Email cannot be empty",
+        message: "Phone cannot be empty",
       });
     }
 
@@ -524,7 +625,21 @@ export const updateTeacher = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Check email uniqueness (outside transaction)
+    // ✅ Check phone uniqueness (if changed)
+    if (phone && phone !== existingTeacher.phone) {
+      const phoneExists = await prisma.teacher.findUnique({
+        where: { phone: phone.trim() },
+      });
+
+      if (phoneExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number already exists",
+        });
+      }
+    }
+
+    // ✅ Check email uniqueness (if changed)
     if (email && email !== existingTeacher.email) {
       const emailExists = await prisma.teacher.findUnique({
         where: { email: email.trim() },
@@ -533,12 +648,12 @@ export const updateTeacher = async (req: Request, res: Response) => {
       if (emailExists) {
         return res.status(400).json({
           success: false,
-          message: "Email already exists.  Please use a different email.",
+          message: "Email already exists",
         });
       }
     }
 
-    // ✅ Check employee ID uniqueness (outside transaction)
+    // ✅ Check employee ID uniqueness
     if (employeeId && employeeId !== existingTeacher.employeeId) {
       const employeeIdExists = await prisma.teacher.findUnique({
         where: { employeeId: employeeId.trim() },
@@ -547,12 +662,12 @@ export const updateTeacher = async (req: Request, res: Response) => {
       if (employeeIdExists) {
         return res.status(400).json({
           success: false,
-          message: "Employee ID already exists. Please use a different ID.",
+          message: "Employee ID already exists",
         });
       }
     }
 
-    // ✅ Check homeroom class availability (outside transaction)
+    // ✅ Check homeroom class availability
     if (
       homeroomClassId &&
       homeroomClassId !== existingTeacher.homeroomClassId
@@ -575,15 +690,15 @@ export const updateTeacher = async (req: Request, res: Response) => {
       ) {
         return res.status(400).json({
           success: false,
-          message: `Class ${classWithTeacher.name} already has a homeroom teacher (${classWithTeacher.homeroomTeacher.firstName} ${classWithTeacher.homeroomTeacher.lastName})`,
+          message: `Class ${classWithTeacher.name} already has a homeroom teacher`,
         });
       }
     }
 
-    // ✅ Update teacher with FAST transaction (increased timeout)
-    const teacher = await prisma.$transaction(
+    // ✅ Update teacher + sync User account
+    const result = await prisma.$transaction(
       async (tx) => {
-        // Delete old assignments (fast bulk deletes)
+        // 1. Delete old assignments
         await Promise.all([
           tx.subjectTeacher.deleteMany({
             where: { teacherId: id },
@@ -593,16 +708,16 @@ export const updateTeacher = async (req: Request, res: Response) => {
           }),
         ]);
 
-        // Update teacher with new assignments
-        return await tx.teacher.update({
+        // 2. Update teacher
+        const teacher = await tx.teacher.update({
           where: { id },
           data: {
             firstName: firstName !== undefined ? firstName.trim() : undefined,
             lastName: lastName !== undefined ? lastName.trim() : undefined,
             khmerName:
               khmerName !== undefined ? khmerName?.trim() || null : undefined,
-            email: email !== undefined ? email.trim() : undefined,
-            phone: phone !== undefined ? phone?.trim() || null : undefined,
+            email: email !== undefined ? email?.trim() || null : undefined,
+            phone: phone !== undefined ? phone.trim() : undefined,
             gender: gender !== undefined ? gender : undefined,
             role: role !== undefined ? role : undefined,
             employeeId:
@@ -614,7 +729,6 @@ export const updateTeacher = async (req: Request, res: Response) => {
             dateOfBirth: dateOfBirth !== undefined ? dateOfBirth : undefined,
             hireDate: hireDate !== undefined ? hireDate : undefined,
 
-            // Set homeroom
             homeroomClassId:
               role === "INSTRUCTOR"
                 ? homeroomClassId || null
@@ -622,7 +736,6 @@ export const updateTeacher = async (req: Request, res: Response) => {
                 ? null
                 : undefined,
 
-            // Create new assignments
             subjectAssignments: {
               create: (subjectIds || []).map((subjectId: string) => ({
                 subjectId,
@@ -635,59 +748,35 @@ export const updateTeacher = async (req: Request, res: Response) => {
             },
           },
           include: {
-            homeroomClass: {
-              select: {
-                id: true,
-                name: true,
-                grade: true,
-                section: true,
-                track: true,
-                _count: {
-                  select: {
-                    students: true,
-                  },
-                },
-              },
-            },
+            homeroomClass: true,
             teachingClasses: {
-              include: {
-                class: {
-                  select: {
-                    id: true,
-                    name: true,
-                    grade: true,
-                    section: true,
-                    track: true,
-                    _count: {
-                      select: {
-                        students: true,
-                      },
-                    },
-                  },
-                },
-              },
+              include: { class: true },
             },
             subjectAssignments: {
-              include: {
-                subject: {
-                  select: {
-                    id: true,
-                    name: true,
-                    nameKh: true,
-                    nameEn: true,
-                    code: true,
-                    grade: true,
-                    track: true,
-                  },
-                },
-              },
+              include: { subject: true },
             },
+            user: true,
           },
         });
+
+        // 3. Update User account (if exists and phone/email changed)
+        if (existingTeacher.user) {
+          await tx.user.update({
+            where: { id: existingTeacher.user.id },
+            data: {
+              phone: phone !== undefined ? phone.trim() : undefined,
+              email: email !== undefined ? email?.trim() || null : undefined,
+              firstName: firstName !== undefined ? firstName.trim() : undefined,
+              lastName: lastName !== undefined ? lastName.trim() : undefined,
+            },
+          });
+        }
+
+        return teacher;
       },
       {
-        maxWait: 10000, // ✅ Wait up to 10 seconds to start transaction
-        timeout: 15000, // ✅ Transaction can run up to 15 seconds
+        maxWait: 10000,
+        timeout: 15000,
       }
     );
 
@@ -696,7 +785,7 @@ export const updateTeacher = async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: "Teacher updated successfully",
-      data: teacher,
+      data: result,
     });
   } catch (error: any) {
     console.error("❌ Error updating teacher:", error);
@@ -709,17 +798,18 @@ export const updateTeacher = async (req: Request, res: Response) => {
 };
 
 /**
- * ✅ DELETE teacher (with validation)
+ * ✅ DELETE teacher (with User account)
  */
 export const deleteTeacher = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    console.log(`🗑️  DELETE TEACHER:  ${id}`);
+    console.log(`🗑️ DELETE TEACHER: ${id}`);
 
     // ✅ Check if teacher exists
     const teacher = await prisma.teacher.findUnique({
       where: { id },
       include: {
+        user: true,
         homeroomClass: true,
         teachingClasses: true,
         subjectAssignments: true,
@@ -737,27 +827,27 @@ export const deleteTeacher = async (req: Request, res: Response) => {
     if (teacher.homeroomClass) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete teacher with assigned homeroom class (${teacher.homeroomClass.name}). Please reassign the homeroom class first.`,
+        message: `Cannot delete teacher with assigned homeroom class (${teacher.homeroomClass.name})`,
       });
     }
 
     // ✅ Check if has teaching classes
     if (teacher.teachingClasses.length > 0) {
-      const classNames = teacher.teachingClasses
-        .map((tc) => tc.class)
-        .join(", ");
       return res.status(400).json({
         success: false,
-        message: `Cannot delete teacher with ${teacher.teachingClasses.length} teaching class(es). Please unassign classes first.`,
+        message: `Cannot delete teacher with ${teacher.teachingClasses.length} teaching class(es)`,
       });
     }
 
-    // ✅ Delete teacher (cascade will handle subject assignments)
+    // ✅ Delete teacher (cascade will delete User account + assignments)
     await prisma.teacher.delete({
       where: { id },
     });
 
     console.log("✅ Teacher deleted successfully");
+    if (teacher.user) {
+      console.log("✅ User account also deleted");
+    }
 
     res.json({
       success: true,

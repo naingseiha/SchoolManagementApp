@@ -64,7 +64,13 @@ export class ReportController {
         where: { id: classId },
         include: {
           students: true, // ✅ Remove orderBy here, sort later
-          teacher: true,
+          homeroomTeacher: true, // ✅ CHANGED from "teacher"
+          teachingTeachers: {
+            // ✅ ADDED: Multiple teachers
+            include: {
+              teacher: true,
+            },
+          },
         },
       });
 
@@ -990,7 +996,13 @@ export class ReportController {
         where: { id: classId },
         include: {
           students: true,
-          teacher: true,
+          homeroomTeacher: true, // ✅ CHANGED from "teacher"
+          teachingTeachers: {
+            // ✅ ADDED: Multiple teachers
+            include: {
+              teacher: true,
+            },
+          },
         },
       });
 

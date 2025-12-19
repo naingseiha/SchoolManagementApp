@@ -12,6 +12,7 @@ interface AuthContextType {
   ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  error: string | null; // ✅ ADDED: Error state
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // ✅ ADDED
   const router = useRouter();
 
   // Check authentication on mount
@@ -46,15 +48,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log("🔐 Token found, verifying with server...");
         const user = await authApi.getCurrentUser();
-        console.log("✅ User authenticated:", user.email);
+        console.log("✅ User authenticated:", user.email || user.phone);
         setCurrentUser(user);
         setIsAuthenticated(true);
+        setError(null); // ✅ Clear any previous errors
         console.log("✅ Auth state set successfully");
       } catch (error: any) {
         console.error("❌ Auth check failed:", error);
 
-        // ✅ IMPORTANT: Don't immediately clear token on network errors
-        // Only clear if token is truly invalid
+        // ✅ Handle different error types
         if (
           error.message?.includes("Invalid token") ||
           error.message?.includes("INVALID_TOKEN") ||
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem("rememberMe");
           setCurrentUser(null);
           setIsAuthenticated(false);
+          setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Please login again");
         } else if (
           error.message?.includes("expired") ||
           error.message?.includes("TOKEN_EXPIRED")
@@ -73,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           try {
             const response = await fetch(
-              "http://localhost:5001/api/auth/refresh",
+              "http://localhost:5001/api/auth/refresh-token",
               {
                 method: "POST",
                 headers: {
@@ -92,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const user = await authApi.getCurrentUser();
                 setCurrentUser(user);
                 setIsAuthenticated(true);
+                setError(null);
               }
             } else {
               console.log("❌ Refresh failed - clearing storage");
@@ -99,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.removeItem("rememberMe");
               setCurrentUser(null);
               setIsAuthenticated(false);
+              setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Session expired");
             }
           } catch (refreshError) {
             console.error("❌ Token refresh failed:", refreshError);
@@ -106,12 +111,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem("rememberMe");
             setCurrentUser(null);
             setIsAuthenticated(false);
+            setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Session expired");
           }
         } else {
-          // Network error or server down - keep token but mark as not authenticated
+          // Network error or server down
           console.log("⚠️ Network error - keeping token for retry");
           setCurrentUser(null);
           setIsAuthenticated(false);
+          setError("មានបញ្ហាក្នុងការភ្ជាប់ទៅ server • Connection error");
         }
       } finally {
         setIsLoading(false);
@@ -122,77 +129,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, []);
 
-  const login = async (
-    credentials: LoginCredentials & { rememberMe?: boolean }
-  ) => {
+  const login = async (credentials: {
+    identifier: string; // ✅ Phone or Email
+    password: string;
+    rememberMe?: boolean;
+  }) => {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🔐 Login attempt from AuthContext:");
+    console.log("  - Identifier:", credentials.identifier);
+    console.log("  - Remember me:", credentials.rememberMe);
+
+    setIsLoading(true);
+    setError(null); // ✅ Clear previous errors
+
     try {
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("📤 Logging in...", {
-        email: credentials.email,
-        rememberMe: credentials.rememberMe,
-      });
+      const result = await authApi.login(credentials);
 
-      const { token, user, expiresIn } = await authApi.login(credentials);
+      console.log("✅ Login successful");
+      console.log("  - User:", result.user.email || result.user.phone);
+      console.log("  - Role:", result.user.role);
+      console.log("  - Token received:", result.token ? "YES" : "NO");
 
-      console.log("✅ Login response received:");
-      console.log("  - Token length:", token?.length || 0);
-      console.log("  - Expires in:", expiresIn);
-      console.log("  - User:", user?.email);
-
-      if (!token) {
-        throw new Error("No token received from server");
-      }
-
-      console.log("💾 Storing token in localStorage...");
-      localStorage.setItem("token", token);
+      // Save token and user
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("user", JSON.stringify(result.user));
 
       if (credentials.rememberMe) {
-        console.log("✅ Remember me enabled - saving preference");
         localStorage.setItem("rememberMe", "true");
-      } else {
-        console.log("⏹️ Remember me disabled");
-        localStorage.removeItem("rememberMe");
       }
 
-      // ✅ Verify storage
-      const storedToken = localStorage.getItem("token");
-      console.log("🔍 Verification:");
-      console.log("  - Token stored:", storedToken ? "YES" : "NO");
-      console.log("  - Matches:", storedToken === token ? "YES" : "NO");
-
-      setCurrentUser(user);
+      setCurrentUser(result.user);
       setIsAuthenticated(true);
+      setError(null);
 
-      console.log("✅ Auth state updated:");
-      console.log("  - isAuthenticated:", true);
-      console.log("  - currentUser:", user.email);
+      console.log("📍 Redirecting based on role:", result.user.role);
 
-      // Dispatch custom event for other components
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("auth-change"));
+      // Redirect based on role
+      if (result.user.role === "ADMIN") {
+        console.log("→ Redirecting to /dashboard");
+        router.push("/dashboard");
+      } else if (result.user.role === "TEACHER") {
+        console.log("→ Redirecting to /dashboard (teacher view)");
+        router.push("/dashboard"); // ✅ Use same dashboard for now
+      } else {
+        console.log("→ Unknown role, redirecting to /dashboard");
+        router.push("/dashboard");
       }
 
-      console.log("✅ Login complete, redirecting to dashboard...");
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    } catch (err: any) {
+      console.error("❌ Login failed:", err);
 
-      router.push("/");
-    } catch (error: any) {
-      console.error("❌ Login failed:", error);
-      throw error;
+      const errorMessage =
+        err.message === "Invalid credentials"
+          ? "លេខទូរស័ព្ទ/អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ\nInvalid phone/email or password"
+          : err.message || "ការចូលប្រើប្រាស់បរាជ័យ\nLogin failed";
+
+      setError(errorMessage);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("👋 Logging out...");
+
     localStorage.removeItem("token");
     localStorage.removeItem("rememberMe");
+    localStorage.removeItem("user");
+
     setCurrentUser(null);
     setIsAuthenticated(false);
+    setError(null);
 
     // Dispatch custom event
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("auth-change"));
     }
+
+    console.log("✅ Logout complete, redirecting to /login");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     router.push("/login");
   };
@@ -205,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         isLoading,
+        error, // ✅ ADDED:  Provide error
       }}
     >
       {children}

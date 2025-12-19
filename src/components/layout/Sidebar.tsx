@@ -9,6 +9,7 @@ import {
   Users,
   GraduationCap,
   BookOpen,
+  BookIcon,
   Calendar,
   ClipboardList,
   BarChart3,
@@ -25,14 +26,20 @@ export default function Sidebar() {
   const { currentUser } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // ✅ Match Prisma schema roles
+  // ✅ Get user role (from User table)
+  const userRole = currentUser?.role; // "ADMIN" or "TEACHER"
+
+  // ✅ Get teacher role (from Teacher table) if user is a teacher
+  const teacherRole = currentUser?.teacher?.role; // "TEACHER" or "INSTRUCTOR"
+
+  // ✅ Menu items with proper role filtering
   const menuItems = [
     {
       icon: LayoutDashboard,
       label: "ផ្ទាំងគ្រប់គ្រង",
       subLabel: "Dashboard",
       href: "/",
-      roles: ["ADMIN", "CLASS_TEACHER", "SUBJECT_TEACHER"],
+      roles: ["ADMIN", "TEACHER"], // ✅ Both can access dashboard
       gradient: "from-blue-500 to-cyan-500",
     },
     {
@@ -40,7 +47,7 @@ export default function Sidebar() {
       label: "សិស្ស",
       subLabel: "Students",
       href: "/students",
-      roles: ["ADMIN", "CLASS_TEACHER"],
+      roles: ["ADMIN"], // ✅ Admin only
       gradient: "from-purple-500 to-pink-500",
     },
     {
@@ -48,7 +55,7 @@ export default function Sidebar() {
       label: "គ្រូបង្រៀន",
       subLabel: "Teachers",
       href: "/teachers",
-      roles: ["ADMIN"],
+      roles: ["ADMIN"], // ✅ Admin only
       gradient: "from-green-500 to-emerald-500",
     },
     {
@@ -56,15 +63,15 @@ export default function Sidebar() {
       label: "ថ្នាក់រៀន",
       subLabel: "Classes",
       href: "/classes",
-      roles: ["ADMIN", "CLASS_TEACHER"],
+      roles: ["ADMIN"], // ✅ Admin only
       gradient: "from-orange-500 to-red-500",
     },
     {
-      icon: BookOpen,
+      icon: BookIcon,
       label: "មុខវិជ្ជា",
       subLabel: "Subjects",
       href: "/subjects",
-      roles: ["ADMIN", "SUBJECT_TEACHER"],
+      roles: ["ADMIN"], // ✅ Admin only
       gradient: "from-indigo-500 to-purple-500",
     },
     {
@@ -72,7 +79,7 @@ export default function Sidebar() {
       label: "ពិន្ទុ",
       subLabel: "Grades",
       href: "/grade-entry",
-      roles: ["ADMIN", "CLASS_TEACHER", "SUBJECT_TEACHER"],
+      roles: ["ADMIN", "TEACHER"], // ✅ Both can access
       gradient: "from-yellow-500 to-orange-500",
     },
     {
@@ -80,7 +87,7 @@ export default function Sidebar() {
       label: "វត្តមាន",
       subLabel: "Attendance",
       href: "/attendance",
-      roles: ["ADMIN", "CLASS_TEACHER"],
+      roles: ["ADMIN", "TEACHER"], // ✅ Both can access
       gradient: "from-teal-500 to-cyan-500",
     },
     {
@@ -88,23 +95,23 @@ export default function Sidebar() {
       label: "របាយការណ៍",
       subLabel: "Reports",
       href: "/reports/monthly",
-      roles: ["ADMIN", "CLASS_TEACHER"],
+      roles: ["ADMIN", "TEACHER"], // ✅ Both can access
       gradient: "from-pink-500 to-rose-500",
     },
     {
       icon: Award,
       label: "តារាងកិត្តិយស",
-      subLabel: "Reports",
+      subLabel: "Honor Roll",
       href: "/reports/award",
-      roles: ["ADMIN", "CLASS_TEACHER"],
+      roles: ["ADMIN", "TEACHER"], // ✅ Both can access
       gradient: "from-pink-500 to-rose-500",
     },
     {
       icon: BookOpen,
       label: "សៀវភៅតាមដានសិស្ស",
-      subLabel: "Reports",
+      subLabel: "Tracking Book",
       href: "/reports/tracking-book",
-      roles: ["ADMIN", "CLASS_TEACHER"],
+      roles: ["ADMIN", "TEACHER"], // ✅ Both can access
       gradient: "from-pink-500 to-rose-500",
     },
     {
@@ -112,42 +119,53 @@ export default function Sidebar() {
       label: "ការកំណត់",
       subLabel: "Settings",
       href: "/settings",
-      roles: ["ADMIN"],
+      roles: ["ADMIN"], // ✅ Admin only
       gradient: "from-gray-500 to-slate-500",
     },
   ];
 
-  const userRole = currentUser?.role;
+  // ✅ Filter menu based on User. role
   const filteredMenuItems = menuItems.filter((item) =>
     item.roles.includes(userRole || "")
   );
 
-  const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case "ADMIN":
+  // ✅ Get role display for sidebar
+  const getRoleDisplay = (userRole?: string, teacherRole?: string) => {
+    if (userRole === "ADMIN") {
+      return {
+        label: "Admin",
+        khmerLabel: "អ្នកគ្រប់គ្រង",
+        color: "text-indigo-600",
+        bg: "bg-indigo-100",
+      };
+    }
+
+    if (userRole === "TEACHER") {
+      if (teacherRole === "INSTRUCTOR") {
         return {
-          label: "Super Admin",
-          color: "text-indigo-600",
-          bg: "bg-indigo-100",
-        };
-      case "CLASS_TEACHER":
-        return {
-          label: "Class Teacher",
+          label: "Instructor",
+          khmerLabel: "គ្រូប្រចាំថ្នាក់",
           color: "text-purple-600",
           bg: "bg-purple-100",
         };
-      case "SUBJECT_TEACHER":
-        return {
-          label: "Subject Teacher",
-          color: "text-green-600",
-          bg: "bg-green-100",
-        };
-      default:
-        return { label: "Unknown", color: "text-gray-600", bg: "bg-gray-100" };
+      }
+      return {
+        label: "Teacher",
+        khmerLabel: "គ្រូបង្រៀន",
+        color: "text-green-600",
+        bg: "bg-green-100",
+      };
     }
+
+    return {
+      label: "Unknown",
+      khmerLabel: "មិនស្គាល់",
+      color: "text-gray-600",
+      bg: "bg-gray-100",
+    };
   };
 
-  const roleInfo = getRoleDisplay(userRole || "");
+  const roleInfo = getRoleDisplay(userRole, teacherRole);
 
   return (
     <aside
@@ -221,11 +239,7 @@ export default function Sidebar() {
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
-                  CLASS_TEACHER
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span>
-                  SUBJECT_TEACHER
+                  TEACHER
                 </li>
               </ul>
             </div>
@@ -245,7 +259,7 @@ export default function Sidebar() {
                       ? "bg-gradient-to-r " +
                         item.gradient +
                         " text-white shadow-lg scale-105"
-                      : "text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-md"
+                      : "text-gray-700 hover:bg-gradient-to-r hover: from-gray-50 hover:to-gray-100 hover:shadow-md"
                   }
                 `}
                 style={{
@@ -253,12 +267,12 @@ export default function Sidebar() {
                   animation: "slideIn 0.3s ease-out forwards",
                 }}
               >
-                {/* Animated background effect for active item */}
+                {/* Animated background effect */}
                 {isActive && (
                   <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                 )}
 
-                {/* Icon with hover effect */}
+                {/* Icon */}
                 <div className="relative z-10">
                   <Icon
                     className={`w-5 h-5 transition-all duration-300 ${
@@ -289,7 +303,7 @@ export default function Sidebar() {
                   </div>
                 )}
 
-                {/* Active indicator dot */}
+                {/* Active indicator */}
                 {isActive && !isCollapsed && (
                   <div className="w-2 h-2 bg-white rounded-full shadow-md animate-pulse relative z-10"></div>
                 )}
@@ -319,7 +333,7 @@ export default function Sidebar() {
             {/* Avatar */}
             <div className="relative group">
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg transform group-hover:scale-110 transition-transform duration-300">
-                {currentUser.name?.charAt(0).toUpperCase()}
+                {currentUser.firstName?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-md">
                 <div className="w-full h-full bg-green-500 rounded-full animate-ping"></div>
@@ -330,21 +344,25 @@ export default function Sidebar() {
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate english-modern mb-0.5">
-                  {currentUser.name}
+                  {currentUser.firstName} {currentUser.lastName}
                 </p>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1. 5">
                   <span
                     className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${roleInfo.bg} ${roleInfo.color}`}
                   >
-                    <Sparkles className="w-2.5 h-2.5 mr-1" />
+                    <Sparkles className="w-2. 5 h-2.5 mr-1" />
                     {roleInfo.label}
                   </span>
                 </div>
+                {/* Show Khmer role name */}
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  {roleInfo.khmerLabel}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Collapsed mode tooltip */}
+          {/* Collapsed mode indicator */}
           {isCollapsed && (
             <div className="mt-2 text-center">
               <div className="w-2 h-2 bg-green-400 rounded-full mx-auto animate-pulse"></div>
@@ -358,7 +376,7 @@ export default function Sidebar() {
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
+        . custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
