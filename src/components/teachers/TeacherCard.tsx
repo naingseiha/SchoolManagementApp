@@ -29,163 +29,118 @@ interface Teacher {
 }
 
 interface TeacherCardProps {
-  teachers: Teacher[];
-  onView: (teacher: Teacher) => void;
-  onEdit: (teacher: Teacher) => void;
-  onDelete: (teacher: Teacher) => void;
+  teacher: any; // ✅ This should be a single teacher object
+  onEdit: (teacher: any) => void;
+  onView: (teacher: any) => void;
+  onDelete: (teacherId: string) => void;
+  viewMode: "grid" | "list";
 }
 
 export default function TeacherCard({
-  teachers,
-  onView,
+  teacher,
   onEdit,
+  onView,
   onDelete,
+  viewMode,
 }: TeacherCardProps) {
-  if (teachers.length === 0) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="text-center py-16">
-          <UserCheck className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 font-bold text-lg mb-2">
-            រកមិនឃើញគ្រូបង្រៀន
-          </p>
-          <p className="text-gray-400 text-sm">
-            សូមព្យាយាមស្វែងរកដោយពាក្យគន្លឹះផ្សេង
-          </p>
-        </div>
-      </div>
-    );
+  // ✅ ADD:  Debug log to see what data is received
+  console.log("👤 TeacherCard received:", teacher);
+
+  // ✅ REMOVE this check (it's checking wrong variable)
+  // if (! teachers || teachers.length === 0) {  // ❌ WRONG!
+  //   return <div>Loading...</div>;
+  // }
+
+  // ✅ ADD: Check if teacher object exists
+  if (!teacher) {
+    console.log("⚠️ No teacher data");
+    return null;
   }
 
+  // ✅ Extract teacher data safely
+  const firstName = teacher.firstName || "";
+  const lastName = teacher.lastName || "";
+  const khmerName = teacher.khmerName || "";
+  const email = teacher.email || "";
+  const phone = teacher.phone || teacher.phoneNumber || "";
+  const role = teacher.role || "TEACHER";
+  const gender = teacher.gender || "MALE";
+
+  // ✅ Get initials for avatar
+  const getInitials = () => {
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    }
+    if (khmerName) {
+      return khmerName.substring(0, 2);
+    }
+    return "T";
+  };
+
+  // Rest of your component...
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="grid grid-cols-1 md: grid-cols-2 lg: grid-cols-3 gap-6 p-6">
-        {teachers.map((teacher) => {
-          const fullName =
-            teacher.firstName && teacher.lastName
-              ? `${teacher.firstName} ${teacher.lastName}`
-              : teacher.name || "Unknown";
-          const initials =
-            teacher.firstName && teacher.lastName
-              ? `${teacher.firstName.charAt(0)}${teacher.lastName.charAt(0)}`
-              : fullName
-                  .split(" ")
-                  .map((n) => n.charAt(0))
-                  .join("")
-                  .substring(0, 2);
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      {/* Avatar */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+          {getInitials()}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-gray-900 text-lg">
+            {firstName} {lastName}
+          </h3>
+          {khmerName && <p className="text-sm text-gray-600">{khmerName}</p>}
+          <span
+            className={`text-xs px-2 py-1 rounded-full ${
+              role === "INSTRUCTOR"
+                ? "bg-amber-100 text-amber-800"
+                : "bg-blue-100 text-blue-800"
+            }`}
+          >
+            {role === "INSTRUCTOR" ? "គ្រូប្រចាំថ្នាក់" : "គ្រូបង្រៀន"}
+          </span>
+        </div>
+      </div>
 
-          return (
-            <div
-              key={teacher.id}
-              className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300 group"
-            >
-              {/* Header */}
-              <div className="flex items-start gap-4 mb-4">
-                <div className="relative">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center font-bold text-white text-lg shadow-lg group-hover:scale-110 transition-transform">
-                    {initials}
-                  </div>
-                  {teacher.gender && (
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-blue-100">
-                      <span className="text-xs">
-                        {teacher.gender === "MALE" || teacher.gender === "male"
-                          ? "👨"
-                          : "👩"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-black text-gray-900 text-base truncate group-hover:text-blue-600 transition-colors">
-                      {fullName}
-                    </h3>
-                    {teacher.role === "INSTRUCTOR" && (
-                      <Award
-                        className="w-4 h-4 text-yellow-500 flex-shrink-0"
-                        title="Instructor"
-                      />
-                    )}
-                  </div>
-                  {teacher.khmerName && (
-                    <p className="text-sm text-gray-600 truncate font-semibold">
-                      {teacher.khmerName}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1 truncate font-medium">
-                    {teacher.subject || "មិនទាន់កំណត់មុខវិជ្ជា"}
-                  </p>
-                </div>
-              </div>
+      {/* Contact Info */}
+      <div className="space-y-2 mb-4">
+        {email && (
+          <p className="text-sm text-gray-600 flex items-center gap-2">
+            📧 {email}
+          </p>
+        )}
+        {phone && (
+          <p className="text-sm text-gray-600 flex items-center gap-2">
+            📱 {phone}
+          </p>
+        )}
+      </div>
 
-              {/* Info */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-600 truncate font-medium">
-                    {teacher.email}
-                  </span>
-                </div>
-                {(teacher.phone || teacher.phoneNumber) && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span className="text-gray-600 font-medium">
-                      {teacher.phone || teacher.phoneNumber}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-sm">
-                  <GraduationCap className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                  <span className="text-gray-600 font-bold">
-                    {teacher.classes?.length || 0} ថ្នាក់ • classes
-                  </span>
-                </div>
-              </div>
+      {/* Teaching Info */}
+      <div className="text-sm text-gray-600 mb-4">
+        <p>{teacher.teachingClasses?.length || 0} ថ្នាក់ • classes</p>
+      </div>
 
-              {/* Role Badge */}
-              {teacher.role && (
-                <div className="mb-4">
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                      teacher.role === "INSTRUCTOR"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {teacher.role === "INSTRUCTOR"
-                      ? "គ្រូប្រចាំថ្នាក់"
-                      : "គ្រូធម្មតា"}
-                  </span>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => onView(teacher)}
-                  className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors text-sm font-bold"
-                  title="មើលព័ត៌មាន View Details"
-                >
-                  <Eye className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onEdit(teacher)}
-                  className="flex items-center justify-center gap-1 px-3 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors text-sm font-bold"
-                  title="កែប្រែ Edit"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onDelete(teacher)}
-                  className="flex items-center justify-center gap-1 px-3 py-2 bg-red-50 hover: bg-red-100 text-red-600 rounded-lg transition-colors text-sm font-bold"
-                  title="លុប Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => onView(teacher)}
+          className="flex-1 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+        >
+          មើល
+        </button>
+        <button
+          onClick={() => onEdit(teacher)}
+          className="flex-1 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+        >
+          កែ
+        </button>
+        <button
+          onClick={() => onDelete(teacher.id)}
+          className="flex-1 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover: bg-red-100 transition-colors"
+        >
+          លុប
+        </button>
       </div>
     </div>
   );

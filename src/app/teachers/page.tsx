@@ -9,7 +9,7 @@ import Header from "@/components/layout/Header";
 import TeacherListView from "@/components/teachers/TeacherListView";
 import BulkImportView from "@/components/teachers/BulkImportView";
 import { teachersApi } from "@/lib/api/teachers";
-import { UserCheck, Upload } from "lucide-react";
+import { UserCheck, Upload, Loader2 } from "lucide-react";
 
 type ViewMode = "list" | "bulk-import";
 
@@ -21,7 +21,7 @@ export default function TeachersPage() {
   const [activeTab, setActiveTab] = useState<ViewMode>("list");
   const [teachers, setTeachers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // ✅ Track if data loaded
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -29,14 +29,20 @@ export default function TeachersPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // ✅ REMOVED:  Auto-load on mount
+
+  // ✅ Manual load function
   const loadTeachers = async () => {
     try {
       setLoading(true);
+      console.log("📥 Loading teachers data...");
       const data = await teachersApi.getAll();
+      console.log("✅ Loaded teachers:", data.length);
       setTeachers(data);
       setIsDataLoaded(true);
     } catch (error) {
-      console.error("Failed to load teachers:", error);
+      console.error("❌ Failed to load teachers:", error);
+      alert("បរាជ័យក្នុងការទាញយកទិន្នន័យ!");
     } finally {
       setLoading(false);
     }
@@ -55,11 +61,16 @@ export default function TeachersPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 font-semibold">កំពុងពិនិត្យ...</p>
+        </div>
       </div>
     );
   }
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
@@ -90,7 +101,7 @@ export default function TeachersPage() {
               <div className="flex items-center gap-6">
                 <div className="text-center">
                   <div className="text-2xl font-black text-blue-600">
-                    {contextTeachers.length}
+                    {isDataLoaded ? teachers.length : contextTeachers.length}
                   </div>
                   <div className="text-xs text-gray-600 font-semibold">
                     សរុប
@@ -98,12 +109,15 @@ export default function TeachersPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-black text-pink-600">
-                    {
-                      contextTeachers.filter(
-                        (t: any) =>
-                          t.gender === "FEMALE" || t.gender === "female"
-                      ).length
-                    }
+                    {isDataLoaded
+                      ? teachers.filter(
+                          (t: any) =>
+                            t.gender === "FEMALE" || t.gender === "female"
+                        ).length
+                      : contextTeachers.filter(
+                          (t: any) =>
+                            t.gender === "FEMALE" || t.gender === "female"
+                        ).length}
                   </div>
                   <div className="text-xs text-gray-600 font-semibold">
                     ស្រី
@@ -111,11 +125,13 @@ export default function TeachersPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-black text-indigo-600">
-                    {
-                      contextTeachers.filter(
-                        (t: any) => t.gender === "MALE" || t.gender === "male"
-                      ).length
-                    }
+                    {isDataLoaded
+                      ? teachers.filter(
+                          (t: any) => t.gender === "MALE" || t.gender === "male"
+                        ).length
+                      : contextTeachers.filter(
+                          (t: any) => t.gender === "MALE" || t.gender === "male"
+                        ).length}
                   </div>
                   <div className="text-xs text-gray-600 font-semibold">
                     ប្រុស
@@ -158,8 +174,9 @@ export default function TeachersPage() {
             <TeacherListView
               teachers={teachers}
               subjects={subjects}
-              isDataLoaded={isDataLoaded}
-              onLoadData={loadTeachers}
+              isDataLoaded={isDataLoaded} // ✅ Pass load state
+              loading={loading} // ✅ Pass loading state
+              onLoadData={loadTeachers} // ✅ Pass load function
               onRefresh={handleRefreshData}
             />
           ) : (
