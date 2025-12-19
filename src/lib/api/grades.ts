@@ -169,7 +169,11 @@ export const gradeApi = {
     }
 
     const data = await response.json();
-    return data.data;
+    // ✅ ENSURE result has savedCount and errorCount
+    return {
+      savedCount: data.savedCount ?? data.saved ?? grades.length,
+      errorCount: data.errorCount ?? data.errors ?? 0,
+    };
   },
 
   /**

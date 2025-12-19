@@ -20,7 +20,7 @@ interface TeacherClassesSelectorProps {
   homeroomClassId: string;
   onToggle: (classId: string) => void;
   gradeOptions: Array<{ value: string; label: string }>;
-  preloadedClasses?: any[]; // ✅ NEW:  Accept preloaded data
+  preloadedClasses?: any[];
 }
 
 export default function TeacherClassesSelector({
@@ -28,7 +28,7 @@ export default function TeacherClassesSelector({
   homeroomClassId,
   onToggle,
   gradeOptions,
-  preloadedClasses = [], // ✅ NEW:  Default to empty array
+  preloadedClasses = [],
 }: TeacherClassesSelectorProps) {
   const [selectedGrade, setSelectedGrade] = useState<GradeType>("all");
   const [classesByGrade, setClassesByGrade] = useState<Record<string, any[]>>(
@@ -38,24 +38,21 @@ export default function TeacherClassesSelector({
     {}
   );
 
-  // ✅ NEW: Initialize with preloaded data
+  // Initialize with preloaded data
   useEffect(() => {
     if (preloadedClasses.length > 0) {
       console.log("🏫 Using preloaded classes:", preloadedClasses.length);
 
-      // Group by grade
       const grouped: Record<string, any[]> = {};
 
       preloadedClasses.forEach((classItem) => {
         const grade = classItem.grade;
 
-        // Add to grade group
         if (!grouped[grade]) {
           grouped[grade] = [];
         }
         grouped[grade].push(classItem);
 
-        // Also group by grade-track for 11-12
         if (grade === "11" || grade === "12") {
           if (classItem.track) {
             const key = `${grade}-${classItem.track.toLowerCase()}`;
@@ -73,7 +70,6 @@ export default function TeacherClassesSelector({
   }, [preloadedClasses]);
 
   const loadClassesForGrade = async (grade: GradeType) => {
-    // ✅ Skip if already loaded
     if (grade === "all" || classesByGrade[grade]?.length > 0) {
       return;
     }
@@ -99,7 +95,7 @@ export default function TeacherClassesSelector({
 
       setClassesByGrade((prev) => ({ ...prev, [grade]: classes }));
     } catch (error) {
-      console.error(`Failed to load classes: `, error);
+      console.error(`Failed to load classes:`, error);
       alert("បរាជ័យក្នុងការទាញយកថ្នាក់!");
     } finally {
       setLoadingClasses((prev) => ({ ...prev, [grade]: false }));
@@ -120,18 +116,29 @@ export default function TeacherClassesSelector({
     return classesByGrade[selectedGrade] || [];
   };
 
-  // ✅ Get all selected classes from all grades
+  // ✅ FIXED: Get unique selected classes (remove duplicates)
   const getAllSelectedClasses = () => {
     const allClasses = Object.values(classesByGrade).flat();
-    return allClasses.filter((c) => selectedClasses.includes(c.id));
+
+    // ✅ Remove duplicates by ID
+    const uniqueClasses = allClasses.filter(
+      (c, index, self) => index === self.findIndex((t) => t.id === c.id)
+    );
+
+    // Filter only selected ones
+    const selected = uniqueClasses.filter((c) =>
+      selectedClasses.includes(c.id)
+    );
+
+    console.log("🔍 All classes:", allClasses.length);
+    console.log("🔍 Unique classes:", uniqueClasses.length);
+    console.log("🔍 Selected classes:", selected.length);
+
+    return selected;
   };
 
   const filteredClasses = getFilteredClasses();
   const selectedClassesList = getAllSelectedClasses();
-
-  console.log("🔍 Selected grade:", selectedGrade);
-  console.log("🔍 Filtered classes:", filteredClasses.length);
-  console.log("🔍 Selected classes list:", selectedClassesList.length);
 
   return (
     <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
@@ -169,14 +176,14 @@ export default function TeacherClassesSelector({
         </div>
       </div>
 
-      {/* ✅ SHOW SELECTED CLASSES WITH REMOVE BUTTONS */}
+      {/* ✅ SHOW SELECTED CLASSES WITH REMOVE BUTTONS (No Duplicates) */}
       {selectedClassesList.length > 0 && (
         <div className="mb-4 p-4 bg-white border-2 border-green-300 rounded-xl">
           <p className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
             <School className="w-4 h-4 text-green-600" />
             បានជ្រើសរើស ({selectedClassesList.length}):
           </p>
-          <div className="grid grid-cols-1 md: grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {selectedClassesList.map((classItem) => (
               <div
                 key={classItem.id}
@@ -212,7 +219,7 @@ export default function TeacherClassesSelector({
                 <button
                   type="button"
                   onClick={() => onToggle(classItem.id)}
-                  className="p-1.5 hover:bg-red-100 rounded transition-colors flex-shrink-0"
+                  className="p-1. 5 hover:bg-red-100 rounded transition-colors flex-shrink-0"
                   title="លុបចេញ"
                   disabled={homeroomClassId === classItem.id}
                 >
@@ -310,7 +317,6 @@ export default function TeacherClassesSelector({
           <button
             type="button"
             onClick={() => {
-              // Remove all except homeroom
               selectedClasses
                 .filter((id) => id !== homeroomClassId)
                 .forEach((id) => onToggle(id));
