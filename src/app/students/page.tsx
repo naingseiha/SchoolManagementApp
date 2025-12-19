@@ -32,7 +32,9 @@ export default function StudentsPage() {
   const loadStudents = async () => {
     try {
       setLoading(true);
-      const data = await studentsApi.getAll();
+      console.log("⚡ Loading students data (lightweight)...");
+      const data = await studentsApi.getAllLightweight();
+      console.log("⚡ Loaded students:", data.length);
       setStudents(data);
       setIsDataLoaded(true);
     } catch (error) {

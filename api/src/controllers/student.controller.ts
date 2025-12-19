@@ -5,8 +5,71 @@ import { parseDate } from "../utils/dateParser"; // ✅ MUST HAVE THIS
 
 const prisma = new PrismaClient();
 
+/**
+ * ✅ GET students LIGHTWEIGHT (for grid/list views - fast loading)
+ */
+export const getStudentsLightweight = async (req: Request, res: Response) => {
+  try {
+    console.log("⚡ Fetching students (lightweight)...");
+
+    const students = await prisma.student.findMany({
+      select: {
+        id: true,
+        studentId: true,
+        firstName: true,
+        lastName: true,
+        khmerName: true,
+        englishName: true,
+        email: true,
+        dateOfBirth: true,
+        gender: true,
+        placeOfBirth: true,
+        currentAddress: true,
+        phoneNumber: true,
+        classId: true,
+        // Only essential class info
+        class: {
+          select: {
+            id: true,
+            name: true,
+            grade: true,
+          },
+        },
+        // Parent info for grid
+        fatherName: true,
+        motherName: true,
+        parentPhone: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    console.log(`⚡ Fetched ${students.length} students (lightweight)`);
+
+    res.json({
+      success: true,
+      data: students,
+    });
+  } catch (error: any) {
+    console.error("❌ Error fetching students (lightweight):", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching students",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET all students (FULL DATA - includes all relations)
+ */
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
+    console.log("📋 Fetching all students (full data)...");
+
     const students = await prisma.student.findMany({
       include: {
         class: {
@@ -22,6 +85,8 @@ export const getAllStudents = async (req: Request, res: Response) => {
         createdAt: "desc",
       },
     });
+
+    console.log(`✅ Fetched ${students.length} students`);
 
     res.json({
       success: true,

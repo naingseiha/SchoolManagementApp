@@ -66,9 +66,9 @@ export default function AssignStudentsModal({
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const data = await studentsApi.getAll();
+      const data = await studentsApi.getAllLightweight();
       setStudents(data);
-      console.log(`✅ Loaded ${data.length} students`);
+      console.log(`⚡ Loaded ${data.length} students (lightweight)`);
     } catch (error) {
       console.error("❌ Error fetching students:", error);
       showError("មិនអាចផ្ទុកបញ្ជីសិស្ស • Failed to load students");

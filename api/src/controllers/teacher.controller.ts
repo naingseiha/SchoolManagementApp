@@ -5,11 +5,99 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 /**
- * ✅ GET all teachers with relations
+ * ✅ GET teachers LIGHTWEIGHT (for grid/list views - fast loading)
+ */
+export const getTeachersLightweight = async (req: Request, res: Response) => {
+  try {
+    console.log("⚡ Fetching teachers (lightweight)...");
+
+    const teachers = await prisma.teacher.findMany({
+      select: {
+        id: true,
+        employeeId: true,
+        firstName: true,
+        lastName: true,
+        khmerName: true,
+        englishName: true,
+        email: true,
+        phone: true,
+        gender: true,
+        role: true,
+        dateOfBirth: true,
+        hireDate: true,
+        address: true,
+        position: true,
+        homeroomClassId: true,
+        createdAt: true,
+        updatedAt: true,
+        // Only essential relations
+        homeroomClass: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        // Get IDs only for assignments (no full data)
+        subjectAssignments: {
+          select: {
+            subjectId: true,
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                nameKh: true,
+              },
+            },
+          },
+        },
+        teachingClasses: {
+          select: {
+            classId: true,
+            class: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Transform to match expected format
+    const transformedTeachers = teachers.map((teacher) => ({
+      ...teacher,
+      subjectIds: teacher.subjectAssignments.map((sa) => sa.subjectId),
+      teachingClassIds: teacher.teachingClasses.map((tc) => tc.classId),
+      subjects: teacher.subjectAssignments.map((sa) => sa.subject),
+      teachingClasses: teacher.teachingClasses.map((tc) => tc.class),
+    }));
+
+    console.log(`⚡ Fetched ${transformedTeachers.length} teachers (lightweight)`);
+
+    res.json({
+      success: true,
+      data: transformedTeachers,
+    });
+  } catch (error: any) {
+    console.error("❌ Error fetching teachers (lightweight):", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching teachers",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET all teachers with relations (FULL DATA - slower)
  */
 export const getAllTeachers = async (req: Request, res: Response) => {
   try {
-    console.log("📋 Fetching all teachers...");
+    console.log("📋 Fetching all teachers (full data)...");
 
     const teachers = await prisma.teacher.findMany({
       include: {
@@ -1168,6 +1256,202 @@ export const bulkCreateTeachers = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Failed to create teachers",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ BULK UPDATE teachers (optimized for speed)
+ */
+export const bulkUpdateTeachers = async (req: Request, res: Response) => {
+  try {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("⚡ BULK UPDATE TEACHERS");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    const { teachers } = req.body;
+
+    if (!Array.isArray(teachers) || teachers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "teachers array is required",
+      });
+    }
+
+    console.log(`👥 Teachers to update: ${teachers.length}`);
+
+    const results: any = { success: [], failed: [] };
+
+    // Process all updates in parallel for speed
+    await Promise.all(
+      teachers.map(async (teacherUpdate: any) => {
+        const { id, ...updateData } = teacherUpdate;
+
+        if (!id) {
+          results.failed.push({
+            id: "unknown",
+            error: "Teacher ID is required",
+          });
+          return;
+        }
+
+        try {
+          // Check if teacher exists
+          const existingTeacher = await prisma.teacher.findUnique({
+            where: { id },
+            include: {
+              subjectAssignments: true,
+              teachingClasses: true,
+            },
+          });
+
+          if (!existingTeacher) {
+            results.failed.push({
+              id,
+              error: "Teacher not found",
+            });
+            return;
+          }
+
+          // Perform update in transaction
+          const updatedTeacher = await prisma.$transaction(
+            async (tx) => {
+              // Delete old assignments
+              await Promise.all([
+                tx.subjectTeacher.deleteMany({
+                  where: { teacherId: id },
+                }),
+                tx.teacherClass.deleteMany({
+                  where: { teacherId: id },
+                }),
+              ]);
+
+              // Update teacher
+              return await tx.teacher.update({
+                where: { id },
+                data: {
+                  firstName:
+                    updateData.firstName !== undefined
+                      ? updateData.firstName.trim()
+                      : undefined,
+                  lastName:
+                    updateData.lastName !== undefined
+                      ? updateData.lastName.trim()
+                      : undefined,
+                  khmerName:
+                    updateData.khmerName !== undefined
+                      ? updateData.khmerName?.trim() || null
+                      : undefined,
+                  englishName:
+                    updateData.englishName !== undefined
+                      ? updateData.englishName?.trim() || null
+                      : undefined,
+                  email:
+                    updateData.email !== undefined
+                      ? updateData.email?.trim() || null
+                      : undefined,
+                  phone:
+                    updateData.phone !== undefined
+                      ? updateData.phone.trim()
+                      : undefined,
+                  gender:
+                    updateData.gender !== undefined
+                      ? updateData.gender
+                      : undefined,
+                  role:
+                    updateData.role !== undefined ? updateData.role : undefined,
+                  employeeId:
+                    updateData.employeeId !== undefined
+                      ? updateData.employeeId?.trim() || null
+                      : undefined,
+                  position:
+                    updateData.position !== undefined
+                      ? updateData.position?.trim() || null
+                      : undefined,
+                  address:
+                    updateData.address !== undefined
+                      ? updateData.address?.trim() || null
+                      : undefined,
+                  dateOfBirth:
+                    updateData.dateOfBirth !== undefined
+                      ? updateData.dateOfBirth
+                      : undefined,
+                  hireDate:
+                    updateData.hireDate !== undefined
+                      ? updateData.hireDate
+                      : undefined,
+
+                  homeroomClassId:
+                    updateData.role === "INSTRUCTOR"
+                      ? updateData.homeroomClassId || null
+                      : updateData.role === "TEACHER"
+                      ? null
+                      : undefined,
+
+                  subjectAssignments: {
+                    create: (updateData.subjectIds || []).map(
+                      (subjectId: string) => ({
+                        subjectId,
+                      })
+                    ),
+                  },
+                  teachingClasses: {
+                    create: (updateData.teachingClassIds || []).map(
+                      (classId: string) => ({
+                        classId,
+                      })
+                    ),
+                  },
+                },
+              });
+            },
+            {
+              maxWait: 10000,
+              timeout: 15000,
+            }
+          );
+
+          results.success.push({
+            id: updatedTeacher.id,
+            name:
+              updatedTeacher.khmerName ||
+              `${updatedTeacher.firstName} ${updatedTeacher.lastName}`,
+          });
+
+          console.log(
+            `  ✅ Updated: ${updatedTeacher.khmerName || updatedTeacher.firstName}`
+          );
+        } catch (error: any) {
+          results.failed.push({
+            id,
+            error: error.message,
+          });
+          console.error(`  ❌ Failed to update ${id}: ${error.message}`);
+        }
+      })
+    );
+
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`✅ Success: ${results.success.length}/${teachers.length}`);
+    console.log(`❌ Failed: ${results.failed.length}/${teachers.length}`);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    res.json({
+      success: true,
+      message: `Updated ${results.success.length} teachers successfully`,
+      data: {
+        total: teachers.length,
+        success: results.success.length,
+        failed: results.failed.length,
+        results,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Bulk update error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update teachers",
       error: error.message,
     });
   }

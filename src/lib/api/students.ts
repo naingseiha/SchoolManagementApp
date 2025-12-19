@@ -254,8 +254,33 @@ const transformToBackend = (frontendData: CreateStudentData): any => {
 };
 
 export const studentsApi = {
+  /**
+   * Get all students (LIGHTWEIGHT - fast loading for grids/lists)
+   */
+  async getAllLightweight(): Promise<Student[]> {
+    try {
+      console.log("⚡ Fetching students (lightweight)...");
+      const students = await apiClient.get<Student[]>("/students/lightweight");
+
+      if (!Array.isArray(students)) {
+        console.error("❌ Expected array but got:", students);
+        return [];
+      }
+
+      console.log(`⚡ Fetched ${students.length} students (lightweight)`);
+      return students.map(transformStudent);
+    } catch (error: any) {
+      console.error("❌ Error fetching students (lightweight):", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get all students (FULL DATA - slower but complete)
+   */
   async getAll(): Promise<Student[]> {
     try {
+      console.log("📋 Fetching students (full data)...");
       const students = await apiClient.get<Student[]>("/students");
 
       if (!Array.isArray(students)) {
@@ -263,6 +288,7 @@ export const studentsApi = {
         return [];
       }
 
+      console.log(`✅ Fetched ${students.length} students`);
       return students.map(transformStudent);
     } catch (error: any) {
       console.error("❌ Error fetching students:", error);

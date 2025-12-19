@@ -88,11 +88,32 @@ export interface Teacher {
 
 export const teachersApi = {
   /**
-   * Get all teachers
+   * Get all teachers (LIGHTWEIGHT - fast loading for grids/lists)
+   */
+  async getAllLightweight(): Promise<Teacher[]> {
+    try {
+      console.log("⚡ Fetching teachers (lightweight)...");
+      const teachers = await apiClient.get<Teacher[]>("/teachers/lightweight");
+
+      if (!Array.isArray(teachers)) {
+        console.error("❌ Expected array but got:", typeof teachers);
+        return [];
+      }
+
+      console.log(`⚡ Fetched ${teachers.length} teachers (lightweight)`);
+      return teachers;
+    } catch (error) {
+      console.error("❌ teachersApi.getAllLightweight error:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get all teachers (FULL DATA - slower but complete)
    */
   async getAll(): Promise<Teacher[]> {
     try {
-      console.log("👨‍🏫 Fetching all teachers from API...");
+      console.log("👨‍🏫 Fetching all teachers (full data)...");
       const teachers = await apiClient.get<Teacher[]>("/teachers");
 
       if (!Array.isArray(teachers)) {
@@ -265,6 +286,35 @@ export const teachersApi = {
       console.error("❌ BULK IMPORT ERROR:", error);
       console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       throw new Error(error.message || "Failed to bulk create teachers");
+    }
+  },
+
+  /**
+   * ✅ NEW: Bulk update teachers (optimized for speed)
+   */
+  async bulkUpdate(
+    teachers: Array<{ id: string } & Partial<BulkTeacherData>>
+  ): Promise<any> {
+    try {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("⚡ FRONTEND: Bulk updating teachers");
+      console.log("👥 Teachers count:", teachers.length);
+
+      const payload = { teachers };
+
+      const response = await apiClient.put<any>("/teachers/bulk", payload);
+
+      console.log("📥 Response:", response);
+      console.log(`✅ Success: ${response.data?.success || 0}`);
+      console.log(`❌ Failed: ${response.data?.failed || 0}`);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      return response;
+    } catch (error: any) {
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("❌ BULK UPDATE ERROR:", error);
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      throw new Error(error.message || "Failed to bulk update teachers");
     }
   },
 };

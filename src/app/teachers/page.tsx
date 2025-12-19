@@ -31,13 +31,13 @@ export default function TeachersPage() {
 
   // ✅ REMOVED:  Auto-load on mount
 
-  // ✅ Manual load function
+  // ✅ Manual load function (using lightweight endpoint for speed)
   const loadTeachers = async () => {
     try {
       setLoading(true);
-      console.log("📥 Loading teachers data...");
-      const data = await teachersApi.getAll();
-      console.log("✅ Loaded teachers:", data.length);
+      console.log("⚡ Loading teachers data (lightweight)...");
+      const data = await teachersApi.getAllLightweight();
+      console.log("⚡ Loaded teachers:", data.length);
       setTeachers(data);
       setIsDataLoaded(true);
     } catch (error) {

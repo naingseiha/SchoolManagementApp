@@ -28,9 +28,9 @@ export default function BulkImportView({
   const loadExistingTeachers = async () => {
     setLoadingExisting(true);
     try {
-      console.log("📥 Loading existing teachers...");
-      const teachers = await teachersApi.getAll();
-      console.log(`✅ Loaded ${teachers.length} existing teachers`);
+      console.log("⚡ Loading existing teachers (lightweight)...");
+      const teachers = await teachersApi.getAllLightweight();
+      console.log(`⚡ Loaded ${teachers.length} existing teachers (fast)`);
       setExistingTeachers(teachers);
     } catch (error) {
       console.error("❌ Failed to load existing teachers:", error);

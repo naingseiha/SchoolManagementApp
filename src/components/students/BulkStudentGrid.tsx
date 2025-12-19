@@ -114,9 +114,9 @@ export default function BulkStudentGrid({
   const loadExistingStudents = async () => {
     try {
       setLoadingStudents(true);
-      setSaveStatus("📥 Loading existing students...");
+      setSaveStatus("⚡ Loading existing students...");
 
-      const allStudents = await studentsApi.getAll();
+      const allStudents = await studentsApi.getAllLightweight();
       const classStudents = allStudents.filter((s) => s.classId === classId);
 
       if (classStudents.length > 0) {

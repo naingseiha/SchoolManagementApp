@@ -561,6 +561,7 @@ export default function BulkTeacherGrid({
 
       let successCount = 0;
       let failCount = 0;
+      const successfullyUpdatedIds = new Set<string>(); // Track successful updates
 
       // ✅ PROCESS NEW TEACHERS
       if (newRows.length > 0) {
@@ -580,27 +581,38 @@ export default function BulkTeacherGrid({
         }
       }
 
-      // ✅ PROCESS MODIFIED TEACHERS
+      // ✅ PROCESS MODIFIED TEACHERS (BULK UPDATE for maximum speed)
       if (modifiedRows.length > 0) {
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         console.log("✏️ Updating MODIFIED teachers:", modifiedRows.length);
+        console.log("⚡ Using BULK UPDATE endpoint for maximum speed...");
 
-        for (const row of modifiedRows) {
-          try {
-            const updateData = convertRowToData(row);
-            console.log(`  - Updating teacher ID: ${row.id}`);
-            console.log(
-              `    Homeroom Class ID: ${updateData.homeroomClassId || "none"}`
-            );
+        try {
+          // Prepare bulk update payload
+          const teachersToUpdate = modifiedRows.map((row) => ({
+            id: row.id,
+            ...convertRowToData(row),
+          }));
 
-            await teachersApi.update(row.id, updateData);
+          // Single bulk update request
+          const bulkResult = await teachersApi.bulkUpdate(teachersToUpdate);
 
-            successCount++;
-            console.log(`  ✅ Updated teacher ${row.id}`);
-          } catch (err: any) {
-            failCount++;
-            console.error(`  ❌ Failed to update teacher ${row.id}:`, err);
+          // Process results
+          const resultData = bulkResult.data || bulkResult;
+          successCount += resultData.success || 0;
+          failCount += resultData.failed || 0;
+
+          // Track successful updates
+          if (resultData.results?.success) {
+            resultData.results.success.forEach((item: any) => {
+              successfullyUpdatedIds.add(item.id);
+            });
           }
+
+          console.log(`⚡ Bulk update completed!`);
+        } catch (err: any) {
+          failCount += modifiedRows.length;
+          console.error("❌ Bulk update failed:", err);
         }
       }
 
@@ -621,12 +633,20 @@ export default function BulkTeacherGrid({
         error(`❌ បរាជ័យក្នុងការរក្សាទុក ${failCount} គ្រូ! `);
       }
 
+      // ✅ Update rows: Reset hasChanges for successfully updated rows, keep all existing rows
       setRows((prev) => {
-        const unchangedExisting = prev.filter(
-          (r) => r.isExisting && !r.hasChanges
-        );
+        const updatedRows = prev
+          .filter((r) => r.isExisting) // Keep all existing teachers
+          .map((r) => {
+            // Reset hasChanges flag for successfully updated rows
+            if (successfullyUpdatedIds.has(r.id)) {
+              return { ...r, hasChanges: false };
+            }
+            return r;
+          });
+
         const emptyRows = Array.from({ length: 10 }, () => createEmptyRow());
-        return [...unchangedExisting, ...emptyRows];
+        return [...updatedRows, ...emptyRows];
       });
     } catch (err: any) {
       console.error("❌ Save error:", err);

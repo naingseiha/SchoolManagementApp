@@ -163,17 +163,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("🔑 Token found, loading data from API...");
 
-      // Load Students
+      // Load Students (lightweight)
       setIsLoadingStudents(true);
-      const studentsData = await studentsApi.getAll();
-      console.log("📥 Students loaded:", studentsData.length);
+      const studentsData = await studentsApi.getAllLightweight();
+      console.log("⚡ Students loaded (lightweight):", studentsData.length);
       setStudents(studentsData);
       setIsLoadingStudents(false);
 
-      // Load Teachers
+      // Load Teachers (lightweight)
       setIsLoadingTeachers(true);
-      const teachersData = await teachersApi.getAll();
-      console.log("📥 Teachers loaded:", teachersData.length);
+      const teachersData = await teachersApi.getAllLightweight();
+      console.log("⚡ Teachers loaded (lightweight):", teachersData.length);
       setTeachers(teachersData);
       setIsLoadingTeachers(false);
 
@@ -216,7 +216,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingStudents(true);
       setStudentsError(null);
-      const data = await studentsApi.getAll();
+      const data = await studentsApi.getAllLightweight();
       setStudents(data);
     } catch (error: any) {
       console.error("❌ Error fetching students:", error);
@@ -282,7 +282,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingTeachers(true);
       setTeachersError(null);
-      const data = await teachersApi.getAll();
+      const data = await teachersApi.getAllLightweight();
       setTeachers(data);
     } catch (error: any) {
       console.error("❌ Error fetching teachers:", error);

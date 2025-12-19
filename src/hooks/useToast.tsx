@@ -27,14 +27,18 @@ export function useToast() {
       <>
         {typeof window !== "undefined" &&
           createPortal(
-            <div className="fixed top-0 right-0 z-50 p-6 space-y-4 pointer-events-none">
+            <div className="fixed top-4 right-4 z-[9999] p-2 space-y-3 pointer-events-none max-w-md">
               {toasts.map((toast, index) => (
                 <div
                   key={toast.id}
                   className="pointer-events-auto"
                   style={{
-                    transform: `translateY(${index * 10}px)`,
-                    transition: "transform 0.3s ease",
+                    transform: `translateY(${index * 4}px) scale(${
+                      1 - index * 0.02
+                    })`,
+                    opacity: 1 - index * 0.1,
+                    transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    zIndex: 9999 - index,
                   }}
                 >
                   <Toast

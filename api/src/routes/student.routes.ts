@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getAllStudents,
+  getStudentsLightweight,
   getStudentById,
   createStudent,
   bulkCreateStudents,
@@ -14,6 +15,7 @@ const router = Router();
 // Apply auth middleware to all routes
 router.use(authMiddleware);
 
+router.get("/lightweight", getStudentsLightweight); // GET students (lightweight - fast)
 router.get("/", getAllStudents);
 router.get("/:id", getStudentById);
 router.post("/", createStudent);
