@@ -47,14 +47,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         console.log("🔐 Token found, verifying with server...");
-        const user = await authApi.getCurrentUser();
+
+        // ✅ Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("AUTH_TIMEOUT")), 10000)
+        );
+
+        const user = await Promise.race([
+          authApi.getCurrentUser(),
+          timeoutPromise,
+        ]) as User;
+
         console.log("✅ User authenticated:", user.email || user.phone);
         setCurrentUser(user);
         setIsAuthenticated(true);
         setError(null); // ✅ Clear any previous errors
         console.log("✅ Auth state set successfully");
+
+        // ✅ Dispatch auth-ready event for DataContext
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("auth-ready"));
+        }
       } catch (error: any) {
         console.error("❌ Auth check failed:", error);
+
+        // ✅ Handle timeout
+        if (error.message === "AUTH_TIMEOUT") {
+          console.log("⏱️ Auth check timed out - clearing token");
+          localStorage.removeItem("token");
+          localStorage.removeItem("rememberMe");
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+          setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Connection timeout");
+          setIsLoading(false);
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          return;
+        }
 
         // ✅ Handle different error types
         if (
