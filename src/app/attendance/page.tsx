@@ -7,12 +7,27 @@ import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import AttendanceGridEditor from "@/components/attendance/AttendanceGridEditor";
+import { useDeviceType } from "@/lib/utils/deviceDetection";
+import dynamic from "next/dynamic";
 import { Download, Loader2, AlertCircle, CalendarCheck } from "lucide-react";
 import {
   attendanceApi,
   type AttendanceGridData,
   type BulkSaveAttendanceItem,
 } from "@/lib/api/attendance";
+
+// Dynamic import for mobile component
+const MobileAttendance = dynamic(
+  () => import("@/components/mobile/attendance/MobileAttendance"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    ),
+  }
+);
 
 const MONTHS = [
   { value: "មករា", label: "មករា", number: 1 },
@@ -42,6 +57,7 @@ export default function AttendancePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { classes } = useData();
+  const deviceType = useDeviceType();
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
@@ -49,6 +65,17 @@ export default function AttendancePage() {
   const [gridData, setGridData] = useState<AttendanceGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Render mobile version for mobile devices
+  if (deviceType === "mobile") {
+    return (
+      <MobileAttendance
+        classId={selectedClassId}
+        month={selectedMonth as any}
+        year={selectedYear}
+      />
+    );
+  }
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {

@@ -89,7 +89,6 @@ async function seedClasses() {
               section,
               academicYear: template.academicYear,
               capacity: template.capacity,
-              teacherId: null,
             },
           });
           console.log(`  ✅ Created: ${name} (${classId})`);
