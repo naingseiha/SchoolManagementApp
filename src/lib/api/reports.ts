@@ -281,7 +281,7 @@ export const reportsApi = {
     subjectId?: string
   ): Promise<StudentTrackingBookData> {
     try {
-      let url = `${API_BASE_URL}/reports/tracking-book/${classId}? year=${year}`;
+      let url = `${API_BASE_URL}/reports/tracking-book/${classId}?year=${year}`;
 
       if (month) {
         url += `&month=${encodeURIComponent(month.trim())}`;

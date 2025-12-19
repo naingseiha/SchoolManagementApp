@@ -163,33 +163,67 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("🔑 Token found, loading data from API...");
 
+      // ✅ Add timeout helper
+      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+        return Promise.race([
+          promise,
+          new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error("DATA_LOAD_TIMEOUT")), timeoutMs)
+          ),
+        ]);
+      };
+
       // Load Students (lightweight)
       setIsLoadingStudents(true);
-      const studentsData = await studentsApi.getAllLightweight();
-      console.log("⚡ Students loaded (lightweight):", studentsData.length);
-      setStudents(studentsData);
-      setIsLoadingStudents(false);
+      try {
+        const studentsData = await withTimeout(studentsApi.getAllLightweight());
+        console.log("⚡ Students loaded (lightweight):", studentsData.length);
+        setStudents(studentsData);
+      } catch (err: any) {
+        console.warn("⚠️ Students load failed:", err.message);
+        setStudents([]);
+      } finally {
+        setIsLoadingStudents(false);
+      }
 
       // Load Teachers (lightweight)
       setIsLoadingTeachers(true);
-      const teachersData = await teachersApi.getAllLightweight();
-      console.log("⚡ Teachers loaded (lightweight):", teachersData.length);
-      setTeachers(teachersData);
-      setIsLoadingTeachers(false);
+      try {
+        const teachersData = await withTimeout(teachersApi.getAllLightweight());
+        console.log("⚡ Teachers loaded (lightweight):", teachersData.length);
+        setTeachers(teachersData);
+      } catch (err: any) {
+        console.warn("⚠️ Teachers load failed:", err.message);
+        setTeachers([]);
+      } finally {
+        setIsLoadingTeachers(false);
+      }
 
       // Load Classes (lightweight)
       setIsLoadingClasses(true);
-      const classesData = await classesApi.getAllLightweight();
-      console.log("⚡ Classes loaded (lightweight):", classesData.length);
-      setClasses(classesData);
-      setIsLoadingClasses(false);
+      try {
+        const classesData = await withTimeout(classesApi.getAllLightweight());
+        console.log("⚡ Classes loaded (lightweight):", classesData.length);
+        setClasses(classesData);
+      } catch (err: any) {
+        console.warn("⚠️ Classes load failed:", err.message);
+        setClasses([]);
+      } finally {
+        setIsLoadingClasses(false);
+      }
 
       // Load Subjects (lightweight)
       setIsLoadingSubjects(true);
-      const subjectsData = await subjectsApi.getAllLightweight();
-      console.log("⚡ Subjects loaded (lightweight):", subjectsData.length);
-      setSubjects(subjectsData);
-      setIsLoadingSubjects(false);
+      try {
+        const subjectsData = await withTimeout(subjectsApi.getAllLightweight());
+        console.log("⚡ Subjects loaded (lightweight):", subjectsData.length);
+        setSubjects(subjectsData);
+      } catch (err: any) {
+        console.warn("⚠️ Subjects load failed:", err.message);
+        setSubjects([]);
+      } finally {
+        setIsLoadingSubjects(false);
+      }
 
       // Load localStorage data
       const loadedGrades = storage.get("grades") || [];

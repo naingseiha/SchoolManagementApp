@@ -528,6 +528,7 @@ export class ReportController {
   /**
    * ✅ FIXED: Get student tracking book - Filter subjects by track
    */
+
   static async getStudentTrackingBook(req: Request, res: Response) {
     try {
       const { classId } = req.params;
@@ -539,17 +540,18 @@ export class ReportController {
       console.log("month:", month);
       console.log("subjectId:", subjectId);
 
+      // ✅ FIXED: Use homeroomTeacher
       const classInfo = await prisma.class.findUnique({
         where: { id: classId },
         include: {
-          teacher: {
+          homeroomTeacher: {
             select: {
               id: true,
               firstName: true,
               lastName: true,
             },
           },
-          students: true, // ✅ Remove orderBy, sort later
+          students: true,
         },
       });
 
@@ -572,17 +574,15 @@ export class ReportController {
       console.log(`📊 Grade: ${classInfo.grade}`);
       console.log(`🎯 Track: ${classInfo.track || "N/A"}`);
 
-      // ✅ FIXED: Build subject filter with track support
+      // ✅ Build subject filter with track support
       const subjectWhereClause: any = {
         grade: classInfo.grade,
         isActive: true,
       };
 
-      // ✅ If specific subject requested, use it
       if (subjectId) {
         subjectWhereClause.id = subjectId as string;
       } else {
-        // ✅ For Grade 11 & 12, filter by track
         const gradeNum = parseInt(classInfo.grade);
         if ((gradeNum === 11 || gradeNum === 12) && classInfo.track) {
           subjectWhereClause.OR = [
@@ -590,7 +590,6 @@ export class ReportController {
             { track: null },
             { track: "common" },
           ];
-
           console.log(`🔍 Filtering subjects by track: ${classInfo.track}`);
         }
       }
@@ -611,10 +610,11 @@ export class ReportController {
 
       console.log(`📖 Subjects: ${subjects.length}`);
       console.log(
-        `📋 Subject list:`,
+        `📋 Subject list: `,
         subjects.map((s) => `${s.nameKh} (${s.track || "common"})`).join(", ")
       );
 
+      // ✅ Build grade query
       const gradeWhereClause: any = {
         classId: classId,
         year: parseInt(year as string),
@@ -645,13 +645,11 @@ export class ReportController {
 
         if (monthIndex >= 0) {
           const monthNumber = monthIndex + 1;
-
           gradeWhereClause.OR = [
             { month: month as string },
             { month: monthNumber.toString() },
             { monthNumber: monthNumber },
           ];
-
           console.log(
             `\n📅 Filtering by month: "${month}" (index: ${monthIndex}, number: ${monthNumber})`
           );
@@ -747,7 +745,7 @@ export class ReportController {
 
       console.log(`\n✅ Found ${attendanceRecords.length} attendance records`);
 
-      // Calculate attendance summary
+      // ✅ Calculate attendance summary
       const attendanceSummary: {
         [studentId: string]: {
           totalAbsent: number;
@@ -828,13 +826,14 @@ export class ReportController {
         };
       };
 
-      // ✅ FIXED: Calculate total coefficient from filtered subjects
+      // ✅✅✅ THIS IS THE MISSING PART - ADD IT HERE ✅✅✅
       const totalCoefficientForClass = subjects.reduce(
         (sum, s) => sum + s.coefficient,
         0
       );
 
       console.log(`\n📊 Total Coefficient: ${totalCoefficientForClass}`);
+      // ✅✅✅ END OF MISSING PART ✅✅✅
 
       // Build student data with subject grade levels
       const studentsData = sortedStudents.map((student) => {
@@ -873,13 +872,13 @@ export class ReportController {
           }
         });
 
-        // ✅ FIXED: Average = totalScore / totalCoefficientForClass
+        // ✅ Average = totalScore / totalCoefficientForClass
         const averageScore =
           totalCoefficientForClass > 0
             ? totalScore / totalCoefficientForClass
             : 0;
 
-        // ✅ FIXED: Grade level thresholds
+        // ✅ Grade level thresholds
         let gradeLevel = "F";
         if (averageScore >= 45) gradeLevel = "A";
         else if (averageScore >= 40) gradeLevel = "B";
@@ -888,12 +887,12 @@ export class ReportController {
         else if (averageScore >= 25) gradeLevel = "E";
 
         const gradeLevelKhmer: { [key: string]: string } = {
-          A: "ល្អបំផុត",
-          B: "ល្អ",
-          C: "ល្អបុរេ",
-          D: "មធ្យម",
-          E: "ខ្សោយ",
-          F: "ខ្សោយបំផុត",
+          A: "ល្អប្រសើរ",
+          B: "ល្អណាស់",
+          C: "ល្អ",
+          D: "ល្អបង្គួរ",
+          E: "មធ្យម",
+          F: "ខ្សោយ",
         };
 
         return {
@@ -936,8 +935,10 @@ export class ReportController {
       if (finalData.length > 0) {
         console.log("\n📊 First student summary:");
         console.log(`  Name: ${finalData[0].studentName}`);
-        console.log(`  Subjects with scores: ${finalData[0].subjectsRecorded}`);
-        console.log(`  Total: ${finalData[0].totalScore}`);
+        console.log(
+          `  Subjects with scores:  ${finalData[0].subjectsRecorded}`
+        );
+        console.log(`  Total:  ${finalData[0].totalScore}`);
         console.log(`  Average: ${finalData[0].averageScore}`);
         console.log(`  Rank: ${finalData[0].rank}`);
         console.log(`  Grade Level: ${finalData[0].gradeLevel}`);
@@ -954,8 +955,8 @@ export class ReportController {
           track: classInfo.track || null,
           year: parseInt(year as string),
           month: (month as string) || null,
-          teacherName: classInfo.teacher
-            ? `${classInfo.teacher.lastName} ${classInfo.teacher.firstName}`
+          teacherName: classInfo.homeroomTeacher
+            ? `${classInfo.homeroomTeacher.lastName} ${classInfo.homeroomTeacher.firstName}`
             : "",
           totalCoefficient: totalCoefficientForClass,
           subjects: subjects.map((s) => ({
@@ -978,7 +979,6 @@ export class ReportController {
       });
     }
   }
-
   /**
    * ✅ NEW: Get monthly statistics with gender breakdown
    */
