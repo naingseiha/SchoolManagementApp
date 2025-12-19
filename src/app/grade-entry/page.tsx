@@ -4,10 +4,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
+import { useToast } from "@/hooks/useToast";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import GradeGridEditor from "@/components/grades/GradeGridEditor";
-import Toast, { ToastType } from "@/components/ui/Toast";
 import {
   Download,
   Loader2,
@@ -51,6 +51,7 @@ export default function GradeEntryPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes } = useData();
+  const { success, error: showError, warning, ToastContainer } = useToast();
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
@@ -58,12 +59,6 @@ export default function GradeEntryPage() {
   const [gridData, setGridData] = useState<GradeGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // ✅ Toast state
-  const [toast, setToast] = useState<{
-    message: string;
-    type: ToastType;
-  } | null>(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -161,10 +156,7 @@ export default function GradeEntryPage() {
   // ✅ Manual load function with Toast notifications
   const handleLoadData = async () => {
     if (!selectedClassId || !currentUser) {
-      setToast({
-        message: "សូមជ្រើសរើសថ្នាក់សិន",
-        type: "warning",
-      });
+      warning("សូមជ្រើសរើសថ្នាក់សិន");
       return;
     }
 
@@ -353,22 +345,18 @@ export default function GradeEntryPage() {
       setGridData(data);
 
       // ✅ Show success toast
-      setToast({
-        message: `✅ ផ្ទុកទិន្នន័យបានជោគជ័យ • ${
+      success(
+        `ផ្ទុកទិន្នន័យបានជោគជ័យ • ${
           data.subjects?.length || 0
-        } មុខវិជ្ជា • ${data.students?.length || 0} សិស្ស`,
-        type: "success",
-      });
+        } មុខវិជ្ជា • ${data.students?.length || 0} សិស្ស`
+      );
 
       console.log("✅ Data loaded successfully!");
     } catch (err: any) {
       console.error("❌ Error fetching grid data:", err);
 
       // ✅ Show error toast
-      setToast({
-        message: `❌ មានបញ្ហាក្នុងការទាញយកទិន្នន័យ:  ${err.message}`,
-        type: "error",
-      });
+      showError(`មានបញ្ហាក្នុងការទាញយកទិន្នន័យ: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -382,10 +370,7 @@ export default function GradeEntryPage() {
     try {
       if (grades.length === 0) {
         if (!isAutoSave) {
-          setToast({
-            message: "សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ",
-            type: "warning",
-          });
+          warning("សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ");
         }
         return;
       }
@@ -412,15 +397,9 @@ export default function GradeEntryPage() {
       // ✅ Only show toast for MANUAL saves (not auto-save)
       if (!isAutoSave) {
         if (errorCount > 0) {
-          setToast({
-            message: `⚠️ រក្សាទុក ${savedCount} ជោគជ័យ, ${errorCount} មានកំហុស`,
-            type: "warning",
-          });
+          warning(`រក្សាទុក ${savedCount} ជោគជ័យ, ${errorCount} មានកំហុស`);
         } else {
-          setToast({
-            message: `✅ រក្សាទុកបានជោគជ័យ ${savedCount} ពិន្ទុ`,
-            type: "success",
-          });
+          success(`រក្សាទុកបានជោគជ័យ ${savedCount} ពិន្ទុ`);
         }
       } else {
         // Silent auto-save (no toast, just console log)
@@ -431,12 +410,9 @@ export default function GradeEntryPage() {
 
       // ✅ Only show error toast for MANUAL saves
       if (!isAutoSave) {
-        setToast({
-          message: `❌ មានបញ្ហាក្នុងការរក្សាទុក:  ${
-            err.message || "Unknown error"
-          }`,
-          type: "error",
-        });
+        showError(
+          `មានបញ្ហាក្នុងការរក្សាទុក: ${err.message || "Unknown error"}`
+        );
         throw err;
       } else {
         // Silent fail for auto-save
@@ -730,15 +706,8 @@ export default function GradeEntryPage() {
         </main>
       </div>
 
-      {/* ✅ TOAST NOTIFICATION */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-          duration={4000}
-        />
-      )}
+      {/* Toast Container */}
+      <ToastContainer />
     </div>
   );
 }

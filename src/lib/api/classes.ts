@@ -53,11 +53,32 @@ export interface CreateClassData {
 
 export const classesApi = {
   /**
-   * Get all classes from database
+   * Get all classes (LIGHTWEIGHT - fast loading for dropdowns/lists)
+   */
+  async getAllLightweight(): Promise<Class[]> {
+    try {
+      console.log("⚡ Fetching classes (lightweight)...");
+      const classes = await apiClient.get<Class[]>("/classes/lightweight");
+
+      if (!Array.isArray(classes)) {
+        console.error("❌ Expected array but got:", typeof classes);
+        return [];
+      }
+
+      console.log(`⚡ Fetched ${classes.length} classes (lightweight)`);
+      return classes;
+    } catch (error) {
+      console.error("❌ classesApi.getAllLightweight error:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get all classes (FULL DATA - includes full student list)
    */
   async getAll(): Promise<Class[]> {
     try {
-      console.log("📚 Fetching all classes from API...");
+      console.log("📚 Fetching all classes (full data)...");
       const classes = await apiClient.get<Class[]>("/classes");
 
       if (!Array.isArray(classes)) {

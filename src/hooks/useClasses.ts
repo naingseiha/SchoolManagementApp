@@ -15,10 +15,10 @@ export function useClasses() {
     try {
       setLoading(true);
       setError(null);
-      console.log("📚 Fetching classes...");
+      console.log("⚡ Fetching classes (lightweight)...");
 
-      const data = await classesApi.getAll();
-      console.log(`✅ Loaded ${data.length} classes from database`);
+      const data = await classesApi.getAllLightweight();
+      console.log(`⚡ Loaded ${data.length} classes (lightweight)`);
 
       setClasses(data);
     } catch (err: any) {

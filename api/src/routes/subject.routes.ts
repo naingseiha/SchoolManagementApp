@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getAllSubjects,
+  getSubjectsLightweight,
   getSubjectById,
   createSubject,
   updateSubject,
@@ -17,6 +18,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // Subject CRUD routes
+router.get("/lightweight", getSubjectsLightweight); // GET subjects (lightweight - fast)
 router.get("/", getAllSubjects);
 router.get("/grade/:grade", getSubjectsByGrade);
 router.get("/:id", getSubjectById);

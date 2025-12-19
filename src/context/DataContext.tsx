@@ -177,17 +177,17 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setTeachers(teachersData);
       setIsLoadingTeachers(false);
 
-      // Load Classes
+      // Load Classes (lightweight)
       setIsLoadingClasses(true);
-      const classesData = await classesApi.getAll();
-      console.log("📥 Classes loaded:", classesData.length);
+      const classesData = await classesApi.getAllLightweight();
+      console.log("⚡ Classes loaded (lightweight):", classesData.length);
       setClasses(classesData);
       setIsLoadingClasses(false);
 
-      // Load Subjects
+      // Load Subjects (lightweight)
       setIsLoadingSubjects(true);
-      const subjectsData = await subjectsApi.getAll();
-      console.log("📥 Subjects loaded:", subjectsData.length);
+      const subjectsData = await subjectsApi.getAllLightweight();
+      console.log("⚡ Subjects loaded (lightweight):", subjectsData.length);
       setSubjects(subjectsData);
       setIsLoadingSubjects(false);
 
@@ -345,7 +345,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingClasses(true);
       setClassesError(null);
-      const data = await classesApi.getAll();
+      const data = await classesApi.getAllLightweight();
       setClasses(data);
     } catch (error: any) {
       console.error("❌ Error fetching classes:", error);
@@ -441,7 +441,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingSubjects(true);
       setSubjectsError(null);
-      const data = await subjectsApi.getAll();
+      const data = await subjectsApi.getAllLightweight();
       setSubjects(data);
     } catch (error: any) {
       console.error("❌ Error fetching subjects:", error);

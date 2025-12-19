@@ -58,11 +58,32 @@ export interface CreateSubjectData {
 
 export const subjectsApi = {
   /**
-   * Get all subjects from database
+   * Get all subjects (LIGHTWEIGHT - fast loading for dropdowns/lists)
+   */
+  async getAllLightweight(): Promise<Subject[]> {
+    try {
+      console.log("⚡ Fetching subjects (lightweight)...");
+      const subjects = await apiClient.get<Subject[]>("/subjects/lightweight");
+
+      if (!Array.isArray(subjects)) {
+        console.error("❌ Expected array but got:", typeof subjects);
+        return [];
+      }
+
+      console.log(`⚡ Fetched ${subjects.length} subjects (lightweight)`);
+      return subjects;
+    } catch (error) {
+      console.error("❌ subjectsApi.getAllLightweight error:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Get all subjects (FULL DATA - includes teacher assignments)
    */
   async getAll(): Promise<Subject[]> {
     try {
-      console.log("📚 Fetching all subjects from API.. .");
+      console.log("📚 Fetching all subjects (full data)...");
       const subjects = await apiClient.get<Subject[]>("/subjects");
 
       if (!Array.isArray(subjects)) {

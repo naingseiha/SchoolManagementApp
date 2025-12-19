@@ -3,10 +3,53 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Get all subjects - RETURN ARRAY DIRECTLY
+/**
+ * ✅ GET subjects LIGHTWEIGHT (for dropdowns/lists - fast loading)
+ */
+export const getSubjectsLightweight = async (req: Request, res: Response) => {
+  try {
+    console.log("⚡ GET SUBJECTS (lightweight)");
+
+    const subjects = await prisma.subject.findMany({
+      select: {
+        id: true,
+        name: true,
+        nameKh: true,
+        nameEn: true,
+        code: true,
+        description: true,
+        grade: true,
+        track: true,
+        category: true,
+        weeklyHours: true,
+        annualHours: true,
+        maxScore: true,
+        coefficient: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: [{ grade: "asc" }, { name: "asc" }],
+    });
+
+    console.log(`⚡ Found ${subjects.length} subjects (lightweight)`);
+    res.json(subjects);
+  } catch (error: any) {
+    console.error("❌ Error getting subjects (lightweight):", error);
+    res.status(500).json({
+      success: false,
+      message: "Error getting subjects",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET all subjects (FULL DATA - includes teacher assignments)
+ */
 export const getAllSubjects = async (req: Request, res: Response) => {
   try {
-    console.log("📚 GET ALL SUBJECTS");
+    console.log("📚 GET ALL SUBJECTS (full data)");
 
     const subjects = await prisma.subject.findMany({
       include: {

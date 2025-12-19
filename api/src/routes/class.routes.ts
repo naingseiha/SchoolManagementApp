@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getAllClasses,
+  getClassesLightweight,
   getClassById,
   createClass,
   updateClass,
@@ -13,6 +14,7 @@ import { authenticate, authorize } from "../middleware/auth";
 
 const router = Router();
 
+router.get("/lightweight", authenticate, getClassesLightweight); // GET classes (lightweight - fast)
 router.get("/", authenticate, getAllClasses);
 router.get("/grade/:grade", authenticate, getClassesByGrade);
 router.get("/:id", authenticate, getClassById);

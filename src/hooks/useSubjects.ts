@@ -15,10 +15,10 @@ export function useSubjects() {
     try {
       setLoading(true);
       setError(null);
-      console.log("📚 Fetching subjects from API...");
+      console.log("⚡ Fetching subjects (lightweight)...");
 
-      const data = await subjectsApi.getAll();
-      console.log(`✅ Loaded ${data.length} subjects from database`);
+      const data = await subjectsApi.getAllLightweight();
+      console.log(`⚡ Loaded ${data.length} subjects (lightweight)`);
 
       setSubjects(data);
     } catch (err: any) {

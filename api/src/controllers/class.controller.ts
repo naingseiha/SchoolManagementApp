@@ -3,10 +3,63 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Get all classes
+/**
+ * ✅ GET classes LIGHTWEIGHT (for lists/dropdowns - fast loading)
+ */
+export const getClassesLightweight = async (req: Request, res: Response) => {
+  try {
+    console.log("⚡ GET CLASSES (lightweight)");
+
+    const classes = await prisma.class.findMany({
+      select: {
+        id: true,
+        classId: true,
+        name: true,
+        grade: true,
+        section: true,
+        academicYear: true,
+        capacity: true,
+        track: true,
+        homeroomTeacherId: true,
+        createdAt: true,
+        updatedAt: true,
+        // Only teacher name (not full details)
+        homeroomTeacher: {
+          select: {
+            id: true,
+            khmerName: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        // Only student count (not full list)
+        _count: {
+          select: {
+            students: true,
+          },
+        },
+      },
+      orderBy: [{ grade: "asc" }, { section: "asc" }],
+    });
+
+    console.log(`⚡ Found ${classes.length} classes (lightweight)`);
+    res.json(classes);
+  } catch (error: any) {
+    console.error("❌ Error getting classes (lightweight):", error);
+    res.status(500).json({
+      success: false,
+      message: "Error getting classes",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET all classes (FULL DATA - includes students list)
+ */
 export const getAllClasses = async (req: Request, res: Response) => {
   try {
-    console.log("📚 GET ALL CLASSES");
+    console.log("📚 GET ALL CLASSES (full data)");
 
     const classes = await prisma.class.findMany({
       include: {
