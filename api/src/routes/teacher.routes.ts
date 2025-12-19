@@ -5,6 +5,7 @@ import {
   createTeacher,
   updateTeacher,
   deleteTeacher,
+  bulkCreateTeachers,
 } from "../controllers/teacher.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
@@ -17,6 +18,7 @@ router.use(authMiddleware);
 router.get("/", getAllTeachers); // GET all teachers
 router.get("/:id", getTeacherById); // GET single teacher
 router.post("/", createTeacher); // CREATE teacher
+router.post("/bulk", bulkCreateTeachers); // BULK CREATE teachers
 router.put("/:id", updateTeacher); // UPDATE teacher
 router.delete("/:id", deleteTeacher); // DELETE teacher
 

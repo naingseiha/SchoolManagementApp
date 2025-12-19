@@ -862,3 +862,313 @@ export const deleteTeacher = async (req: Request, res: Response) => {
     });
   }
 };
+
+// ✅ ADD this function to teacher.controller.ts
+
+/**
+ * ✅ BULK CREATE teachers
+ */
+export const bulkCreateTeachers = async (req: Request, res: Response) => {
+  try {
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📥 BULK CREATE TEACHERS");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    const { teachers } = req.body;
+
+    if (!Array.isArray(teachers) || teachers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "teachers array is required",
+      });
+    }
+
+    console.log(`👥 Teachers to create: ${teachers.length}`);
+
+    const results = { success: [], failed: [] };
+
+    // ✅ Get all classes and subjects for mapping
+    const [allClasses, allSubjects] = await Promise.all([
+      prisma.class.findMany({
+        select: { id: true, name: true },
+      }),
+      prisma.subject.findMany({
+        select: { id: true, name: true, nameKh: true, nameEn: true },
+      }),
+    ]);
+
+    console.log(`📚 Found ${allClasses.length} classes`);
+    console.log(`📖 Found ${allSubjects.length} subjects`);
+
+    // ✅ Helper:  Map subject names to IDs
+    const mapSubjectNamesToIds = (subjectsString: string): string[] => {
+      if (!subjectsString || subjectsString.trim() === "") return [];
+
+      const subjectNames = subjectsString
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s);
+
+      return subjectNames
+        .map((name) => {
+          const subject = allSubjects.find(
+            (s) =>
+              s.nameKh?.toLowerCase() === name.toLowerCase() ||
+              s.nameEn?.toLowerCase() === name.toLowerCase() ||
+              s.name?.toLowerCase() === name.toLowerCase()
+          );
+          return subject?.id;
+        })
+        .filter((id) => id) as string[];
+    };
+
+    // ✅ Helper: Map class names to IDs
+    const mapClassNamesToIds = (classesString: string): string[] => {
+      if (!classesString || classesString.trim() === "") return [];
+
+      const classNames = classesString
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s);
+
+      return classNames
+        .map((name) => {
+          const cls = allClasses.find(
+            (c) => c.name?.toLowerCase() === name.toLowerCase()
+          );
+          return cls?.id;
+        })
+        .filter((id) => id) as string[];
+    };
+
+    // ✅ Helper: Find homeroom class ID
+    const findHomeroomClassId = (className: string): string | null => {
+      if (!className || className.trim() === "") return null;
+
+      const cls = allClasses.find(
+        (c) => c.name?.toLowerCase() === className.trim().toLowerCase()
+      );
+
+      return cls?.id || null;
+    };
+
+    // ✅ Process each teacher
+    for (let i = 0; i < teachers.length; i++) {
+      const teacherData = teachers[i];
+      const rowNumber = i + 1;
+
+      try {
+        // ✅ Validate required fields
+        if (!teacherData.firstName || teacherData.firstName.trim() === "") {
+          throw new Error("First name is required");
+        }
+        if (!teacherData.lastName || teacherData.lastName.trim() === "") {
+          throw new Error("Last name is required");
+        }
+        if (!teacherData.phone || teacherData.phone.trim() === "") {
+          throw new Error("Phone number is required");
+        }
+
+        // ✅ Validate phone format
+        const phoneRegex = /^[0-9]{8,15}$/;
+        if (!phoneRegex.test(teacherData.phone.trim().replace(/\s/g, ""))) {
+          throw new Error("Invalid phone number format");
+        }
+
+        // ✅ Check phone uniqueness
+        const existingPhone = await prisma.teacher.findUnique({
+          where: { phone: teacherData.phone.trim() },
+        });
+
+        if (existingPhone) {
+          throw new Error("Phone number already exists");
+        }
+
+        // ✅ Validate gender
+        let gender: "MALE" | "FEMALE" = "MALE";
+        if (teacherData.gender) {
+          const g = teacherData.gender.toString().trim().toUpperCase();
+          if (["MALE", "M", "ប្រុស", "ប"].includes(g)) {
+            gender = "MALE";
+          } else if (["FEMALE", "F", "ស្រី", "ស"].includes(g)) {
+            gender = "FEMALE";
+          }
+        }
+
+        // ✅ Validate role
+        const role =
+          teacherData.role?.toUpperCase() === "INSTRUCTOR"
+            ? "INSTRUCTOR"
+            : "TEACHER";
+
+        // ✅ Map subjects
+        const subjectIds = mapSubjectNamesToIds(teacherData.subjects || "");
+
+        // ✅ Map teaching classes
+        const teachingClassIds = mapClassNamesToIds(
+          teacherData.teachingClasses || ""
+        );
+
+        // ✅ Find homeroom class
+        let homeroomClassId: string | null = null;
+        if (role === "INSTRUCTOR") {
+          if (!teacherData.homeroomClass) {
+            throw new Error("Instructor must have homeroom class");
+          }
+
+          homeroomClassId = findHomeroomClassId(teacherData.homeroomClass);
+
+          if (!homeroomClassId) {
+            throw new Error(
+              `Homeroom class "${teacherData.homeroomClass}" not found`
+            );
+          }
+
+          // Check if already has homeroom teacher
+          const classWithTeacher = await prisma.class.findUnique({
+            where: { id: homeroomClassId },
+            include: { homeroomTeacher: true },
+          });
+
+          if (classWithTeacher?.homeroomTeacher) {
+            throw new Error(
+              `Class "${teacherData.homeroomClass}" already has a homeroom teacher`
+            );
+          }
+
+          // Add homeroom class to teaching classes if not already there
+          if (!teachingClassIds.includes(homeroomClassId)) {
+            teachingClassIds.push(homeroomClassId);
+          }
+        }
+
+        // ✅ Auto-generate Employee ID
+        const year = new Date().getFullYear().toString().slice(-2);
+        const teacherCount = await prisma.teacher.count({
+          where: {
+            createdAt: {
+              gte: new Date(`${new Date().getFullYear()}-01-01`),
+            },
+          },
+        });
+        const sequence = (teacherCount + 1).toString().padStart(5, "0");
+        const employeeId = `T${year}${sequence}`;
+
+        // ✅ Create teacher with User account
+        const result = await prisma.$transaction(
+          async (tx) => {
+            // Create teacher
+            const teacher = await tx.teacher.create({
+              data: {
+                firstName: teacherData.firstName.trim(),
+                lastName: teacherData.lastName.trim(),
+                khmerName:
+                  teacherData.khmerName?.trim() ||
+                  `${teacherData.firstName} ${teacherData.lastName}`,
+                email: teacherData.email?.trim() || null,
+                phone: teacherData.phone.trim(),
+                gender,
+                role,
+                employeeId,
+                position: teacherData.position?.trim() || null,
+                address: teacherData.address?.trim() || null,
+                dateOfBirth: teacherData.dateOfBirth || null,
+                hireDate: teacherData.hireDate || null,
+                homeroomClassId,
+
+                // Subject assignments
+                subjectAssignments: {
+                  create: subjectIds.map((subjectId) => ({
+                    subjectId,
+                  })),
+                },
+
+                // Teaching class assignments
+                teachingClasses: {
+                  create: teachingClassIds.map((classId) => ({
+                    classId,
+                  })),
+                },
+              },
+            });
+
+            // Create User account
+            const hashedPassword = await bcrypt.hash(
+              teacherData.phone.trim(),
+              10
+            );
+
+            await tx.user.create({
+              data: {
+                phone: teacherData.phone.trim(),
+                email: teacherData.email?.trim() || null,
+                password: hashedPassword,
+                firstName: teacherData.firstName.trim(),
+                lastName: teacherData.lastName.trim(),
+                role: "TEACHER",
+                teacherId: teacher.id,
+                permissions: {
+                  canEnterGrades: true,
+                  canMarkAttendance: true,
+                  canViewReports: true,
+                  canUpdateStudents: false,
+                  canManageClasses: false,
+                },
+              },
+            });
+
+            return teacher;
+          },
+          {
+            maxWait: 15000,
+            timeout: 20000,
+          }
+        );
+
+        results.success.push({
+          row: rowNumber,
+          teacherId: result.id,
+          name: result.khmerName || `${result.firstName} ${result.lastName}`,
+          employeeId: result.employeeId || "",
+        });
+
+        console.log(
+          `  ✅ Row ${rowNumber}: ${result.khmerName} (${result.employeeId})`
+        );
+      } catch (error: any) {
+        results.failed.push({
+          row: rowNumber,
+          name:
+            teacherData.khmerName ||
+            `${teacherData.firstName || ""} ${teacherData.lastName || ""}` ||
+            "Unknown",
+          error: error.message,
+        });
+        console.error(`  ❌ Row ${rowNumber}: ${error.message}`);
+      }
+    }
+
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log(`✅ Success: ${results.success.length}/${teachers.length}`);
+    console.log(`❌ Failed: ${results.failed.length}/${teachers.length}`);
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    res.status(201).json({
+      success: true,
+      message: `Created ${results.success.length} teachers successfully`,
+      data: {
+        total: teachers.length,
+        success: results.success.length,
+        failed: results.failed.length,
+        results,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Bulk create error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create teachers",
+      error: error.message,
+    });
+  }
+};

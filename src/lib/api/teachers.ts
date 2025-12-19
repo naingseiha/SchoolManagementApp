@@ -2,6 +2,25 @@
 
 import { apiClient } from "./client";
 
+export interface BulkTeacherData {
+  firstName: string;
+  lastName: string;
+  khmerName?: string;
+  englishName?: string;
+  email: string;
+  phone: string;
+  gender: "MALE" | "FEMALE";
+  role?: "TEACHER" | "INSTRUCTOR";
+  dateOfBirth?: string;
+  hireDate?: string;
+  address?: string;
+  position?: string;
+  // ✅ CHANGE: Send IDs instead of names
+  subjectIds?: string[];
+  teachingClassIds?: string[];
+  homeroomClassId?: string;
+}
+
 export interface Teacher {
   id: string;
   teacherId?: string;
@@ -54,7 +73,7 @@ export interface Teacher {
   subjects?: Array<{
     id: string;
     name: string;
-    nameKh: string; // ✅ Use nameKh
+    nameKh: string;
     code: string;
     grade: string;
     track?: string;
@@ -201,6 +220,51 @@ export const teachersApi = {
     } catch (error) {
       console.error("❌ Error searching teachers:", error);
       return [];
+    }
+  },
+
+  /**
+   * ✅ NEW:  Bulk create teachers
+   */
+  async bulkCreate(teachers: BulkTeacherData[]): Promise<any> {
+    try {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📤 FRONTEND: Bulk creating teachers");
+      console.log("👥 Teachers count:", teachers.length);
+
+      const payload = { teachers };
+
+      console.log("📦 Sending payload.. .");
+
+      const response = await apiClient.post<any>("/teachers/bulk", payload);
+
+      console.log("📥 Raw response:", response);
+
+      // ✅ Handle response structure
+      let result;
+      if (response.success !== undefined && response.data !== undefined) {
+        result = response;
+      } else if (response.total !== undefined) {
+        result = {
+          success: true,
+          message: "Bulk import completed",
+          data: response,
+        };
+      } else {
+        throw new Error("Invalid response structure");
+      }
+
+      console.log("✅ Parsed response:", result);
+      console.log(`   - Success: ${result.data.success}/${result.data.total}`);
+      console.log(`   - Failed: ${result.data.failed}/${result.data.total}`);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+      return result;
+    } catch (error: any) {
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.error("❌ BULK IMPORT ERROR:", error);
+      console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      throw new Error(error.message || "Failed to bulk create teachers");
     }
   },
 };
