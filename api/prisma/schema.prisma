@@ -215,6 +215,7 @@ model Attendance {
   studentId String
   classId   String?
   date      DateTime
+  session   AttendanceSession @default(MORNING)
   status    AttendanceStatus
   remarks   String?
   createdAt DateTime         @default(now())
@@ -222,9 +223,14 @@ model Attendance {
   class     Class?           @relation(fields: [classId], references: [id])
   student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@unique([studentId, classId, date])
+  @@unique([studentId, classId, date, session])
   @@index([classId, date])
   @@map("attendance")
+}
+
+enum AttendanceSession {
+  MORNING    // ព្រឹក
+  AFTERNOON  // ល្ងាច
 }
 
 model StudentMonthlySummary {

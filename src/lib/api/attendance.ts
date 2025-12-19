@@ -14,16 +14,25 @@ export interface AttendanceGridData {
     studentName: string;
     gender: string;
     attendance: {
-      [day: number]: {
+      [key: string]: {
+        // ⭐ Key format: "day_M" or "day_A"
         id: string | null;
         status: string | null;
         displayValue: string;
         isSaved: boolean;
+        session: "MORNING" | "AFTERNOON";
       };
     };
     totalAbsent: number;
     totalPermission: number;
   }>;
+}
+
+export interface BulkSaveAttendanceItem {
+  studentId: string;
+  day: number;
+  session: "M" | "A"; // ⭐ NEW
+  value: string;
 }
 
 export interface BulkSaveAttendanceItem {

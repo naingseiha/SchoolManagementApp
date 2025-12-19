@@ -3,24 +3,21 @@ import { PrismaClient, AttendanceStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// api/src/controllers/attendance.controller.ts
+
 export class AttendanceController {
   /**
-   * Get attendance grid for Excel-like editing
+   * ✅ UPDATED: Get attendance grid with session support
    */
   static async getAttendanceGrid(req: Request, res: Response) {
     try {
       const { classId } = req.params;
       const { month, year } = req.query;
 
-      // ✅ Log incoming params
-      console.log("📥 Get attendance grid params:", { classId, month, year });
-
       const classData = await prisma.class.findUnique({
         where: { id: classId },
         include: {
-          students: {
-            orderBy: { khmerName: "asc" },
-          },
+          students: { orderBy: { khmerName: "asc" } },
         },
       });
 
@@ -46,37 +43,24 @@ export class AttendanceController {
         "ធ្នូ",
       ];
 
-      // ✅ Fix: indexOf returns -1 if not found, add 1 to get 1-12
       const monthIndex = monthNames.indexOf(month as string);
-      const monthNumber = monthIndex + 1; // 1-12 (not 0-11)
+      const monthNumber = monthIndex + 1;
 
-      console.log("📅 Month parsing:", {
-        monthName: month,
-        monthIndex,
-        monthNumber,
-      });
-
-      // ✅ Validate month number
       if (monthNumber === 0) {
         return res.status(400).json({
           success: false,
-          message: `Invalid month name: ${month}.  Must be one of: ${monthNames.join(
-            ", "
-          )}`,
+          message: `Invalid month name: ${month}`,
         });
       }
 
-      // ✅ Use monthNumber (1-12) for Date constructor
-      // JavaScript Date months are 0-indexed, so subtract 1
       const daysInMonth = new Date(
         parseInt(year as string),
-        monthNumber, // This gives us the last day of the month
+        monthNumber,
         0
       ).getDate();
 
       const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-      // ✅ Create proper date range
       const startDate = new Date(
         parseInt(year as string),
         monthNumber - 1,
@@ -94,12 +78,7 @@ export class AttendanceController {
         59
       );
 
-      console.log("📅 Date range:", {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        daysInMonth,
-      });
-
+      // ✅ Fetch all attendance records (both sessions)
       const attendanceRecords = await prisma.attendance.findMany({
         where: {
           classId,
@@ -112,36 +91,78 @@ export class AttendanceController {
 
       console.log(`✅ Found ${attendanceRecords.length} attendance records`);
 
-      // Build grid data
+      // ✅ Build grid data with session support
       const gridData = classData.students.map((student) => {
-        const studentAttendance: { [day: number]: any } = {};
+        const studentAttendance: {
+          [key: string]: {
+            id: string | null;
+            status: string | null;
+            displayValue: string;
+            isSaved: boolean;
+            session: "MORNING" | "AFTERNOON";
+          };
+        } = {};
+
         let totalAbsent = 0;
         let totalPermission = 0;
 
         days.forEach((day) => {
-          const record = attendanceRecords.find(
+          // ⭐ Morning session
+          const morningRecord = attendanceRecords.find(
             (a) =>
               a.studentId === student.id &&
               a.date.getDate() === day &&
-              a.date.getMonth() === monthNumber - 1 // JavaScript month is 0-indexed
+              a.date.getMonth() === monthNumber - 1 &&
+              a.session === "MORNING"
           );
 
-          let displayValue = "";
-          if (record) {
-            if (record.status === AttendanceStatus.ABSENT) {
-              displayValue = "A";
+          // ⭐ Afternoon session
+          const afternoonRecord = attendanceRecords.find(
+            (a) =>
+              a.studentId === student.id &&
+              a.date.getDate() === day &&
+              a.date.getMonth() === monthNumber - 1 &&
+              a.session === "AFTERNOON"
+          );
+
+          // ✅ Morning cell key:  "day_M"
+          let morningValue = "";
+          if (morningRecord) {
+            if (morningRecord.status === "ABSENT") {
+              morningValue = "A";
               totalAbsent++;
-            } else if (record.status === AttendanceStatus.PERMISSION) {
-              displayValue = "P";
+            } else if (morningRecord.status === "PERMISSION") {
+              morningValue = "P";
               totalPermission++;
             }
           }
 
-          studentAttendance[day] = {
-            id: record?.id || null,
-            status: record?.status || null,
-            displayValue,
-            isSaved: !!record,
+          studentAttendance[`${day}_M`] = {
+            id: morningRecord?.id || null,
+            status: morningRecord?.status || null,
+            displayValue: morningValue,
+            isSaved: !!morningRecord,
+            session: "MORNING",
+          };
+
+          // ✅ Afternoon cell key: "day_A"
+          let afternoonValue = "";
+          if (afternoonRecord) {
+            if (afternoonRecord.status === "ABSENT") {
+              afternoonValue = "A";
+              totalAbsent++;
+            } else if (afternoonRecord.status === "PERMISSION") {
+              afternoonValue = "P";
+              totalPermission++;
+            }
+          }
+
+          studentAttendance[`${day}_A`] = {
+            id: afternoonRecord?.id || null,
+            status: afternoonRecord?.status || null,
+            displayValue: afternoonValue,
+            isSaved: !!afternoonRecord,
+            session: "AFTERNOON",
           };
         });
 
@@ -163,7 +184,7 @@ export class AttendanceController {
           className: classData.name,
           month: month as string,
           year: parseInt(year as string),
-          monthNumber, // ✅ Now returns correct value (1-12)
+          monthNumber,
           daysInMonth,
           days,
           students: gridData,
@@ -179,57 +200,56 @@ export class AttendanceController {
   }
 
   /**
-   * Bulk save attendance
+   * ✅ UPDATED:  Bulk save with session support
    */
   static async bulkSaveAttendance(req: Request, res: Response) {
     try {
       const { classId, month, year, monthNumber, attendance } = req.body;
 
-      console.log("💾 Bulk save attendance:", {
-        classId,
-        month,
-        year,
-        monthNumber,
-        recordCount: attendance?.length,
-      });
+      console.log("\n=== BULK SAVE ATTENDANCE ===");
+      console.log("Class:", classId);
+      console.log("Month:", month, monthNumber);
+      console.log("Year:", year);
+      console.log("Records:", attendance.length);
 
-      if (
-        !classId ||
-        !month ||
-        !year ||
-        !attendance ||
-        !Array.isArray(attendance)
-      ) {
+      if (!Array.isArray(attendance) || attendance.length === 0) {
         return res.status(400).json({
           success: false,
-          message: "Invalid request data",
+          message: "No attendance data provided",
         });
       }
 
-      const savedRecords: any[] = [];
+      let savedCount = 0;
+      let errorCount = 0;
       const errors: any[] = [];
 
-      for (const record of attendance) {
-        const { studentId, day, value } = record;
-
+      for (const item of attendance) {
         try {
-          let status: AttendanceStatus | null = null;
-          if (value === "A" || value === "a") {
-            status = AttendanceStatus.ABSENT;
-          } else if (value === "P" || value === "p") {
-            status = AttendanceStatus.PERMISSION;
+          const { studentId, day, session, value } = item;
+
+          if (!studentId || !day || !session) {
+            errorCount++;
+            errors.push({ item, reason: "Missing required fields" });
+            continue;
           }
 
-          // ✅ Create date at noon to avoid timezone issues
-          const dateKey = new Date(year, monthNumber - 1, day, 12, 0, 0, 0);
+          // ✅ Parse session
+          const sessionEnum = session === "M" ? "MORNING" : "AFTERNOON";
 
-          console.log(
-            `📝 Processing: Student ${studentId}, Day ${day}, Value: "${value}", Status: ${status}, Date: ${dateKey.toISOString()}`
-          );
+          // ✅ Create date
+          const date = new Date(year, monthNumber - 1, day, 12, 0, 0);
 
-          if (status) {
-            // ✅ FIX: Find existing record first
-            const existingRecord = await prisma.attendance.findFirst({
+          // ✅ Determine status
+          let status: "PRESENT" | "ABSENT" | "PERMISSION" | null = null;
+          if (value === "A") {
+            status = "ABSENT";
+          } else if (value === "P") {
+            status = "PERMISSION";
+          }
+
+          // ✅ If empty, delete existing record
+          if (!status) {
+            await prisma.attendance.deleteMany({
               where: {
                 studentId,
                 classId,
@@ -237,71 +257,50 @@ export class AttendanceController {
                   gte: new Date(year, monthNumber - 1, day, 0, 0, 0),
                   lt: new Date(year, monthNumber - 1, day + 1, 0, 0, 0),
                 },
+                session: sessionEnum,
               },
             });
-
-            if (existingRecord) {
-              // Update existing
-              const updated = await prisma.attendance.update({
-                where: { id: existingRecord.id },
-                data: { status },
-              });
-              savedRecords.push(updated);
-              console.log(`✅ Updated: ${updated.id}`);
-            } else {
-              // Create new
-              const created = await prisma.attendance.create({
-                data: {
+          } else {
+            // ✅ FIXED: Use correct unique constraint name
+            await prisma.attendance.upsert({
+              where: {
+                studentId_classId_date_session: {
+                  // ⭐ This will work after migration
                   studentId,
                   classId,
-                  date: dateKey,
-                  status,
-                },
-              });
-              savedRecords.push(created);
-              console.log(`✅ Created: ${created.id}`);
-            }
-          } else {
-            // Delete if exists (marked as PRESENT or empty)
-            const deleted = await prisma.attendance.deleteMany({
-              where: {
-                studentId,
-                classId,
-                date: {
-                  gte: new Date(year, monthNumber - 1, day, 0, 0, 0),
-                  lt: new Date(year, monthNumber - 1, day + 1, 0, 0, 0),
+                  date,
+                  session: sessionEnum,
                 },
               },
+              update: {
+                status,
+              },
+              create: {
+                studentId,
+                classId,
+                date,
+                session: sessionEnum,
+                status,
+              },
             });
-            if (deleted.count > 0) {
-              console.log(`🗑️ Deleted ${deleted.count} record(s)`);
-            }
           }
-        } catch (error: any) {
-          console.error(
-            `❌ Error processing student ${studentId}, day ${day}:`,
-            error
-          );
-          errors.push({
-            studentId,
-            day,
-            error: error.message,
-          });
+
+          savedCount++;
+        } catch (err: any) {
+          console.error("Error saving attendance:", err);
+          errorCount++;
+          errors.push({ item, error: err.message });
         }
       }
 
-      console.log(
-        `✅ Bulk save complete: ${savedRecords.length} saved, ${errors.length} errors`
-      );
+      console.log(`✅ Saved:  ${savedCount}, Errors: ${errorCount}`);
+      console.log("===========================\n");
 
       return res.json({
-        success: errors.length === 0,
-        message: `Saved ${savedRecords.length} records${
-          errors.length > 0 ? `, ${errors.length} errors` : ""
-        }`,
+        success: true,
         data: {
-          savedCount: savedRecords.length,
-          errorCount: errors.length,
+          savedCount,
+          errorCount,
           errors: errors.length > 0 ? errors : undefined,
         },
       });
@@ -315,16 +314,12 @@ export class AttendanceController {
   }
 
   /**
-   * Get monthly attendance summary for grade entry
+   * ✅ UPDATED:  Monthly summary with session support
    */
   static async getMonthlySummary(req: Request, res: Response) {
     try {
       const { classId } = req.params;
       const { month, year } = req.query;
-
-      console.log(
-        `📊 Getting attendance summary for class: ${classId}, month: ${month}, year: ${year}`
-      );
 
       const monthNames = [
         "មករា",
@@ -340,27 +335,16 @@ export class AttendanceController {
         "វិច្ឆិកា",
         "ធ្នូ",
       ];
+
       const monthNumber = monthNames.indexOf(month as string) + 1;
-
-      if (monthNumber === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid month name",
-        });
-      }
-
       const startDate = new Date(parseInt(year as string), monthNumber - 1, 1);
       const endDate = new Date(
         parseInt(year as string),
-        monthNumber,
-        0,
+        monthNumber - 1,
+        new Date(parseInt(year as string), monthNumber, 0).getDate(),
         23,
         59,
         59
-      );
-
-      console.log(
-        `📅 Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`
       );
 
       const attendanceRecords = await prisma.attendance.findMany({
@@ -379,6 +363,7 @@ export class AttendanceController {
         [studentId: string]: { absent: number; permission: number };
       } = {};
 
+      // ✅ Count both sessions
       attendanceRecords.forEach((record) => {
         if (!summary[record.studentId]) {
           summary[record.studentId] = { absent: 0, permission: 0 };
@@ -401,10 +386,10 @@ export class AttendanceController {
         data: summary,
       });
     } catch (error: any) {
-      console.error("❌ Get attendance summary error:", error);
+      console.error("❌ Get monthly summary error:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || "Failed to get attendance summary",
+        message: error.message || "Failed to get monthly summary",
       });
     }
   }
