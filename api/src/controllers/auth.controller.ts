@@ -4,360 +4,319 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
-const JWT_SECRET =
-  process.env.JWT_SECRET || "your-secret-key-change-in-production";
-
-// ✅ Token expiration times
-const TOKEN_EXPIRY = {
-  SHORT: "1d", // 1 day - default
-  MEDIUM: "7d", // 7 days - remember me
-  LONG: "30d", // 30 days - long session
-};
 
 /**
- * ✅ LOGIN - Support both phone and email
+ * ✅ REGISTER - បង្កើតគណនីថ្មី
  */
-export const login = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response) => {
   try {
-    const { identifier, password, rememberMe } = req.body; // ✅ Changed from "email" to "identifier"
+    const { email, password, firstName, lastName, role, phone } = req.body;
 
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🔐 Login attempt:", { identifier, rememberMe: !!rememberMe });
+    console.log("📝 REGISTER REQUEST:", { email, role, firstName, lastName });
 
-    if (!identifier || !password) {
+    if (!password || !firstName || !lastName || !role) {
       return res.status(400).json({
         success: false,
-        message:
-          "លេខទូរស័ព្ទ/អ៊ីមែល និងពាក្យសម្ងាត់ត្រូវតែមាន\nPhone/Email and password are required",
+        message: "សូមបំពេញព័ត៌មានទាំងអស់\nAll fields are required",
       });
     }
 
-    // ✅ Find user by phone OR email
+    if (email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "អ៊ីមែលនេះត្រូវបានប្រើរួចហើយ\nEmail already exists",
+        });
+      }
+    }
+
+    if (phone) {
+      const existingPhone = await prisma.user.findUnique({
+        where: { phone },
+      });
+
+      if (existingPhone) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "លេខទូរសព្ទនេះត្រូវបានប្រើរួចហើយ\nPhone number already exists",
+        });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email: email || undefined,
+        phone: phone || undefined,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role,
+      },
+    });
+
+    // ✅ FIXED: Proper JWT signing
+    const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      jwtSecret,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    console.log("✅ User registered successfully:", user.id);
+
+    res.status(201).json({
+      success: true,
+      message: "បង្កើតគណនីបានជោគជ័យ\nRegistration successful",
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
+        token,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Register error:", error);
+    res.status(500).json({
+      success: false,
+      message: "មានបញ្ហាក្នុងការបង្កើតគណនី\nRegistration failed",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ LOGIN - ចូលប្រើប្រាស់
+ */
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, phone, password } = req.body;
+
+    console.log("🔐 LOGIN REQUEST:", { email, phone });
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: "សូមបញ្ចូលពាក្យសម្ងាត់\nPassword is required",
+      });
+    }
+
+    if (!email && !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "សូមបញ្ចូលអ៊ីមែល ឬលេខទូរសព្ទ\nEmail or phone is required",
+      });
+    }
+
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ phone: identifier.trim() }, { email: identifier.trim() }],
+        OR: [{ email: email || undefined }, { phone: phone || undefined }],
       },
       include: {
-        teacher: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            khmerName: true,
-            role: true,
-            homeroomClassId: true,
-          },
-        },
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            khmerName: true,
-            classId: true,
-          },
-        },
+        student: true,
+        teacher: true,
       },
     });
 
     if (!user) {
-      console.log("❌ User not found:", identifier);
       return res.status(401).json({
         success: false,
-        message:
-          "លេខទូរស័ព្ទ/អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ\nInvalid credentials",
+        message: "អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ\nInvalid credentials",
       });
     }
 
-    // ✅ Check if account is active
-    if (!user.isActive) {
-      console.log("❌ Account deactivated:", identifier);
-      return res.status(401).json({
-        success: false,
-        message: "គណនីត្រូវបានផ្អាក\nAccount is deactivated",
-      });
-    }
-
-    // ✅ Check if account is locked
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutesLeft = Math.ceil(
-        (user.lockedUntil.getTime() - Date.now()) / (1000 * 60)
-      );
-      console.log("❌ Account locked:", identifier);
-      return res.status(401).json({
-        success: false,
-        message: `គណនីត្រូវបានចាក់សោរ សូមព្យាយាមម្តងទៀតក្នុងរយៈពេល ${minutesLeft} នាទី\nAccount locked.  Try again in ${minutesLeft} minutes`,
-      });
-    }
-
-    // ✅ Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      console.log("❌ Invalid password for user:", identifier);
-
-      // ✅ Increment failed attempts
-      const newFailedAttempts = user.failedAttempts + 1;
-      const shouldLock = newFailedAttempts >= 5;
-
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          failedAttempts: newFailedAttempts,
-          lockedUntil: shouldLock
-            ? new Date(Date.now() + 15 * 60 * 1000) // Lock for 15 minutes
-            : null,
+          failedAttempts: user.failedAttempts + 1,
         },
       });
 
       return res.status(401).json({
         success: false,
-        message: shouldLock
-          ? "ពាក្យសម្ងាត់មិនត្រឹមត្រូវ។ គណនីត្រូវបានចាក់សោរ 15 នាទី\nToo many failed attempts. Account locked for 15 minutes"
-          : `ពាក្យសម្ងាត់មិនត្រឹមត្រូវ (${newFailedAttempts}/5)\nInvalid password (${newFailedAttempts}/5 attempts)`,
+        message: "អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ\nInvalid credentials",
       });
     }
 
-    // ✅ Reset failed attempts and update login stats
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "គណនីត្រូវបានបិទ\nAccount is disabled",
+      });
+    }
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        failedAttempts: 0,
-        lockedUntil: null,
         lastLogin: new Date(),
         loginCount: user.loginCount + 1,
+        failedAttempts: 0,
       },
     });
 
-    // ✅ Choose token expiry based on rememberMe option
-    const expiresIn = rememberMe ? TOKEN_EXPIRY.MEDIUM : TOKEN_EXPIRY.SHORT;
-
-    // ✅ Generate JWT token
+    // ✅ FIXED:  Proper JWT signing
+    const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
     const token = jwt.sign(
       {
         userId: user.id,
-        phone: user.phone,
         email: user.email,
         role: user.role,
-        teacherId: user.teacherId,
-        studentId: user.studentId,
       },
-      JWT_SECRET,
-      { expiresIn }
+      jwtSecret,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
 
-    console.log("✅ Login successful:", identifier);
-    console.log(`📅 Token expires in: ${expiresIn}`);
-    console.log(
-      `⏰ Remember me: ${rememberMe ? "YES (7 days)" : "NO (1 day)"}`
-    );
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("✅ Login successful:", user.id);
 
     res.json({
       success: true,
       message: "ចូលប្រើប្រាស់បានជោគជ័យ\nLogin successful",
       data: {
-        token,
-        expiresIn,
         user: {
           id: user.id,
-          phone: user.phone,
           email: user.email,
+          phone: user.phone,
           firstName: user.firstName,
           lastName: user.lastName,
           role: user.role,
-          teacher: user.teacher,
           student: user.student,
-          permissions: user.permissions,
-          lastLogin: user.lastLogin,
-          loginCount: user.loginCount + 1,
+          teacher: user.teacher,
         },
+        token,
       },
     });
   } catch (error: any) {
     console.error("❌ Login error:", error);
     res.status(500).json({
       success: false,
-      message: "Login failed",
+      message: "មានបញ្ហាក្នុងការចូលប្រើប្រាស់\nLogin failed",
       error: error.message,
     });
   }
 };
 
 /**
- * ✅ CHANGE PASSWORD
+ * ✅ REFRESH TOKEN - ផ្តល់ token ថ្មី
  */
-export const changePassword = async (req: Request, res: Response) => {
+export const refreshToken = async (req: Request, res: Response) => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Token is required",
+      });
+    }
+
+    // ✅ FIXED:  Proper JWT verify
+    const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
+    const decoded = jwt.verify(token, jwtSecret) as {
+      userId: string;
+      email: string;
+      role: string;
+    };
+
+    const newToken = jwt.sign(
+      {
+        userId: decoded.userId,
+        email: decoded.email,
+        role: decoded.role,
+      },
+      jwtSecret,
+      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+    );
+
+    res.json({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        token: newToken,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Refresh token error:", error);
+    res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET CURRENT USER
+ */
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
     const userId = (req as any).user?.userId;
 
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "Authentication required",
-      });
-    }
-
-    if (!oldPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "ពាក្យសម្ងាត់ចាស់ និងពាក្យសម្ងាត់ថ្មីត្រូវតែមាន\nOld and new passwords are required",
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច 6 តួអក្សរ\nPassword must be at least 6 characters",
+        message: "Unauthorized",
       });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    // Verify old password
-    const isValid = await bcrypt.compare(oldPassword, user.password);
-    if (!isValid) {
-      return res.status(400).json({
-        success: false,
-        message: "ពាក្យសម្ងាត់ចាស់មិនត្រឹមត្រូវ\nInvalid current password",
-      });
-    }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
-
-    console.log("✅ Password changed for user:", user.phone || user.email);
-
-    res.json({
-      success: true,
-      message: "ប្តូរពាក្យសម្ងាត់បានជោគជ័យ\nPassword changed successfully",
-    });
-  } catch (error: any) {
-    console.error("❌ Change password error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to change password",
-      error: error.message,
-    });
-  }
-};
-
-/**
- * ✅ GET CURRENT USER (with teacher/student data)
- */
-export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      userId: string;
-      phone?: string;
-      email?: string;
-      role: string;
-    };
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
       select: {
         id: true,
-        phone: true,
         email: true,
+        phone: true,
         firstName: true,
         lastName: true,
         role: true,
         isActive: true,
-        permissions: true,
         lastLogin: true,
         loginCount: true,
-        teacher: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            khmerName: true,
-            role: true,
-            position: true,
-            homeroomClassId: true,
-            homeroomClass: {
-              select: {
-                id: true,
-                name: true,
-                grade: true,
-                section: true,
-                track: true,
-              },
-            },
-            teachingClasses: {
-              include: {
-                class: {
-                  select: {
-                    id: true,
-                    name: true,
-                    grade: true,
-                    section: true,
-                    track: true,
-                  },
-                },
-              },
-            },
-            subjectAssignments: {
-              include: {
-                subject: {
-                  select: {
-                    id: true,
-                    name: true,
-                    nameKh: true,
-                    code: true,
-                    grade: true,
-                  },
-                },
-              },
-            },
-          },
-        },
+        createdAt: true,
+        updatedAt: true,
         student: {
           select: {
             id: true,
             studentId: true,
+            khmerName: true,
             firstName: true,
             lastName: true,
-            khmerName: true,
+            gender: true,
             classId: true,
             class: {
               select: {
                 id: true,
                 name: true,
                 grade: true,
-                section: true,
-                track: true,
               },
             },
+          },
+        },
+        teacher: {
+          select: {
+            id: true,
+            teacherId: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
+            position: true,
+            homeroomClassId: true,
           },
         },
       },
@@ -375,14 +334,6 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       data: user,
     });
   } catch (error: any) {
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        success: false,
-        message: "Token expired",
-        code: "TOKEN_EXPIRED",
-      });
-    }
-
     console.error("❌ Get current user error:", error);
     res.status(500).json({
       success: false,
@@ -393,87 +344,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 };
 
 /**
- * ✅ TOKEN REFRESH
- */
-export const refreshToken = async (req: Request, res: Response) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        message: "No token provided",
-      });
-    }
-
-    const oldToken = authHeader.substring(7);
-
-    try {
-      // Verify old token (even if expired)
-      const decoded = jwt.verify(oldToken, JWT_SECRET, {
-        ignoreExpiration: true,
-      }) as {
-        userId: string;
-        phone?: string;
-        email?: string;
-        role: string;
-        teacherId?: string;
-        studentId?: string;
-      };
-
-      // Check if token is too old (more than 30 days)
-      const decodedComplete = jwt.decode(oldToken) as any;
-      const tokenAge = Date.now() / 1000 - decodedComplete.iat;
-
-      if (tokenAge > 30 * 24 * 60 * 60) {
-        return res.status(401).json({
-          success: false,
-          message: "Token too old.  Please login again.",
-        });
-      }
-
-      // Generate new token
-      const newToken = jwt.sign(
-        {
-          userId: decoded.userId,
-          phone: decoded.phone,
-          email: decoded.email,
-          role: decoded.role,
-          teacherId: decoded.teacherId,
-          studentId: decoded.studentId,
-        },
-        JWT_SECRET,
-        { expiresIn: TOKEN_EXPIRY.MEDIUM }
-      );
-
-      console.log("🔄 Token refreshed for:", decoded.phone || decoded.email);
-
-      res.json({
-        success: true,
-        message: "Token refreshed",
-        data: {
-          token: newToken,
-          expiresIn: TOKEN_EXPIRY.MEDIUM,
-        },
-      });
-    } catch (error: any) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token",
-      });
-    }
-  } catch (error: any) {
-    console.error("❌ Token refresh error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Token refresh failed",
-      error: error.message,
-    });
-  }
-};
-
-/**
- * ✅ LOGOUT (optional - just for logging)
+ * ✅ LOGOUT
  */
 export const logout = async (req: Request, res: Response) => {
   try {

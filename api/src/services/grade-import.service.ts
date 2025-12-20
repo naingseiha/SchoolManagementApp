@@ -1,284 +1,100 @@
 import ExcelJS from "exceljs";
 import { PrismaClient } from "@prisma/client";
-import { GradeCalculationService } from "./grade-calculation.service";
 
 const prisma = new PrismaClient();
 
-export interface ImportedGrade {
-  studentName: string;
-  gender: string;
-  grades: {
-    [subjectCode: string]: number | null;
-  };
-}
-
-export interface GradeImportResult {
-  success: boolean;
-  totalStudents: number;
-  importedStudents: number;
-  errorStudents: number;
-  errors: Array<{
-    row: number;
-    studentName: string;
-    error: string;
-  }>;
-  summary: {
-    month: string;
-    year: number;
-    classId: string;
-    className: string;
-  };
+interface GradeImportRow {
+  studentId?: string;
+  studentName?: string;
+  [key: string]: any; // For dynamic subject columns
 }
 
 export class GradeImportService {
   /**
-   * Get subject mapping by grade level
+   * ✅ FIXED: Parse Excel buffer with proper Buffer handling
    */
-  private static getSubjectMapping(grade: string): { [col: string]: string } {
-    // Grade 7, 8
-    if (["7", "8"].includes(grade)) {
-      return {
-        D: "WRITING",
-        E: "DICTATION",
-        F: "MATH",
-        G: "PHY",
-        H: "CHEM",
-        I: "BIO",
-        J: "EARTH",
-        K: "MORAL",
-        L: "GEO",
-        M: "HIST",
-        N: "ENG",
-        O: "SPORTS",
-        P: "AGRI",
-        Q: "ICT",
-      };
-    }
+  static async parseExcelBuffer(buffer: Buffer): Promise<any[]> {
+    try {
+      console.log("📊 Parsing Excel buffer for grades...");
 
-    // Grade 9
-    if (grade === "9") {
-      return {
-        D: "WRITING",
-        E: "DICTATION",
-        F: "MATH",
-        G: "PHY",
-        H: "CHEM",
-        I: "BIO",
-        J: "EARTH",
-        K: "MORAL",
-        L: "GEO",
-        M: "HIST",
-        N: "ENG",
-        O: "ECON",
-        P: "SPORTS",
-        Q: "AGRI",
-        R: "ICT",
-      };
-    }
+      const workbook = new ExcelJS.Workbook();
 
-    // Grade 10
-    if (grade === "10") {
-      return {
-        D: "KHM",
-        E: "MATH",
-        F: "PHY",
-        G: "CHEM",
-        H: "BIO",
-        I: "EARTH",
-        J: "MORAL",
-        K: "GEO",
-        L: "HIST",
-        M: "ENG",
-        N: "SPORTS",
-        O: "AGRI",
-        P: "ICT",
-      };
-    }
+      // ✅ FIXED: Use buffer directly without slice
+      await workbook.xlsx.load(buffer);
 
-    // Grade 11
-    if (grade === "11") {
-      return {
-        D: "KHM",
-        E: "MATH",
-        F: "PHY",
-        G: "CHEM",
-        H: "BIO",
-        I: "EARTH",
-        J: "MORAL",
-        K: "GEO",
-        L: "HIST",
-        M: "ENG",
-        N: "SPORTS",
-        O: "AGRI",
-        P: "ICT",
-      };
-    }
-
-    // Grade 12 (will determine science/social from track)
-    if (grade === "12") {
-      return {
-        D: "KHM",
-        E: "MATH",
-        F: "PHY",
-        G: "CHEM",
-        H: "BIO",
-        I: "EARTH",
-        J: "MORAL",
-        K: "GEO",
-        L: "HIST",
-        M: "ENG",
-        N: "ICT",
-      };
-    }
-
-    return {};
-  }
-
-  /**
-   * Get month number from Khmer month name
-   */
-  private static getMonthNumber(monthKh: string): number {
-    const months: { [key: string]: number } = {
-      មករា: 1,
-      កុម្ភៈ: 2,
-      មីនា: 3,
-      មេសា: 4,
-      ឧសភា: 5,
-      មិថុនា: 6,
-      កក្កដា: 7,
-      សីហា: 8,
-      កញ្ញា: 9,
-      តុលា: 10,
-      វិច្ឆិកា: 11,
-      ធ្នូ: 12,
-    };
-    return months[monthKh] || 1;
-  }
-
-  /**
-   * Parse grade Excel file
-   */
-  static async parseGradeFile(
-    buffer: Buffer,
-    classId: string
-  ): Promise<{
-    students: ImportedGrade[];
-    month: string;
-    year: number;
-    grade: string;
-  }> {
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📂 Parsing grade Excel file...");
-
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const worksheet = workbook.getWorksheet(1) || workbook.worksheets[0];
-
-    // Get class info to determine grade level
-    const classData = await prisma.class.findUnique({
-      where: { id: classId },
-    });
-
-    if (!classData) {
-      throw new Error("Class not found");
-    }
-
-    const grade = classData.grade;
-    const subjectMapping = this.getSubjectMapping(grade);
-
-    // Extract month and year from Excel (assume in specific cells)
-    // You may need to adjust based on your template structure
-    const monthCell = worksheet.getCell("T6").value?.toString() || "មករា";
-    const yearCell = worksheet.getCell("T7").value?.toString() || "2024";
-
-    const month = monthCell.split(":")[0]?.trim() || "មករា";
-    const year = parseInt(yearCell.match(/\d{4}/)?.[0] || "2024");
-
-    console.log(`📅 Month: ${month}, Year: ${year}`);
-    console.log(`🎓 Grade: ${grade}`);
-
-    const students: ImportedGrade[] = [];
-
-    // Find data start row (look for ល.រ header)
-    let dataStartRow = 10;
-    worksheet.eachRow((row, rowNumber) => {
-      row.eachCell((cell) => {
-        if (cell.value && cell.value.toString().includes("ល.រ")) {
-          dataStartRow = rowNumber + 1;
-        }
-      });
-    });
-
-    console.log(`📍 Data starts at row: ${dataStartRow}`);
-
-    // Parse each student row
-    worksheet.eachRow((row, rowNumber) => {
-      if (rowNumber < dataStartRow) return;
-
-      const studentName = row.getCell("B").value?.toString().trim();
-      const gender = row.getCell("C").value?.toString().trim();
-
-      if (!studentName || studentName === "") return;
-
-      const grades: { [subjectCode: string]: number | null } = {};
-
-      // Parse grades based on subject mapping
-      for (const [col, subjectCode] of Object.entries(subjectMapping)) {
-        const cellValue = row.getCell(col).value;
-        let score: number | null = null;
-
-        if (cellValue !== null && cellValue !== undefined && cellValue !== "") {
-          const numValue =
-            typeof cellValue === "number"
-              ? cellValue
-              : parseFloat(cellValue.toString());
-
-          if (!isNaN(numValue)) {
-            score = numValue;
-          }
-        }
-
-        grades[subjectCode] = score;
+      const worksheet = workbook.getWorksheet(1);
+      if (!worksheet) {
+        throw new Error("No worksheet found in Excel file");
       }
 
-      students.push({
-        studentName,
-        gender: gender || "",
-        grades,
+      console.log(`📄 Found worksheet:  ${worksheet.name}`);
+
+      const data: any[] = [];
+      const headers: string[] = [];
+
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          // First row = headers
+          row.eachCell((cell) => {
+            headers.push(cell.value?.toString().trim() || "");
+          });
+          console.log("📋 Headers:", headers);
+        } else {
+          // Data rows
+          const rowData: any = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              // Parse cell value
+              let value = cell.value;
+
+              // Handle date values
+              if (value instanceof Date) {
+                value = value.toISOString();
+              }
+
+              // Handle formula results
+              if (cell.type === ExcelJS.ValueType.Formula && cell.result) {
+                value = cell.result;
+              }
+
+              rowData[header] = value;
+            }
+          });
+
+          // Only add non-empty rows
+          if (Object.keys(rowData).length > 0) {
+            data.push(rowData);
+          }
+        }
       });
 
-      console.log(`  ✓ Row ${rowNumber}: ${studentName}`);
-    });
-
-    console.log(`✅ Parsed ${students.length} students`);
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-    return { students, month, year, grade };
+      console.log(`✅ Parsed ${data.length} rows from Excel`);
+      return data;
+    } catch (error: any) {
+      console.error("❌ Parse Excel error:", error);
+      throw new Error(`Failed to parse Excel:  ${error.message}`);
+    }
   }
 
   /**
-   * Import grades to database
+   * ✅ Import grades from Excel buffer
    */
   static async importGrades(
     classId: string,
     buffer: Buffer
-  ): Promise<GradeImportResult> {
-    const result: GradeImportResult = {
-      success: true,
-      totalStudents: 0,
-      importedStudents: 0,
-      errorStudents: 0,
-      errors: [],
-      summary: {
-        month: "",
-        year: 0,
-        classId: "",
-        className: "",
-      },
-    };
-
+  ): Promise<{
+    success: boolean;
+    imported: number;
+    updated: number;
+    skipped: number;
+    errors: any[];
+  }> {
     try {
-      // Get class data
+      console.log("\n=== EXCEL GRADE IMPORT ===");
+      console.log("Class ID:", classId);
+
+      // ✅ Verify class exists
       const classData = await prisma.class.findUnique({
         where: { id: classId },
         include: {
@@ -290,160 +106,591 @@ export class GradeImportService {
         throw new Error("Class not found");
       }
 
-      // Parse Excel
-      const { students, month, year, grade } = await this.parseGradeFile(
-        buffer,
-        classId
-      );
+      console.log("Class:", classData.name);
+      console.log("Students in class:", classData.students.length);
 
-      result.totalStudents = students.length;
-      result.summary.month = month;
-      result.summary.year = year;
-      result.summary.classId = classId;
-      result.summary.className = classData.name;
+      // ✅ Get subjects for this grade
+      const subjects = await prisma.subject.findMany({
+        where: {
+          grade: classData.grade,
+          isActive: true,
+        },
+      });
 
-      const monthNumber = this.getMonthNumber(month);
+      console.log("Subjects:", subjects.length);
 
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log(`📥 Importing grades for ${classData.name}...`);
-      console.log(`📅 Month: ${month} (${monthNumber}), Year: ${year}`);
+      // ✅ Parse Excel data
+      const data = await this.parseExcelBuffer(buffer);
 
-      // Get track for grade 12
-      let track: string | null = null;
-      if (grade === "12") {
-        // You may need to determine track from class name or ask user
-        // For now, assume from class name (e.g., "ថ្នាក់ទី១២ក-វិទ្យាសាស្ត្រ")
-        if (
-          classData.name.includes("វិទ្យាសាស្ត្រ") ||
-          classData.name.includes("science")
-        ) {
-          track = "science";
-        } else if (
-          classData.name.includes("សង្គម") ||
-          classData.name.includes("social")
-        ) {
-          track = "social";
-        }
+      if (data.length === 0) {
+        throw new Error("No data found in Excel file");
       }
 
-      // Process each student
-      for (let i = 0; i < students.length; i++) {
-        const importedStudent = students[i];
-        const rowNumber = i + 11;
+      const errors: any[] = [];
+      let imported = 0;
+      let updated = 0;
+      let skipped = 0;
+
+      // ✅ Extract month and year from first valid row or use current
+      const firstRow = data[0];
+      const month =
+        firstRow.month || firstRow["Month"] || firstRow["ខែ"] || "មករា";
+      const year = parseInt(
+        firstRow.year?.toString() ||
+          firstRow["Year"]?.toString() ||
+          firstRow["ឆ្នាំ"]?.toString() ||
+          new Date().getFullYear().toString()
+      );
+
+      console.log(`📅 Import period: ${month} ${year}`);
+
+      // ✅ Get month number
+      const monthNames = [
+        "មករា",
+        "កុម្ភៈ",
+        "មីនា",
+        "មេសា",
+        "ឧសភា",
+        "មិថុនា",
+        "កក្កដា",
+        "សីហា",
+        "កញ្ញា",
+        "តុលា",
+        "វិច្ឆិកា",
+        "ធ្នូ",
+      ];
+      const monthNumber = monthNames.indexOf(month) + 1;
+
+      if (monthNumber === 0) {
+        throw new Error(`Invalid month name: ${month}`);
+      }
+
+      // ✅ Process each row
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
 
         try {
-          // Find student in database by name
-          const student = classData.students.find(
-            (s) =>
-              s.khmerName === importedStudent.studentName ||
-              `${s.lastName} ${s.firstName}` === importedStudent.studentName
-          );
+          console.log(`\n📝 Processing row ${i + 1}: `, row);
 
-          if (!student) {
-            result.errors.push({
-              row: rowNumber,
-              studentName: importedStudent.studentName,
-              error: "Student not found in class",
+          // ✅ Find student
+          const studentId =
+            row.studentId?.toString() ||
+            row["Student ID"]?.toString() ||
+            row["លេខសិស្ស"]?.toString();
+
+          const studentName =
+            row.studentName?.toString() ||
+            row["Student Name"]?.toString() ||
+            row["ឈ្មោះសិស្ស"]?.toString();
+
+          if (!studentId && !studentName) {
+            errors.push({
+              row: i + 2,
+              data: row,
+              error: "Missing student ID or name",
             });
-            result.errorStudents++;
+            skipped++;
             continue;
           }
 
-          // Import grades for each subject
-          for (const [subjectCode, score] of Object.entries(
-            importedStudent.grades
-          )) {
-            if (score === null) continue;
+          // ✅ Find student in class
+          let student;
+          if (studentId) {
+            student = classData.students.find((s) => s.studentId === studentId);
+          }
 
-            // Find subject
-            const subjectCodeWithGrade =
-              grade === "12" && track
-                ? `${subjectCode}-G${grade}-${track.toUpperCase()}`
-                : `${subjectCode}-G${grade}`;
+          if (!student && studentName) {
+            student = classData.students.find(
+              (s) =>
+                s.khmerName === studentName ||
+                `${s.lastName} ${s.firstName}` === studentName
+            );
+          }
 
-            const subject = await prisma.subject.findUnique({
-              where: { code: subjectCodeWithGrade },
+          if (!student) {
+            errors.push({
+              row: i + 2,
+              data: row,
+              error: `Student not found: ${studentId || studentName}`,
             });
+            skipped++;
+            continue;
+          }
 
-            if (!subject) {
-              console.warn(
-                `  ⚠️ Subject not found: ${subjectCodeWithGrade} for ${importedStudent.studentName}`
-              );
+          console.log(`👤 Found student: ${student.khmerName}`);
+
+          // ✅ Process each subject grade
+          let gradesProcessed = 0;
+
+          for (const subject of subjects) {
+            // Try multiple column name formats
+            const possibleKeys = [
+              subject.code,
+              subject.nameKh,
+              subject.nameEn,
+              subject.name,
+              subject.code.toLowerCase(),
+            ];
+
+            let score: number | null = null;
+
+            for (const key of possibleKeys) {
+              if (
+                row[key] !== undefined &&
+                row[key] !== null &&
+                row[key] !== ""
+              ) {
+                const scoreValue = parseFloat(row[key].toString());
+                if (!isNaN(scoreValue)) {
+                  score = scoreValue;
+                  break;
+                }
+              }
+            }
+
+            // Skip if no score found for this subject
+            if (score === null) {
               continue;
             }
 
-            // Create or update grade
-            await prisma.grade.upsert({
+            // ✅ Validate score
+            if (score < 0 || score > subject.maxScore) {
+              errors.push({
+                row: i + 2,
+                student: student.khmerName,
+                subject: subject.nameKh,
+                error: `Invalid score ${score} (max: ${subject.maxScore})`,
+              });
+              continue;
+            }
+
+            // ✅ Calculate weighted score
+            const percentage = (score / subject.maxScore) * 100;
+            const weightedScore = score * subject.coefficient;
+
+            // ✅ Check if grade exists
+            const existingGrade = await prisma.grade.findFirst({
               where: {
-                studentId_subjectId_classId_month_year: {
-                  studentId: student.id,
-                  subjectId: subject.id,
-                  classId: classId,
-                  month: month,
-                  year: year,
-                },
-              },
-              update: {
-                score,
-                maxScore: subject.maxScore,
-                monthNumber,
-              },
-              create: {
                 studentId: student.id,
                 subjectId: subject.id,
                 classId: classId,
-                score,
-                maxScore: subject.maxScore,
-                month,
-                monthNumber,
-                year,
+                month: month,
+                year: year,
               },
             });
+
+            if (existingGrade) {
+              // ✅ Update existing grade
+              await prisma.grade.update({
+                where: { id: existingGrade.id },
+                data: {
+                  score,
+                  maxScore: subject.maxScore,
+                  percentage,
+                  weightedScore,
+                  updatedAt: new Date(),
+                },
+              });
+              updated++;
+              gradesProcessed++;
+            } else {
+              // ✅ Create new grade
+              await prisma.grade.create({
+                data: {
+                  studentId: student.id,
+                  subjectId: subject.id,
+                  classId: classId,
+                  score,
+                  maxScore: subject.maxScore,
+                  month: month,
+                  monthNumber: monthNumber,
+                  year: year,
+                  percentage,
+                  weightedScore,
+                },
+              });
+              imported++;
+              gradesProcessed++;
+            }
           }
 
-          // Calculate monthly summary for this student
-          await GradeCalculationService.calculateMonthlySummary(
-            student.id,
-            classId,
-            month,
-            monthNumber,
-            year
-          );
-
-          result.importedStudents++;
           console.log(
-            `  ✅ Row ${rowNumber}: ${importedStudent.studentName} - Grades imported`
+            `✅ Processed ${gradesProcessed} grades for ${student.khmerName}`
           );
         } catch (error: any) {
-          console.error(`  ❌ Row ${rowNumber} error:`, error.message);
-          result.errors.push({
-            row: rowNumber,
-            studentName: importedStudent.studentName,
-            error: error.message || "Unknown error",
+          console.error(`❌ Error processing row ${i + 1}:`, error);
+          errors.push({
+            row: i + 2,
+            data: row,
+            error: error.message,
           });
-          result.errorStudents++;
+          skipped++;
         }
       }
 
-      // Calculate class ranks
-      await GradeCalculationService.calculateClassRanks(classId, month, year);
+      console.log("\n=== GRADE IMPORT SUMMARY ===");
+      console.log(`✅ Imported (new): ${imported}`);
+      console.log(`🔄 Updated (existing): ${updated}`);
+      console.log(`⚠️  Skipped: ${skipped}`);
+      console.log(`❌ Errors: ${errors.length}`);
+      console.log("============================\n");
 
-      result.success = result.errorStudents === 0;
-
-      console.log(
-        `✅ Import completed: ${result.importedStudents} success, ${result.errorStudents} errors`
-      );
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      return {
+        success: true,
+        imported,
+        updated,
+        skipped,
+        errors,
+      };
     } catch (error: any) {
-      console.error("❌ Import failed:", error);
-      result.success = false;
-      result.errors.push({
-        row: 0,
-        studentName: "System",
-        error: error.message,
-      });
+      console.error("❌ Import grades error:", error);
+      throw new Error(`Grade import failed: ${error.message}`);
     }
+  }
 
-    return result;
+  /**
+   * ✅ Generate Excel template for grade import
+   */
+  static async generateGradeTemplate(classId: string): Promise<Buffer> {
+    try {
+      console.log("📄 Generating grade import template for class:", classId);
+
+      // ✅ Get class data
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          students: {
+            orderBy: { khmerName: "asc" },
+          },
+        },
+      });
+
+      if (!classData) {
+        throw new Error("Class not found");
+      }
+
+      // ✅ Get subjects
+      const subjects = await prisma.subject.findMany({
+        where: {
+          grade: classData.grade,
+          isActive: true,
+        },
+        orderBy: { code: "asc" },
+      });
+
+      // ✅ Create workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Grades");
+
+      // ✅ Define columns
+      const columns: any[] = [
+        { header: "studentId", key: "studentId", width: 15 },
+        { header: "studentName", key: "studentName", width: 25 },
+        { header: "month", key: "month", width: 12 },
+        { header: "year", key: "year", width: 10 },
+      ];
+
+      // Add subject columns
+      for (const subject of subjects) {
+        columns.push({
+          header: subject.code,
+          key: subject.code,
+          width: 12,
+        });
+      }
+
+      worksheet.columns = columns;
+
+      // ✅ Style header row
+      worksheet.getRow(1).font = { bold: true, size: 12 };
+      worksheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4472C4" },
+      };
+      worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+
+      // ✅ Add student rows
+      for (const student of classData.students) {
+        const rowData: any = {
+          studentId: student.studentId,
+          studentName: student.khmerName,
+          month: "មករា",
+          year: new Date().getFullYear(),
+        };
+
+        // Add empty grade cells for each subject
+        for (const subject of subjects) {
+          rowData[subject.code] = "";
+        }
+
+        worksheet.addRow(rowData);
+      }
+
+      // ✅ Add subject info row (for reference)
+      const subjectInfoRow: any = {
+        studentId: "ព័ត៌មានមុខវិជ្ជា",
+        studentName: "Subject Info",
+        month: "",
+        year: "",
+      };
+
+      for (const subject of subjects) {
+        subjectInfoRow[
+          subject.code
+        ] = `${subject.nameKh} (Max: ${subject.maxScore})`;
+      }
+
+      worksheet.addRow(subjectInfoRow);
+
+      // Style subject info row
+      const lastRow = worksheet.lastRow;
+      if (lastRow) {
+        lastRow.font = { italic: true, color: { argb: "FF808080" } };
+        lastRow.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFF0F0F0" },
+        };
+      }
+
+      // ✅ Generate buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+      return Buffer.from(buffer);
+    } catch (error: any) {
+      console.error("❌ Generate grade template error:", error);
+      throw new Error(`Failed to generate template: ${error.message}`);
+    }
+  }
+
+  /**
+   * ✅ Validate grade Excel file before import
+   */
+  static async validateGradeFile(
+    classId: string,
+    buffer: Buffer
+  ): Promise<{
+    valid: boolean;
+    errors: string[];
+    rowCount: number;
+    subjectsFound: string[];
+  }> {
+    try {
+      const data = await this.parseExcelBuffer(buffer);
+
+      const errors: string[] = [];
+      const subjectsFound: string[] = [];
+
+      if (data.length === 0) {
+        errors.push("Excel file is empty");
+      }
+
+      // ✅ Check required columns
+      const requiredColumns = ["studentId", "studentName"];
+      const firstRow = data[0] || {};
+
+      for (const col of requiredColumns) {
+        const hasColumn =
+          firstRow.hasOwnProperty(col) ||
+          firstRow.hasOwnProperty(col.toLowerCase()) ||
+          Object.keys(firstRow).some((key) =>
+            key.toLowerCase().includes(col.toLowerCase())
+          );
+
+        if (!hasColumn) {
+          errors.push(`Missing required column: ${col}`);
+        }
+      }
+
+      // ✅ Find subject columns
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+      });
+
+      if (classData) {
+        const subjects = await prisma.subject.findMany({
+          where: {
+            grade: classData.grade,
+            isActive: true,
+          },
+        });
+
+        for (const subject of subjects) {
+          if (
+            firstRow.hasOwnProperty(subject.code) ||
+            firstRow.hasOwnProperty(subject.nameKh)
+          ) {
+            subjectsFound.push(subject.code);
+          }
+        }
+      }
+
+      return {
+        valid: errors.length === 0,
+        errors,
+        rowCount: data.length,
+        subjectsFound,
+      };
+    } catch (error: any) {
+      return {
+        valid: false,
+        errors: [error.message],
+        rowCount: 0,
+        subjectsFound: [],
+      };
+    }
+  }
+
+  /**
+   * ✅ Export grades to Excel
+   */
+  static async exportGrades(
+    classId: string,
+    month: string,
+    year: number
+  ): Promise<Buffer> {
+    try {
+      console.log("📤 Exporting grades:", { classId, month, year });
+
+      // ✅ Get class with students
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          students: {
+            orderBy: { khmerName: "asc" },
+          },
+        },
+      });
+
+      if (!classData) {
+        throw new Error("Class not found");
+      }
+
+      // ✅ Get subjects
+      const subjects = await prisma.subject.findMany({
+        where: {
+          grade: classData.grade,
+          isActive: true,
+        },
+        orderBy: { code: "asc" },
+      });
+
+      // ✅ Get grades
+      const grades = await prisma.grade.findMany({
+        where: {
+          classId,
+          month,
+          year,
+        },
+      });
+
+      // ✅ Create workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(
+        `${classData.name} - ${month} ${year}`
+      );
+
+      // ✅ Define columns
+      const columns: any[] = [
+        { header: "លេខសិស្ស", key: "studentId", width: 15 },
+        { header: "ឈ្មោះសិស្ស", key: "studentName", width: 25 },
+      ];
+
+      for (const subject of subjects) {
+        columns.push({
+          header: `${subject.nameKh}\n(${subject.code})`,
+          key: subject.code,
+          width: 15,
+        });
+      }
+
+      columns.push(
+        { header: "សរុប", key: "total", width: 12 },
+        { header: "មធ្យមភាគ", key: "average", width: 12 },
+        { header: "និទ្ទេស", key: "grade", width: 10 },
+        { header: "ចំណាត់ថ្នាក់", key: "rank", width: 12 }
+      );
+
+      worksheet.columns = columns;
+
+      // ✅ Style header
+      worksheet.getRow(1).font = { bold: true, size: 11 };
+      worksheet.getRow(1).alignment = {
+        vertical: "middle",
+        horizontal: "center",
+        wrapText: true,
+      };
+      worksheet.getRow(1).height = 40;
+      worksheet.getRow(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4472C4" },
+      };
+      worksheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+
+      // ✅ Add data rows
+      const totalCoefficient = subjects.reduce(
+        (sum, s) => sum + s.coefficient,
+        0
+      );
+
+      const studentData = classData.students.map((student) => {
+        const rowData: any = {
+          studentId: student.studentId,
+          studentName: student.khmerName,
+        };
+
+        let totalScore = 0;
+
+        subjects.forEach((subject) => {
+          const grade = grades.find(
+            (g) => g.studentId === student.id && g.subjectId === subject.id
+          );
+          rowData[subject.code] = grade?.score ?? "";
+          if (grade?.score) {
+            totalScore += grade.score;
+          }
+        });
+
+        const average =
+          totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+
+        let gradeLevel = "F";
+        if (average >= 45) gradeLevel = "A";
+        else if (average >= 40) gradeLevel = "B";
+        else if (average >= 35) gradeLevel = "C";
+        else if (average >= 30) gradeLevel = "D";
+        else if (average >= 25) gradeLevel = "E";
+
+        rowData.total = totalScore.toFixed(2);
+        rowData.average = average.toFixed(2);
+        rowData.grade = gradeLevel;
+
+        return { ...rowData, averageNum: average };
+      });
+
+      // ✅ Calculate ranks
+      const sorted = studentData
+        .slice()
+        .sort((a, b) => b.averageNum - a.averageNum)
+        .map((s, i) => ({ ...s, rank: i + 1 }));
+
+      const finalData = studentData.map((s) => {
+        const ranked = sorted.find((r) => r.studentId === s.studentId);
+        return { ...s, rank: ranked?.rank || 0 };
+      });
+
+      // ✅ Add rows to worksheet
+      finalData.forEach((data) => {
+        worksheet.addRow(data);
+      });
+
+      // ✅ Generate buffer
+      const buffer = await workbook.xlsx.writeBuffer();
+      return Buffer.from(buffer);
+    } catch (error: any) {
+      console.error("❌ Export grades error:", error);
+      throw new Error(`Failed to export grades: ${error.message}`);
+    }
   }
 }

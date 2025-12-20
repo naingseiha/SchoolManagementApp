@@ -599,9 +599,9 @@ export class GradeController {
         for (let i = 0; i < toUpdate.length; i += UPDATE_BATCH) {
           const batch = toUpdate.slice(i, i + UPDATE_BATCH);
 
+          // ✅ After (correct)
           await prisma.$transaction(
-            batch.map((update) => prisma.grade.update(update)),
-            { timeout: 30000 }
+            batch.map((update) => prisma.grade.update(update))
           );
 
           updated += batch.length;
