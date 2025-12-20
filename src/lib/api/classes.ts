@@ -1,6 +1,5 @@
-// Classes API Service - Connected to Backend
-
 import { apiClient } from "./client";
+import type { Student } from "@/types";
 
 export interface Class {
   id: string;
@@ -25,19 +24,6 @@ export interface Class {
   };
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface Student {
-  id: string;
-  studentId?: string;
-  khmerName?: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  dateOfBirth?: string;
-  email?: string;
-  phoneNumber?: string;
-  classId?: string;
 }
 
 export interface CreateClassData {

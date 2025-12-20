@@ -1,16 +1,16 @@
-// Main Types
+// src/types/index.ts
 
+// Main Types
 export type Gender = "MALE" | "FEMALE" | "male" | "female";
 export type Role = "ADMIN" | "TEACHER" | "CLASS_TEACHER" | "STUDENT";
 export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
 
-// Student Type (matching Prisma schema)
+// Student Type
 export interface Student {
   id: string;
-  studentId?: string; // Auto-generated ID from backend
+  studentId?: string;
   khmerName?: string;
   englishName?: string;
-  // For backward compatibility
   firstName?: string;
   lastName?: string;
   gender: "male" | "female" | "MALE" | "FEMALE";
@@ -18,13 +18,11 @@ export interface Student {
   placeOfBirth?: string;
   currentAddress?: string;
   phoneNumber?: string;
-  // Legacy fields
   email?: string;
   phone?: string;
   address?: string;
   guardianName?: string;
   guardianPhone?: string;
-  // Relations
   classId?: string;
   class?: Class;
   userId?: string;
@@ -32,7 +30,7 @@ export interface Student {
   updatedAt?: string;
 }
 
-// Teacher Type (matching Prisma schema)
+// Teacher Type
 export interface Teacher {
   id: string;
   teacherId?: string;
@@ -45,16 +43,12 @@ export interface Teacher {
   phone?: string;
   phoneNumber?: string;
   employeeId?: string;
-
-  // ✅ NEW FIELDS
   role: "TEACHER" | "INSTRUCTOR";
   gender?: "MALE" | "FEMALE";
   dateOfBirth?: string;
   hireDate?: string;
   address?: string;
   position?: string;
-
-  // ✅ Relations
   homeroomClassId?: string;
   homeroomClass?: any;
   teachingClassIds?: string[];
@@ -63,15 +57,14 @@ export interface Teacher {
   subjects?: any[];
   subject?: string;
   classes?: any[];
-
   createdAt?: string;
   updatedAt?: string;
 }
 
-// Class Type (matching Prisma schema)
+// Class Type
 export interface Class {
   id: string;
-  classId?: string; // Auto-generated ID from backend
+  classId?: string;
   name: string;
   grade: string;
   section?: string;
@@ -85,10 +78,10 @@ export interface Class {
   updatedAt?: string;
 }
 
-// Subject Type (matching Prisma schema)
+// Subject Type
 export interface Subject {
   id: string;
-  subjectId?: string; // Auto-generated ID from backend
+  subjectId?: string;
   name: string;
   code: string;
   credits?: number;
@@ -101,7 +94,7 @@ export interface Subject {
   updatedAt?: string;
 }
 
-// Grade Type (matching Prisma schema)
+// Grade Type
 export interface Grade {
   id: string;
   studentId: string;
@@ -122,7 +115,37 @@ export interface Grade {
   updatedAt?: string;
 }
 
-// Attendance Type (matching Prisma schema)
+// ⭐⭐⭐ ADD THESE MISSING TYPES ⭐⭐⭐
+
+/**
+ * Grade Import Result
+ */
+export interface GradeImportResult {
+  success: boolean;
+  message?: string;
+  totalRows: number;
+  savedCount: number;
+  errorCount: number;
+  errors?: Array<{
+    row: number;
+    studentName?: string;
+    subjectName?: string;
+    error: string;
+  }>;
+}
+
+/**
+ * Grade Scale for grading system
+ */
+export interface GradeScale {
+  grade: string;
+  min: number;
+  max: number;
+  label?: string;
+  labelKhmer?: string;
+}
+
+// Attendance Type
 export interface Attendance {
   id: string;
   studentId: string;
@@ -136,7 +159,7 @@ export interface Attendance {
   updatedAt?: string;
 }
 
-// Schedule Type (existing - keep for now)
+// Schedule Type
 export interface Schedule {
   id: string;
   classId: string;

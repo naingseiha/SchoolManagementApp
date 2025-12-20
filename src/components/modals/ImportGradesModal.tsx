@@ -79,7 +79,7 @@ export default function ImportGradesModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="នាំចូលពិន្ទុពី Excel • Import Grades"
-      size="medium"
+      size="md"
     >
       <div className="space-y-6">
         {/* Class Info */}

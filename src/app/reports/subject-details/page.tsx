@@ -650,6 +650,7 @@ export default function SubjectDetailsReportPage() {
                 selectedYear={selectedYear}
                 isGradeWide={reportType === "grade-wide"}
                 showClassName={showClassName}
+                selectedMonth={selectedMonth}
               />
             </div>
           )}
