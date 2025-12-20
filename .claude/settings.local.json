@@ -22,7 +22,10 @@
       "Bash(git add:*)",
       "Bash(git restore:*)",
       "Bash(git push:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(timeout 60 tail:*)"
     ]
   }
 }

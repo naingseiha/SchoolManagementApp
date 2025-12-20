@@ -5,7 +5,6 @@ import { X, UserCheck, Loader2 } from "lucide-react";
 import { teachersApi } from "@/lib/api/teachers";
 import { subjectsApi } from "@/lib/api/subjects";
 import { classesApi } from "@/lib/api/classes";
-import Toast, { ToastType } from "@/components/ui/Toast"; // ✅ ADD THIS
 import TeacherBasicInfoForm from "./forms/TeacherBasicInfoForm";
 import TeacherHomeroomClassSelector from "./forms/TeacherHomeroomClassSelector";
 import TeacherSubjectsSelector from "./forms/TeacherSubjectsSelector";
@@ -55,12 +54,6 @@ export default function TeacherEditModal({
 }: TeacherEditModalProps) {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-
-  // ✅ ADD Toast state
-  const [toast, setToast] = useState<{
-    message: string;
-    type: ToastType;
-  } | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -170,11 +163,6 @@ export default function TeacherEditModal({
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     } catch (error) {
       console.error("❌ Error loading teacher data:", error);
-      // ✅ CHANGED: Use toast instead of alert
-      setToast({
-        message: "❌ បរាជ័យក្នុងការទាញយកទិន្នន័យ! ",
-        type: "error",
-      });
     } finally {
       setInitialLoading(false);
     }
@@ -184,7 +172,6 @@ export default function TeacherEditModal({
     if (!isOpen) {
       setFormErrors({});
       setInitialLoading(true);
-      setToast(null); // ✅ Clear toast on close
     }
   }, [isOpen]);
 
@@ -309,11 +296,6 @@ export default function TeacherEditModal({
     e.preventDefault();
 
     if (!validateForm()) {
-      // ✅ CHANGED: Use toast instead of alert
-      setToast({
-        message: "សូមបំពេញព័ត៌មានដែលត្រូវការ! ",
-        type: "warning",
-      });
       return;
     }
 
@@ -354,27 +336,12 @@ export default function TeacherEditModal({
 
       console.log("✅ Teacher updated successfully");
 
-      // ✅ CHANGED: Use toast instead of alert
-      setToast({
-        message: "✅ បានកែប្រែគ្រូបង្រៀនដោយជោគជ័យ!",
-        type: "success",
-      });
-
-      // ✅ Close modal after 1. 5 seconds to show toast
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
+      // ✅ Close modal immediately then trigger success callback
+      onClose();
+      onSuccess();
     } catch (error: any) {
       console.error("❌ Error updating teacher:", error);
-
-      // ✅ CHANGED: Use toast instead of alert
-      setToast({
-        message: `❌ បរាជ័យក្នុងការកែប្រែគ្រូបង្រៀន:  ${
-          error.message || "Unknown error"
-        }`,
-        type: "error",
-      });
+      alert(`❌ បរាជ័យក្នុងការកែប្រែគ្រូបង្រៀន: ${error.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }
