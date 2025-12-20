@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate:splash": "node scripts/generate-splash-screens.js",
+    "generate:pwa-assets": "npm run generate:splash"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

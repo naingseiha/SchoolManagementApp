@@ -204,7 +204,7 @@ export const previewExport = async (req: Request, res: Response) => {
             gender: true,
           },
         },
-        teacher: {
+        homeroomTeacher: {
           select: {
             khmerName: true,
             firstName: true,
@@ -230,9 +230,9 @@ export const previewExport = async (req: Request, res: Response) => {
     ).length;
 
     const instructorName =
-      classData.teacher?.khmerName ||
-      (classData.teacher
-        ? `${classData.teacher.firstName} ${classData.teacher.lastName}`
+      classData.homeroomTeacher?.khmerName ||
+      (classData.homeroomTeacher
+        ? `${classData.homeroomTeacher.firstName} ${classData.homeroomTeacher.lastName}`
         : "មិនទាន់កំណត់");
 
     res.json({

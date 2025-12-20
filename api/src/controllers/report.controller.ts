@@ -266,8 +266,8 @@ export class ReportController {
           className: classData.name,
           grade: classData.grade,
           track: classData.track || null,
-          teacherName: classData.teacher
-            ? `${classData.teacher.lastName} ${classData.teacher.firstName}`
+          teacherName: classData.homeroomTeacher
+            ? `${classData.homeroomTeacher.lastName} ${classData.homeroomTeacher.firstName}`
             : null,
           month: month as string,
           year: parseInt(year as string),
@@ -1291,8 +1291,8 @@ export class ReportController {
           track: classData.track || null,
           month: month as string,
           year: parseInt(year as string),
-          teacherName: classData.teacher
-            ? `${classData.teacher.lastName} ${classData.teacher.firstName}`
+          teacherName: classData.homeroomTeacher
+            ? `${classData.homeroomTeacher.lastName} ${classData.homeroomTeacher.firstName}`
             : null,
           totalCoefficient: totalCoefficient,
           subjects: subjects.map((s) => ({

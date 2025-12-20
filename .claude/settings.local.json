@@ -6,7 +6,9 @@
       "Bash(node scripts/generate-icons.js:*)",
       "Bash(npm run build:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npm run generate:splash:*)",
+      "Bash(pkill:*)"
     ]
   }
 }

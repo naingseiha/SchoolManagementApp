@@ -7,7 +7,9 @@ const router = (0, express_1.Router)();
 // Apply auth middleware to all routes
 router.use(auth_middleware_1.authMiddleware);
 // Subject CRUD routes
+router.get("/lightweight", subject_controller_1.getSubjectsLightweight); // GET subjects (lightweight - fast)
 router.get("/", subject_controller_1.getAllSubjects);
+router.get("/grade/:grade", subject_controller_1.getSubjectsByGrade);
 router.get("/:id", subject_controller_1.getSubjectById);
 router.post("/", subject_controller_1.createSubject);
 router.put("/:id", subject_controller_1.updateSubject);

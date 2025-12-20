@@ -77,7 +77,7 @@ export class ExcelTemplateService {
         students: {
           orderBy: [{ gender: "asc" }, { khmerName: "asc" }],
         },
-        teacher: {
+        homeroomTeacher: {
           select: {
             khmerName: true,
             firstName: true,
@@ -112,9 +112,9 @@ export class ExcelTemplateService {
 
     const instructorName =
       options.classInstructor ||
-      classData.teacher?.khmerName ||
-      (classData.teacher
-        ? `${classData.teacher.firstName} ${classData.teacher.lastName}`
+      classData.homeroomTeacher?.khmerName ||
+      (classData.homeroomTeacher
+        ? `${classData.homeroomTeacher.firstName} ${classData.homeroomTeacher.lastName}`
         : "មិនទាន់កំណត់");
 
     const replacements = {
