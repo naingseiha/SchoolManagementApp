@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -21,7 +21,7 @@ async function main() {
       password: hashedPassword,
       firstName: "Admin",
       lastName: "System",
-      role: Role.ADMIN,
+      role: UserRole.ADMIN,
     },
   });
 
@@ -44,7 +44,7 @@ async function main() {
       phone: "012 345 678",
       employeeId: "TCH-001",
       gender: "MALE",
-      dateOfBirth: new Date("1985-05-15"),
+      dateOfBirth: "1985-05-15",
       position: "Senior Teacher",
     },
   });
@@ -60,7 +60,7 @@ async function main() {
       phone: "012 345 679",
       employeeId: "TCH-002",
       gender: "FEMALE",
-      dateOfBirth: new Date("1988-08-20"),
+      dateOfBirth: "1988-08-20",
       position: "Teacher",
     },
   });
@@ -79,7 +79,7 @@ async function main() {
       password: teacherPassword,
       firstName: "Class",
       lastName: "Teacher",
-      role: Role.CLASS_TEACHER,
+      role: UserRole.TEACHER,
     },
   });
 
@@ -96,7 +96,7 @@ async function main() {
       password: teacherPassword,
       firstName: "Subject",
       lastName: "Teacher",
-      role: Role.SUBJECT_TEACHER,
+      role: UserRole.TEACHER,
     },
   });
 

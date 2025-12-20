@@ -1,12 +1,14 @@
 # 🏫 School Management System (ប្រព័ន្ធគ្រប់គ្រងសាលា)
 
-A professional full-stack School Management System for Khmer educational institutions with comprehensive student tracking, grade management, and reporting capabilities.
+A professional full-stack **Progressive Web App (PWA)** for Khmer educational institutions with comprehensive student tracking, grade management, reporting capabilities, and **mobile-optimized UI**.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC)
+![PWA](https://img.shields.io/badge/PWA-Ready-5A0FC8)
+![Mobile](https://img.shields.io/badge/Mobile-Optimized-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---

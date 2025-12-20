@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/useToast";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import GradeGridEditor from "@/components/grades/GradeGridEditor";
+import { useDeviceType } from "@/lib/utils/deviceDetection";
+import dynamic from "next/dynamic";
 import {
   Download,
   Loader2,
@@ -22,6 +24,19 @@ import {
   type GradeGridData,
   type BulkSaveGradeItem,
 } from "@/lib/api/grades";
+
+// Dynamic import for mobile component (code splitting)
+const MobileGradeEntry = dynamic(
+  () => import("@/components/mobile/grades/MobileGradeEntry"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    ),
+  }
+);
 
 const MONTHS = [
   { value: "មករា", label: "មករា", number: 1 },
@@ -52,6 +67,7 @@ export default function GradeEntryPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes } = useData();
   const { success, error: showError, warning, ToastContainer } = useToast();
+  const deviceType = useDeviceType();
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
@@ -59,6 +75,17 @@ export default function GradeEntryPage() {
   const [gridData, setGridData] = useState<GradeGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Render mobile version for mobile devices
+  if (deviceType === "mobile") {
+    return (
+      <MobileGradeEntry
+        classId={selectedClassId}
+        month={selectedMonth}
+        year={selectedYear}
+      />
+    );
+  }
 
   // Redirect if not authenticated
   useEffect(() => {

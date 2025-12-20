@@ -112,9 +112,9 @@ export default function SeedSubjectsPage() {
             onClick={handleSeed}
             disabled={isSeeding || isClearing}
             variant="primary"
-            icon={<Database className="w-5 h-5" />}
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
           >
+            <Database className="w-5 h-5" />
             {isSeeding
               ? "កំពុងបង្កើត... • Seeding..."
               : "បង្កើតមុខវិជ្ជា • Seed Subjects"}
@@ -124,9 +124,9 @@ export default function SeedSubjectsPage() {
             onClick={handleClear}
             disabled={isSeeding || isClearing}
             variant="danger"
-            icon={<Trash2 className="w-5 h-5" />}
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2"
           >
+            <Trash2 className="w-5 h-5" />
             {isClearing
               ? "កំពុងលុប... • Clearing..."
               : "លុបមុខវិជ្ជាទាំងអស់ • Clear All Subjects"}
