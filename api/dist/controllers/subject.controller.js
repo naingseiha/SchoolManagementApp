@@ -1,12 +1,54 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeTeacherFromSubject = exports.assignTeachersToSubject = exports.deleteSubject = exports.getSubjectById = exports.updateSubject = exports.createSubject = exports.getAllSubjects = void 0;
+exports.removeTeacherFromSubject = exports.assignTeachersToSubject = exports.deleteSubject = exports.getSubjectsByGrade = exports.getSubjectById = exports.updateSubject = exports.createSubject = exports.getAllSubjects = exports.getSubjectsLightweight = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-// Get all subjects - RETURN ARRAY DIRECTLY
+/**
+ * ✅ GET subjects LIGHTWEIGHT (for dropdowns/lists - fast loading)
+ */
+const getSubjectsLightweight = async (req, res) => {
+    try {
+        console.log("⚡ GET SUBJECTS (lightweight)");
+        const subjects = await prisma.subject.findMany({
+            select: {
+                id: true,
+                name: true,
+                nameKh: true,
+                nameEn: true,
+                code: true,
+                description: true,
+                grade: true,
+                track: true,
+                category: true,
+                weeklyHours: true,
+                annualHours: true,
+                maxScore: true,
+                coefficient: true,
+                isActive: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+            orderBy: [{ grade: "asc" }, { name: "asc" }],
+        });
+        console.log(`⚡ Found ${subjects.length} subjects (lightweight)`);
+        res.json(subjects);
+    }
+    catch (error) {
+        console.error("❌ Error getting subjects (lightweight):", error);
+        res.status(500).json({
+            success: false,
+            message: "Error getting subjects",
+            error: error.message,
+        });
+    }
+};
+exports.getSubjectsLightweight = getSubjectsLightweight;
+/**
+ * ✅ GET all subjects (FULL DATA - includes teacher assignments)
+ */
 const getAllSubjects = async (req, res) => {
     try {
-        console.log("📚 GET ALL SUBJECTS");
+        console.log("📚 GET ALL SUBJECTS (full data)");
         const subjects = await prisma.subject.findMany({
             include: {
                 teacherAssignments: {
@@ -32,7 +74,7 @@ const getAllSubjects = async (req, res) => {
             orderBy: [{ grade: "asc" }, { name: "asc" }],
         });
         console.log(`✅ Found ${subjects.length} subjects`);
-        // ✅ FIX: Return array directly (not wrapped in {data: ...})
+        // ✅ Return array directly (not wrapped in {data: ...})
         res.json(subjects);
     }
     catch (error) {
@@ -45,15 +87,23 @@ const getAllSubjects = async (req, res) => {
     }
 };
 exports.getAllSubjects = getAllSubjects;
-// Create subject - RETURN OBJECT DIRECTLY
+// ✅ FIXED: Create subject - RETURN WRAPPED RESPONSE
 const createSubject = async (req, res) => {
     try {
-        const { name, nameKh, nameEn, code, description, grade, track, category, weeklyHours, annualHours, maxScore, isActive, } = req.body;
-        console.log("➕ CREATE SUBJECT:", { name, code, grade });
+        const { name, nameKh, nameEn, code, description, grade, track, category, weeklyHours, annualHours, maxScore, coefficient, isActive, } = req.body;
+        console.log("➕ CREATE SUBJECT:", { name, code, grade, coefficient });
         if (!name || !code || !grade) {
             return res.status(400).json({
                 success: false,
                 message: "Name, code, and grade are required",
+            });
+        }
+        // ✅ Validate coefficient
+        const coefficientValue = coefficient !== undefined ? parseFloat(coefficient) : 1.0;
+        if (coefficientValue < 0.5 || coefficientValue > 3.0) {
+            return res.status(400).json({
+                success: false,
+                message: "Coefficient must be between 0.5 and 3.0",
             });
         }
         const existingSubject = await prisma.subject.findUnique({
@@ -78,6 +128,7 @@ const createSubject = async (req, res) => {
                 weeklyHours: parseFloat(weeklyHours) || 0,
                 annualHours: parseInt(annualHours) || 0,
                 maxScore: parseInt(maxScore) || 100,
+                coefficient: coefficientValue,
                 isActive: isActive !== false,
             },
             include: {
@@ -94,8 +145,12 @@ const createSubject = async (req, res) => {
             },
         });
         console.log("✅ Subject created successfully:", subject.id);
-        // ✅ FIX: Return object directly
-        res.status(201).json(subject);
+        // ✅ FIX: Return wrapped response to match frontend expectation
+        res.status(201).json({
+            success: true,
+            message: "Subject created successfully",
+            data: subject,
+        });
     }
     catch (error) {
         console.error("❌ Error creating subject:", error);
@@ -107,12 +162,12 @@ const createSubject = async (req, res) => {
     }
 };
 exports.createSubject = createSubject;
-// Update subject - RETURN OBJECT DIRECTLY
+// ✅ FIXED: Update subject - RETURN WRAPPED RESPONSE
 const updateSubject = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        console.log("✏️ UPDATE SUBJECT:", id);
+        console.log("✏️ UPDATE SUBJECT:", id, updateData);
         const existingSubject = await prisma.subject.findUnique({
             where: { id },
         });
@@ -133,6 +188,16 @@ const updateSubject = async (req, res) => {
                 });
             }
         }
+        // ✅ Validate coefficient if provided
+        if (updateData.coefficient !== undefined) {
+            const coefficientValue = parseFloat(updateData.coefficient);
+            if (coefficientValue < 0.5 || coefficientValue > 3.0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Coefficient must be between 0. 5 and 3.0",
+                });
+            }
+        }
         const subject = await prisma.subject.update({
             where: { id },
             data: {
@@ -146,6 +211,9 @@ const updateSubject = async (req, res) => {
                 maxScore: updateData.maxScore !== undefined
                     ? parseInt(updateData.maxScore)
                     : existingSubject.maxScore,
+                coefficient: updateData.coefficient !== undefined
+                    ? parseFloat(updateData.coefficient)
+                    : existingSubject.coefficient,
             },
             include: {
                 teacherAssignments: {
@@ -161,8 +229,12 @@ const updateSubject = async (req, res) => {
             },
         });
         console.log("✅ Subject updated successfully");
-        // ✅ FIX: Return object directly
-        res.json(subject);
+        // ✅ FIX: Return wrapped response
+        res.json({
+            success: true,
+            message: "Subject updated successfully",
+            data: subject,
+        });
     }
     catch (error) {
         console.error("❌ Error updating subject:", error);
@@ -203,6 +275,66 @@ const getSubjectById = async (req, res) => {
     }
 };
 exports.getSubjectById = getSubjectById;
+/**
+ * ✅ GET subjects by grade (with optional track filter)
+ */
+const getSubjectsByGrade = async (req, res) => {
+    try {
+        const { grade } = req.params;
+        const { track } = req.query; // Optional:   "science" | "social"
+        console.log(`📚 GET SUBJECTS BY GRADE:  ${grade}`, track ? `(${track})` : "");
+        const whereClause = {
+            grade: grade.toString(),
+            isActive: true,
+        };
+        // ✅ Filter by track for grades 11-12
+        if (track) {
+            whereClause.track = track.toString();
+        }
+        const subjects = await prisma.subject.findMany({
+            where: whereClause,
+            include: {
+                teacherAssignments: {
+                    include: {
+                        teacher: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                khmerName: true,
+                                englishName: true,
+                                role: true,
+                            },
+                        },
+                    },
+                },
+                _count: {
+                    select: {
+                        grades: true,
+                        teacherAssignments: true,
+                    },
+                },
+            },
+            orderBy: {
+                name: "asc",
+            },
+        });
+        console.log(`✅ Found ${subjects.length} subjects`);
+        res.json({
+            success: true,
+            data: subjects,
+        });
+    }
+    catch (error) {
+        console.error("❌ Error getting subjects by grade:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching subjects",
+            error: error.message,
+        });
+    }
+};
+exports.getSubjectsByGrade = getSubjectsByGrade;
 const deleteSubject = async (req, res) => {
     try {
         const { id } = req.params;
@@ -219,13 +351,14 @@ const deleteSubject = async (req, res) => {
         if (subjectWithGrades.grades.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: `Cannot delete subject with ${subjectWithGrades.grades.length} grade(s).`,
+                message: `Cannot delete subject with ${subjectWithGrades.grades.length} grade(s). `,
             });
         }
         await prisma.subject.delete({ where: { id } });
         res.json({
             success: true,
             message: "Subject deleted successfully",
+            data: null,
         });
     }
     catch (error) {
@@ -285,6 +418,7 @@ const removeTeacherFromSubject = async (req, res) => {
         res.json({
             success: true,
             message: "Teacher removed successfully",
+            data: null,
         });
     }
     catch (error) {

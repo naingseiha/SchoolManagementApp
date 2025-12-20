@@ -1,21 +1,76 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeStudentFromClass = exports.assignStudentsToClass = exports.deleteClass = exports.updateClass = exports.createClass = exports.getClassById = exports.getAllClasses = void 0;
+exports.getClassesByGrade = exports.removeStudentFromClass = exports.assignStudentsToClass = exports.deleteClass = exports.updateClass = exports.createClass = exports.getClassById = exports.getAllClasses = exports.getClassesLightweight = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-// Get all classes
-const getAllClasses = async (req, res) => {
+/**
+ * ✅ GET classes LIGHTWEIGHT (for lists/dropdowns - fast loading)
+ */
+const getClassesLightweight = async (req, res) => {
     try {
-        console.log("📚 GET ALL CLASSES");
+        console.log("⚡ GET CLASSES (lightweight)");
         const classes = await prisma.class.findMany({
-            include: {
-                teacher: {
+            select: {
+                id: true,
+                classId: true,
+                name: true,
+                grade: true,
+                section: true,
+                academicYear: true,
+                capacity: true,
+                track: true,
+                homeroomTeacherId: true,
+                createdAt: true,
+                updatedAt: true,
+                // Only teacher name (not full details)
+                homeroomTeacher: {
                     select: {
                         id: true,
                         khmerName: true,
                         firstName: true,
                         lastName: true,
+                    },
+                },
+                // Only student count (not full list)
+                _count: {
+                    select: {
+                        students: true,
+                    },
+                },
+            },
+            orderBy: [{ grade: "asc" }, { section: "asc" }],
+        });
+        console.log(`⚡ Found ${classes.length} classes (lightweight)`);
+        res.json(classes);
+    }
+    catch (error) {
+        console.error("❌ Error getting classes (lightweight):", error);
+        res.status(500).json({
+            success: false,
+            message: "Error getting classes",
+            error: error.message,
+        });
+    }
+};
+exports.getClassesLightweight = getClassesLightweight;
+/**
+ * ✅ GET all classes (FULL DATA - includes students list)
+ */
+const getAllClasses = async (req, res) => {
+    try {
+        console.log("📚 GET ALL CLASSES (full data)");
+        const classes = await prisma.class.findMany({
+            include: {
+                homeroomTeacher: {
+                    // ✅ CHANGED: teacher → homeroomTeacher
+                    select: {
+                        id: true,
+                        khmerName: true,
+                        englishName: true, // ✅ ADDED
+                        firstName: true,
+                        lastName: true,
                         email: true,
+                        role: true, // ✅ ADDED
                     },
                 },
                 students: {
@@ -56,7 +111,7 @@ const getClassById = async (req, res) => {
         const classData = await prisma.class.findUnique({
             where: { id },
             include: {
-                teacher: true,
+                homeroomTeacher: true, // ✅ CHANGED: teacher → homeroomTeacher
                 students: {
                     orderBy: {
                         khmerName: "asc",
@@ -91,12 +146,22 @@ exports.getClassById = getClassById;
 // Create class
 const createClass = async (req, res) => {
     try {
-        const { classId, name, grade, section, academicYear, capacity, teacherId } = req.body;
+        const { classId, name, grade, section, track, // ✅ ADDED
+        academicYear, capacity, teacherId, // ⚠️ Keep for backward compatibility
+        homeroomTeacherId, // ✅ ADDED
+         } = req.body;
         console.log("➕ CREATE CLASS:", { classId, name, grade });
         if (!name || !grade || !academicYear) {
             return res.status(400).json({
                 success: false,
                 message: "Name, grade, and academicYear are required",
+            });
+        }
+        // ✅ Validate track for grades 11-12
+        if ((grade === "11" || grade === "12") && !track) {
+            return res.status(400).json({
+                success: false,
+                message: "Track (science/social) is required for grades 11-12",
             });
         }
         // Check if classId already exists
@@ -111,18 +176,21 @@ const createClass = async (req, res) => {
                 });
             }
         }
+        // ✅ Use homeroomTeacherId if provided, fallback to teacherId for backward compatibility
+        const finalTeacherId = homeroomTeacherId || teacherId || null;
         const classData = await prisma.class.create({
             data: {
                 classId: classId || `G${grade}-${section || "A"}`,
                 name,
                 grade,
                 section: section || null,
+                track: track || null, // ✅ ADDED
                 academicYear,
                 capacity: capacity ? parseInt(capacity) : null,
-                teacherId: teacherId || null,
+                homeroomTeacherId: finalTeacherId, // ✅ CHANGED: teacherId → homeroomTeacherId
             },
             include: {
-                teacher: true,
+                homeroomTeacher: true, // ✅ CHANGED:  teacher → homeroomTeacher
                 _count: {
                     select: {
                         students: true,
@@ -158,16 +226,28 @@ const updateClass = async (req, res) => {
                 message: "Class not found",
             });
         }
+        // ✅ Handle both teacherId (old) and homeroomTeacherId (new)
+        const finalTeacherId = updateData.homeroomTeacherId !== undefined
+            ? updateData.homeroomTeacherId
+            : updateData.teacherId !== undefined
+                ? updateData.teacherId
+                : undefined;
         const classData = await prisma.class.update({
             where: { id },
             data: {
-                ...updateData,
+                classId: updateData.classId,
+                name: updateData.name,
+                grade: updateData.grade,
+                section: updateData.section,
+                track: updateData.track, // ✅ ADDED
+                academicYear: updateData.academicYear,
                 capacity: updateData.capacity
                     ? parseInt(updateData.capacity)
                     : existing.capacity,
+                homeroomTeacherId: finalTeacherId, // ✅ CHANGED
             },
             include: {
-                teacher: true,
+                homeroomTeacher: true, // ✅ CHANGED: teacher → homeroomTeacher
                 _count: {
                     select: {
                         students: true,
@@ -192,29 +272,42 @@ exports.updateClass = updateClass;
 const deleteClass = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("🗑️ DELETE CLASS:", id);
+        console.log("🗑️ DELETE CLASS REQUEST:", id);
+        // ✅ Check if class exists and get student count
         const classWithStudents = await prisma.class.findUnique({
             where: { id },
             include: {
-                students: true,
+                students: {
+                    select: {
+                        id: true,
+                        khmerName: true,
+                        firstName: true,
+                        lastName: true,
+                    },
+                },
             },
         });
         if (!classWithStudents) {
+            console.log("❌ Class not found:", id);
             return res.status(404).json({
                 success: false,
                 message: "Class not found",
             });
         }
+        // ✅ Prevent deletion if class has students
         if (classWithStudents.students.length > 0) {
+            console.log(`❌ Cannot delete class with ${classWithStudents.students.length} students`);
             return res.status(400).json({
                 success: false,
                 message: `Cannot delete class with ${classWithStudents.students.length} student(s). Please remove students first.`,
+                studentCount: classWithStudents.students.length,
             });
         }
+        // ✅ Delete the class
         await prisma.class.delete({
             where: { id },
         });
-        console.log("✅ Class deleted");
+        console.log("✅ Class deleted successfully:", classWithStudents.name);
         res.json({
             success: true,
             message: "Class deleted successfully",
@@ -313,3 +406,63 @@ const removeStudentFromClass = async (req, res) => {
     }
 };
 exports.removeStudentFromClass = removeStudentFromClass;
+/**
+ * ✅ GET classes by grade (with optional track filter)
+ */
+const getClassesByGrade = async (req, res) => {
+    try {
+        const { grade } = req.params;
+        const { track } = req.query; // Optional: "science" | "social"
+        console.log(`📚 GET CLASSES BY GRADE: ${grade}`, track ? `(${track})` : "");
+        const whereClause = {
+            grade: grade.toString(),
+        };
+        // ✅ Filter by track for grades 11-12
+        if (track) {
+            whereClause.track = track.toString();
+        }
+        const classes = await prisma.class.findMany({
+            where: whereClause,
+            include: {
+                homeroomTeacher: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        khmerName: true,
+                        englishName: true,
+                        role: true,
+                    },
+                },
+                students: {
+                    select: {
+                        id: true,
+                        khmerName: true,
+                        firstName: true,
+                        lastName: true,
+                        gender: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        students: true,
+                    },
+                },
+            },
+            orderBy: {
+                name: "asc",
+            },
+        });
+        console.log(`✅ Found ${classes.length} classes`);
+        res.json(classes); // ✅ Return array directly (to match existing format)
+    }
+    catch (error) {
+        console.error("❌ Error getting classes by grade:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching classes",
+            error: error.message,
+        });
+    }
+};
+exports.getClassesByGrade = getClassesByGrade;

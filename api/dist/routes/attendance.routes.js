@@ -2,14 +2,20 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const attendance_controller_1 = require("../controllers/attendance.controller");
-const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
-router.get('/', auth_1.authenticate, attendance_controller_1.getAllAttendance);
-router.get('/:id', auth_1.authenticate, attendance_controller_1.getAttendanceById);
-router.get('/student/:studentId', auth_1.authenticate, attendance_controller_1.getAttendanceByStudent);
-router.get('/class/:classId', auth_1.authenticate, attendance_controller_1.getAttendanceByClass);
-router.get('/date/:date', auth_1.authenticate, attendance_controller_1.getAttendanceByDate);
-router.post('/', auth_1.authenticate, (0, auth_1.authorize)('ADMIN', 'CLASS_TEACHER', 'SUBJECT_TEACHER'), attendance_controller_1.createAttendance);
-router.put('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN', 'CLASS_TEACHER', 'SUBJECT_TEACHER'), attendance_controller_1.updateAttendance);
-router.delete('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), attendance_controller_1.deleteAttendance);
+/**
+ * @route   GET /api/attendance/grid/:classId
+ * @desc    Get attendance grid for a month
+ */
+router.get("/grid/:classId", attendance_controller_1.AttendanceController.getAttendanceGrid);
+/**
+ * @route   POST /api/attendance/bulk-save
+ * @desc    Bulk save attendance
+ */
+router.post("/bulk-save", attendance_controller_1.AttendanceController.bulkSaveAttendance);
+/**
+ * @route   GET /api/attendance/summary/:classId
+ * @desc    Get monthly attendance summary (for grade entry)
+ */
+router.get("/summary/:classId", attendance_controller_1.AttendanceController.getMonthlySummary);
 exports.default = router;

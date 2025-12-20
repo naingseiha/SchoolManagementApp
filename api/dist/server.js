@@ -17,27 +17,28 @@ const class_routes_1 = __importDefault(require("./routes/class.routes"));
 const subject_routes_1 = __importDefault(require("./routes/subject.routes"));
 const grade_routes_1 = __importDefault(require("./routes/grade.routes"));
 const attendance_routes_1 = __importDefault(require("./routes/attendance.routes"));
+const export_routes_1 = __importDefault(require("./routes/export.routes"));
+const report_routes_1 = __importDefault(require("./routes/report.routes"));
 // Load environment variables
 dotenv_1.default.config();
 // Initialize Express app
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 5001; // Changed to 5001
-// CORS Configuration - FIXED
+const PORT = process.env.PORT || 5001;
+// CORS Configuration
 const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     process.env.CLIENT_URL,
-    "https://schoolmanagementapp-3irq.onrender.com", // Your production frontend if deployed
+    "https://schoolmanagementapp-3irq.onrender.com",
 ].filter(Boolean);
 app.use((0, cors_1.default)({
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl, postman)
         if (!origin)
             return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             console.log("❌ CORS blocked origin:", origin);
-            return callback(null, true); // Still allow for development
+            return callback(null, true);
         }
         return callback(null, true);
     },
@@ -45,7 +46,6 @@ app.use((0, cors_1.default)({
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
-// Handle preflight requests
 app.options("*", (0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
@@ -59,7 +59,6 @@ app.get("/", (req, res) => {
         timestamp: new Date().toISOString(),
     });
 });
-// Health Check Route (for frontend)
 app.get("/api/health", (req, res) => {
     res.json({
         success: true,
@@ -75,6 +74,8 @@ app.use("/api/classes", class_routes_1.default);
 app.use("/api/subjects", subject_routes_1.default);
 app.use("/api/grades", grade_routes_1.default);
 app.use("/api/attendance", attendance_routes_1.default);
+app.use("/api/export", export_routes_1.default);
+app.use("/api/reports", report_routes_1.default);
 // API Documentation Route
 app.get("/api", (req, res) => {
     res.json({
@@ -144,12 +145,9 @@ app.use(errorHandler_1.errorHandler);
 // Start Server
 const startServer = async () => {
     try {
-        // Connect to database with retry logic
         await (0, database_1.connectDatabase)();
         console.log("✅ Database connected successfully");
-        // Start keep-alive to prevent auto-suspend (Neon free tier)
         (0, database_1.startKeepAlive)();
-        // Start listening
         app.listen(PORT, () => {
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             console.log(`🚀 Server running on port ${PORT}`);
@@ -157,6 +155,7 @@ const startServer = async () => {
             console.log(`🌐 API URL: http://localhost:${PORT}`);
             console.log(`📚 API Docs: http://localhost:${PORT}/api`);
             console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
+            console.log(`🔌 Connection pool: 20 connections available`);
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         });
     }
@@ -165,23 +164,53 @@ const startServer = async () => {
         process.exit(1);
     }
 };
-// Graceful shutdown
+// ✅ Enhanced Graceful Shutdown
 const shutdown = async () => {
-    console.log("\n🛑 Shutting down gracefully...");
+    console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("🛑 Shutting down gracefully...");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // Stop keep-alive
     (0, database_1.stopKeepAlive)();
+    console.log("⏹️  Keep-alive stopped");
+    // Disconnect database
+    try {
+        await (0, database_1.disconnectDatabase)();
+        console.log("✅ Database disconnected");
+    }
+    catch (error) {
+        console.error("❌ Error disconnecting database:", error);
+    }
+    console.log("👋 Goodbye!");
     process.exit(0);
 };
+// Process signals
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
-// Handle unhandled promise rejections
+// ✅ Enhanced Error Handlers
 process.on("unhandledRejection", (err) => {
-    console.error("❌ Unhandled Rejection:", err.message);
-    process.exit(1);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("❌ Unhandled Promise Rejection");
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("Message:", err.message);
+    console.error("Stack:", err.stack);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // Give time for logging before exit
+    setTimeout(() => {
+        console.log("⚠️  Exiting process due to unhandled rejection...");
+        process.exit(1);
+    }, 1000);
 });
-// Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
-    console.error("❌ Uncaught Exception:", err.message);
-    process.exit(1);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("❌ Uncaught Exception");
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.error("Message:", err.message);
+    console.error("Stack:", err.stack);
+    console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    setTimeout(() => {
+        console.log("⚠️  Exiting process due to uncaught exception...");
+        process.exit(1);
+    }, 1000);
 });
 // Start the server
 startServer();

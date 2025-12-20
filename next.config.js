@@ -5,6 +5,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   skipWaiting: true,
   reloadOnOnline: true,
   swcMinify: true,
+  fallbacks: {
+    document: '/offline',
+  },
   workboxOptions: {
     disableDevLogs: true,
     runtimeCaching: [
@@ -48,6 +51,28 @@ const withPWA = require('@ducanh2912/next-pwa').default({
           expiration: {
             maxEntries: 4,
             maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts-stylesheets',
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'google-fonts-webfonts',
+          expiration: {
+            maxEntries: 30,
+            maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
           },
         },
       },
