@@ -128,8 +128,51 @@ export const login = async (req: Request, res: Response) => {
         OR: [{ email: email || undefined }, { phone: phone || undefined }],
       },
       include: {
-        student: true,
-        teacher: true,
+        student: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                name: true,
+                grade: true,
+              },
+            },
+          },
+        },
+        teacher: {
+          include: {
+            homeroomClass: {
+              select: {
+                id: true,
+                name: true,
+                grade: true,
+              },
+            },
+            subjectTeachers: {
+              include: {
+                subject: {
+                  select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    nameKh: true,
+                  },
+                },
+              },
+            },
+            teacherClasses: {
+              include: {
+                class: {
+                  select: {
+                    id: true,
+                    name: true,
+                    grade: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -321,6 +364,40 @@ export const getCurrentUser = async (req: Request, res: Response) => {
             khmerName: true,
             position: true,
             homeroomClassId: true,
+            homeroomClass: {
+              select: {
+                id: true,
+                name: true,
+                grade: true,
+              },
+            },
+            subjectTeachers: {
+              select: {
+                id: true,
+                subjectId: true,
+                subject: {
+                  select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    nameKh: true,
+                  },
+                },
+              },
+            },
+            teacherClasses: {
+              select: {
+                id: true,
+                classId: true,
+                class: {
+                  select: {
+                    id: true,
+                    name: true,
+                    grade: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

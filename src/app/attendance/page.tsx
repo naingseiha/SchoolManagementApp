@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -55,8 +55,8 @@ const getCurrentYear = () => {
 
 export default function AttendancePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { classes } = useData();
+  const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const deviceType = useDeviceType();
 
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -82,6 +82,49 @@ export default function AttendancePage() {
       router.push("/login");
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // ✅ Filter classes based on role - Show both homeroom (INSTRUCTOR) and teaching classes (TEACHER)
+  const availableClasses = useMemo(() => {
+    if (!currentUser) {
+      return [];
+    }
+
+    if (currentUser.role === "ADMIN") {
+      return classes;
+    }
+
+    if (currentUser.role === "TEACHER") {
+      const classIdsSet = new Set<string>();
+
+      // From teacherClasses (classes where teacher teaches subjects)
+      if (currentUser.teacher?.teacherClasses) {
+        currentUser.teacher.teacherClasses.forEach((tc: any) => {
+          const classId = tc.classId || tc.class?.id;
+          if (classId) {
+            classIdsSet.add(classId);
+          }
+        });
+      }
+
+      // From homeroom class (class the teacher manages as INSTRUCTOR)
+      if (currentUser.teacher?.homeroomClassId) {
+        classIdsSet.add(currentUser.teacher.homeroomClassId);
+      }
+
+      const teacherClassIds = Array.from(classIdsSet);
+      return classes.filter((c) => teacherClassIds.includes(c.id));
+    }
+
+    return [];
+  }, [currentUser, classes]);
+
+  // Proactively load classes if empty
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [isAuthenticated, authLoading, classes.length, isLoadingClasses, refreshClasses]);
 
   useEffect(() => {
     if (selectedClassId) {
@@ -191,10 +234,12 @@ export default function AttendancePage() {
 
   if (!isAuthenticated) return null;
 
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const classOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសថ្នាក់" },
+        ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
+      ];
 
   const monthOptions = MONTHS.map((m) => ({
     value: m.value,
@@ -242,7 +287,8 @@ export default function AttendancePage() {
                   <select
                     value={selectedClassId}
                     onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    disabled={isLoadingClasses}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>

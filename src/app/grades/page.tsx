@@ -56,6 +56,14 @@ export default function GradesPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Proactively load classes if empty
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [isAuthenticated, authLoading, classes.length, isLoadingClasses, refreshClasses]);
+
   // Fetch summary when class/month changes
   useEffect(() => {
     if (selectedClassId) {
@@ -125,10 +133,12 @@ export default function GradesPage() {
 
   const selectedClass = classes.find((c) => c.id === selectedClassId);
 
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់ - Select Class" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const classOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសថ្នាក់ - Select Class" },
+        ...classes.map((c) => ({ value: c.id, label: c.name })),
+      ];
 
   const monthOptions = MONTHS.map((m) => ({
     value: m.value,
@@ -208,6 +218,7 @@ export default function GradesPage() {
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
                 options={classOptions}
+                disabled={isLoadingClasses}
               />
               <Select
                 label="ខែ"

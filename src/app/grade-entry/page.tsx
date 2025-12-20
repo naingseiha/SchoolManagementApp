@@ -65,7 +65,7 @@ const getCurrentYear = () => {
 export default function GradeEntryPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
-  const { classes } = useData();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const { success, error: showError, warning, ToastContainer } = useToast();
   const deviceType = useDeviceType();
 
@@ -94,6 +94,14 @@ export default function GradeEntryPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Proactively load classes if empty
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [isAuthenticated, authLoading, classes.length, isLoadingClasses, refreshClasses]);
+
   // ✅ Filter classes based on role
   const availableClasses = useMemo(() => {
     if (!currentUser) {
@@ -107,16 +115,47 @@ export default function GradeEntryPage() {
     }
 
     if (currentUser.role === "TEACHER") {
-      const teacherClassIds =
-        currentUser.teacher?.teachingClasses?.map((tc) => tc.classId) || [];
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("🔍 DEBUGGING TEACHER DATA STRUCTURE:");
+      console.log("Full teacher object:", JSON.stringify(currentUser.teacher, null, 2));
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-      console.log("👨‍🏫 Teacher assigned classes:", teacherClassIds);
+      // Extract class IDs from multiple sources
+      const classIdsSet = new Set<string>();
+
+      // 1. From teacherClasses (if exists) - This is where teachers teach subjects
+      if (currentUser.teacher?.teacherClasses) {
+        console.log("📚 Found teacherClasses:", currentUser.teacher.teacherClasses.length);
+        currentUser.teacher.teacherClasses.forEach((tc: any) => {
+          const classId = tc.classId || tc.class?.id;
+          if (classId) {
+            classIdsSet.add(classId);
+            console.log("  ✅ Added class from teacherClasses:", classId);
+          }
+        });
+      } else {
+        console.log("⚠️ No teacherClasses found");
+      }
+
+      // 2. From homeroom class (if exists) - This is the class the teacher manages (INSTRUCTOR role)
+      if (currentUser.teacher?.homeroomClassId) {
+        classIdsSet.add(currentUser.teacher.homeroomClassId);
+        console.log("🏠 Added homeroom class (INSTRUCTOR):", currentUser.teacher.homeroomClassId);
+      } else {
+        console.log("⚠️ No homeroomClass found (not an INSTRUCTOR)");
+      }
+
+      const teacherClassIds = Array.from(classIdsSet);
+      console.log("👨‍🏫 Final teacher class IDs:", teacherClassIds);
+      console.log("📊 Total classes available:", classes.length);
 
       const filteredClasses = classes.filter((c) =>
         teacherClassIds.includes(c.id)
       );
 
       console.log("✅ Filtered classes for teacher:", filteredClasses.length);
+      console.log("  Classes:", filteredClasses.map(c => `${c.id}: ${c.name}`));
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       return filteredClasses;
     }
@@ -139,12 +178,12 @@ export default function GradeEntryPage() {
     }
 
     if (currentUser.role === "TEACHER") {
-      const assignments = currentUser.teacher?.subjectAssignments || [];
+      const subjectTeachers = currentUser.teacher?.subjectTeachers || [];
 
       // ✅ Extract subject CODES instead of IDs
-      const subjectCodes = assignments
-        .map((sa: any) => {
-          const code = sa.subject?.code;
+      const subjectCodes = subjectTeachers
+        .map((st: any) => {
+          const code = st.subject?.code;
           // Extract base code (before grade suffix)
           // E.g., "MATH-G11-SCIENCE" → "MATH"
           return code ? code.split("-")[0] : null;
@@ -152,14 +191,14 @@ export default function GradeEntryPage() {
         .filter((code): code is string => code !== null);
 
       console.log("👨‍🏫 Teacher subject assignments (by CODE):", {
-        count: assignments.length,
+        count: subjectTeachers.length,
         subjectCodes,
         homeroomClassId: currentUser.teacher?.homeroomClassId,
         homeroomClassName: currentUser.teacher?.homeroomClass?.name,
-        assignments: assignments.map((sa: any) => ({
-          subjectCode: sa.subject?.code,
-          baseCode: sa.subject?.code?.split("-")[0],
-          subjectName: sa.subject?.nameKh || sa.subject?.name,
+        subjectTeachers: subjectTeachers.map((st: any) => ({
+          subjectCode: st.subject?.code,
+          baseCode: st.subject?.code?.split("-")[0],
+          subjectName: st.subject?.nameKh || st.subject?.name,
         })),
       });
 
@@ -213,20 +252,21 @@ export default function GradeEntryPage() {
           teacherId: currentUser.teacher?.id,
           homeroomClassId: currentUser.teacher?.homeroomClassId,
           homeroomClassName: currentUser.teacher?.homeroomClass?.name,
-          subjectAssignments: currentUser.teacher?.subjectAssignments,
-          assignmentCount: currentUser.teacher?.subjectAssignments?.length,
+          subjectTeachers: currentUser.teacher?.subjectTeachers,
+          teacherClassesCount: currentUser.teacher?.teacherClasses?.length,
+          subjectTeachersCount: currentUser.teacher?.subjectTeachers?.length,
         });
 
         console.log("📋 Teacher Subject CODES:");
-        currentUser.teacher?.subjectAssignments?.forEach(
-          (sa: any, index: number) => {
+        currentUser.teacher?.subjectTeachers?.forEach(
+          (st: any, index: number) => {
             console.log(
-              `  ${index + 1}. Code: ${sa.subject?.code} → Base: ${
-                sa.subject?.code?.split("-")[0]
+              `  ${index + 1}. Code: ${st.subject?.code} → Base: ${
+                st.subject?.code?.split("-")[0]
               }`,
               {
-                subjectName: sa.subject?.nameKh || sa.subject?.name,
-                fullCode: sa.subject?.code,
+                subjectName: st.subject?.nameKh || st.subject?.name,
+                fullCode: st.subject?.code,
               }
             );
           }
@@ -474,10 +514,12 @@ export default function GradeEntryPage() {
 
   if (!isAuthenticated) return null;
 
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const classOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសថ្នាក់" },
+        ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
+      ];
 
   const monthOptions = MONTHS.map((m) => ({
     value: m.value,
@@ -519,7 +561,7 @@ export default function GradeEntryPage() {
                         </p>
                         <p>
                           <strong>មុខវិជ្ជា:</strong>{" "}
-                          {currentUser.teacher?.subjectAssignments?.length || 0}{" "}
+                          {currentUser.teacher?.subjectTeachers?.length || 0}{" "}
                           មុខ
                         </p>
                       </div>
@@ -591,7 +633,8 @@ export default function GradeEntryPage() {
                       setGridData(null);
                       setError(null);
                     }}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus: ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    disabled={isLoadingClasses}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>

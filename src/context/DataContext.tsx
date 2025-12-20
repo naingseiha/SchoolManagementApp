@@ -163,8 +163,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("🔑 Token found, loading data from API...");
 
-      // ✅ Add timeout helper
-      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+      // ✅ Add timeout helper with increased timeout for better reliability
+      const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number = 15000): Promise<T> => {
         return Promise.race([
           promise,
           new Promise<T>((_, reject) =>
@@ -379,11 +379,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingClasses(true);
       setClassesError(null);
+      console.log("📚 Fetching classes...");
+
       const data = await classesApi.getAllLightweight();
+
+      console.log(`✅ Fetched ${data.length} classes successfully`);
       setClasses(data);
+      setClassesError(null);
     } catch (error: any) {
       console.error("❌ Error fetching classes:", error);
-      setClassesError(error.message);
+      const errorMsg = error.message || "Failed to load classes";
+      setClassesError(errorMsg);
+      // Don't clear classes on error - keep existing data
     } finally {
       setIsLoadingClasses(false);
     }

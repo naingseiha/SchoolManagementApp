@@ -37,7 +37,7 @@ export default function MobileGradeEntry({
   month,
   year,
 }: MobileGradeEntryProps) {
-  const { classes } = useData();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [students, setStudents] = useState<StudentGrade[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -46,6 +46,14 @@ export default function MobileGradeEntry({
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [selectedMonth, setSelectedMonth] = useState(month || "មករា");
   const [selectedYear, setSelectedYear] = useState(year || new Date().getFullYear());
+
+  // Proactively load classes if empty
+  useEffect(() => {
+    if (classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [classes.length, isLoadingClasses, refreshClasses]);
 
   // Khmer months
   const khmerMonths = [
@@ -226,15 +234,21 @@ export default function MobileGradeEntry({
                 setSelectedClass(e.target.value);
                 setCurrentIndex(0);
               }}
-              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              disabled={isLoadingClasses}
+              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               style={{ fontSize: "16px" }}
             >
-              <option value="">-- ជ្រើសរើសថ្នាក់ • Select Class --</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
+              <option value="">
+                {isLoadingClasses
+                  ? "កំពុងផ្ទុក... • Loading..."
+                  : "-- ជ្រើសរើសថ្នាក់ • Select Class --"}
+              </option>
+              {!isLoadingClasses &&
+                classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </option>
+                ))}
             </select>
           </div>
 

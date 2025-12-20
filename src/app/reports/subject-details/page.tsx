@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -31,9 +31,42 @@ import {
 } from "@/lib/reportHelpers";
 
 export default function SubjectDetailsReportPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes } = useData();
   const router = useRouter();
+
+  // ✅ Filter classes based on role - Show both homeroom (INSTRUCTOR) and teaching classes (TEACHER)
+  const availableClasses = useMemo(() => {
+    if (!currentUser) {
+      return [];
+    }
+
+    if (currentUser.role === "ADMIN") {
+      return classes;
+    }
+
+    if (currentUser.role === "TEACHER") {
+      const classIdsSet = new Set<string>();
+
+      // From teacherClasses (classes where teacher teaches subjects)
+      if (currentUser.teacher?.teacherClasses) {
+        currentUser.teacher.teacherClasses.forEach((tc: any) => {
+          const classId = tc.classId || tc.class?.id;
+          if (classId) classIdsSet.add(classId);
+        });
+      }
+
+      // From homeroom class (class the teacher manages as INSTRUCTOR)
+      if (currentUser.teacher?.homeroomClassId) {
+        classIdsSet.add(currentUser.teacher.homeroomClassId);
+      }
+
+      const teacherClassIds = Array.from(classIdsSet);
+      return classes.filter((c) => teacherClassIds.includes(c.id));
+    }
+
+    return [];
+  }, [currentUser, classes]);
 
   const currentMonth = getCurrentKhmerMonth();
 
@@ -95,7 +128,7 @@ export default function SubjectDetailsReportPage() {
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Get unique grades from classes
-  const grades = Array.from(new Set(classes.map((c) => c.grade))).sort();
+  const grades = Array.from(new Set(availableClasses.map((c) => c.grade))).sort();
   const gradeOptions = [
     { value: "", label: "ជ្រើសរើសកម្រិតថ្នាក់" },
     ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី${g} ទាំងអស់` })),
@@ -168,7 +201,7 @@ export default function SubjectDetailsReportPage() {
 
   const classOptions = [
     { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
+    ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
   ];
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => {

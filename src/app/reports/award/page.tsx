@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -41,9 +41,29 @@ const monthNames = [
 ];
 
 export default function AwardReportPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes } = useData();
   const router = useRouter();
+
+  // ✅ Filter classes based on role
+  const availableClasses = useMemo(() => {
+    if (!currentUser) return [];
+    if (currentUser.role === "ADMIN") return classes;
+    if (currentUser.role === "TEACHER") {
+      const classIdsSet = new Set<string>();
+      if (currentUser.teacher?.teacherClasses) {
+        currentUser.teacher.teacherClasses.forEach((tc: any) => {
+          const classId = tc.classId || tc.class?.id;
+          if (classId) classIdsSet.add(classId);
+        });
+      }
+      if (currentUser.teacher?.homeroomClassId) {
+        classIdsSet.add(currentUser.teacher.homeroomClassId);
+      }
+      return classes.filter((c) => Array.from(classIdsSet).includes(c.id));
+    }
+    return [];
+  }, [currentUser, classes]);
 
   const [reportType, setReportType] = useState<"class" | "grade">("class");
   const [selectedClassId, setSelectedClassId] = useState("");

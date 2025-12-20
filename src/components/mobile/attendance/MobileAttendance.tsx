@@ -32,7 +32,7 @@ export default function MobileAttendance({
   month,
   year,
 }: MobileAttendanceProps) {
-  const { classes } = useData();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const [currentDay, setCurrentDay] = useState(new Date().getDate());
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [selectedMonth, setSelectedMonth] = useState(
@@ -44,6 +44,14 @@ export default function MobileAttendance({
   const [students, setStudents] = useState<StudentAttendance[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Proactively load classes if empty
+  useEffect(() => {
+    if (classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [classes.length, isLoadingClasses, refreshClasses]);
 
   const monthNames = [
     "មករា",
@@ -207,15 +215,21 @@ export default function MobileAttendance({
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              disabled={isLoadingClasses}
+              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               style={{ fontSize: "16px" }}
             >
-              <option value="">-- ជ្រើសរើសថ្នាក់ • Select Class --</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
+              <option value="">
+                {isLoadingClasses
+                  ? "កំពុងផ្ទុក... • Loading..."
+                  : "-- ជ្រើសរើសថ្នាក់ • Select Class --"}
+              </option>
+              {!isLoadingClasses &&
+                classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </option>
+                ))}
             </select>
           </div>
 
