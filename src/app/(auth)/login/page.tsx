@@ -63,7 +63,7 @@ export default function LoginPage() {
   // ✅ Updated demo credentials
   const fillDemoCredentials = (role: "admin" | "teacher") => {
     const credentials = {
-      admin: { identifier: "admin@school.edu. kh", password: "admin123" },
+      admin: { identifier: "admin@school.edu.kh", password: "admin123" },
       teacher: { identifier: "012123456", password: "012123456" },
     };
 

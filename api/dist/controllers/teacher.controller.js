@@ -40,7 +40,7 @@ const getTeachersLightweight = async (req, res) => {
                     },
                 },
                 // Get IDs only for assignments (no full data)
-                subjectAssignments: {
+                subjectTeachers: {
                     select: {
                         subjectId: true,
                         subject: {
@@ -52,7 +52,7 @@ const getTeachersLightweight = async (req, res) => {
                         },
                     },
                 },
-                teachingClasses: {
+                teacherClasses: {
                     select: {
                         classId: true,
                         class: {
@@ -71,10 +71,10 @@ const getTeachersLightweight = async (req, res) => {
         // Transform to match expected format
         const transformedTeachers = teachers.map((teacher) => ({
             ...teacher,
-            subjectIds: teacher.subjectAssignments.map((sa) => sa.subjectId),
-            teachingClassIds: teacher.teachingClasses.map((tc) => tc.classId),
-            subjects: teacher.subjectAssignments.map((sa) => sa.subject),
-            teachingClasses: teacher.teachingClasses.map((tc) => tc.class),
+            subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
+            teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
+            subjects: teacher.subjectTeachers.map((sa) => sa.subject),
+            teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
         }));
         console.log(`⚡ Fetched ${transformedTeachers.length} teachers (lightweight)`);
         res.json({
@@ -116,7 +116,7 @@ const getAllTeachers = async (req, res) => {
                     },
                 },
                 // ✅ Teaching classes (many-to-many)
-                teachingClasses: {
+                teacherClasses: {
                     include: {
                         class: {
                             select: {
@@ -135,7 +135,7 @@ const getAllTeachers = async (req, res) => {
                     },
                 },
                 // ✅ Subject assignments (many-to-many)
-                subjectAssignments: {
+                subjectTeachers: {
                     include: {
                         subject: {
                             select: {
@@ -169,13 +169,13 @@ const getAllTeachers = async (req, res) => {
         const transformedTeachers = teachers.map((teacher) => ({
             ...teacher,
             // Extract IDs for easy access
-            subjectIds: teacher.subjectAssignments.map((sa) => sa.subjectId),
-            teachingClassIds: teacher.teachingClasses.map((tc) => tc.classId),
+            subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
+            teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
             // Flatten nested data
-            subjects: teacher.subjectAssignments.map((sa) => sa.subject),
-            teachingClasses: teacher.teachingClasses.map((tc) => tc.class),
+            subjects: teacher.subjectTeachers.map((sa) => sa.subject),
+            teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
             // Create subject string for display
-            subject: teacher.subjectAssignments
+            subject: teacher.subjectTeachers
                 .map((sa) => sa.subject.nameKh || sa.subject.name)
                 .join(", "),
             // ✅ Login status
@@ -227,7 +227,7 @@ const getTeacherById = async (req, res) => {
                         },
                     },
                 },
-                teachingClasses: {
+                teacherClasses: {
                     include: {
                         class: {
                             include: {
@@ -250,7 +250,7 @@ const getTeacherById = async (req, res) => {
                         },
                     },
                 },
-                subjectAssignments: {
+                subjectTeachers: {
                     include: {
                         subject: {
                             select: {
@@ -288,11 +288,11 @@ const getTeacherById = async (req, res) => {
         // ✅ Transform data
         const transformedTeacher = {
             ...teacher,
-            subjectIds: teacher.subjectAssignments.map((sa) => sa.subjectId),
-            teachingClassIds: teacher.teachingClasses.map((tc) => tc.classId),
-            subjects: teacher.subjectAssignments.map((sa) => sa.subject),
-            teachingClasses: teacher.teachingClasses.map((tc) => tc.class),
-            subject: teacher.subjectAssignments
+            subjectIds: teacher.subjectTeachers.map((sa) => sa.subjectId),
+            teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
+            subjects: teacher.subjectTeachers.map((sa) => sa.subject),
+            teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
+            subject: teacher.subjectTeachers
                 .map((sa) => sa.subject.nameKh || sa.subject.name)
                 .join(", "),
             hasLoginAccount: !!teacher.user,
@@ -488,13 +488,13 @@ const createTeacher = async (req, res) => {
                     emergencyPhone: emergencyPhone?.trim() || null,
                     homeroomClassId: homeroomClassId || null,
                     // Subject assignments
-                    subjectAssignments: {
+                    subjectTeachers: {
                         create: (subjectIds || []).map((subjectId) => ({
                             subjectId,
                         })),
                     },
                     // Teaching class assignments
-                    teachingClasses: {
+                    teacherClasses: {
                         create: (teachingClassIds || []).map((classId) => ({
                             classId,
                         })),
@@ -502,10 +502,10 @@ const createTeacher = async (req, res) => {
                 },
                 include: {
                     homeroomClass: true,
-                    teachingClasses: {
+                    teacherClasses: {
                         include: { class: true },
                     },
-                    subjectAssignments: {
+                    subjectTeachers: {
                         include: { subject: true },
                     },
                 },
@@ -582,8 +582,8 @@ const updateTeacher = async (req, res) => {
             include: {
                 user: true,
                 homeroomClass: true,
-                teachingClasses: true,
-                subjectAssignments: true,
+                teacherClasses: true,
+                subjectTeachers: true,
             },
         });
         if (!existingTeacher) {
@@ -707,12 +707,12 @@ const updateTeacher = async (req, res) => {
                         : role === "TEACHER"
                             ? null
                             : undefined,
-                    subjectAssignments: {
+                    subjectTeachers: {
                         create: (subjectIds || []).map((subjectId) => ({
                             subjectId,
                         })),
                     },
-                    teachingClasses: {
+                    teacherClasses: {
                         create: (teachingClassIds || []).map((classId) => ({
                             classId,
                         })),
@@ -720,10 +720,10 @@ const updateTeacher = async (req, res) => {
                 },
                 include: {
                     homeroomClass: true,
-                    teachingClasses: {
+                    teacherClasses: {
                         include: { class: true },
                     },
-                    subjectAssignments: {
+                    subjectTeachers: {
                         include: { subject: true },
                     },
                     user: true,
@@ -776,8 +776,8 @@ const deleteTeacher = async (req, res) => {
             include: {
                 user: true,
                 homeroomClass: true,
-                teachingClasses: true,
-                subjectAssignments: true,
+                teacherClasses: true,
+                subjectTeachers: true,
             },
         });
         if (!teacher) {
@@ -794,10 +794,10 @@ const deleteTeacher = async (req, res) => {
             });
         }
         // ✅ Check if has teaching classes
-        if (teacher.teachingClasses.length > 0) {
+        if (teacher.teacherClasses.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: `Cannot delete teacher with ${teacher.teachingClasses.length} teaching class(es)`,
+                message: `Cannot delete teacher with ${teacher.teacherClasses.length} teaching class(es)`,
             });
         }
         // ✅ Delete teacher (cascade will delete User account + assignments)
@@ -936,7 +936,7 @@ const bulkCreateTeachers = async (req, res) => {
                 // ✅ Map subjects
                 const subjectIds = mapSubjectNamesToIds(teacherData.subjects || "");
                 // ✅ Map teaching classes
-                const teachingClassIds = mapClassNamesToIds(teacherData.teachingClasses || "");
+                const teachingClassIds = mapClassNamesToIds(teacherData.teacherClasses || "");
                 // ✅ Find homeroom class
                 let homeroomClassId = null;
                 if (role === "INSTRUCTOR") {
@@ -991,13 +991,13 @@ const bulkCreateTeachers = async (req, res) => {
                             hireDate: teacherData.hireDate || null,
                             homeroomClassId,
                             // Subject assignments
-                            subjectAssignments: {
+                            subjectTeachers: {
                                 create: subjectIds.map((subjectId) => ({
                                     subjectId,
                                 })),
                             },
                             // Teaching class assignments
-                            teachingClasses: {
+                            teacherClasses: {
                                 create: teachingClassIds.map((classId) => ({
                                     classId,
                                 })),
@@ -1105,8 +1105,8 @@ const bulkUpdateTeachers = async (req, res) => {
                 const existingTeacher = await prisma.teacher.findUnique({
                     where: { id },
                     include: {
-                        subjectAssignments: true,
-                        teachingClasses: true,
+                        subjectTeachers: true,
+                        teacherClasses: true,
                     },
                 });
                 if (!existingTeacher) {
@@ -1173,12 +1173,12 @@ const bulkUpdateTeachers = async (req, res) => {
                                 : updateData.role === "TEACHER"
                                     ? null
                                     : undefined,
-                            subjectAssignments: {
+                            subjectTeachers: {
                                 create: (updateData.subjectIds || []).map((subjectId) => ({
                                     subjectId,
                                 })),
                             },
-                            teachingClasses: {
+                            teacherClasses: {
                                 create: (updateData.teachingClassIds || []).map((classId) => ({
                                     classId,
                                 })),

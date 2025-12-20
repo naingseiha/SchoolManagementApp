@@ -66,7 +66,7 @@ export const register = async (req: Request, res: Response) => {
     const token = jwt.sign(
       {
         userId: user.id,
-        email: user.email,
+        email: user.email || user.phone || "",
         role: user.role,
       },
       jwtSecret,
@@ -177,7 +177,7 @@ export const login = async (req: Request, res: Response) => {
     const token = jwt.sign(
       {
         userId: user.id,
-        email: user.email,
+        email: user.email || user.phone || "",
         role: user.role,
       },
       jwtSecret,
@@ -238,11 +238,11 @@ export const refreshToken = async (req: Request, res: Response) => {
     const newToken = jwt.sign(
       {
         userId: decoded.userId,
-        email: decoded.email,
+        email: decoded.email || "",
         role: decoded.role,
       },
-      jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+      jwtSecret as string,
+      { expiresIn: (process.env.JWT_EXPIRES_IN || "7d") as string }
     );
 
     res.json({
@@ -267,9 +267,13 @@ export const refreshToken = async (req: Request, res: Response) => {
  */
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    // ✅ FIX: Middleware sets req.userId, not req.user.userId
+    const userId = (req as any).userId;
+
+    console.log("📍 Getting current user for ID:", userId);
 
     if (!userId) {
+      console.log("❌ No userId found in request");
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -348,7 +352,8 @@ export const getCurrentUser = async (req: Request, res: Response) => {
  */
 export const logout = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    // ✅ FIX: Middleware sets req.userId, not req.user.userId
+    const userId = (req as any).userId;
 
     if (userId) {
       console.log("👋 User logged out:", userId);

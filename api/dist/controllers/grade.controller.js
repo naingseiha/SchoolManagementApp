@@ -511,7 +511,8 @@ class GradeController {
                 console.time("  📤 Bulk Update");
                 for (let i = 0; i < toUpdate.length; i += UPDATE_BATCH) {
                     const batch = toUpdate.slice(i, i + UPDATE_BATCH);
-                    await prisma.$transaction(batch.map((update) => prisma.grade.update(update)), { timeout: 30000 });
+                    // ✅ After (correct)
+                    await prisma.$transaction(batch.map((update) => prisma.grade.update(update)));
                     updated += batch.length;
                     if (updateBatches > 1) {
                         console.log(`    Progress: ${updated}/${toUpdate.length}`);

@@ -34,9 +34,19 @@ export const authApi = {
       console.log("  - Identifier:", credentials.identifier);
       console.log("  - Remember me:", credentials.rememberMe);
 
+      // ✅ FIX: Transform identifier to email or phone based on format
+      const isEmail = credentials.identifier.includes("@");
+      const loginPayload = {
+        [isEmail ? "email" : "phone"]: credentials.identifier,
+        password: credentials.password,
+        rememberMe: credentials.rememberMe,
+      };
+
+      console.log("  - Sending as:", isEmail ? "email" : "phone");
+
       const data = await apiClient.post<LoginResponseData>(
         "/auth/login",
-        credentials
+        loginPayload
       );
 
       console.log("✅ Login API response received:");
@@ -80,9 +90,9 @@ export const authApi = {
 
   async refreshToken(): Promise<string> {
     try {
-      console.log("🔄 Refreshing token.. .");
+      console.log("🔄 Refreshing token...");
       const data = await apiClient.post<{ token: string; expiresIn: string }>(
-        "/auth/refresh-token"
+        "/auth/refresh"
       );
       console.log("✅ Token refreshed");
       return data.token;

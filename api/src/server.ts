@@ -34,17 +34,27 @@ const allowedOrigins = [
   "http://localhost:3001",
   "http://127.0.0.1:3000",
   process.env.CLIENT_URL,
+  process.env.CORS_ORIGIN,
   "https://schoolmanagementapp-3irq.onrender.com",
-].filter(Boolean);
+].filter((origin): origin is string => Boolean(origin) && origin !== "undefined");
+
+console.log("🔒 CORS allowed origins:", allowedOrigins);
 
 app.use(
   cors({
     origin: function (origin, callback) {
+      // ✅ Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
+
+      // ✅ SECURITY FIX: Only allow whitelisted origins
       if (allowedOrigins.indexOf(origin) === -1) {
-        console.log("❌ CORS blocked origin:", origin);
-        return callback(null, true);
+        const msg = `CORS policy: Origin ${origin} is not allowed`;
+        console.log("❌ CORS BLOCKED:", origin);
+        return callback(new Error(msg), false);
       }
+
+      // ✅ Origin is allowed
+      console.log("✅ CORS ALLOWED:", origin);
       return callback(null, true);
     },
     credentials: true,
