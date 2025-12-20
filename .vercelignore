@@ -1,5 +1,8 @@
 # Ignore backend API folder during Vercel build
-api/
+api
+api/**
+/api
+/api/**
 
 # Ignore other non-frontend files
 *.md
