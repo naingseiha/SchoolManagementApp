@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -797,7 +798,7 @@ export const updateTeacher = async (req: Request, res: Response) => {
         ]);
 
         // 2. Update teacher
-        const teacher = await tx.teacher.update({
+        await tx.teacher.update({
           where: { id },
           data: {
             firstName: firstName !== undefined ? firstName.trim() : undefined,
@@ -823,18 +824,41 @@ export const updateTeacher = async (req: Request, res: Response) => {
                 : role === "TEACHER"
                 ? null
                 : undefined,
-
-            subjectTeachers: {
-              create: (subjectIds || []).map((subjectId: string) => ({
-                subjectId,
-              })),
-            },
-            teacherClasses: {
-              create: (teachingClassIds || []).map((classId: string) => ({
-                classId,
-              })),
-            },
           },
+        });
+
+        // 3. Create new subject and class assignments
+        const now = new Date();
+        await Promise.all([
+          // Create subject assignments
+          ...(subjectIds || []).map((subjectId: string) =>
+            tx.subjectTeacher.create({
+              data: {
+                id: randomUUID(),
+                teacherId: id,
+                subjectId,
+                createdAt: now,
+                updatedAt: now,
+              },
+            })
+          ),
+          // Create class assignments
+          ...(teachingClassIds || []).map((classId: string) =>
+            tx.teacherClass.create({
+              data: {
+                id: randomUUID(),
+                teacherId: id,
+                classId,
+                createdAt: now,
+                updatedAt: now,
+              },
+            })
+          ),
+        ]);
+
+        // 4. Fetch updated teacher with all relations
+        const updatedTeacher = await tx.teacher.findUnique({
+          where: { id },
           include: {
             homeroomClass: true,
             teacherClasses: {
@@ -847,7 +871,12 @@ export const updateTeacher = async (req: Request, res: Response) => {
           },
         });
 
-        // 3. Update User account (if exists and phone/email changed)
+        // 5. Verify teacher was fetched successfully
+        if (!updatedTeacher) {
+          throw new Error("Failed to fetch updated teacher");
+        }
+
+        // 6. Update User account (if exists and phone/email changed)
         if (existingTeacher.user) {
           await tx.user.update({
             where: { id: existingTeacher.user.id },
@@ -860,7 +889,7 @@ export const updateTeacher = async (req: Request, res: Response) => {
           });
         }
 
-        return teacher;
+        return updatedTeacher;
       },
       {
         maxWait: 10000,

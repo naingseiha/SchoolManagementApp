@@ -65,47 +65,47 @@ export default function Toast({
   const Icon = style.icon;
 
   return (
-    <div className="animate-in slide-in-from-right-5 fade-in duration-500 ease-out">
+    <div className="animate-in slide-in-from-top-5 fade-in duration-300 ease-out">
       <div
-        className={`${style.bgLight} ${style.borderColor} border-2 rounded-2xl shadow-2xl overflow-hidden max-w-md backdrop-blur-sm bg-opacity-95 transform transition-all hover:scale-105 hover:shadow-3xl`}
+        className={`${style.bgLight} ${style.borderColor} border rounded-xl shadow-lg overflow-hidden w-full backdrop-blur-sm bg-opacity-95`}
       >
-        {/* Gradient Top Bar with Pulse Animation */}
+        {/* Gradient Top Bar */}
         <div
-          className={`h-2 bg-gradient-to-r ${style.bgGradient} animate-pulse-subtle`}
+          className={`h-1 bg-gradient-to-r ${style.bgGradient}`}
         />
 
         {/* Content */}
-        <div className="p-4 flex items-start gap-4">
-          {/* Icon with Bounce Animation */}
+        <div className="p-3 flex items-center gap-3">
+          {/* Icon */}
           <div
-            className={`flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br ${style.bgGradient} flex items-center justify-center shadow-lg animate-bounce-subtle`}
+            className={`flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${style.bgGradient} flex items-center justify-center shadow-sm`}
           >
-            <Icon className="w-6 h-6 text-white drop-shadow-md" />
+            <Icon className="w-4 h-4 text-white" />
           </div>
 
           {/* Message */}
-          <div className="flex-1 pt-1.5">
+          <div className="flex-1">
             <p
-              className={`${style.textColor} font-bold text-base leading-relaxed tracking-tight`}
+              className={`${style.textColor} font-medium text-sm leading-snug`}
             >
               {message}
             </p>
           </div>
 
-          {/* Close Button with Hover Effect */}
+          {/* Close Button */}
           <button
             onClick={onClose}
-            className={`flex-shrink-0 ${style.iconColor} hover:bg-gray-200 p-1.5 rounded-lg transition-all duration-200 hover:rotate-90`}
+            className={`flex-shrink-0 ${style.iconColor} hover:bg-gray-200 p-1 rounded transition-colors duration-150`}
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Animated Progress Bar */}
-        <div className="h-1.5 bg-gray-200/50">
+        <div className="h-1 bg-gray-200/50">
           <div
-            className={`h-full bg-gradient-to-r ${style.bgGradient} shadow-inner`}
+            className={`h-full bg-gradient-to-r ${style.bgGradient}`}
             style={{
               animation: `shrink ${duration}ms linear forwards`,
             }}
@@ -121,30 +121,6 @@ export default function Toast({
           to {
             width: 0%;
           }
-        }
-        @keyframes pulse-subtle {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.8;
-          }
-        }
-        @keyframes bounce-subtle {
-          0%,
-          100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-        }
-        .animate-pulse-subtle {
-          animation: pulse-subtle 2s ease-in-out infinite;
-        }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 0.6s ease-in-out;
         }
       `}</style>
     </div>

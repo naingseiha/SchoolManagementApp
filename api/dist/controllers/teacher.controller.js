@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.bulkUpdateTeachers = exports.bulkCreateTeachers = exports.deleteTeacher = exports.updateTeacher = exports.createTeacher = exports.getTeacherById = exports.getAllTeachers = exports.getTeachersLightweight = void 0;
 const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = require("crypto");
 const prisma = new client_1.PrismaClient();
 /**
  * ✅ GET teachers LIGHTWEIGHT (for grid/list views - fast loading)
@@ -687,7 +688,7 @@ const updateTeacher = async (req, res) => {
                 }),
             ]);
             // 2. Update teacher
-            const teacher = await tx.teacher.update({
+            await tx.teacher.update({
                 where: { id },
                 data: {
                     firstName: firstName !== undefined ? firstName.trim() : undefined,
@@ -707,17 +708,30 @@ const updateTeacher = async (req, res) => {
                         : role === "TEACHER"
                             ? null
                             : undefined,
-                    subjectTeachers: {
-                        create: (subjectIds || []).map((subjectId) => ({
-                            subjectId,
-                        })),
-                    },
-                    teacherClasses: {
-                        create: (teachingClassIds || []).map((classId) => ({
-                            classId,
-                        })),
-                    },
                 },
+            });
+            // 3. Create new subject and class assignments
+            await Promise.all([
+                // Create subject assignments
+                ...(subjectIds || []).map((subjectId) => tx.subjectTeacher.create({
+                    data: {
+                        id: (0, crypto_1.randomUUID)(),
+                        teacherId: id,
+                        subjectId,
+                    },
+                })),
+                // Create class assignments
+                ...(teachingClassIds || []).map((classId) => tx.teacherClass.create({
+                    data: {
+                        id: (0, crypto_1.randomUUID)(),
+                        teacherId: id,
+                        classId,
+                    },
+                })),
+            ]);
+            // 4. Fetch updated teacher with all relations
+            const updatedTeacher = await tx.teacher.findUnique({
+                where: { id },
                 include: {
                     homeroomClass: true,
                     teacherClasses: {
@@ -729,7 +743,7 @@ const updateTeacher = async (req, res) => {
                     user: true,
                 },
             });
-            // 3. Update User account (if exists and phone/email changed)
+            // 5. Update User account (if exists and phone/email changed)
             if (existingTeacher.user) {
                 await tx.user.update({
                     where: { id: existingTeacher.user.id },
@@ -741,7 +755,7 @@ const updateTeacher = async (req, res) => {
                     },
                 });
             }
-            return teacher;
+            return updatedTeacher;
         }, {
             maxWait: 10000,
             timeout: 15000,
