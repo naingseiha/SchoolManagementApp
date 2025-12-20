@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import { dashboardApi, DashboardStats } from "@/lib/api/dashboard";
+import { SimpleBarChart, SimplePieChart } from "@/components/ui/SimpleBarChart";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { SkeletonDashboard, SkeletonCard, SkeletonChart } from "@/components/ui/LoadingSkeleton";
 import {
   Users,
   GraduationCap,
@@ -16,17 +20,26 @@ import {
   Award,
   BarChart3,
   Loader2,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, currentUser, isLoading } = useAuth();
   const {
-    students = [], // ✅ ADD DEFAULT
-    teachers = [], // ✅ ADD DEFAULT
-    classes = [], // ✅ ADD DEFAULT
-    subjects = [], // ✅ ADD DEFAULT
+    students = [],
+    teachers = [],
+    classes = [],
+    subjects = [],
   } = useData();
+
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -35,12 +48,36 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Fetch dashboard statistics
+  useEffect(() => {
+    if (isAuthenticated && currentUser) {
+      fetchDashboardStats();
+    }
+  }, [isAuthenticated, currentUser]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setIsLoadingStats(true);
+      setStatsError(null);
+      const stats = await dashboardApi.getStats();
+      setDashboardStats(stats);
+    } catch (error: any) {
+      console.error("Error fetching dashboard stats:", error);
+      setStatsError(error.message || "Failed to load dashboard statistics");
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto" />
-          <p className="mt-4 text-gray-600">Checking authentication...</p>
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
+        <Sidebar />
+        <div className="flex-1">
+          <Header />
+          <main className="p-6">
+            <SkeletonDashboard />
+          </main>
         </div>
       </div>
     );
@@ -74,11 +111,12 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
-      <Sidebar />
-      <div className="flex-1">
-        <Header />
-        <main className="p-6">
+    <ErrorBoundary>
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30">
+        <Sidebar />
+        <div className="flex-1">
+          <Header />
+          <main className="p-6">
           {/* Welcome Section - Modern Design */}
           <div className="mb-8 relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-2xl p-8">
             {/* Decorative elements */}
@@ -289,7 +327,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Actions - Modern Grid */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-8">
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-8 mb-8">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
@@ -346,8 +384,240 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-        </main>
+
+          {/* Enhanced Analytics Section */}
+          {dashboardStats && (
+            <>
+              {/* Recent Activity */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Recent Activity Card */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-black text-gray-900">
+                      Recent Activity (Last 7 Days)
+                    </h3>
+                    <Activity className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <BookOpen className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">Grade Entries</p>
+                          <p className="text-xs text-gray-600">New grades recorded</p>
+                        </div>
+                      </div>
+                      <span className="text-2xl font-black text-blue-600">
+                        {dashboardStats.recentActivity.recentGradeEntries}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">Attendance Records</p>
+                          <p className="text-xs text-gray-600">New attendance marked</p>
+                        </div>
+                      </div>
+                      <span className="text-2xl font-black text-green-600">
+                        {dashboardStats.recentActivity.recentAttendanceRecords}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Class Distribution */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-lg font-black text-gray-900">
+                      Classes by Grade Level
+                    </h3>
+                    <GraduationCap className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <SimpleBarChart
+                    data={dashboardStats.classByGrade.map((item) => ({
+                      label: `Grade ${item.grade}`,
+                      value: item.count,
+                      color: "#8b5cf6",
+                    }))}
+                    height={180}
+                  />
+                </div>
+              </div>
+
+              {/* Analytics Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Grade Distribution */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <h3 className="text-lg font-black text-gray-900">
+                        Grade Distribution
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        Current academic year performance
+                      </p>
+                    </div>
+                    <Award className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <SimpleBarChart
+                    data={[
+                      {
+                        label: "A (ល្អប្រសើរ)",
+                        value: dashboardStats.gradeDistribution.A,
+                        color: "#10b981",
+                      },
+                      {
+                        label: "B (ល្អណាស់)",
+                        value: dashboardStats.gradeDistribution.B,
+                        color: "#3b82f6",
+                      },
+                      {
+                        label: "C (ល្អ)",
+                        value: dashboardStats.gradeDistribution.C,
+                        color: "#f59e0b",
+                      },
+                      {
+                        label: "D (ល្អបង្គួរ)",
+                        value: dashboardStats.gradeDistribution.D,
+                        color: "#f97316",
+                      },
+                      {
+                        label: "E (មធ្យម)",
+                        value: dashboardStats.gradeDistribution.E,
+                        color: "#ef4444",
+                      },
+                      {
+                        label: "F (ខ្សោយ)",
+                        value: dashboardStats.gradeDistribution.F,
+                        color: "#dc2626",
+                      },
+                    ]}
+                    height={200}
+                  />
+                </div>
+
+                {/* Attendance Overview */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <h3 className="text-lg font-black text-gray-900">
+                        Attendance Overview
+                      </h3>
+                      <p className="text-xs text-gray-600">Last 30 days statistics</p>
+                    </div>
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex justify-center">
+                    <SimplePieChart
+                      data={[
+                        {
+                          label: "Present",
+                          value: dashboardStats.attendanceStats.present,
+                          color: "#10b981",
+                        },
+                        {
+                          label: "Absent",
+                          value: dashboardStats.attendanceStats.absent,
+                          color: "#ef4444",
+                        },
+                        {
+                          label: "Late",
+                          value: dashboardStats.attendanceStats.late,
+                          color: "#f59e0b",
+                        },
+                        {
+                          label: "Excused",
+                          value: dashboardStats.attendanceStats.excused,
+                          color: "#3b82f6",
+                        },
+                      ]}
+                      size={180}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Performing Classes */}
+              {dashboardStats.topPerformingClasses.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-lg border border-amber-200 p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div>
+                      <h3 className="text-lg font-black text-gray-900">
+                        Top Performing Classes 🏆
+                      </h3>
+                      <p className="text-xs text-gray-600">
+                        Based on average student performance
+                      </p>
+                    </div>
+                    <TrendingUp className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {dashboardStats.topPerformingClasses.map((cls, index) => (
+                      <div
+                        key={cls.id}
+                        className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-amber-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-black text-amber-600">
+                                #{index + 1}
+                              </span>
+                              <h4 className="font-black text-gray-900">{cls.name}</h4>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                              Grade {cls.grade} • {cls.studentCount} students
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-amber-100">
+                          <p className="text-xs text-gray-600 mb-1">Average Score</p>
+                          <p className="text-2xl font-black text-amber-600">
+                            {cls.averageScore?.toFixed(1) || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Loading state for stats */}
+          {isLoadingStats && !dashboardStats && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <SkeletonChart />
+                <SkeletonChart />
+              </div>
+            </div>
+          )}
+
+          {/* Error state */}
+          {statsError && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <div>
+                  <p className="font-bold text-red-900">Failed to load statistics</p>
+                  <p className="text-sm text-red-700">{statsError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          </main>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

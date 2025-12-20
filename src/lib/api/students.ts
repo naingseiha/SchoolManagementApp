@@ -2,6 +2,7 @@
 
 import { apiClient } from "./client";
 import { parseDate } from "../utils/dateParser";
+import { apiCache } from "../cache";
 
 export interface Student {
   id: string;
@@ -256,19 +257,26 @@ const transformToBackend = (frontendData: CreateStudentData): any => {
 export const studentsApi = {
   /**
    * Get all students (LIGHTWEIGHT - fast loading for grids/lists)
+   * Cached for 3 minutes to improve performance
    */
   async getAllLightweight(): Promise<Student[]> {
     try {
-      console.log("⚡ Fetching students (lightweight)...");
-      const students = await apiClient.get<Student[]>("/students/lightweight");
+      return apiCache.getOrFetch(
+        "students:lightweight",
+        async () => {
+          console.log("⚡ Fetching students (lightweight)...");
+          const students = await apiClient.get<Student[]>("/students/lightweight");
 
-      if (!Array.isArray(students)) {
-        console.error("❌ Expected array but got:", students);
-        return [];
-      }
+          if (!Array.isArray(students)) {
+            console.error("❌ Expected array but got:", students);
+            return [];
+          }
 
-      console.log(`⚡ Fetched ${students.length} students (lightweight)`);
-      return students.map(transformStudent);
+          console.log(`⚡ Fetched ${students.length} students (lightweight)`);
+          return students.map(transformStudent);
+        },
+        3 * 60 * 1000 // 3 minutes cache
+      );
     } catch (error: any) {
       console.error("❌ Error fetching students (lightweight):", error);
       return [];

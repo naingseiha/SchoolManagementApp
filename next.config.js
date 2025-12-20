@@ -83,11 +83,57 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // Image Optimization
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+
+  // Performance Optimizations
   compress: true,
+  poweredByHeader: false,
+  generateEtags: true,
+
+  // Compiler Options
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
+  // Experimental Features for Performance
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react'],
+  },
+
+  // Production Source Maps (disabled for performance)
+  productionBrowserSourceMaps: false,
+
+  // Bundle Analyzer (optional - enable when needed)
+  // webpack: (config, { isServer }) => {
+  //   if (!isServer) {
+  //     config.optimization.splitChunks = {
+  //       chunks: 'all',
+  //       cacheGroups: {
+  //         default: false,
+  //         vendors: false,
+  //         commons: {
+  //           name: 'commons',
+  //           chunks: 'all',
+  //           minChunks: 2,
+  //         },
+  //       },
+  //     };
+  //   }
+  //   return config;
+  // },
+
   typescript: {
     // Temporarily ignore build errors (pre-existing Button icon prop issues)
     ignoreBuildErrors: true,

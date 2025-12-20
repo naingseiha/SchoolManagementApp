@@ -20,6 +20,7 @@ import gradeRoutes from "./routes/grade.routes";
 import attendanceRoutes from "./routes/attendance.routes";
 import exportRoutes from "./routes/export.routes";
 import reportRoutes from "./routes/report.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
 
 // Load environment variables
 dotenv.config();
@@ -89,6 +90,7 @@ app.get("/api/health", (req: Request, res: Response) => {
 
 // API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/teachers", teacherRoutes);
 app.use("/api/classes", classRoutes);
