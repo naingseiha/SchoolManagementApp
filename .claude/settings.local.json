@@ -18,7 +18,11 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWlxN3ZuYmIwMDAwNXR6YnRpZHp5YjJxIiwiZW1haWwiOiJhZG1pbkBzY2hvb2wuZWR1LmtoIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzY2MjA4NTY4LCJleHAiOjE3NjY4MTMzNjh9.8bQfWUnvSG4IxAQD09jfoVutXCPt3sFM5irV4DoZMys\")",
       "Bash(bash -c 'TOKEN=$\\(curl -s -X POST http://localhost:5001/api/auth/login -H \"\"Content-Type: application/json\"\" -d \"\"{\\\\\"\"email\\\\\"\": \\\\\"\"admin@school.edu.kh\\\\\"\", \\\\\"\"password\\\\\"\": \\\\\"\"admin123\\\\\"\"}\"\" | jq -r \"\".data.token\"\"\\) && echo \"\"Using token\"\" && curl -s http://localhost:5001/api/auth/me -H \"\"Authorization: Bearer ${TOKEN}\"\" | jq \"\".\"\"')",
       "Bash(bash -c 'TOKEN=$\\(curl -s -X POST http://localhost:5001/api/auth/login -H \"\"Content-Type: application/json\"\" -d \"\"{\\\\\"\"email\\\\\"\": \\\\\"\"admin@school.edu.kh\\\\\"\", \\\\\"\"password\\\\\"\": \\\\\"\"admin123\\\\\"\"}\"\" | jq -r \"\".data.token\"\"\\) && curl -s http://localhost:5001/api/auth/me -H \"\"Authorization: Bearer ${TOKEN}\"\" | jq \"\".\"\"')",
-      "Bash(bash -c 'curl -s -X POST http://localhost:5001/api/auth/login -H \"\"Content-Type: application/json\"\" -d \"\"{\\\\\"\"email\\\\\"\": \\\\\"\"admin@school.edu.kh\\\\\"\", \\\\\"\"password\\\\\"\": \\\\\"\"admin123\\\\\"\"}\"\" | jq \"\".success\"\"')"
+      "Bash(bash -c 'curl -s -X POST http://localhost:5001/api/auth/login -H \"\"Content-Type: application/json\"\" -d \"\"{\\\\\"\"email\\\\\"\": \\\\\"\"admin@school.edu.kh\\\\\"\", \\\\\"\"password\\\\\"\": \\\\\"\"admin123\\\\\"\"}\"\" | jq \"\".success\"\"')",
+      "Bash(git add:*)",
+      "Bash(git restore:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

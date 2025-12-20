@@ -1,11 +1,18 @@
-# Ignore backend API folder during Vercel build
-api
-api/**
-/api
-/api/**
+# Backend API folder (root level only)
 
-# Ignore other non-frontend files
-*.md
+/api/
+/api/\*\*
+
+# Documentation
+
+\*.md
 !README.md
-.git
-.github
+
+# Git metadata
+
+.git/
+.github/
+
+# Deployment files
+
+.vercel/
