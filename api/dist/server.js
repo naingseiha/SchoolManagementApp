@@ -19,6 +19,7 @@ const grade_routes_1 = __importDefault(require("./routes/grade.routes"));
 const attendance_routes_1 = __importDefault(require("./routes/attendance.routes"));
 const export_routes_1 = __importDefault(require("./routes/export.routes"));
 const report_routes_1 = __importDefault(require("./routes/report.routes"));
+const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
 // Load environment variables
 dotenv_1.default.config();
 // Initialize Express app
@@ -75,6 +76,7 @@ app.get("/api/health", (req, res) => {
 });
 // API Routes
 app.use("/api/auth", auth_routes_1.default);
+app.use("/api/dashboard", dashboard_routes_1.default);
 app.use("/api/students", student_routes_1.default);
 app.use("/api/teachers", teacher_routes_1.default);
 app.use("/api/classes", class_routes_1.default);

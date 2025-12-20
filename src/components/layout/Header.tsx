@@ -16,10 +16,22 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200/50 bg-white/95 backdrop-blur-xl shadow-sm animate-slideDown">
+    <header className="sticky top-0 z-40 border-b border-gray-200/50 bg-white/95 backdrop-blur-xl shadow-sm">
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Khmer+OS+Muol+Light&family=Khmer+OS+Battambang&display=swap');
+
+        .font-khmer-title {
+          font-family: 'Khmer OS Muol Light', serif;
+        }
+
+        .font-khmer-body {
+          font-family: 'Khmer OS Battambang', sans-serif;
+        }
+      `}</style>
+
       <div className="flex h-20 items-center justify-between px-4 md:px-8">
         {/* Left Section - Brand & Title */}
-        <div className="flex items-center space-x-4 animate-slideInLeft">
+        <div className="flex items-center space-x-4">
           {/* Logo/Icon */}
           <div className="hidden md:flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-lg">
             <svg
@@ -39,23 +51,20 @@ export default function Header() {
 
           {/* Title Section */}
           <div className="flex flex-col">
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent khmer-header leading-tight tracking-wider">
-              ប្រព័ន្ធគ្រប់គ្រងសាលារៀន
+            <h1 className="font-khmer-title text-xl md:text-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-tight">
+              ប្រព័ន្ធគ្រប់គ្រងសាលា
             </h1>
-            <p className="text-xs md:text-sm text-gray-500 english-modern font-medium mt-0.5">
-              School Management System
-            </p>
           </div>
         </div>
 
         {/* Right Section - User Info & Actions */}
-        <div className="flex items-center space-x-2 md:space-x-3 animate-slideInRight">
+        <div className="flex items-center space-x-2 md:space-x-3">
           {/* Notifications Button */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2.5 text-gray-600 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 group"
-              aria-label="Notifications"
+              aria-label="ការជូនដំណឹង"
             >
               <Bell className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
               <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-[10px] text-white font-bold animate-pulse shadow-lg">
@@ -65,10 +74,10 @@ export default function Header() {
 
             {/* Notifications Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 animate-scaleIn overflow-hidden">
+              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4">
-                  <h3 className="text-white font-semibold english-modern flex items-center justify-between">
-                    <span>Notifications</span>
+                  <h3 className="font-khmer-body text-white font-semibold flex items-center justify-between">
+                    <span>ការជូនដំណឹង</span>
                     <button
                       onClick={() => setShowNotifications(false)}
                       className="text-white/80 hover:text-white transition-colors"
@@ -80,18 +89,18 @@ export default function Header() {
                 <div className="max-h-96 overflow-y-auto">
                   {[
                     {
-                      title: "New student registered",
-                      time: "2 minutes ago",
+                      title: "សិស្សថ្មីបានចុះឈ្មោះ",
+                      time: "២ នាទីមុន",
                       icon: "👤",
                     },
                     {
-                      title: "Grade updated for Class 10A",
-                      time: "1 hour ago",
+                      title: "ពិន្ទុថ្នាក់ទី១០A បានធ្វើបច្ចុប្បន្នភាព",
+                      time: "១ ម៉ោងមុន",
                       icon: "📝",
                     },
                     {
-                      title: "Teacher assigned to Math",
-                      time: "3 hours ago",
+                      title: "គ្រូថ្មីបានចាត់តាំងមុខវិជ្ជាគណិតវិទ្យា",
+                      time: "៣ ម៉ោងមុន",
                       icon: "👨‍🏫",
                     },
                   ].map((notif, i) => (
@@ -102,10 +111,10 @@ export default function Header() {
                       <div className="flex items-start space-x-3">
                         <span className="text-2xl">{notif.icon}</span>
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                          <p className="font-khmer-body text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
                             {notif.title}
                           </p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="font-khmer-body text-xs text-gray-500 mt-1">
                             {notif.time}
                           </p>
                         </div>
@@ -114,8 +123,8 @@ export default function Header() {
                   ))}
                 </div>
                 <div className="p-3 bg-gray-50 text-center">
-                  <button className="text-sm text-indigo-600 hover:text-indigo-700 font-medium english-modern">
-                    View All Notifications
+                  <button className="font-khmer-body text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                    មើលការជូនដំណឹងទាំងអស់
                   </button>
                 </div>
               </div>
@@ -126,7 +135,7 @@ export default function Header() {
           <button
             onClick={() => router.push("/settings")}
             className="p-2.5 text-gray-600 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 group hidden md:block"
-            aria-label="Settings"
+            aria-label="ការកំណត់"
           >
             <Settings className="h-5 w-5 transition-transform duration-500 group-hover:rotate-90" />
           </button>
@@ -146,11 +155,11 @@ export default function Header() {
 
             {/* User Info */}
             <div className="hidden lg:block">
-              <p className="text-sm font-semibold text-gray-900 english-modern leading-tight">
-                {currentUser?.name}
+              <p className="font-khmer-body text-sm font-semibold text-gray-900 leading-tight">
+                {currentUser?.firstName} {currentUser?.lastName}
               </p>
-              <p className="text-xs text-gray-500 capitalize english-modern font-medium">
-                {currentUser?.role}
+              <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                {currentUser?.role === "ADMIN" ? "អ្នកគ្រប់គ្រង" : "គ្រូបង្រៀន"}
               </p>
             </div>
 
@@ -158,10 +167,10 @@ export default function Header() {
             <button
               onClick={handleLogout}
               className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-red-500 to-pink-600 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group"
-              aria-label="Logout"
+              aria-label="ចាកចេញ"
             >
               <LogOut className="h-3.5 w-3.5 md:h-4 md:w-4 transition-transform duration-300 group-hover:-translate-x-1" />
-              <span className="hidden sm:inline khmer-header">ចាកចេញ</span>
+              <span className="font-khmer-body hidden sm:inline">ចាកចេញ</span>
             </button>
           </div>
         </div>

@@ -1,40 +1,48 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
-  GraduationCap,
-  User,
+  BookOpen,
   Lock,
   AlertCircle,
   Loader2,
   Phone,
   Mail,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error: authError } = useAuth(); // ✅ Get error from context
+  const { login, isLoading, error: authError, isAuthenticated } = useAuth();
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
   });
 
-  const [error, setError] = useState(""); // ✅ Local error state
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log("✅ User already authenticated, redirecting to dashboard");
+      router.push("/");
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError(""); // ✅ Clear previous errors
+    setError("");
     setIsSubmitting(true);
 
     try {
       const { identifier, password } = formData;
 
-      // ✅ Validate inputs
       if (!identifier || !password) {
         setError("សូមបំពេញលេខទូរស័ព្ទ និងពាក្យសម្ងាត់");
         setIsSubmitting(false);
@@ -42,10 +50,9 @@ export default function LoginPage() {
       }
 
       await login({ identifier, password, rememberMe });
-      // Redirect is handled by AuthContext
     } catch (err: any) {
       console.error("Login error:", err);
-      setError(err.message || "Login failed. Please check your credentials.");
+      setError(err.message || "ការចូលបរាជ័យ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នក។");
     } finally {
       setIsSubmitting(false);
     }
@@ -56,225 +63,216 @@ export default function LoginPage() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    // Clear error when user types
     if (error) setError("");
   };
 
-  // ✅ Updated demo credentials
-  const fillDemoCredentials = (role: "admin" | "teacher") => {
-    const credentials = {
-      admin: { identifier: "admin@school.edu.kh", password: "admin123" },
-      teacher: { identifier: "012123456", password: "012123456" },
-    };
-
-    setFormData(credentials[role]);
-    setError(""); // Clear errors when filling demo
-  };
-
-  // ✅ Detect input type (phone or email)
   const inputType = formData.identifier.includes("@") ? "email" : "phone";
-
-  // ✅ Use local error or auth context error
   const displayError = error || authError;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 py-12 px-4 sm:px-6 lg: px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="flex justify-center">
-            <div className="bg-gradient-to-r from-green-600 to-blue-600 p-4 rounded-full shadow-lg">
-              <GraduationCap className="h-12 w-12 text-white" />
-            </div>
-          </div>
-          <h2 className="mt-6 text-3xl font-extrabold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-            School Management System
-          </h2>
-          <p className="mt-2 text-lg font-semibold text-gray-700">
-            ប្រព័ន្ធគ្រប់គ្រងសាលា
-          </p>
-          <p className="mt-2 text-sm text-gray-500">
-            ចូលប្រើប្រាស់ប្រព័ន្ធ • Sign in to access your account
-          </p>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Khmer+OS+Muol+Light&family=Khmer+OS+Battambang&display=swap');
+
+        .font-khmer-title {
+          font-family: 'Khmer OS Muol Light', serif;
+        }
+
+        .font-khmer-body {
+          font-family: 'Khmer OS Battambang', sans-serif;
+        }
+      `}</style>
+
+      {/* Animated Background Pattern */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-30">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-blob"></div>
+          <div className="absolute top-40 right-20 w-72 h-72 bg-yellow-200 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
 
-        {/* Login Form */}
-        <div className="mt-8 bg-white py-8 px-4 shadow-xl rounded-xl sm:px-10 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Error Message */}
-            {displayError && (
-              <div className="bg-red-50 border-2 border-red-200 text-red-800 rounded-lg p-4 flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <span className="text-sm font-semibold">{displayError}</span>
-              </div>
-            )}
+        {/* Decorative circles */}
+        <div className="absolute top-10 right-10 w-20 h-20 border-4 border-white/20 rounded-full"></div>
+        <div className="absolute bottom-20 left-10 w-32 h-32 border-4 border-white/10 rounded-full"></div>
+        <div className="absolute top-1/2 right-1/4 w-16 h-16 border-4 border-white/20 rounded-full"></div>
+      </div>
 
-            {/* Identifier Field (Phone or Email) */}
-            <div>
-              <label
-                htmlFor="identifier"
-                className="block text-sm font-bold text-gray-700 mb-2"
-              >
-                លេខទូរស័ព្ទ ឬអ៊ីមែល • Phone or Email
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  {inputType === "email" ? (
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Phone className="h-5 w-5 text-gray-400" />
-                  )}
+      {/* Login Card */}
+      <div className="relative w-full max-w-md mx-6">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+          {/* Header Section */}
+          <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-8 py-12 text-center">
+            <div className="absolute inset-0 bg-black/5"></div>
+
+            <div className="relative">
+              {/* Icon */}
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl"></div>
+                  <div className="relative bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-lg">
+                    <BookOpen className="h-12 w-12 text-indigo-600" strokeWidth={2.5} />
+                  </div>
                 </div>
-                <input
-                  id="identifier"
-                  name="identifier"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={formData.identifier}
-                  onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus: ring-2 focus:ring-green-500 focus:border-transparent transition font-semibold"
-                  placeholder="012345678 or admin@school.edu.kh"
-                />
               </div>
-              <p className="mt-1 text-xs text-gray-500 font-semibold">
-                គ្រូប្រើលេខទូរស័ព្ទ • Admin ប្រើអ៊ីមែល
-              </p>
-            </div>
 
-            {/* Password Field */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-bold text-gray-700 mb-2"
-              >
-                ពាក្យសម្ងាត់ • Password
-              </label>
-              <div className="mt-1 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+              {/* Title */}
+              <h1 className="font-khmer-title text-4xl text-white mb-2 drop-shadow-lg">
+                ប្រព័ន្ធគ្រប់គ្រងសាលា
+              </h1>
+              <div className="w-20 h-1 bg-white/50 mx-auto rounded-full"></div>
+            </div>
+          </div>
+
+          {/* Form Section */}
+          <div className="px-8 py-10">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              {/* Error Message */}
+              {displayError && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+                    <span className="font-khmer-body text-sm text-red-800">
+                      {displayError}
+                    </span>
+                  </div>
                 </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="appearance-none block w-full pl-10 pr-3 py-2.5 border-2 border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition font-semibold"
-                  placeholder="Enter your password"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500 font-semibold">
-                គ្រូ: ពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នានឹងលេខទូរស័ព្ទ
-              </p>
-            </div>
+              )}
 
-            {/* Remember Me */}
-            <div className="flex items-center justify-between">
+              {/* Identifier Field */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="identifier"
+                  className="font-khmer-body block text-sm font-semibold text-gray-700"
+                >
+                  លេខទូរស័ព្ទ ឬអ៊ីមែល
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    {inputType === "email" ? (
+                      <Mail className="h-5 w-5 text-gray-400" />
+                    ) : (
+                      <Phone className="h-5 w-5 text-gray-400" />
+                    )}
+                  </div>
+                  <input
+                    id="identifier"
+                    name="identifier"
+                    type="text"
+                    autoComplete="username"
+                    required
+                    value={formData.identifier}
+                    onChange={handleChange}
+                    className="font-khmer-body block w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                    placeholder="បញ្ចូលលេខទូរស័ព្ទ ឬអ៊ីមែល"
+                  />
+                </div>
+                <p className="font-khmer-body text-xs text-gray-500 ml-1">
+                  គ្រូប្រើលេខទូរស័ព្ទ ចំណែកអ្នកគ្រប់គ្រងប្រើអ៊ីមែល
+                </p>
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="password"
+                  className="font-khmer-body block text-sm font-semibold text-gray-700"
+                >
+                  ពាក្យសម្ងាត់
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="font-khmer-body block w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                    placeholder="បញ្ចូលពាក្យសម្ងាត់"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me */}
               <div className="flex items-center">
                 <input
                   id="rememberMe"
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 cursor-pointer"
+                  className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
                 />
                 <label
                   htmlFor="rememberMe"
-                  className="ml-2 text-sm text-gray-700 cursor-pointer select-none font-semibold"
+                  className="font-khmer-body ml-3 text-sm text-gray-700 cursor-pointer select-none"
                 >
-                  ចងចាំខ្ញុំ • Remember me
-                  <span className="text-xs text-gray-500 ml-1 font-normal">
-                    (7 days)
-                  </span>
+                  ចងចាំខ្ញុំ (៧ ថ្ងៃ)
                 </label>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <div>
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting || isLoading}
-                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-gradient-to-r from-green-600 to-blue-600 hover: from-green-700 hover: to-blue-700 focus: outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-khmer-body font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
               >
                 {isSubmitting || isLoading ? (
                   <>
                     <Loader2 className="animate-spin h-5 w-5 mr-2" />
-                    កំពុងចូល...
+                    <span>កំពុងចូល...</span>
                   </>
                 ) : (
                   <>
                     <Lock className="h-5 w-5 mr-2" />
-                    ចូលប្រព័ន្ធ • Sign in
+                    <span>ចូលប្រព័ន្ធ</span>
                   </>
                 )}
               </button>
-            </div>
-          </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500 font-medium">
-                  ចូលរហ័ស • Quick Login (Demo)
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials("admin")}
-                className="group px-4 py-3 border-2 border-blue-200 rounded-lg text-sm font-semibold text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
-              >
-                <span className="block text-2xl">👨‍💼</span>
-                <span className="block mt-1">Admin</span>
-                <span className="block text-xs text-blue-600 mt-0.5">
-                  អ៊ីមែល
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials("teacher")}
-                className="group px-4 py-3 border-2 border-green-200 rounded-lg text-sm font-semibold text-green-700 hover:bg-green-50 hover:border-green-300 transition-all duration-200 transform hover:scale-105 active:scale-95"
-              >
-                <span className="block text-2xl">👨‍🏫</span>
-                <span className="block mt-1">Teacher</span>
-                <span className="block text-xs text-green-600 mt-0.5">
-                  លេខទូរស័ព្ទ
-                </span>
-              </button>
-            </div>
-
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-center text-blue-800 font-semibold mb-2">
-                📝 ការណែនាំ
-              </p>
-              <ul className="text-xs text-blue-700 space-y-1">
-                <li>
-                  • <strong>Admin:</strong> ប្រើអ៊ីមែល + ពាក្យសម្ងាត់
-                </li>
-                <li>
-                  • <strong>គ្រូ:</strong> ប្រើលេខទូរស័ព្ទ
-                  (ពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នា)
-                </li>
-              </ul>
-            </div>
+            </form>
           </div>
         </div>
 
-        {/* Copyright */}
-        <p className="text-center text-xs text-gray-400">
-          © 2025 School Management System. All rights reserved.
+        {/* Footer */}
+        <p className="font-khmer-body text-center text-sm text-white/80 mt-6 drop-shadow-lg">
+          © ២០២៥ ប្រព័ន្ធគ្រប់គ្រងសាលា។ រក្សាសិទ្ធិគ្រប់យ៉ាង។
         </p>
       </div>
+
+      <style jsx>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(20px, -50px) scale(1.1); }
+          50% { transform: translate(-20px, 20px) scale(0.9); }
+          75% { transform: translate(50px, 50px) scale(1.05); }
+        }
+
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
