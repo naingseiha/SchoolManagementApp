@@ -1,0 +1,8 @@
+# Ignore backend API folder during Vercel build
+api/
+
+# Ignore other non-frontend files
+*.md
+!README.md
+.git
+.github
