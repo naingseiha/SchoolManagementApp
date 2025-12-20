@@ -51,7 +51,7 @@ const getAllSubjects = async (req, res) => {
         console.log("📚 GET ALL SUBJECTS (full data)");
         const subjects = await prisma.subject.findMany({
             include: {
-                teacherAssignments: {
+                subjectTeachers: {
                     include: {
                         teacher: {
                             select: {
@@ -132,7 +132,7 @@ const createSubject = async (req, res) => {
                 isActive: isActive !== false,
             },
             include: {
-                teacherAssignments: {
+                subjectTeachers: {
                     include: {
                         teacher: true,
                     },
@@ -216,7 +216,7 @@ const updateSubject = async (req, res) => {
                     : existingSubject.coefficient,
             },
             include: {
-                teacherAssignments: {
+                subjectTeachers: {
                     include: {
                         teacher: true,
                     },
@@ -253,7 +253,7 @@ const getSubjectById = async (req, res) => {
         const subject = await prisma.subject.findUnique({
             where: { id },
             include: {
-                teacherAssignments: { include: { teacher: true } },
+                subjectTeachers: { include: { teacher: true } },
                 _count: { select: { grades: true } },
             },
         });
@@ -294,7 +294,7 @@ const getSubjectsByGrade = async (req, res) => {
         const subjects = await prisma.subject.findMany({
             where: whereClause,
             include: {
-                teacherAssignments: {
+                subjectTeachers: {
                     include: {
                         teacher: {
                             select: {
@@ -311,7 +311,7 @@ const getSubjectsByGrade = async (req, res) => {
                 _count: {
                     select: {
                         grades: true,
-                        teacherAssignments: true,
+                        subjectTeachers: true,
                     },
                 },
             },

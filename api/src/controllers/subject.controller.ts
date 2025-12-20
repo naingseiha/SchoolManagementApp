@@ -53,7 +53,7 @@ export const getAllSubjects = async (req: Request, res: Response) => {
 
     const subjects = await prisma.subject.findMany({
       include: {
-        teacherAssignments: {
+        subjectTeachers: {
           include: {
             teacher: {
               select: {
@@ -156,7 +156,7 @@ export const createSubject = async (req: Request, res: Response) => {
         isActive: isActive !== false,
       },
       include: {
-        teacherAssignments: {
+        subjectTeachers: {
           include: {
             teacher: true,
           },
@@ -252,7 +252,7 @@ export const updateSubject = async (req: Request, res: Response) => {
             : existingSubject.coefficient,
       },
       include: {
-        teacherAssignments: {
+        subjectTeachers: {
           include: {
             teacher: true,
           },
@@ -290,7 +290,7 @@ export const getSubjectById = async (req: Request, res: Response) => {
     const subject = await prisma.subject.findUnique({
       where: { id },
       include: {
-        teacherAssignments: { include: { teacher: true } },
+        subjectTeachers: { include: { teacher: true } },
         _count: { select: { grades: true } },
       },
     });
@@ -339,7 +339,7 @@ export const getSubjectsByGrade = async (req: Request, res: Response) => {
     const subjects = await prisma.subject.findMany({
       where: whereClause,
       include: {
-        teacherAssignments: {
+        subjectTeachers: {
           include: {
             teacher: {
               select: {
@@ -356,7 +356,7 @@ export const getSubjectsByGrade = async (req: Request, res: Response) => {
         _count: {
           select: {
             grades: true,
-            teacherAssignments: true,
+            subjectTeachers: true,
           },
         },
       },

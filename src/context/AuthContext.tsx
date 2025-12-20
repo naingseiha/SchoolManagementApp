@@ -103,13 +103,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("⏰ Token expired - attempting refresh...");
 
           try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
             const response = await fetch(
-              "http://localhost:5001/api/auth/refresh-token",
+              `${API_BASE_URL}/auth/refresh`,
               {
                 method: "POST",
                 headers: {
+                  "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
+                body: JSON.stringify({ token }),
               }
             );
 
@@ -192,17 +195,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("📍 Redirecting based on role:", result.user.role);
 
-      // Redirect based on role
-      if (result.user.role === "ADMIN") {
-        console.log("→ Redirecting to /dashboard");
-        router.push("/dashboard");
-      } else if (result.user.role === "TEACHER") {
-        console.log("→ Redirecting to /dashboard (teacher view)");
-        router.push("/dashboard"); // ✅ Use same dashboard for now
-      } else {
-        console.log("→ Unknown role, redirecting to /dashboard");
-        router.push("/dashboard");
-      }
+      // Redirect to main dashboard (root page)
+      console.log("→ Redirecting to dashboard");
+      router.push("/");
 
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     } catch (err: any) {

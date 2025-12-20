@@ -7,14 +7,235 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Attendance {
+  id        String            @id
+  studentId String
+  classId   String?
+  date      DateTime
+  status    AttendanceStatus
+  remarks   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime
+  session   AttendanceSession @default(MORNING)
+  class     Class?            @relation(fields: [classId], references: [id])
+  student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId, date, session])
+  @@index([classId, date])
+  @@map("attendance")
+}
+
+model Class {
+  id                        String                   @id
+  classId                   String?                  @unique
+  name                      String
+  grade                     String
+  section                   String?
+  academicYear              String                   @default("2024-2025")
+  capacity                  Int?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime
+  track                     String?
+  homeroomTeacherId         String?                  @unique
+  attendance                Attendance[]
+  grades                    Grade[]
+  studentMonthlySummaries   StudentMonthlySummary[]
+  students                  Student[]
+  teacherClasses            TeacherClass[]
+  homeroomTeacher           Teacher?
+
+  @@map("classes")
+}
+
+model Grade {
+  id            String   @id
+  studentId     String
+  subjectId     String
+  classId       String
+  score         Float
+  maxScore      Float
+  month         String?
+  monthNumber   Int?
+  year          Int?
+  percentage    Float?
+  weightedScore Float?
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, subjectId, classId, month, year])
+  @@index([classId, month, year])
+  @@map("grades")
+}
+
+model StudentMonthlySummary {
+  id                 String   @id
+  studentId          String
+  classId            String
+  month              String
+  monthNumber        Int
+  year               Int
+  totalScore         Float
+  totalMaxScore      Float
+  totalWeightedScore Float
+  totalCoefficient   Float
+  average            Float
+  classRank          Int?
+  gradeLevel         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  class              Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId, month, year])
+  @@index([classId, month, year])
+  @@map("student_monthly_summaries")
+}
+
+model Student {
+  id                        String                   @id
+  studentId                 String?                  @unique
+  firstName                 String
+  lastName                  String
+  khmerName                 String
+  dateOfBirth               String
+  gender                    Gender
+  englishName               String?
+  email                     String?                  @unique
+  placeOfBirth              String?                  @default("ភ្នំពេញ")
+  currentAddress            String?                  @default("ភ្នំពេញ")
+  phoneNumber               String?
+  classId                   String?
+  fatherName                String?                  @default("ឪពុក")
+  motherName                String?                  @default("ម្តាយ")
+  parentPhone               String?
+  parentOccupation          String?                  @default("កសិករ")
+  previousGrade             String?
+  remarks                   String?
+  photoUrl                  String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime
+  grade12ExamCenter         String?
+  grade12ExamDesk           String?
+  grade12ExamRoom           String?
+  grade12ExamSession        String?
+  grade12PassStatus         String?
+  grade12Track              String?
+  grade9ExamCenter          String?
+  grade9ExamDesk            String?
+  grade9ExamRoom            String?
+  grade9ExamSession         String?
+  grade9PassStatus          String?
+  previousSchool            String?
+  repeatingGrade            String?
+  transferredFrom           String?
+  attendance                Attendance[]
+  grades                    Grade[]
+  monthlySummaries          StudentMonthlySummary[]
+  class                     Class?                   @relation(fields: [classId], references: [id])
+  user                      User?
+
+  @@map("students")
+}
+
+model SubjectTeacher {
+  id        String   @id
+  subjectId String
+  teacherId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, teacherId])
+  @@map("subject_teachers")
+}
+
+model Subject {
+  id              String           @id
+  name            String
+  nameKh          String
+  nameEn          String?
+  code            String           @unique
+  description     String?
+  grade           String
+  track           String?
+  category        String
+  weeklyHours     Float            @default(0)
+  annualHours     Int              @default(0)
+  maxScore        Int              @default(100)
+  coefficient     Float            @default(1.0)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  grades          Grade[]
+  subjectTeachers SubjectTeacher[]
+
+  @@map("subjects")
+}
+
+model TeacherClass {
+  id        String   @id
+  teacherId String
+  classId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId])
+  @@map("teacher_classes")
+}
+
+model Teacher {
+  id               String           @id
+  teacherId        String?          @unique
+  firstName        String
+  lastName         String
+  khmerName        String?
+  email            String?          @unique
+  phone            String           @unique
+  employeeId       String?          @unique
+  gender           Gender?
+  dateOfBirth      String?
+  position         String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime
+  address          String?
+  hireDate         String?
+  homeroomClassId  String?          @unique
+  role             TeacherRole      @default(TEACHER)
+  englishName      String?
+  degree           DegreeLevel?
+  emergencyContact String?
+  emergencyPhone   String?
+  idCard           String?
+  major1           String?
+  major2           String?
+  nationality      String?
+  passport         String?
+  phoneNumber      String?
+  salaryRange      String?
+  workingLevel     WorkingLevel?
+  subjectTeachers  SubjectTeacher[]
+  teacherClasses   TeacherClass[]
+  homeroomClass    Class?           @relation(fields: [homeroomClassId], references: [id])
+  user             User?
+
+  @@map("teachers")
+}
+
 model User {
-  id             String    @id @default(cuid())
+  id             String    @id
   email          String?   @unique
   password       String
   firstName      String
   lastName       String
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  updatedAt      DateTime
   failedAttempts Int       @default(0)
   isActive       Boolean   @default(true)
   lastLogin      DateTime?
@@ -31,256 +252,17 @@ model User {
   @@map("users")
 }
 
-model Teacher {
-  id                 String           @id @default(cuid())
-  teacherId          String?          @unique
-  firstName          String
-  lastName           String
-  khmerName          String?
-  email              String?          @unique
-  phone              String           @unique
-  employeeId         String?          @unique
-  gender             Gender?
-  dateOfBirth        String?
-  position           String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  address            String?
-  hireDate           String?
-  homeroomClassId    String?          @unique
-  role               TeacherRole      @default(TEACHER)
-  englishName        String?
-  degree             DegreeLevel?
-  emergencyContact   String?
-  emergencyPhone     String?
-  idCard             String?
-  major1             String?
-  major2             String?
-  nationality        String?
-  passport           String?
-  phoneNumber        String?
-  salaryRange        String?
-  workingLevel       WorkingLevel?
-  subjectAssignments SubjectTeacher[]
-  teachingClasses    TeacherClass[]   @relation("TeachingClasses")
-  homeroomClass      Class?           @relation("HomeroomTeacher", fields: [homeroomClassId], references: [id])
-  user               User?
-
-  @@map("teachers")
-}
-
-model Student {
-  id                 String                  @id @default(cuid())
-  studentId          String?                 @unique
-  firstName          String
-  lastName           String
-  khmerName          String
-  dateOfBirth        String
-  gender             Gender
-  englishName        String?
-  email              String?                 @unique
-  placeOfBirth       String?                 @default("ភ្នំពេញ")
-  currentAddress     String?                 @default("ភ្នំពេញ")
-  phoneNumber        String?
-  classId            String?
-  fatherName         String?                 @default("ឪពុក")
-  motherName         String?                 @default("ម្តាយ")
-  parentPhone        String?
-  parentOccupation   String?                 @default("កសិករ")
-  previousGrade      String?
-  remarks            String?
-  photoUrl           String?
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
-  grade12ExamCenter  String?
-  grade12ExamDesk    String?
-  grade12ExamRoom    String?
-  grade12ExamSession String?
-  grade12PassStatus  String?
-  grade12Track       String?
-  grade9ExamCenter   String?
-  grade9ExamDesk     String?
-  grade9ExamRoom     String?
-  grade9ExamSession  String?
-  grade9PassStatus   String?
-  previousSchool     String?
-  repeatingGrade     String?
-  transferredFrom    String?
-  attendance         Attendance[]
-  grades             Grade[]
-  summaries          StudentMonthlySummary[]
-  class              Class?                  @relation(fields: [classId], references: [id])
-  user               User?
-
-  @@map("students")
-}
-
-model Class {
-  id                String                  @id @default(cuid())
-  classId           String?                 @unique
-  name              String
-  grade             String
-  section           String?
-  academicYear      String                  @default("2024-2025")
-  capacity          Int?
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
-  track             String?
-  homeroomTeacherId String?                 @unique
-  attendance        Attendance[]
-  grades            Grade[]
-  summaries         StudentMonthlySummary[]
-  students          Student[]
-  teachingTeachers  TeacherClass[]          @relation("ClassTeachers")
-  homeroomTeacher   Teacher?                @relation("HomeroomTeacher")
-
-  @@map("classes")
-}
-
-model TeacherClass {
-  id        String   @id @default(cuid())
-  teacherId String
-  classId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  class     Class    @relation("ClassTeachers", fields: [classId], references: [id], onDelete: Cascade)
-  teacher   Teacher  @relation("TeachingClasses", fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@unique([teacherId, classId])
-  @@map("teacher_classes")
-}
-
-model SubjectTeacher {
-  id        String   @id @default(cuid())
-  subjectId String
-  teacherId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@unique([subjectId, teacherId])
-  @@map("subject_teachers")
-}
-
-model Subject {
-  id                 String           @id @default(cuid())
-  name               String
-  nameKh             String
-  nameEn             String?
-  code               String           @unique
-  description        String?
-  grade              String
-  track              String?
-  category           String
-  weeklyHours        Float            @default(0)
-  annualHours        Int              @default(0)
-  maxScore           Int              @default(100)
-  coefficient        Float            @default(1.0)
-  isActive           Boolean          @default(true)
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  grades             Grade[]
-  teacherAssignments SubjectTeacher[]
-
-  @@map("subjects")
-}
-
-model Grade {
-  id            String   @id @default(cuid())
-  studentId     String
-  subjectId     String
-  classId       String
-  score         Float
-  maxScore      Float
-  month         String?
-  monthNumber   Int?
-  year          Int?
-  percentage    Float?
-  weightedScore Float?
-  remarks       String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, subjectId, classId, month, year])
-  @@index([classId, month, year])
-  @@map("grades")
-}
-
-model Attendance {
-  id        String           @id @default(cuid())
-  studentId String
-  classId   String?
-  date      DateTime
-  session   AttendanceSession @default(MORNING)
-  status    AttendanceStatus
-  remarks   String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  class     Class?           @relation(fields: [classId], references: [id])
-  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, classId, date, session])
-  @@index([classId, date])
-  @@map("attendance")
-}
-
 enum AttendanceSession {
-  MORNING    // ព្រឹក
-  AFTERNOON  // ល្ងាច
+  MORNING
+  AFTERNOON
 }
 
-model StudentMonthlySummary {
-  id                 String   @id @default(cuid())
-  studentId          String
-  classId            String
-  month              String
-  monthNumber        Int
-  year               Int
-  totalScore         Float
-  totalMaxScore      Float
-  totalWeightedScore Float
-  totalCoefficient   Float
-  average            Float
-  classRank          Int?
-  gradeLevel         String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  class              Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, classId, month, year])
-  @@index([classId, month, year])
-  @@map("student_monthly_summaries")
-}
-
-enum UserRole {
-  ADMIN
-  TEACHER
-  STUDENT
-  PARENT
-  STAFF
-}
-
-enum TeacherRole {
-  TEACHER
-  INSTRUCTOR
-}
-
-enum Gender {
-  MALE
-  FEMALE
-}
-
-enum WorkingLevel {
-  FRAMEWORK_A
-  FRAMEWORK_B
-  FRAMEWORK_C
-  CONTRACT
-  PROBATION
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  PERMISSION
+  LATE
+  EXCUSED
 }
 
 enum DegreeLevel {
@@ -292,10 +274,28 @@ enum DegreeLevel {
   OTHER
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  PERMISSION
-  LATE
-  EXCUSED
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum TeacherRole {
+  TEACHER
+  INSTRUCTOR
+}
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+  STAFF
+}
+
+enum WorkingLevel {
+  FRAMEWORK_A
+  FRAMEWORK_B
+  FRAMEWORK_C
+  CONTRACT
+  PROBATION
 }

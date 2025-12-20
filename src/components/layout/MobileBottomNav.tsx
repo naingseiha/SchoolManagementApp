@@ -27,7 +27,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     labelKh: "ផ្ទាំង",
     icon: LayoutDashboard,
-    href: "/dashboard",
+    href: "/",
     roles: ["ADMIN", "TEACHER"],
   },
   {

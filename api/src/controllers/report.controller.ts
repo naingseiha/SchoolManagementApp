@@ -65,7 +65,7 @@ export class ReportController {
         include: {
           students: true, // ✅ Remove orderBy here, sort later
           homeroomTeacher: true, // ✅ CHANGED from "teacher"
-          teachingTeachers: {
+          teacherClasses: {
             // ✅ ADDED: Multiple teachers
             include: {
               teacher: true,
@@ -997,7 +997,7 @@ export class ReportController {
         include: {
           students: true,
           homeroomTeacher: true, // ✅ CHANGED from "teacher"
-          teachingTeachers: {
+          teacherClasses: {
             // ✅ ADDED: Multiple teachers
             include: {
               teacher: true,
