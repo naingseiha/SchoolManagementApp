@@ -359,38 +359,41 @@ export default function MobileDashboard({
                 </div>
               )}
 
-              {dashboardStats.topPerformingClasses && dashboardStats.topPerformingClasses.length > 0 && (
-                <div>
-                  <h4 className="font-khmer-body text-sm font-bold text-gray-700 mb-3">
-                    ថ្នាក់ល្អប្រសើរ
-                  </h4>
-                  <div className="space-y-2">
-                    {dashboardStats.topPerformingClasses.slice(0, 5).map((classItem, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg">
-                            <span className="text-white font-black text-sm">
-                              {index + 1}
-                            </span>
+              {dashboardStats.topPerformingClasses &&
+                dashboardStats.topPerformingClasses.length > 0 && (
+                  <div>
+                    <h4 className="font-khmer-body text-sm font-bold text-gray-700 mb-3">
+                      ថ្នាក់ល្អប្រសើរ
+                    </h4>
+                    <div className="space-y-2">
+                      {dashboardStats.topPerformingClasses
+                        .slice(0, 5)
+                        .map((classItem, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl border border-yellow-200"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-lg">
+                                <span className="text-white font-black text-sm">
+                                  {index + 1}
+                                </span>
+                              </div>
+                              <span className="font-khmer-body text-sm font-bold text-gray-900">
+                                {classItem.className}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Award className="w-4 h-4 text-yellow-600" />
+                              <span className="text-lg font-black text-yellow-600">
+                                {classItem.averageScore.toFixed(1)}
+                              </span>
+                            </div>
                           </div>
-                          <span className="font-khmer-body text-sm font-bold text-gray-900">
-                            {classItem.className}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Award className="w-4 h-4 text-yellow-600" />
-                          <span className="text-lg font-black text-yellow-600">
-                            {classItem.averageScore.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )}
         </CollapsibleSection>
