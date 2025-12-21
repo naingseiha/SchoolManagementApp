@@ -1,136 +1,260 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { ChevronLeft, ChevronRight, Save, Loader2, Download, AlertCircle } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
-import { gradeApi } from "@/lib/api/grades";
+import { useAuth } from "@/context/AuthContext";
+import { gradeApi, type GradeGridData } from "@/lib/api/grades";
 
 interface Subject {
   id: string;
   nameKh: string;
+  nameEn: string;
   code: string;
   maxScore: number;
   coefficient: number;
+  isEditable?: boolean;
 }
 
 interface StudentGrade {
   studentId: string;
   khmerName: string;
+  firstName: string;
+  lastName: string;
   gender: string;
   rollNumber?: number;
-  subjects: {
-    [subjectId: string]: {
-      score: number | null;
-      maxScore: number;
-    };
-  };
+  score: number | null;
+  maxScore: number;
 }
 
-interface MobileGradeEntryProps {
-  classId?: string;
-  month?: string;
-  year?: number;
-}
+const MONTHS = [
+  { value: "មករា", label: "មករា", number: 1 },
+  { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
+  { value: "មីនា", label: "មីនា", number: 3 },
+  { value: "មេសា", label: "មេសា", number: 4 },
+  { value: "ឧសភា", label: "ឧសភា", number: 5 },
+  { value: "មិថុនា", label: "មិថុនា", number: 6 },
+  { value: "កក្កដា", label: "កក្កដា", number: 7 },
+  { value: "សីហា", label: "សីហា", number: 8 },
+  { value: "កញ្ញា", label: "កញ្ញា", number: 9 },
+  { value: "តុលា", label: "តុលា", number: 10 },
+  { value: "វិច្ឆិកា", label: "វិច្ឆិកា", number: 11 },
+  { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
+];
 
-export default function MobileGradeEntry({
-  classId,
-  month,
-  year,
-}: MobileGradeEntryProps) {
+// Auto-calculate academic year (2025 means 2025-2026)
+const getAcademicYearOptions = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let i = -1; i <= 2; i++) {
+    const year = currentYear + i;
+    years.push({
+      value: year.toString(),
+      label: `${year}-${year + 1}`,
+    });
+  }
+  return years;
+};
+
+const getCurrentAcademicYear = () => {
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const year = now.getFullYear();
+
+  // If current month is Sept-Dec, academic year is current year
+  // If current month is Jan-Aug, academic year is previous year
+  return month >= 9 ? year : year - 1;
+};
+
+export default function MobileGradeEntry() {
   const { classes, isLoadingClasses, refreshClasses } = useData();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [students, setStudents] = useState<StudentGrade[]>([]);
+  const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("មករា");
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+  const [selectedSubject, setSelectedSubject] = useState("");
+
+  const [gridData, setGridData] = useState<GradeGridData | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [students, setStudents] = useState<StudentGrade[]>([]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedClass, setSelectedClass] = useState(classId || "");
-  const [selectedMonth, setSelectedMonth] = useState(month || "មករា");
-  const [selectedYear, setSelectedYear] = useState(year || new Date().getFullYear());
+  const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Proactively load classes if empty
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
-      console.log("📚 Classes array is empty, fetching classes...");
       refreshClasses();
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
 
-  // Khmer months
-  const khmerMonths = [
-    "មករា",
-    "កុម្ភៈ",
-    "មីនា",
-    "មេសា",
-    "ឧសភា",
-    "មិថុនា",
-    "កក្កដា",
-    "សីហា",
-    "កញ្ញា",
-    "តុលា",
-    "វិច្ឆិកា",
-    "ធ្នូ",
-  ];
+  // ✅ Filter classes based on role (same logic as desktop)
+  const availableClasses = useMemo(() => {
+    if (!currentUser) return [];
 
-  const currentStudent = students[currentIndex];
+    if (currentUser.role === "ADMIN") {
+      return classes;
+    }
 
-  // Calculate totals and average for current student
-  const calculateTotals = useCallback(() => {
-    if (!currentStudent) return { total: 0, maxTotal: 0, average: 0 };
+    if (currentUser.role === "TEACHER") {
+      const classIdsSet = new Set<string>();
 
-    let total = 0;
-    let maxTotal = 0;
-    let totalCoefficient = 0;
-
-    subjects.forEach((subject) => {
-      const grade = currentStudent.subjects[subject.id];
-      if (grade && grade.score !== null) {
-        total += grade.score * subject.coefficient;
-        maxTotal += grade.maxScore * subject.coefficient;
-        totalCoefficient += subject.coefficient;
+      // From teacherClasses
+      if (currentUser.teacher?.teacherClasses) {
+        currentUser.teacher.teacherClasses.forEach((tc: any) => {
+          const classId = tc.classId || tc.class?.id;
+          if (classId) classIdsSet.add(classId);
+        });
       }
-    });
 
-    const average = totalCoefficient > 0 ? total / totalCoefficient : 0;
+      // From homeroom class
+      if (currentUser.teacher?.homeroomClassId) {
+        classIdsSet.add(currentUser.teacher.homeroomClassId);
+      }
 
-    return {
-      total: total.toFixed(2),
-      maxTotal: maxTotal.toFixed(2),
-      average: average.toFixed(2),
-      totalCoefficient,
-    };
-  }, [currentStudent, subjects]);
+      const teacherClassIds = Array.from(classIdsSet);
+      return classes.filter((c) => teacherClassIds.includes(c.id));
+    }
 
-  const totals = calculateTotals();
+    return [];
+  }, [currentUser, classes]);
 
-  // Load grade data
-  useEffect(() => {
-    const loadGrades = async () => {
-      if (!selectedClass) {
+  // ✅ Get teacher's editable subjects by CODE
+  const teacherEditableSubjects = useMemo(() => {
+    if (!currentUser) return new Set<string>();
+    if (currentUser.role === "ADMIN") return new Set<string>();
+
+    if (currentUser.role === "TEACHER") {
+      const subjectTeachers = currentUser.teacher?.subjectTeachers || [];
+      const subjectCodes = subjectTeachers
+        .map((st: any) => {
+          const code = st.subject?.code;
+          return code ? code.split("-")[0] : null;
+        })
+        .filter((code): code is string => code !== null);
+
+      return new Set(subjectCodes);
+    }
+
+    return new Set<string>();
+  }, [currentUser]);
+
+  // ✅ Get homeroom class ID
+  const teacherHomeroomClassId = useMemo(() => {
+    if (currentUser?.role === "TEACHER") {
+      return currentUser.teacher?.homeroomClassId || null;
+    }
+    return null;
+  }, [currentUser]);
+
+  // ✅ Load data when user clicks "Load" button
+  const handleLoadData = async () => {
+    if (!selectedClass || !currentUser) {
+      alert("សូមជ្រើសរើសថ្នាក់សិន • Please select a class first");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setGridData(null);
+    setSubjects([]);
+    setStudents([]);
+    setSelectedSubject("");
+    setDataLoaded(false);
+
+    try {
+      const data = await gradeApi.getGradesGrid(
+        selectedClass,
+        selectedMonth,
+        selectedYear
+      );
+
+      // ✅ Apply teacher permissions (same logic as desktop)
+      if (currentUser.role === "ADMIN") {
+        data.subjects = data.subjects.map((subject) => ({
+          ...subject,
+          isEditable: true,
+        }));
+      } else if (currentUser.role === "TEACHER") {
+        const isHomeroomClass = teacherHomeroomClassId === selectedClass;
+
+        data.subjects = data.subjects.map((subject) => {
+          const baseCode = subject.code?.split("-")[0];
+          const isEditable = isHomeroomClass
+            ? true
+            : baseCode
+            ? teacherEditableSubjects.has(baseCode)
+            : false;
+
+          return {
+            ...subject,
+            isEditable,
+          };
+        });
+      }
+
+      // ✅ Filter to show only editable subjects
+      const editableSubjects = data.subjects.filter((s) => s.isEditable);
+
+      if (editableSubjects.length === 0) {
+        setError("អ្នកមិនមានសិទ្ធិបញ្ចូលពិន្ទុសម្រាប់ថ្នាក់នេះទេ • You don't have permission to enter grades for this class");
         setLoading(false);
         return;
       }
 
-      setLoading(true);
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/grades/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
-        );
-        const result = await response.json();
+      setGridData(data);
+      setSubjects(editableSubjects);
+      setDataLoaded(true);
 
-        if (result.success) {
-          setStudents(result.data.students || []);
-          setSubjects(result.data.subjects || []);
-        }
-      } catch (error) {
-        console.error("Error loading grades:", error);
-      } finally {
-        setLoading(false);
+      // Auto-select first subject if only one available
+      if (editableSubjects.length === 1) {
+        setSelectedSubject(editableSubjects[0].id);
       }
-    };
+    } catch (err: any) {
+      console.error("Error loading grades:", err);
+      setError(err.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យ");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadGrades();
-  }, [selectedClass, selectedMonth, selectedYear]);
+  // ✅ Load students for selected subject
+  useEffect(() => {
+    if (!gridData || !selectedSubject) {
+      setStudents([]);
+      setCurrentIndex(0);
+      return;
+    }
+
+    const subject = subjects.find((s) => s.id === selectedSubject);
+    if (!subject) return;
+
+    // Map grid data to student grades for this subject
+    const studentGrades: StudentGrade[] = gridData.students.map((student) => {
+      const gradeData = student.grades[selectedSubject];
+      return {
+        studentId: student.studentId,
+        khmerName: student.studentName,
+        firstName: "",
+        lastName: "",
+        gender: student.gender,
+        rollNumber: undefined,
+        score: gradeData?.score || null,
+        maxScore: subject.maxScore,
+      };
+    });
+
+    setStudents(studentGrades);
+    setCurrentIndex(0);
+  }, [gridData, selectedSubject, subjects]);
+
+  const currentStudent = students[currentIndex];
+  const currentSubject = subjects.find((s) => s.id === selectedSubject);
 
   const handleNext = () => {
     if (currentIndex < students.length - 1) {
@@ -144,58 +268,45 @@ export default function MobileGradeEntry({
     }
   };
 
-  const handleScoreChange = (subjectId: string, value: string) => {
+  const handleScoreChange = (value: string) => {
     const score = value === "" ? null : parseFloat(value);
-    const subject = subjects.find((s) => s.id === subjectId);
 
     // Validate score doesn't exceed max
-    if (score !== null && subject && score > subject.maxScore) {
+    if (score !== null && currentStudent && score > currentStudent.maxScore) {
       return;
     }
 
     setStudents((prev) =>
       prev.map((student, idx) =>
         idx === currentIndex
-          ? {
-              ...student,
-              subjects: {
-                ...student.subjects,
-                [subjectId]: {
-                  ...student.subjects[subjectId],
-                  score,
-                },
-              },
-            }
+          ? { ...student, score }
           : student
       )
     );
   };
 
   const handleSave = async () => {
-    if (!selectedClass) {
-      alert("សូមជ្រើសរើសថ្នាក់សិន • Please select a class first");
+    if (!selectedClass || !selectedSubject) {
+      alert("សូមជ្រើសរើសថ្នាក់ និងមុខវិជ្ជាសិន • Please select class and subject first");
       return;
     }
 
     setSaving(true);
     try {
-      // Prepare bulk save data
-      const gradesToSave = students.flatMap((student) =>
-        subjects
-          .filter((subject) => student.subjects[subject.id]?.score !== null)
-          .map((subject) => ({
-            studentId: student.studentId,
-            subjectId: subject.id,
-            score: student.subjects[subject.id].score!,
-          }))
-      );
+      // Prepare grades for the selected subject only
+      const gradesToSave = students
+        .filter((student) => student.score !== null)
+        .map((student) => ({
+          studentId: student.studentId,
+          subjectId: selectedSubject,
+          score: student.score!,
+        }));
 
       if (gradesToSave.length === 0) {
         alert("សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ • Please enter at least one score");
         return;
       }
 
-      // Use the proper API method
       const result = await gradeApi.bulkSaveGrades(
         selectedClass,
         selectedMonth,
@@ -204,17 +315,20 @@ export default function MobileGradeEntry({
       );
 
       if (result.savedCount > 0) {
-        alert(`ការរក្សាទុកជោគជ័យ! រក្សាទុកបាន ${result.savedCount} ពិន្ទុ • Saved ${result.savedCount} grades successfully!`);
+        alert(`រក្សាទុកបាន ${result.savedCount} ពិន្ទុ • Saved ${result.savedCount} grades successfully!`);
+
+        // Reload data to get updated scores
+        await handleLoadData();
       }
     } catch (error: any) {
       console.error("Error saving grades:", error);
-      alert(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message} • Error saving grades: ${error.message}`);
+      alert(`មានបញ្ហា: ${error.message} • Error: ${error.message}`);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <MobileLayout title="Grade Entry">
         <div className="flex items-center justify-center h-full">
@@ -226,81 +340,145 @@ export default function MobileGradeEntry({
 
   return (
     <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ">
-      <div className="p-4 space-y-4">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 space-y-3">
+      <div className="p-4 space-y-4 pb-24">
+        {/* Filters Section */}
+        <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            ជ្រើសរើស • Selection
+          </h3>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-semibold text-gray-600 mb-2">
               ថ្នាក់ • Class
             </label>
             <select
               value={selectedClass}
               onChange={(e) => {
                 setSelectedClass(e.target.value);
-                setCurrentIndex(0);
+                setDataLoaded(false);
+                setSelectedSubject("");
               }}
               disabled={isLoadingClasses}
-              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
               style={{ fontSize: "16px" }}
             >
               <option value="">
-                {isLoadingClasses
-                  ? "កំពុងផ្ទុក... • Loading..."
-                  : "-- ជ្រើសរើសថ្នាក់ • Select Class --"}
+                {isLoadingClasses ? "កំពុងផ្ទុក..." : "-- ជ្រើសរើសថ្នាក់ --"}
               </option>
-              {!isLoadingClasses &&
-                classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </option>
-                ))}
+              {availableClasses.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-gray-600 mb-2">
                 ខែ • Month
               </label>
               <select
                 value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setDataLoaded(false);
+                }}
                 className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 style={{ fontSize: "16px" }}
               >
-                {khmerMonths.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
+                {MONTHS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                ឆ្នាំ • Year
+              <label className="block text-xs font-semibold text-gray-600 mb-2">
+                ឆ្នាំសិក្សា • Academic Year
               </label>
-              <input
-                type="number"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              <select
+                value={selectedYear.toString()}
+                onChange={(e) => {
+                  setSelectedYear(parseInt(e.target.value));
+                  setDataLoaded(false);
+                }}
                 className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 style={{ fontSize: "16px" }}
-              />
+              >
+                {getAcademicYearOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
+
+          {/* Load Button */}
+          <button
+            onClick={handleLoadData}
+            disabled={!selectedClass || loading}
+            className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 touch-feedback"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                កំពុងផ្ទុក...
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5" />
+                ផ្ទុកទិន្នន័យ • Load Data
+              </>
+            )}
+          </button>
         </div>
 
-        {students.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500">
-              មិនមានសិស្ស • No students found
-            </p>
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
           </div>
-        ) : (
+        )}
+
+        {/* Subject Selector - Only show after data loaded */}
+        {dataLoaded && subjects.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm p-4">
+            <label className="block text-xs font-semibold text-gray-600 mb-2">
+              មុខវិជ្ជា • Subject {subjects.length > 1 && `(${subjects.length})`}
+            </label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              style={{ fontSize: "16px" }}
+            >
+              <option value="">-- ជ្រើសរើសមុខវិជ្ជា --</option>
+              {subjects.map((subject) => (
+                <option key={subject.id} value={subject.id}>
+                  {subject.nameKh} ({subject.maxScore} ពិន្ទុ)
+                </option>
+              ))}
+            </select>
+            {currentUser?.role === "TEACHER" && teacherHomeroomClassId === selectedClass && (
+              <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                🏠 អ្នកគឺជា​ INSTRUCTOR - អាចបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Student List - Only show when subject is selected */}
+        {selectedSubject && students.length > 0 && currentSubject && (
           <>
             {/* Student Navigation */}
-            <div className="flex items-center justify-between bg-white rounded-lg shadow p-3">
+            <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-3">
               <button
                 onClick={handlePrev}
                 disabled={currentIndex === 0}
@@ -309,9 +487,10 @@ export default function MobileGradeEntry({
                 <ChevronLeft className="w-6 h-6 text-gray-700" />
               </button>
               <div className="text-center">
-                <span className="text-sm font-medium text-gray-600">
-                  Student {currentIndex + 1} of {students.length}
+                <span className="text-sm font-semibold text-gray-700">
+                  {currentIndex + 1} / {students.length}
                 </span>
+                <p className="text-xs text-gray-500">{currentSubject.nameKh}</p>
               </div>
               <button
                 onClick={handleNext}
@@ -325,73 +504,44 @@ export default function MobileGradeEntry({
             {/* Student Card */}
             {currentStudent && (
               <>
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow p-4 text-white">
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-md p-4 text-white">
                   <h2 className="text-xl font-bold">{currentStudent.khmerName}</h2>
                   <p className="text-indigo-100 text-sm mt-1">
                     {currentStudent.gender === "MALE" ? "ប្រុស • Male" : "ស្រី • Female"}
-                    {currentStudent.rollNumber && ` • Roll #${currentStudent.rollNumber}`}
                   </p>
                 </div>
 
-                {/* Subject Scores */}
-                <div className="space-y-3">
-                  {subjects.map((subject) => {
-                    const grade = currentStudent.subjects[subject.id];
-                    return (
-                      <div
-                        key={subject.id}
-                        className="bg-white rounded-lg shadow p-4"
-                      >
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {subject.nameKh}
-                          <span className="text-gray-500 text-xs ml-2">
-                            (Max: {subject.maxScore})
-                          </span>
-                        </label>
-                        <input
-                          type="number"
-                          value={grade?.score ?? ""}
-                          onChange={(e) =>
-                            handleScoreChange(subject.id, e.target.value)
-                          }
-                          className="w-full h-12 px-4 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                          placeholder={`0 - ${subject.maxScore}`}
-                          min="0"
-                          max={subject.maxScore}
-                          step="0.5"
-                          style={{ fontSize: "16px" }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Summary */}
-                <div className="bg-indigo-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Total:</span>
-                    <span className="font-semibold text-gray-900">
-                      {totals.total} / {totals.maxTotal}
+                {/* Score Input */}
+                <div className="bg-white rounded-xl shadow-sm p-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    {currentSubject.nameKh}
+                    <span className="text-gray-500 text-xs ml-2">
+                      (Max: {currentSubject.maxScore} ពិន្ទុ)
                     </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Average:</span>
-                    <span className="font-semibold text-indigo-600 text-lg">
-                      {totals.average}
-                    </span>
-                  </div>
+                  </label>
+                  <input
+                    type="number"
+                    value={currentStudent.score ?? ""}
+                    onChange={(e) => handleScoreChange(e.target.value)}
+                    className="w-full h-14 px-4 border-2 border-gray-300 rounded-xl text-2xl font-bold text-center focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder={`0 - ${currentSubject.maxScore}`}
+                    min="0"
+                    max={currentSubject.maxScore}
+                    step="0.5"
+                    style={{ fontSize: "24px" }}
+                  />
                 </div>
 
                 {/* Save Button */}
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 touch-feedback shadow-lg"
+                  className="w-full h-12 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2 touch-feedback shadow-lg"
                 >
                   {saving ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      កំពុងរក្សាទុក • Saving...
+                      កំពុងរក្សាទុក...
                     </>
                   ) : (
                     <>
@@ -403,6 +553,18 @@ export default function MobileGradeEntry({
               </>
             )}
           </>
+        )}
+
+        {/* Empty State */}
+        {!dataLoaded && !loading && (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <p className="text-sm text-gray-600">
+              សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ ហើយចុច "ផ្ទុកទិន្នន័យ"
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Select class, month, year and click "Load Data"
+            </p>
+          </div>
         )}
       </div>
     </MobileLayout>
