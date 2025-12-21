@@ -1,9 +1,7 @@
-// src/components/attendance/AttendanceGridEditor.tsx
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Save, Check } from "lucide-react";
 import type {
   AttendanceGridData,
   BulkSaveAttendanceItem,
@@ -33,7 +31,10 @@ export default function AttendanceGridEditor({
 }: AttendanceGridEditorProps) {
   const [cells, setCells] = useState<{ [key: string]: CellState }>({});
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
 
   // Initialize cells with session support
@@ -118,6 +119,9 @@ export default function AttendanceGridEditor({
     if (changes.length === 0) return;
 
     try {
+      setIsSaving(true);
+      setSaveSuccess(false);
+
       await onSave(changes);
 
       // Mark as saved
@@ -138,8 +142,22 @@ export default function AttendanceGridEditor({
       });
 
       setPendingChanges(new Set());
+
+      // Show success state
+      setIsSaving(false);
+      setSaveSuccess(true);
+
+      // Hide success icon after 2 seconds
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => {
+        setSaveSuccess(false);
+      }, 2000);
     } catch (error: any) {
       console.error("Auto-save error:", error);
+      setIsSaving(false);
+      setSaveSuccess(false);
     }
   };
 
@@ -292,6 +310,15 @@ export default function AttendanceGridEditor({
     return base + "bg-white text-gray-700 hover:bg-gray-50";
   };
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
       {/* Header */}
@@ -306,20 +333,33 @@ export default function AttendanceGridEditor({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            {pendingChanges.size > 0 ? (
+          {/* ✅ NEW: Inline Save Status */}
+          <div className="flex items-center gap-3">
+            {isSaving ? (
               <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
                 <span className="text-sm font-medium text-white">
-                  កំពុងរក្សាទុក... ({pendingChanges.size})
+                  កំពុងរក្សាទុក...
+                </span>
+              </div>
+            ) : saveSuccess ? (
+              <div className="flex items-center gap-2 bg-green-500/90 backdrop-blur-sm px-4 py-2 rounded-lg animate-in fade-in duration-300">
+                <Check className="w-4 h-4 text-white" />
+                <span className="text-sm font-medium text-white">
+                  រក្សាទុកបានជោគជ័យ
+                </span>
+              </div>
+            ) : pendingChanges.size > 0 ? (
+              <div className="flex items-center gap-2 bg-yellow-500/20 backdrop-blur-sm px-4 py-2 rounded-lg border border-yellow-300/50">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-white">
+                  {pendingChanges.size} ការផ្លាស់ប្តូរ
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
                 <CheckCircle2 className="w-4 h-4 text-white" />
-                <span className="text-sm font-medium text-white">
-                  បានរក្សាទុក
-                </span>
+                <span className="text-sm font-medium text-white">រួចរាល់</span>
               </div>
             )}
           </div>
@@ -345,7 +385,8 @@ export default function AttendanceGridEditor({
               </li>
               <li>
                 <strong>វេនព្រឹក (M)</strong> + <strong>វេនល្ងាច (A)</strong> =
-                ២ columns ក្នុង១ថ្ងៃ
+                ២ columns ក្នុង១ថ្ងៃ • <strong>រក្សាទុកស្វ័យប្រវត្តិ</strong>{" "}
+                ក្រោយ 1 វិនាទី
               </li>
             </ul>
           </div>
@@ -393,7 +434,7 @@ export default function AttendanceGridEditor({
                 <>
                   <th
                     key={`${day}_M`}
-                    className="px-1 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50/50 border-l border-gray-200"
+                    className="px-1 py-1. 5 text-xs font-semibold text-indigo-700 bg-indigo-50/50 border-l border-gray-200"
                   >
                     <div>ព្រឹក</div>
                     <div className="text-[10px] text-indigo-500">M</div>
@@ -420,7 +461,7 @@ export default function AttendanceGridEditor({
                   border-b border-gray-100
                 `}
               >
-                {/* Student name - ពង្រីក column */}
+                {/* Student name */}
                 <td className="sticky left-0 z-10 bg-inherit px-6 py-2 border-r border-gray-200 font-medium min-w-[280px]">
                   <div className="flex items-center gap-3">
                     <span className="text-gray-400 text-xs font-normal min-w-[24px] text-right">
@@ -510,20 +551,17 @@ export default function AttendanceGridEditor({
                   );
                 })}
 
-                {/* Total - តម្រៀបផ្តេក (horizontal) */}
+                {/* Total */}
                 <td className="sticky right-0 z-10 bg-inherit border-l-2 border-gray-300 px-4 py-2 min-w-[180px]">
                   <div className="flex items-center justify-center gap-4">
-                    {/* អត់ច្បាប់ */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1. 5">
                       <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
                         អត់ច្បាប់:
                       </span>
-                      <span className="text-sm font-bold text-red-600 bg-red-50 px-2. 5 py-0.5 rounded min-w-[32px] text-center">
+                      <span className="text-sm font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded min-w-[32px] text-center">
                         {student.totalAbsent}
                       </span>
                     </div>
-
-                    {/* មានច្បាប់ */}
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
                         មានច្បាប់:

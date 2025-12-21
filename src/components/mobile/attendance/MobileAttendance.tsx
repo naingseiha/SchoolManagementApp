@@ -1,14 +1,9 @@
+// 📂 src/components/mobile/attendance/MobileAttendance.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  X,
-  Save,
-  Loader2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, Loader2 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 
@@ -44,6 +39,7 @@ export default function MobileAttendance({
   const [students, setStudents] = useState<StudentAttendance[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Proactively load classes if empty
   useEffect(() => {
@@ -93,21 +89,31 @@ export default function MobileAttendance({
 
           // Fetch attendance for the selected date
           const attendanceResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
+            `${
+              process.env.NEXT_PUBLIC_API_URL
+            }/attendance/grid/${selectedClass}? month=${
+              monthNames[selectedMonth - 1]
+            }&year=${selectedYear}`
           );
           const attendanceData = await attendanceResponse.json();
 
           // Map students with their attendance status for the current day
-          const studentsWithAttendance: StudentAttendance[] =
-            classStudents.map((student: any) => {
-              // Find attendance record for this student on this day
+          const studentsWithAttendance: StudentAttendance[] = classStudents.map(
+            (student: any) => {
               const dayAttendance = attendanceData.data?.students?.find(
                 (s: any) => s.studentId === student.id
               );
 
-              const dayKey = `day${currentDay}`;
-              const status =
-                dayAttendance?.attendance?.[dayKey] || "PRESENT";
+              // ✅ Check morning session
+              const morningKey = `${currentDay}_M`;
+              const morningData = dayAttendance?.attendance?.[morningKey];
+
+              let status: AttendanceStatus = "PRESENT";
+              if (morningData?.displayValue === "A") {
+                status = "ABSENT";
+              } else if (morningData?.displayValue === "P") {
+                status = "PERMISSION";
+              }
 
               return {
                 studentId: student.id,
@@ -115,7 +121,8 @@ export default function MobileAttendance({
                 rollNumber: student.rollNumber,
                 status,
               };
-            });
+            }
+          );
 
           setStudents(studentsWithAttendance);
         }
@@ -134,7 +141,6 @@ export default function MobileAttendance({
       prev.map((student) => {
         if (student.studentId !== studentId) return student;
 
-        // Cycle through statuses: PRESENT → ABSENT → PERMISSION → PRESENT
         const statusCycle: AttendanceStatus[] = [
           "PRESENT",
           "ABSENT",
@@ -154,31 +160,58 @@ export default function MobileAttendance({
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveSuccess(false);
+
     try {
-      const attendanceRecords = students.map((student) => ({
-        studentId: student.studentId,
-        classId: selectedClass,
-        date: new Date(selectedYear, selectedMonth - 1, currentDay).toISOString(),
-        session: "MORNING", // Default to morning session
-        status: student.status,
-      }));
+      const khmerMonth = monthNames[selectedMonth - 1];
+
+      // Transform students to attendance records
+      const attendanceRecords = students.map((student) => {
+        let value = "";
+        if (student.status === "ABSENT") {
+          value = "A";
+        } else if (student.status === "PERMISSION") {
+          value = "P";
+        }
+
+        return {
+          studentId: student.studentId,
+          day: currentDay,
+          session: "M", // Morning session
+          value: value,
+        };
+      });
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/attendance/bulk-save`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ attendance: attendanceRecords }),
+          body: JSON.stringify({
+            classId: selectedClass,
+            month: khmerMonth,
+            year: selectedYear,
+            monthNumber: selectedMonth,
+            attendance: attendanceRecords,
+          }),
         }
       );
 
       const result = await response.json();
+
       if (result.success) {
-        alert("ការរក្សាទុកជោគជ័យ! • Saved successfully!");
+        setSaveSuccess(true);
+
+        // Hide success message after 2 seconds
+        setTimeout(() => {
+          setSaveSuccess(false);
+        }, 2000);
+      } else {
+        throw new Error(result.message || "Failed to save");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving attendance:", error);
-      alert("មានបញ្ហាក្នុងការរក្សាទុក • Error saving");
+      alert(`មានបញ្ហាក្នុងការរក្សាទុក • Error: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -216,12 +249,12 @@ export default function MobileAttendance({
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
               disabled={isLoadingClasses}
-              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               style={{ fontSize: "16px" }}
             >
               <option value="">
                 {isLoadingClasses
-                  ? "កំពុងផ្ទុក... • Loading..."
+                  ? "កំពុងផ្ទុក...  • Loading..."
                   : "-- ជ្រើសរើសថ្នាក់ • Select Class --"}
               </option>
               {!isLoadingClasses &&
@@ -319,9 +352,7 @@ export default function MobileAttendance({
           </div>
         ) : students.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-500">
-              មិនមានសិស្ស • No students found
-            </p>
+            <p className="text-gray-500">មិនមានសិស្ស • No students found</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -401,22 +432,31 @@ export default function MobileAttendance({
           </div>
         )}
 
-        {/* Save Button */}
+        {/* ✅ NEW:  Save Button with Inline Status */}
         {students.length > 0 && (
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white rounded-lg font-medium flex items-center justify-center gap-2 touch-feedback shadow-lg"
+            className={`w-full h-12 rounded-lg font-medium flex items-center justify-center gap-2 touch-feedback shadow-lg transition-all duration-300 ${
+              saveSuccess
+                ? "bg-green-500 hover:bg-green-600"
+                : "bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400"
+            }`}
           >
             {saving ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                កំពុងរក្សាទុក • Saving...
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
+                <span className="text-white">កំពុងរក្សាទុក... </span>
+              </>
+            ) : saveSuccess ? (
+              <>
+                <Check className="w-5 h-5 text-white" />
+                <span className="text-white">រក្សាទុកបានជោគជ័យ!</span>
               </>
             ) : (
               <>
-                <Save className="w-5 h-5" />
-                រក្សាទុក • Save
+                <Check className="w-5 h-5 text-white" />
+                <span className="text-white">រក្សាទុក • Save</span>
               </>
             )}
           </button>
