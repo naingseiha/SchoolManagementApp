@@ -25,7 +25,8 @@
       "Bash(git commit:*)",
       "Bash(lsof:*)",
       "Bash(xargs kill:*)",
-      "Bash(timeout 60 tail:*)"
+      "Bash(timeout 60 tail:*)",
+      "Bash(xargs cat:*)"
     ]
   }
 }

@@ -8,6 +8,7 @@ const client_1 = require("@prisma/client");
 const grade_import_service_1 = require("../services/grade-import.service");
 const grade_calculation_service_1 = require("../services/grade-calculation.service");
 const multer_1 = __importDefault(require("multer"));
+const crypto_1 = require("crypto");
 const prisma = new client_1.PrismaClient();
 // Configure multer for file upload
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
@@ -475,8 +476,9 @@ class GradeController {
                     }
                 }
                 else {
-                    // ✅ Include maxScore in create
+                    // ✅ Include maxScore, id, and updatedAt in create
                     toCreate.push({
+                        id: (0, crypto_1.randomUUID)(), // ✅ FIXED: Generate unique ID
                         studentId: item.studentId,
                         subjectId: item.subjectId,
                         classId: classId,
@@ -484,6 +486,7 @@ class GradeController {
                         maxScore: subject.maxScore, // ✅ FIXED: Include maxScore
                         year: year,
                         month: month,
+                        updatedAt: new Date(), // ✅ FIXED: Add updatedAt timestamp
                     });
                 }
             });
