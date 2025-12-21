@@ -12,8 +12,7 @@ import {
   Calendar,
   Users,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
+  Save,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -37,7 +36,6 @@ interface MobileAttendanceProps {
   year?: number;
 }
 
-// ✅ Same MONTHS structure as MobileGradeEntry
 const MONTHS = [
   { value: "មករា", label: "មករា", number: 1 },
   { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
@@ -127,7 +125,7 @@ export default function MobileAttendance({
       });
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
       );
 
       if (!response.ok) {
@@ -215,19 +213,9 @@ export default function MobileAttendance({
     );
 
     setHasUnsavedChanges(true);
-    triggerAutoSave();
   };
 
-  const triggerAutoSave = () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave();
-    }, 1500);
-  };
-
+  // ✅ FIXED: Save only current day data (smaller payload)
   const handleSave = async () => {
     if (!hasUnsavedChanges) return;
 
@@ -237,28 +225,31 @@ export default function MobileAttendance({
     try {
       const attendanceRecords: any[] = [];
 
+      // ✅ Only save CURRENT DAY (not all days)
       students.forEach((student) => {
-        daysArray.forEach((day) => {
-          const status = student.dailyAttendance[day];
+        const status = student.dailyAttendance[currentDay];
 
-          let value = "";
-          if (status === "ABSENT") value = "A";
-          else if (status === "PERMISSION") value = "P";
+        let value = "";
+        if (status === "ABSENT") value = "A";
+        else if (status === "PERMISSION") value = "P";
 
-          attendanceRecords.push({
-            studentId: student.studentId,
-            day: day,
-            session: "M",
-            value: value,
-          });
+        // Save for both morning and afternoon sessions
+        attendanceRecords.push({
+          studentId: student.studentId,
+          day: currentDay,
+          session: "M",
+          value: value,
+        });
+
+        attendanceRecords.push({
+          studentId: student.studentId,
+          day: currentDay,
+          session: "A",
+          value: value,
         });
       });
 
-      console.log("💾 Saving attendance:", {
-        classId: selectedClass,
-        month: selectedMonth,
-        year: selectedYear,
-        monthNumber: monthNumber,
+      console.log("💾 Saving attendance for day:", currentDay, {
         records: attendanceRecords.length,
       });
 
@@ -316,15 +307,42 @@ export default function MobileAttendance({
       }))
     );
     setHasUnsavedChanges(true);
-    triggerAutoSave();
   };
 
   const handlePrevDay = () => {
-    if (currentDay > 1) setCurrentDay((prev) => prev - 1);
+    if (currentDay > 1) {
+      if (hasUnsavedChanges) {
+        if (confirm("មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើចង់រក្សាទុកមុនទេ? ")) {
+          handleSave();
+        }
+      }
+      setCurrentDay((prev) => prev - 1);
+      setHasUnsavedChanges(false);
+    }
   };
 
   const handleNextDay = () => {
-    if (currentDay < daysInMonth) setCurrentDay((prev) => prev + 1);
+    if (currentDay < daysInMonth) {
+      if (hasUnsavedChanges) {
+        if (confirm("មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើចង់រក្សាទុកមុនទេ?")) {
+          handleSave();
+        }
+      }
+      setCurrentDay((prev) => prev + 1);
+      setHasUnsavedChanges(false);
+    }
+  };
+
+  const handleDayChange = (day: number) => {
+    if (day === currentDay) return;
+
+    if (hasUnsavedChanges) {
+      if (confirm("មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើចង់រក្សាទុកមុនទេ?")) {
+        handleSave();
+      }
+    }
+    setCurrentDay(day);
+    setHasUnsavedChanges(false);
   };
 
   const currentDaySummary = {
@@ -347,113 +365,115 @@ export default function MobileAttendance({
   return (
     <MobileLayout title="វត្តមាន • Attendance">
       <div className="flex flex-col h-full bg-gray-50">
-        {/* Filters Section */}
-        <div className="bg-white shadow-sm border-b border-gray-200 p-4 space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
-              ថ្នាក់ • Class
-            </label>
-            <select
-              value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setStudents([]);
-              }}
-              disabled={isLoadingClasses}
-              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
-              style={{ fontSize: "16px" }}
-            >
-              <option value="">
-                {isLoadingClasses ? "កំពុងផ្ទុក..." : "-- ជ្រើសរើសថ្នាក់ --"}
-              </option>
-              {!isLoadingClasses &&
-                classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+        {/* ✅ Filters - Collapsible */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="p-4 space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                ខែ • Month
+              <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
+                ថ្នាក់ • Class
               </label>
               <select
-                value={selectedMonth}
+                value={selectedClass}
                 onChange={(e) => {
-                  setSelectedMonth(e.target.value);
-                  setCurrentDay(1);
+                  setSelectedClass(e.target.value);
+                  setStudents([]);
                 }}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                style={{ fontSize: "16px" }}
-              >
-                {MONTHS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                ឆ្នាំ • Year
-              </label>
-              <select
-                value={selectedYear.toString()}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                disabled={isLoadingClasses}
                 className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
                 style={{ fontSize: "16px" }}
               >
-                {getAcademicYearOptions().map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
+                <option value="">
+                  {isLoadingClasses ? "កំពុងផ្ទុក..." : "-- ជ្រើសរើសថ្នាក់ --"}
+                </option>
+                {!isLoadingClasses &&
+                  classes.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </option>
+                  ))}
               </select>
             </div>
-          </div>
 
-          <button
-            onClick={loadAttendanceData}
-            disabled={!selectedClass || loadingData}
-            className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg shadow-md flex items-center justify-center gap-2 transition-all"
-          >
-            {loadingData ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">កំពុងផ្ទុក...</span>
-              </>
-            ) : (
-              <>
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">ផ្ទុកទិន្នន័យ</span>
-              </>
-            )}
-          </button>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                  ខែ • Month
+                </label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => {
+                    setSelectedMonth(e.target.value);
+                    setCurrentDay(1);
+                  }}
+                  className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  style={{ fontSize: "16px" }}
+                >
+                  {MONTHS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+                  ឆ្នាំ • Year
+                </label>
+                <select
+                  value={selectedYear.toString()}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  style={{ fontSize: "16px" }}
+                >
+                  {getAcademicYearOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={loadAttendanceData}
+              disabled={!selectedClass || loadingData}
+              className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg shadow-md flex items-center justify-center gap-2 transition-all"
+            >
+              {loadingData ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">កំពុងផ្ទុក...</span>
+                </>
+              ) : (
+                <>
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm">ផ្ទុកទិន្នន័យ</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Main Content */}
         {students.length > 0 ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Day Navigator */}
-            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-3 shadow-lg">
-              <div className="flex items-center justify-between mb-3">
+            {/* ✅ FIXED: Scrollable Day Navigator */}
+            <div className="bg-white border-b border-gray-200 px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
                 <button
                   onClick={handlePrevDay}
                   disabled={currentDay === 1}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg disabled:opacity-30 transition-all active:scale-95"
+                  className="p-2 bg-indigo-100 rounded-lg disabled:opacity-30 transition-all active:scale-95"
                 >
-                  <ChevronLeft className="w-5 h-5 text-white" />
+                  <ChevronLeft className="w-5 h-5 text-indigo-600" />
                 </button>
 
-                <div className="text-center flex-1 px-4">
-                  <div className="text-white text-xl font-bold">
+                <div className="text-center">
+                  <div className="text-indigo-600 text-xl font-bold">
                     ថ្ងៃទី {currentDay}
                   </div>
-                  <div className="text-indigo-100 text-xs mt-0.5">
+                  <div className="text-gray-600 text-xs mt-0.5">
                     {selectedMonth} {selectedYear}
                   </div>
                 </div>
@@ -461,23 +481,23 @@ export default function MobileAttendance({
                 <button
                   onClick={handleNextDay}
                   disabled={currentDay === daysInMonth}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg disabled:opacity-30 transition-all active:scale-95"
+                  className="p-2 bg-indigo-100 rounded-lg disabled:opacity-30 transition-all active:scale-95"
                 >
-                  <ChevronRight className="w-5 h-5 text-white" />
+                  <ChevronRight className="w-5 h-5 text-indigo-600" />
                 </button>
               </div>
 
-              {/* Day Grid Selector */}
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2">
-                <div className="grid grid-cols-7 gap-1">
+              {/* ✅ Horizontal scrollable day grid */}
+              <div className="overflow-x-auto -mx-2 px-2">
+                <div className="flex gap-2 pb-2 min-w-max">
                   {daysArray.map((day) => (
                     <button
                       key={day}
-                      onClick={() => setCurrentDay(day)}
-                      className={`h-8 rounded-md text-xs font-semibold transition-all ${
+                      onClick={() => handleDayChange(day)}
+                      className={`flex-shrink-0 w-10 h-10 rounded-lg text-sm font-semibold transition-all ${
                         day === currentDay
-                          ? "bg-white text-indigo-600 shadow-md scale-110"
-                          : "bg-white/20 text-white hover:bg-white/30"
+                          ? "bg-indigo-600 text-white shadow-md scale-110"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
                       {day}
@@ -485,124 +505,59 @@ export default function MobileAttendance({
                   ))}
                 </div>
               </div>
-
-              {/* Save Status */}
-              <div className="mt-3 flex items-center justify-center">
-                {saving ? (
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                    <Loader2 className="w-3. 5 h-3.5 animate-spin text-white" />
-                    <span className="text-xs font-medium text-white">
-                      កំពុងរក្សាទុក...
-                    </span>
-                  </div>
-                ) : saveSuccess ? (
-                  <div className="flex items-center gap-2 bg-green-500/90 px-3 py-1.5 rounded-full animate-in fade-in">
-                    <Check className="w-3.5 h-3.5 text-white" />
-                    <span className="text-xs font-medium text-white">
-                      រក្សាទុករួចរាល់
-                    </span>
-                  </div>
-                ) : hasUnsavedChanges ? (
-                  <div className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1.5 rounded-full border border-yellow-300/50">
-                    <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
-                    <span className="text-xs font-medium text-white">
-                      មានការផ្លាស់ប្តូរ
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                    <span className="text-xs font-medium text-white">
-                      រួចរាល់
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="px-4 py-3 bg-white border-b border-gray-200">
+            <div className="px-4 py-2 bg-white border-b border-gray-200">
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setAllStatus("PRESENT")}
                   className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-green-200"
                 >
                   <Check className="w-3. 5 h-3.5" />
-                  All Present
+                  All P
                 </button>
                 <button
                   onClick={() => setAllStatus("ABSENT")}
                   className="h-9 bg-red-50 hover: bg-red-100 text-red-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-red-200"
                 >
                   <X className="w-3.5 h-3.5" />
-                  All Absent
+                  All A
                 </button>
                 <button
                   onClick={() => setAllStatus("PERMISSION")}
                   className="h-9 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-orange-200"
                 >
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  Permission
+                  P
                 </button>
               </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-white rounded-lg p-2. 5 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-green-600">
-                        {currentDaySummary.present}
-                      </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Present
-                      </div>
-                    </div>
-                  </div>
+            {/* Summary */}
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200">
+              <div className="flex items-center justify-around text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-green-500 rounded-full" />
+                  <span className="font-semibold text-green-700">
+                    {currentDaySummary.present}
+                  </span>
                 </div>
-
-                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                      <X className="w-4 h-4 text-red-600" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-red-600">
-                        {currentDaySummary.absent}
-                      </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Absent
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-red-500 rounded-full" />
+                  <span className="font-semibold text-red-700">
+                    {currentDaySummary.absent}
+                  </span>
                 </div>
-
-                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-orange-600">
-                        P
-                      </span>
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {currentDaySummary.permission}
-                      </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Permission
-                      </div>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 bg-orange-500 rounded-full" />
+                  <span className="font-semibold text-orange-700">
+                    {currentDaySummary.permission}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Student List */}
+            {/* ✅ FIXED:  Scrollable Student List */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
               {students.map((student, index) => {
                 const status = student.dailyAttendance[currentDay] || "PRESENT";
@@ -611,32 +566,32 @@ export default function MobileAttendance({
                   <button
                     key={student.studentId}
                     onClick={() => toggleStudentStatus(student.studentId)}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl shadow-md transition-all active:scale-98 border-2 ${
+                    className={`w-full flex items-center justify-between p-3 rounded-lg shadow-sm transition-all active:scale-98 border-2 ${
                       status === "PRESENT"
-                        ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300"
+                        ? "bg-green-50 border-green-300"
                         : status === "ABSENT"
-                        ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-300"
-                        : "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300"
+                        ? "bg-red-50 border-red-300"
+                        : "bg-orange-50 border-orange-300"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md ${
+                        className={`w-9 h-9 rounded-full flex items-center justify-center shadow-sm ${
                           status === "PRESENT"
-                            ? "bg-gradient-to-br from-green-500 to-emerald-600"
+                            ? "bg-green-500"
                             : status === "ABSENT"
-                            ? "bg-gradient-to-br from-red-500 to-rose-600"
-                            : "bg-gradient-to-br from-orange-500 to-amber-600"
+                            ? "bg-red-500"
+                            : "bg-orange-500"
                         }`}
                       >
                         {status === "PRESENT" && (
-                          <Check className="w-6 h-6 text-white" />
+                          <Check className="w-5 h-5 text-white" />
                         )}
                         {status === "ABSENT" && (
-                          <X className="w-6 h-6 text-white" />
+                          <X className="w-5 h-5 text-white" />
                         )}
                         {status === "PERMISSION" && (
-                          <span className="text-white font-bold text-lg">
+                          <span className="text-white font-bold text-sm">
                             P
                           </span>
                         )}
@@ -651,20 +606,47 @@ export default function MobileAttendance({
                             {student.khmerName}
                           </span>
                         </div>
-                        {student.rollNumber && (
-                          <div className="text-xs text-gray-600 mt-0.5">
-                            Roll #{student.rollNumber}
-                          </div>
-                        )}
                       </div>
                     </div>
 
-                    <div className="text-xs font-medium text-gray-500 bg-white/50 px-2.5 py-1 rounded-full">
+                    <div className="text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-full">
                       Tap
                     </div>
                   </button>
                 );
               })}
+            </div>
+
+            {/* ✅ Save Button (sticky bottom) */}
+            <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
+              <button
+                onClick={handleSave}
+                disabled={!hasUnsavedChanges || saving}
+                className={`w-full h-12 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all ${
+                  hasUnsavedChanges
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    : saveSuccess
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    កំពុងរក្សាទុក...
+                  </>
+                ) : saveSuccess ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5" />
+                    រក្សាទុករួចរាល់
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    រក្សាទុក
+                  </>
+                )}
+              </button>
             </div>
           </div>
         ) : selectedClass && !loadingData ? (
