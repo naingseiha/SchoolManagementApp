@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Save, Loader2, Download, AlertCircle } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Loader2, Download, AlertCircle, CheckCircle, Clock } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
@@ -43,7 +43,14 @@ const MONTHS = [
   { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
 ];
 
-// Auto-calculate academic year (2025 means 2025-2026)
+// Get current Khmer month
+const getCurrentKhmerMonth = () => {
+  const monthNumber = new Date().getMonth() + 1; // 1-12
+  const month = MONTHS.find((m) => m.number === monthNumber);
+  return month?.value || "មករា";
+};
+
+// Auto-calculate academic year
 const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();
   const years = [];
@@ -59,11 +66,8 @@ const getAcademicYearOptions = () => {
 
 const getCurrentAcademicYear = () => {
   const now = new Date();
-  const month = now.getMonth() + 1; // 1-12
+  const month = now.getMonth() + 1;
   const year = now.getFullYear();
-
-  // If current month is Sept-Dec, academic year is current year
-  // If current month is Jan-Aug, academic year is previous year
   return month >= 9 ? year : year - 1;
 };
 
@@ -72,7 +76,7 @@ export default function MobileGradeEntry() {
   const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [selectedClass, setSelectedClass] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("មករា");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Auto-select current month
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [selectedSubject, setSelectedSubject] = useState("");
 
@@ -80,20 +84,21 @@ export default function MobileGradeEntry() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<StudentGrade[]>([]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Proactively load classes if empty
+  // Auto-save state
+  const [savingStudents, setSavingStudents] = useState<Set<string>>(new Set());
+  const [savedStudents, setSavedStudents] = useState<Set<string>>(new Set());
+  const saveTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
       refreshClasses();
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
 
-  // ✅ Filter classes based on role (same logic as desktop)
   const availableClasses = useMemo(() => {
     if (!currentUser) return [];
 
@@ -104,7 +109,6 @@ export default function MobileGradeEntry() {
     if (currentUser.role === "TEACHER") {
       const classIdsSet = new Set<string>();
 
-      // From teacherClasses
       if (currentUser.teacher?.teacherClasses) {
         currentUser.teacher.teacherClasses.forEach((tc: any) => {
           const classId = tc.classId || tc.class?.id;
@@ -112,7 +116,6 @@ export default function MobileGradeEntry() {
         });
       }
 
-      // From homeroom class
       if (currentUser.teacher?.homeroomClassId) {
         classIdsSet.add(currentUser.teacher.homeroomClassId);
       }
@@ -124,7 +127,6 @@ export default function MobileGradeEntry() {
     return [];
   }, [currentUser, classes]);
 
-  // ✅ Get teacher's editable subjects by CODE
   const teacherEditableSubjects = useMemo(() => {
     if (!currentUser) return new Set<string>();
     if (currentUser.role === "ADMIN") return new Set<string>();
@@ -144,7 +146,6 @@ export default function MobileGradeEntry() {
     return new Set<string>();
   }, [currentUser]);
 
-  // ✅ Get homeroom class ID
   const teacherHomeroomClassId = useMemo(() => {
     if (currentUser?.role === "TEACHER") {
       return currentUser.teacher?.homeroomClassId || null;
@@ -152,7 +153,6 @@ export default function MobileGradeEntry() {
     return null;
   }, [currentUser]);
 
-  // ✅ Load data when user clicks "Load" button
   const handleLoadData = async () => {
     if (!selectedClass || !currentUser) {
       alert("សូមជ្រើសរើសថ្នាក់សិន • Please select a class first");
@@ -166,6 +166,8 @@ export default function MobileGradeEntry() {
     setStudents([]);
     setSelectedSubject("");
     setDataLoaded(false);
+    setSavedStudents(new Set());
+    setSavingStudents(new Set());
 
     try {
       const data = await gradeApi.getGradesGrid(
@@ -174,7 +176,6 @@ export default function MobileGradeEntry() {
         selectedYear
       );
 
-      // ✅ Apply teacher permissions (same logic as desktop)
       if (currentUser.role === "ADMIN") {
         data.subjects = data.subjects.map((subject) => ({
           ...subject,
@@ -198,7 +199,6 @@ export default function MobileGradeEntry() {
         });
       }
 
-      // ✅ Filter to show only editable subjects
       const editableSubjects = data.subjects.filter((s) => s.isEditable);
 
       if (editableSubjects.length === 0) {
@@ -211,7 +211,6 @@ export default function MobileGradeEntry() {
       setSubjects(editableSubjects);
       setDataLoaded(true);
 
-      // Auto-select first subject if only one available
       if (editableSubjects.length === 1) {
         setSelectedSubject(editableSubjects[0].id);
       }
@@ -223,18 +222,15 @@ export default function MobileGradeEntry() {
     }
   };
 
-  // ✅ Load students for selected subject
   useEffect(() => {
     if (!gridData || !selectedSubject) {
       setStudents([]);
-      setCurrentIndex(0);
       return;
     }
 
     const subject = subjects.find((s) => s.id === selectedSubject);
     if (!subject) return;
 
-    // Map grid data to student grades for this subject
     const studentGrades: StudentGrade[] = gridData.students.map((student) => {
       const gradeData = student.grades[selectedSubject];
       return {
@@ -250,83 +246,100 @@ export default function MobileGradeEntry() {
     });
 
     setStudents(studentGrades);
-    setCurrentIndex(0);
   }, [gridData, selectedSubject, subjects]);
 
-  const currentStudent = students[currentIndex];
-  const currentSubject = subjects.find((s) => s.id === selectedSubject);
+  // ✅ Auto-save function
+  const autoSaveScore = useCallback(
+    async (studentId: string, score: number | null) => {
+      if (!selectedClass || !selectedSubject) return;
 
-  const handleNext = () => {
-    if (currentIndex < students.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
-    }
-  };
+      setSavingStudents((prev) => new Set(prev).add(studentId));
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1);
-    }
-  };
+      try {
+        const gradesToSave = [
+          {
+            studentId,
+            subjectId: selectedSubject,
+            score: score!,
+          },
+        ];
 
-  const handleScoreChange = (value: string) => {
-    const score = value === "" ? null : parseFloat(value);
+        await gradeApi.bulkSaveGrades(
+          selectedClass,
+          selectedMonth,
+          selectedYear,
+          gradesToSave
+        );
 
-    // Validate score doesn't exceed max
-    if (score !== null && currentStudent && score > currentStudent.maxScore) {
-      return;
-    }
+        setSavingStudents((prev) => {
+          const next = new Set(prev);
+          next.delete(studentId);
+          return next;
+        });
 
-    setStudents((prev) =>
-      prev.map((student, idx) =>
-        idx === currentIndex
-          ? { ...student, score }
-          : student
-      )
-    );
-  };
+        setSavedStudents((prev) => new Set(prev).add(studentId));
 
-  const handleSave = async () => {
-    if (!selectedClass || !selectedSubject) {
-      alert("សូមជ្រើសរើសថ្នាក់ និងមុខវិជ្ជាសិន • Please select class and subject first");
-      return;
-    }
+        // Clear saved indicator after 2 seconds
+        setTimeout(() => {
+          setSavedStudents((prev) => {
+            const next = new Set(prev);
+            next.delete(studentId);
+            return next;
+          });
+        }, 2000);
+      } catch (error: any) {
+        console.error("Auto-save error:", error);
+        setSavingStudents((prev) => {
+          const next = new Set(prev);
+          next.delete(studentId);
+          return next;
+        });
+        alert(`មានបញ្ហា: ${error.message}`);
+      }
+    },
+    [selectedClass, selectedSubject, selectedMonth, selectedYear]
+  );
 
-    setSaving(true);
-    try {
-      // Prepare grades for the selected subject only
-      const gradesToSave = students
-        .filter((student) => student.score !== null)
-        .map((student) => ({
-          studentId: student.studentId,
-          subjectId: selectedSubject,
-          score: student.score!,
-        }));
+  // ✅ Handle score change with auto-save
+  const handleScoreChange = useCallback(
+    (studentId: string, value: string, maxScore: number) => {
+      const score = value === "" ? null : parseFloat(value);
 
-      if (gradesToSave.length === 0) {
-        alert("សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ • Please enter at least one score");
+      if (score !== null && score > maxScore) {
         return;
       }
 
-      const result = await gradeApi.bulkSaveGrades(
-        selectedClass,
-        selectedMonth,
-        selectedYear,
-        gradesToSave
+      // Update local state immediately
+      setStudents((prev) =>
+        prev.map((student) =>
+          student.studentId === studentId ? { ...student, score } : student
+        )
       );
 
-      if (result.savedCount > 0) {
-        alert(`រក្សាទុកបាន ${result.savedCount} ពិន្ទុ • Saved ${result.savedCount} grades successfully!`);
-
-        // Reload data to get updated scores
-        await handleLoadData();
+      // Clear existing timeout for this student
+      const existingTimeout = saveTimeouts.current.get(studentId);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
       }
-    } catch (error: any) {
-      console.error("Error saving grades:", error);
-      alert(`មានបញ្ហា: ${error.message} • Error: ${error.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
+
+      // Set new timeout for auto-save (1 second debounce)
+      if (score !== null) {
+        const timeout = setTimeout(() => {
+          autoSaveScore(studentId, score);
+        }, 1000);
+
+        saveTimeouts.current.set(studentId, timeout);
+      }
+    },
+    [autoSaveScore]
+  );
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      saveTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+    };
+  }, []);
 
   if (authLoading) {
     return (
@@ -337,6 +350,8 @@ export default function MobileGradeEntry() {
       </MobileLayout>
     );
   }
+
+  const currentSubject = subjects.find((s) => s.id === selectedSubject);
 
   return (
     <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ">
@@ -417,7 +432,6 @@ export default function MobileGradeEntry() {
             </div>
           </div>
 
-          {/* Load Button */}
           <button
             onClick={handleLoadData}
             disabled={!selectedClass || loading}
@@ -437,7 +451,6 @@ export default function MobileGradeEntry() {
           </button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
             <div className="flex items-start gap-2">
@@ -447,7 +460,7 @@ export default function MobileGradeEntry() {
           </div>
         )}
 
-        {/* Subject Selector - Only show after data loaded */}
+        {/* Subject Selector */}
         {dataLoaded && subjects.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             <label className="block text-xs font-semibold text-gray-600 mb-2">
@@ -468,100 +481,113 @@ export default function MobileGradeEntry() {
             </select>
             {currentUser?.role === "TEACHER" && teacherHomeroomClassId === selectedClass && (
               <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                🏠 អ្នកគឺជា​ INSTRUCTOR - អាចបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
+                🏠 អ្នកគឺជា INSTRUCTOR - អាចបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
               </p>
             )}
           </div>
         )}
 
-        {/* Student List - Only show when subject is selected */}
+        {/* Students List - Show ALL students */}
         {selectedSubject && students.length > 0 && currentSubject && (
-          <>
-            {/* Student Navigation */}
-            <div className="flex items-center justify-between bg-white rounded-xl shadow-sm p-3">
-              <button
-                onClick={handlePrev}
-                disabled={currentIndex === 0}
-                className="p-2 touch-target touch-feedback disabled:opacity-30"
-              >
-                <ChevronLeft className="w-6 h-6 text-gray-700" />
-              </button>
-              <div className="text-center">
-                <span className="text-sm font-semibold text-gray-700">
-                  {currentIndex + 1} / {students.length}
-                </span>
-                <p className="text-xs text-gray-500">{currentSubject.nameKh}</p>
-              </div>
-              <button
-                onClick={handleNext}
-                disabled={currentIndex === students.length - 1}
-                className="p-2 touch-target touch-feedback disabled:opacity-30"
-              >
-                <ChevronRight className="w-6 h-6 text-gray-700" />
-              </button>
-            </div>
-
-            {/* Student Card */}
-            {currentStudent && (
-              <>
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-md p-4 text-white">
-                  <h2 className="text-xl font-bold">{currentStudent.khmerName}</h2>
-                  <p className="text-indigo-100 text-sm mt-1">
-                    {currentStudent.gender === "MALE" ? "ប្រុស • Male" : "ស្រី • Female"}
+          <div className="space-y-3">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-md p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">{currentSubject.nameKh}</h3>
+                  <p className="text-sm text-indigo-100 mt-1">
+                    {students.length} សិស្ស • Max: {currentSubject.maxScore} ពិន្ទុ
                   </p>
                 </div>
-
-                {/* Score Input */}
-                <div className="bg-white rounded-xl shadow-sm p-4">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    {currentSubject.nameKh}
-                    <span className="text-gray-500 text-xs ml-2">
-                      (Max: {currentSubject.maxScore} ពិន្ទុ)
-                    </span>
-                  </label>
-                  <input
-                    type="number"
-                    value={currentStudent.score ?? ""}
-                    onChange={(e) => handleScoreChange(e.target.value)}
-                    className="w-full h-14 px-4 border-2 border-gray-300 rounded-xl text-2xl font-bold text-center focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder={`0 - ${currentSubject.maxScore}`}
-                    min="0"
-                    max={currentSubject.maxScore}
-                    step="0.5"
-                    style={{ fontSize: "24px" }}
-                  />
+                <div className="text-right">
+                  <p className="text-xs text-indigo-100">Auto-save</p>
+                  <p className="text-sm font-semibold">រក្សាស្វ័យប្រវត្តិ</p>
                 </div>
+              </div>
+            </div>
 
-                {/* Save Button */}
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="w-full h-12 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2 touch-feedback shadow-lg"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      កំពុងរក្សាទុក...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5" />
-                      រក្សាទុក • Save All
-                    </>
-                  )}
-                </button>
-              </>
-            )}
-          </>
+            {/* All Students List */}
+            <div className="space-y-2">
+              {students.map((student, index) => {
+                const isSaving = savingStudents.has(student.studentId);
+                const isSaved = savedStudents.has(student.studentId);
+
+                return (
+                  <div
+                    key={student.studentId}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Student Number */}
+                      <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-indigo-700">
+                          {index + 1}
+                        </span>
+                      </div>
+
+                      {/* Student Name */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {student.khmerName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {student.gender === "MALE" ? "ប្រុស" : "ស្រី"}
+                        </p>
+                      </div>
+
+                      {/* Score Input */}
+                      <div className="flex-shrink-0 w-24 relative">
+                        <input
+                          type="number"
+                          value={student.score ?? ""}
+                          onChange={(e) =>
+                            handleScoreChange(
+                              student.studentId,
+                              e.target.value,
+                              student.maxScore
+                            )
+                          }
+                          className="w-full h-11 px-3 text-center border-2 border-gray-300 rounded-lg text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          placeholder="0"
+                          min="0"
+                          max={student.maxScore}
+                          step="0.5"
+                          style={{ fontSize: "16px" }}
+                        />
+                      </div>
+
+                      {/* Save Status */}
+                      <div className="flex-shrink-0 w-8">
+                        {isSaving ? (
+                          <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                        ) : isSaved ? (
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        ) : student.score !== null ? (
+                          <Clock className="w-5 h-5 text-gray-300" />
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Info Footer */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs text-blue-700 text-center">
+                💡 ពិន្ទុរក្សាទុកដោយស្វ័យប្រវត្តិ • Scores auto-save after typing
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Empty State */}
         {!dataLoaded && !loading && (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 mb-2">
               សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ ហើយចុច "ផ្ទុកទិន្នន័យ"
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-gray-500">
               Select class, month, year and click "Load Data"
             </p>
           </div>
