@@ -14,11 +14,11 @@ import {
   ChevronRight,
   ArrowLeft,
   Users,
-  TrendingUp,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useRouter } from "next/navigation";
+import { gradeApi } from "@/lib/api/grades";
 
 interface StudentGrade {
   studentId: string;
@@ -112,37 +112,41 @@ export default function MobileReportsDashboard() {
     setLoading(true);
     setSelectedSubject(null);
     try {
-      console.log("📊 Loading subject status:", {
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("📊 LOADING SUBJECT STATUS:");
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("Request params:", {
         classId: selectedClass,
         month: selectedMonth,
+        monthType: typeof selectedMonth,
         year: selectedYear,
+        yearType: typeof selectedYear,
       });
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/grades/grid/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
+      const gridData = await gradeApi.getGradesGrid(
+        selectedClass,
+        selectedMonth,
+        selectedYear
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`មានបញ្ហា:  ${errorText}`);
-      }
+      console.log("✅ Grid data received:", {
+        className: gridData.className,
+        month: selectedMonth,
+        year: selectedYear,
+        studentsCount: gridData.students.length,
+        subjectsCount: gridData.subjects.length,
+      });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || "Failed to load data");
-      }
-
-      const gridData = result.data;
       const totalStudents = gridData.students.length;
 
-      // ✅ Build detailed subject status with student grades
+      console.log("🔍 Processing grades for each subject:");
+
       const subjectStatusList: SubjectStatus[] = gridData.subjects.map(
-        (subject: any) => {
+        (subject: any, idx: number) => {
           const studentGrades: StudentGrade[] = [];
           let studentsWithGrades = 0;
 
-          gridData.students.forEach((student: any) => {
+          gridData.students.forEach((student: any, studentIdx: number) => {
             const gradeData = student.grades[subject.id];
             const score = gradeData?.score ?? null;
 
@@ -154,9 +158,16 @@ export default function MobileReportsDashboard() {
               maxScore: subject.maxScore,
             });
 
-            // ✅ Count only non-null, non-zero scores
             if (score !== null && score !== undefined) {
               studentsWithGrades++;
+            }
+
+            if (studentIdx === 0) {
+              console.log(`  Subject ${idx + 1} (${subject.nameKh}):`, {
+                firstStudent: student.studentName,
+                score: score,
+                hasScore: score !== null,
+              });
             }
           });
 
@@ -165,8 +176,11 @@ export default function MobileReportsDashboard() {
               ? Math.round((studentsWithGrades / totalStudents) * 100)
               : 0;
 
-          // ✅ Subject is complete only if ALL students have grades
           const isComplete = studentsWithGrades === totalStudents;
+
+          console.log(
+            `  ✅ ${subject.nameKh}:  ${studentsWithGrades}/${totalStudents} (${completionRate}%)`
+          );
 
           return {
             subjectId: subject.id,
@@ -184,7 +198,11 @@ export default function MobileReportsDashboard() {
         }
       );
 
-      console.log("✅ Subject status loaded:", subjectStatusList);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      console.log("✅ Subject status loaded successfully");
+      console.log("Total subjects:", subjectStatusList.length);
+      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
       setSubjects(subjectStatusList);
       setDataLoaded(true);
     } catch (error: any) {
@@ -201,7 +219,7 @@ export default function MobileReportsDashboard() {
       month: selectedMonth,
       year: selectedYear.toString(),
     });
-    router.push(`/reports/mobile?${params.toString()}`);
+    router.push(`/reports/mobile? ${params.toString()}`);
   };
 
   const completedSubjects = subjects.filter((s) => s.isComplete).length;
@@ -211,7 +229,7 @@ export default function MobileReportsDashboard() {
       ? Math.round((completedSubjects / totalSubjects) * 100)
       : 0;
 
-  // ✅ Subject detail view
+  // ✅ Subject Detail View
   if (selectedSubject) {
     return (
       <MobileLayout title="ពិន្ទុសិស្ស • Student Grades">
@@ -343,7 +361,7 @@ export default function MobileReportsDashboard() {
           <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
             <div className="flex items-center justify-between text-sm">
               <div>
-                <span className="text-gray-600">បានបញ្ចូល:</span>{" "}
+                <span className="text-gray-600">បានបញ្ចូល: </span>{" "}
                 <span className="font-bold text-green-600">
                   {selectedSubject.studentsWithGrades}
                 </span>
@@ -371,7 +389,7 @@ export default function MobileReportsDashboard() {
     );
   }
 
-  // ✅ Main dashboard view
+  // ✅ Main Dashboard View
   return (
     <MobileLayout title="របាយការណ៍ • Reports">
       <div className="flex flex-col h-full bg-gray-50">
