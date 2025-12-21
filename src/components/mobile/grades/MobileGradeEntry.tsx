@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
+import { gradeApi } from "@/lib/api/grades";
 
 interface Subject {
   id: string;
@@ -171,6 +172,11 @@ export default function MobileGradeEntry({
   };
 
   const handleSave = async () => {
+    if (!selectedClass) {
+      alert("សូមជ្រើសរើសថ្នាក់សិន • Please select a class first");
+      return;
+    }
+
     setSaving(true);
     try {
       // Prepare bulk save data
@@ -180,30 +186,29 @@ export default function MobileGradeEntry({
           .map((subject) => ({
             studentId: student.studentId,
             subjectId: subject.id,
-            classId: selectedClass,
-            score: student.subjects[subject.id].score,
-            maxScore: subject.maxScore,
-            month: selectedMonth,
-            year: selectedYear,
+            score: student.subjects[subject.id].score!,
           }))
       );
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/grades/bulk-save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ grades: gradesToSave }),
-        }
+      if (gradesToSave.length === 0) {
+        alert("សូមបញ្ចូលពិន្ទុយ៉ាងហោចណាស់មួយ • Please enter at least one score");
+        return;
+      }
+
+      // Use the proper API method
+      const result = await gradeApi.bulkSaveGrades(
+        selectedClass,
+        selectedMonth,
+        selectedYear,
+        gradesToSave
       );
 
-      const result = await response.json();
-      if (result.success) {
-        alert("ការរក្សាទុកជោគជ័យ! • Saved successfully!");
+      if (result.savedCount > 0) {
+        alert(`ការរក្សាទុកជោគជ័យ! រក្សាទុកបាន ${result.savedCount} ពិន្ទុ • Saved ${result.savedCount} grades successfully!`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving grades:", error);
-      alert("មានបញ្ហាក្នុងការរក្សាទុក • Error saving grades");
+      alert(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message} • Error saving grades: ${error.message}`);
     } finally {
       setSaving(false);
     }
