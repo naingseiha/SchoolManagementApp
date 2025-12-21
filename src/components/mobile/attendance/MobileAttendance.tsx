@@ -53,12 +53,14 @@ const MONTHS = [
   { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
 ];
 
+// ✅ Get current Khmer month
 const getCurrentKhmerMonth = () => {
-  const monthNumber = new Date().getMonth() + 1;
+  const monthNumber = new Date().getMonth() + 1; // 1-12
   const month = MONTHS.find((m) => m.number === monthNumber);
   return month?.value || "មករា";
 };
 
+// ✅ Auto-calculate academic year
 const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();
   const years = [];
@@ -87,7 +89,7 @@ export default function MobileAttendance({
   const { classes, isLoadingClasses, refreshClasses } = useData();
 
   const [selectedClass, setSelectedClass] = useState(classId || "");
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Auto-select current month
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [currentDay, setCurrentDay] = useState(new Date().getDate());
 
@@ -228,6 +230,7 @@ export default function MobileAttendance({
     }, 1500);
   };
 
+  // ✅ FIXED: Save only current day (smaller payload)
   const handleSave = async () => {
     if (!hasUnsavedChanges) return;
 
@@ -237,27 +240,28 @@ export default function MobileAttendance({
     try {
       const attendanceRecords: any[] = [];
 
+      // ✅ Save ONLY current day (not all days)
       students.forEach((student) => {
-        daysArray.forEach((day) => {
-          const status = student.dailyAttendance[day];
+        const status = student.dailyAttendance[currentDay];
 
-          let value = "";
-          if (status === "ABSENT") value = "A";
-          else if (status === "PERMISSION") value = "P";
+        let value = "";
+        if (status === "ABSENT") value = "A";
+        else if (status === "PERMISSION") value = "P";
 
-          attendanceRecords.push({
-            studentId: student.studentId,
-            day: day,
-            session: "M",
-            value: value,
-          });
+        // Save for morning session only
+        attendanceRecords.push({
+          studentId: student.studentId,
+          day: currentDay,
+          session: "M",
+          value: value,
         });
       });
 
-      console.log("💾 Saving attendance:", {
+      console.log("💾 Saving attendance (current day only):", {
         classId: selectedClass,
         month: selectedMonth,
         year: selectedYear,
+        currentDay: currentDay,
         monthNumber: monthNumber,
         records: attendanceRecords.length,
       });
@@ -525,7 +529,7 @@ export default function MobileAttendance({
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setAllStatus("PRESENT")}
-                  className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-green-200"
+                  className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1. 5 transition-all active:scale-95 border border-green-200"
                 >
                   <Check className="w-3. 5 h-3.5" />
                   All Present
