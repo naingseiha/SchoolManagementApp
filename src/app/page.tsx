@@ -2,10 +2,13 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
+import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import MobileLayout from "@/components/layout/MobileLayout";
 import { dashboardApi, DashboardStats } from "@/lib/api/dashboard";
 import { SimpleBarChart, SimplePieChart } from "@/components/ui/SimpleBarChart";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -27,8 +30,15 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+// Lazy load mobile dashboard for code splitting
+const MobileDashboard = dynamic(
+  () => import("@/components/mobile/dashboard/MobileDashboard"),
+  { ssr: false }
+);
+
 export default function DashboardPage() {
   const router = useRouter();
+  const deviceType = useDeviceType();
   const { isAuthenticated, currentUser, isLoading } = useAuth();
   const {
     students = [],
@@ -70,7 +80,13 @@ export default function DashboardPage() {
   };
 
   if (isLoading) {
-    return (
+    return deviceType === "mobile" ? (
+      <MobileLayout title="ផ្ទាំង">
+        <div className="p-4">
+          <SkeletonDashboard />
+        </div>
+      </MobileLayout>
+    ) : (
       <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
         <Sidebar />
         <div className="flex-1">
@@ -110,6 +126,24 @@ export default function DashboardPage() {
         : 0,
   };
 
+  // Mobile layout
+  if (deviceType === "mobile") {
+    return (
+      <ErrorBoundary>
+        <MobileLayout title="ផ្ទាំង">
+          <MobileDashboard
+            currentUser={currentUser}
+            stats={stats}
+            completionRate={completionRate}
+            dashboardStats={dashboardStats}
+            isLoadingStats={isLoadingStats}
+          />
+        </MobileLayout>
+      </ErrorBoundary>
+    );
+  }
+
+  // Desktop layout
   return (
     <ErrorBoundary>
       <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
