@@ -7,15 +7,26 @@ import {
   Loader2,
   BarChart3,
   Filter,
-  BookOpen,
   CheckCircle2,
   AlertCircle,
+  XCircle,
   Award,
+  ChevronRight,
+  ArrowLeft,
+  Users,
   TrendingUp,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useRouter } from "next/navigation";
+
+interface StudentGrade {
+  studentId: string;
+  studentName: string;
+  gender: string;
+  score: number | null;
+  maxScore: number;
+}
 
 interface SubjectStatus {
   subjectId: string;
@@ -24,9 +35,11 @@ interface SubjectStatus {
   subjectCode: string;
   maxScore: number;
   coefficient: number;
-  hasGrades: boolean;
-  studentCount: number;
+  totalStudents: number;
+  studentsWithGrades: number;
   completionRate: number;
+  isComplete: boolean;
+  studentGrades: StudentGrade[];
 }
 
 const MONTHS = [
@@ -78,6 +91,9 @@ export default function MobileReportsDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [subjects, setSubjects] = useState<SubjectStatus[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<SubjectStatus | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -94,6 +110,7 @@ export default function MobileReportsDashboard() {
     }
 
     setLoading(true);
+    setSelectedSubject(null);
     try {
       console.log("📊 Loading subject status:", {
         classId: selectedClass,
@@ -119,13 +136,26 @@ export default function MobileReportsDashboard() {
       const gridData = result.data;
       const totalStudents = gridData.students.length;
 
+      // ✅ Build detailed subject status with student grades
       const subjectStatusList: SubjectStatus[] = gridData.subjects.map(
         (subject: any) => {
+          const studentGrades: StudentGrade[] = [];
           let studentsWithGrades = 0;
 
           gridData.students.forEach((student: any) => {
             const gradeData = student.grades[subject.id];
-            if (gradeData && gradeData.score !== null) {
+            const score = gradeData?.score ?? null;
+
+            studentGrades.push({
+              studentId: student.studentId,
+              studentName: student.studentName,
+              gender: student.gender,
+              score: score,
+              maxScore: subject.maxScore,
+            });
+
+            // ✅ Count only non-null, non-zero scores
+            if (score !== null && score !== undefined) {
               studentsWithGrades++;
             }
           });
@@ -135,6 +165,9 @@ export default function MobileReportsDashboard() {
               ? Math.round((studentsWithGrades / totalStudents) * 100)
               : 0;
 
+          // ✅ Subject is complete only if ALL students have grades
+          const isComplete = studentsWithGrades === totalStudents;
+
           return {
             subjectId: subject.id,
             subjectName: subject.name,
@@ -142,13 +175,16 @@ export default function MobileReportsDashboard() {
             subjectCode: subject.code,
             maxScore: subject.maxScore,
             coefficient: subject.coefficient,
-            hasGrades: studentsWithGrades > 0,
-            studentCount: totalStudents,
+            totalStudents: totalStudents,
+            studentsWithGrades: studentsWithGrades,
             completionRate: completionRate,
+            isComplete: isComplete,
+            studentGrades: studentGrades,
           };
         }
       );
 
+      console.log("✅ Subject status loaded:", subjectStatusList);
       setSubjects(subjectStatusList);
       setDataLoaded(true);
     } catch (error: any) {
@@ -160,20 +196,182 @@ export default function MobileReportsDashboard() {
   };
 
   const handleViewReport = () => {
-    router.push(
-      `/reports/mobile?class=${selectedClass}&month=${selectedMonth}&year=${selectedYear}`
-    );
+    const params = new URLSearchParams({
+      class: selectedClass,
+      month: selectedMonth,
+      year: selectedYear.toString(),
+    });
+    router.push(`/reports/mobile?${params.toString()}`);
   };
 
-  const completedSubjects = subjects.filter(
-    (s) => s.completionRate === 100
-  ).length;
+  const completedSubjects = subjects.filter((s) => s.isComplete).length;
   const totalSubjects = subjects.length;
   const overallCompletion =
     totalSubjects > 0
       ? Math.round((completedSubjects / totalSubjects) * 100)
       : 0;
 
+  // ✅ Subject detail view
+  if (selectedSubject) {
+    return (
+      <MobileLayout title="ពិន្ទុសិស្ស • Student Grades">
+        <div className="flex flex-col h-full bg-gray-50">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => setSelectedSubject(null)}
+                className="p-2 bg-white/20 backdrop-blur-sm rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 text-white" />
+              </button>
+              <div className="flex-1 text-center px-4">
+                <h3 className="text-white text-lg font-bold truncate">
+                  {selectedSubject.subjectNameKh}
+                </h3>
+                <p className="text-indigo-100 text-xs mt-0.5">
+                  {selectedSubject.subjectCode}
+                </p>
+              </div>
+              <div className="w-10" />
+            </div>
+
+            {/* Subject Stats */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20">
+                <div className="text-xs text-indigo-100 mb-0.5">Max</div>
+                <div className="text-lg font-bold text-white">
+                  {selectedSubject.maxScore}
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20">
+                <div className="text-xs text-indigo-100 mb-0.5">មេគុណ</div>
+                <div className="text-lg font-bold text-white">
+                  ×{selectedSubject.coefficient}
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20">
+                <div className="text-xs text-indigo-100 mb-0.5">Status</div>
+                <div className="text-lg font-bold text-white">
+                  {selectedSubject.completionRate}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Student List */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {selectedSubject.studentGrades.map((student, index) => {
+              const hasScore =
+                student.score !== null && student.score !== undefined;
+
+              return (
+                <div
+                  key={student.studentId}
+                  className={`bg-white rounded-lg shadow-sm border-2 p-3 ${
+                    hasScore
+                      ? "border-green-200 bg-green-50/30"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    {/* Student Info */}
+                    <div className="flex items-center gap-3 flex-1">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          hasScore
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <span className="text-xs font-bold">{index + 1}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
+                            {student.studentName}
+                          </p>
+                          {student.gender === "FEMALE" && (
+                            <span className="text-pink-500 text-xs">♀</span>
+                          )}
+                          {student.gender === "MALE" && (
+                            <span className="text-blue-500 text-xs">♂</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Score Display */}
+                    <div className="text-right">
+                      {hasScore ? (
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl font-bold text-green-600">
+                            {student.score}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            /{student.maxScore}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-sm font-semibold text-gray-400">
+                          មិនទាន់បញ្ចូល
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  {hasScore && (
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1. 5 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
+                        style={{
+                          width: `${Math.min(
+                            ((student.score || 0) / student.maxScore) * 100,
+                            100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary Footer */}
+          <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
+            <div className="flex items-center justify-between text-sm">
+              <div>
+                <span className="text-gray-600">បានបញ្ចូល:</span>{" "}
+                <span className="font-bold text-green-600">
+                  {selectedSubject.studentsWithGrades}
+                </span>
+                <span className="text-gray-500">
+                  /{selectedSubject.totalStudents}
+                </span>
+              </div>
+              <div>
+                {selectedSubject.isComplete ? (
+                  <span className="flex items-center gap-1 text-green-600 font-semibold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    រួចរាល់
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-orange-600 font-semibold">
+                    <AlertCircle className="w-4 h-4" />
+                    មិនទាន់ចប់
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  // ✅ Main dashboard view
   return (
     <MobileLayout title="របាយការណ៍ • Reports">
       <div className="flex flex-col h-full bg-gray-50">
@@ -188,7 +386,7 @@ export default function MobileReportsDashboard() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+            <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
               ថ្នាក់ • Class
             </label>
             <select
@@ -300,7 +498,7 @@ export default function MobileReportsDashboard() {
                   <span>
                     {completedSubjects} / {totalSubjects} មុខវិជ្ជា
                   </span>
-                  <span>{subjects[0]?.studentCount || 0} សិស្ស</span>
+                  <span>{subjects[0]?.totalStudents || 0} សិស្ស</span>
                 </div>
               </div>
             </div>
@@ -308,15 +506,15 @@ export default function MobileReportsDashboard() {
             {/* Subject Cards */}
             <div className="px-4 py-3 space-y-2">
               {subjects.map((subject, index) => {
-                const isComplete = subject.completionRate === 100;
-                const isPartial =
-                  subject.completionRate > 0 && subject.completionRate < 100;
-                const isEmpty = subject.completionRate === 0;
+                const isComplete = subject.isComplete;
+                const isPartial = subject.studentsWithGrades > 0 && !isComplete;
+                const isEmpty = subject.studentsWithGrades === 0;
 
                 return (
-                  <div
+                  <button
                     key={subject.subjectId}
-                    className={`bg-white rounded-xl shadow-md border-2 p-4 transition-all ${
+                    onClick={() => setSelectedSubject(subject)}
+                    className={`w-full bg-white rounded-xl shadow-md border-2 p-4 transition-all active:scale-98 ${
                       isComplete
                         ? "border-green-300 bg-gradient-to-r from-green-50/30 to-emerald-50/30"
                         : isPartial
@@ -340,7 +538,7 @@ export default function MobileReportsDashboard() {
                           </span>
                         </div>
 
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 text-left">
                           <h4 className="text-sm font-bold text-gray-900 mb-0.5">
                             {subject.subjectNameKh}
                           </h4>
@@ -355,31 +553,36 @@ export default function MobileReportsDashboard() {
                         </div>
                       </div>
 
-                      <div
-                        className={`px-3 py-1.5 rounded-lg flex items-center gap-1. 5 ${
-                          isComplete
-                            ? "bg-green-100"
-                            : isPartial
-                            ? "bg-yellow-100"
-                            : "bg-gray-100"
-                        }`}
-                      >
-                        {isComplete ? (
-                          <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-yellow-600" />
-                        )}
-                        <span
-                          className={`text-xs font-bold ${
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
                             isComplete
-                              ? "text-green-700"
+                              ? "bg-green-100"
                               : isPartial
-                              ? "text-yellow-700"
-                              : "text-gray-600"
+                              ? "bg-yellow-100"
+                              : "bg-gray-100"
                           }`}
                         >
-                          {subject.completionRate}%
-                        </span>
+                          {isComplete ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : isPartial ? (
+                            <AlertCircle className="w-4 h-4 text-yellow-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-gray-500" />
+                          )}
+                          <span
+                            className={`text-xs font-bold ${
+                              isComplete
+                                ? "text-green-700"
+                                : isPartial
+                                ? "text-yellow-700"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            {subject.completionRate}%
+                          </span>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
                       </div>
                     </div>
 
@@ -396,7 +599,11 @@ export default function MobileReportsDashboard() {
                       />
                     </div>
 
-                    <div className="mt-2 text-xs text-gray-600">
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span className="text-gray-600">
+                        {subject.studentsWithGrades}/{subject.totalStudents}{" "}
+                        សិស្ស
+                      </span>
                       {isComplete ? (
                         <span className="text-green-700 font-semibold">
                           ✓ បញ្ចូលពិន្ទុរួចរាល់
@@ -411,7 +618,7 @@ export default function MobileReportsDashboard() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
