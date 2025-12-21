@@ -9,6 +9,8 @@ import Header from "@/components/layout/Header";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import ImportGradesModal from "@/components/modals/ImportGradesModal";
+import { useDeviceType } from "@/lib/utils/deviceDetection";
+import dynamic from "next/dynamic";
 import {
   Upload,
   Download,
@@ -19,6 +21,18 @@ import {
 } from "lucide-react";
 import { gradeApi, type StudentSummary } from "@/lib/api/grades";
 import type { Class } from "@/lib/api/classes";
+
+const MobileGradeSummary = dynamic(
+  () => import("@/components/mobile/grades/MobileGradeSummary"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+      </div>
+    ),
+  }
+);
 
 const MONTHS = [
   { value: "មករា", label: "មករា - January", number: 1 },
@@ -39,6 +53,7 @@ export default function GradesPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { classes, isLoadingClasses, refreshClasses } = useData();
+  const deviceType = useDeviceType();
 
   // State
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -48,6 +63,11 @@ export default function GradesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Render mobile version for mobile devices
+  if (deviceType === "mobile") {
+    return <MobileGradeSummary />;
+  }
 
   // Redirect if not authenticated
   useEffect(() => {
