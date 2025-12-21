@@ -4,7 +4,7 @@ import { useState } from "react";
 import TeacherCard from "./TeacherCard";
 import TeacherCreateModal from "./TeacherAddModal";
 import TeacherEditModal from "./TeacherEditModal";
-import TeacherViewModal from "../modals/TeacherDetailsModal";
+import TeacherDetailsModal from "../modals/TeacherDetailsModal";
 import {
   Plus,
   Search,
@@ -42,15 +42,32 @@ export default function TeacherListView({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+  const [loadingTeacherDetails, setLoadingTeacherDetails] = useState(false);
 
   const handleEdit = (teacher: any) => {
     setSelectedTeacher(teacher);
     setEditModalOpen(true);
   };
 
-  const handleView = (teacher: any) => {
-    setSelectedTeacher(teacher);
-    setViewModalOpen(true);
+  const handleView = async (teacher: any) => {
+    // Show loading state
+    setLoadingTeacherDetails(true);
+
+    // Fetch full teacher data with all relations
+    try {
+      const fullTeacherData = await teachersApi.getById(teacher.id);
+      if (fullTeacherData) {
+        setSelectedTeacher(fullTeacherData);
+        setViewModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Failed to fetch teacher details:", error);
+      // Fallback to lightweight data
+      setSelectedTeacher(teacher);
+      setViewModalOpen(true);
+    } finally {
+      setLoadingTeacherDetails(false);
+    }
   };
 
   const handleDelete = async (teacherId: string) => {
@@ -108,82 +125,73 @@ export default function TeacherListView({
       <div className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 rounded-2xl border-2 border-dashed border-gray-200 shadow-sm">
         {/* Decorative background */}
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-blue-500 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-32 h-32 bg-indigo-500 rounded-full blur-3xl"></div>
+          <div className="absolute top-5 left-5 w-24 h-24 bg-blue-500 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-5 right-5 w-24 h-24 bg-indigo-500 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative z-10 text-center px-8 py-20">
+        <div className="relative z-10 text-center px-6 py-10">
           {/* Icon */}
-          <div className="mb-8 inline-flex">
+          <div className="mb-4 inline-flex">
             <div className="relative">
-              <div className="w-28 h-28 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-xl transform hover:scale-105 transition-transform duration-300">
-                <Database className="w-14 h-14 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <Database className="w-8 h-8 text-white" />
               </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                <span className="text-xl">✨</span>
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-md animate-bounce">
+                <span className="text-xs">✨</span>
               </div>
             </div>
           </div>
 
           {/* Title */}
-          <h3 className="text-3xl font-black text-gray-900 mb-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <h3 className="text-xl font-black text-gray-900 mb-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent khmer-title">
             រៀបចំជាស្រេច!
           </h3>
-          <p className="text-lg font-semibold text-gray-700 mb-2">
+          <p className="text-sm font-semibold text-gray-700 mb-3">
             Ready to Load Teacher Data
           </p>
 
           {/* Description */}
-          <p className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
-            ចុចប៊ូតុង <span className="font-bold text-blue-600">"ផ្ទុកទិន្នន័យ"</span> ខាងក្រោម ដើម្បីទាញយកបញ្ជីគ្រូបង្រៀនទាំងអស់ពីប្រព័ន្ធ។ ទិន្នន័យនឹងត្រូវបានផ្ទុកយ៉ាងលឿន និងប្រកបដោយប្រសិទ្ធភាព។
+          <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto khmer-text">
+            ចុចប៊ូតុង <span className="font-bold text-blue-600">"ផ្ទុកទិន្នន័យ"</span> ដើម្បីទាញយកបញ្ជីគ្រូបង្រៀនទាំងអស់
           </p>
 
           {/* Load Button */}
           <button
             onClick={onLoadData}
             disabled={loading}
-            className="group relative px-10 py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-2xl font-black text-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none inline-flex items-center gap-4"
+            className="group relative px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none inline-flex items-center gap-3"
           >
-            {/* Animated glow effect */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
-
             {loading ? (
               <>
-                <Loader2 className="w-6 h-6 animate-spin" />
-                <span>កំពុងផ្ទុក...</span>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="khmer-text">កំពុងផ្ទុក...</span>
               </>
             ) : (
               <>
-                <Database className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                <span>ផ្ទុកទិន្នន័យគ្រូបង្រៀន</span>
+                <Database className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                <span className="khmer-text">ផ្ទុកទិន្នន័យគ្រូបង្រៀន</span>
               </>
             )}
           </button>
 
           {/* Info cards */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="text-blue-600 text-2xl mb-2">⚡</div>
-              <p className="text-sm font-bold text-gray-900 mb-1">ផ្ទុកលឿន</p>
-              <p className="text-xs text-gray-600">Optimized loading</p>
+          <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-blue-600 text-xl mb-1">⚡</div>
+              <p className="text-xs font-bold text-gray-900 khmer-text">ផ្ទុកលឿន</p>
+              <p className="text-xs text-gray-500">Optimized</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="text-indigo-600 text-2xl mb-2">🔄</div>
-              <p className="text-sm font-bold text-gray-900 mb-1">Real-time</p>
-              <p className="text-xs text-gray-600">ទិន្នន័យថ្មីបំផុត</p>
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-indigo-600 text-xl mb-1">🔄</div>
+              <p className="text-xs font-bold text-gray-900">Real-time</p>
+              <p className="text-xs text-gray-500 khmer-text">ទិន្នន័យថ្មី</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="text-purple-600 text-2xl mb-2">✅</div>
-              <p className="text-sm font-bold text-gray-900 mb-1">ប្រកបដោយសុវត្ថិភាព</p>
-              <p className="text-xs text-gray-600">Secure & reliable</p>
+            <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-purple-600 text-xl mb-1">✅</div>
+              <p className="text-xs font-bold text-gray-900 khmer-text">សុវត្ថិភាព</p>
+              <p className="text-xs text-gray-500">Secure</p>
             </div>
           </div>
-
-          {/* Tip */}
-          <p className="text-xs text-gray-500 mt-8 flex items-center justify-center gap-2">
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-            💡 អ្នកអាចទាញយកទិន្នន័យជាថ្មីនៅពេលណាក៏បាន
-          </p>
         </div>
       </div>
     );
@@ -351,11 +359,40 @@ export default function TeacherListView({
       )}
 
       {viewModalOpen && selectedTeacher && (
-        <TeacherViewModal
+        <TeacherDetailsModal
           isOpen={viewModalOpen}
           onClose={() => setViewModalOpen(false)}
           teacher={selectedTeacher}
         />
+      )}
+
+      {/* Loading Modal for Teacher Details */}
+      {loadingTeacherDetails && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full mx-4">
+            <div className="text-center">
+              <div className="relative inline-flex mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg animate-pulse">
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md animate-bounce">
+                  <span className="text-lg">✨</span>
+                </div>
+              </div>
+              <h3 className="text-xl font-black text-gray-900 mb-2 khmer-title">
+                កំពុងទាញយកទិន្នន័យ...
+              </h3>
+              <p className="text-sm text-gray-600 font-semibold">
+                Loading teacher details
+              </p>
+              <div className="mt-4 flex justify-center gap-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

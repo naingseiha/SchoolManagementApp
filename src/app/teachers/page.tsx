@@ -29,13 +29,13 @@ export default function TeachersPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // ✅ Manual load function (using lightweight endpoint for speed)
+  // ✅ Manual load function (using full data to show correct counts)
   // ✅ REMOVED auto-load - user must click "Load Data" button
   const loadTeachers = async () => {
     try {
       setLoading(true);
-      console.log("⚡ Loading teachers data (lightweight)...");
-      const data = await teachersApi.getAllLightweight();
+      console.log("⚡ Loading teachers data (full)...");
+      const data = await teachersApi.getAll();
       console.log("⚡ Loaded teachers:", data.length);
       setTeachers(data);
       setIsDataLoaded(true);
