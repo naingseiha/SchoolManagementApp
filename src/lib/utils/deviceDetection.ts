@@ -6,14 +6,14 @@ export type DeviceType = "mobile" | "tablet" | "desktop";
 
 // Breakpoints (matching Tailwind)
 export const BREAKPOINTS = {
-  mobile: 640, // sm
+  mobile: 768, // md - mobile/tablet breakpoint
   tablet: 1024, // lg
   desktop: 1280, // xl
 } as const;
 
 /**
  * React hook for detecting device type based on window width
- * Returns 'mobile' (<640px), 'tablet' (640-1024px), or 'desktop' (>1024px)
+ * Returns 'mobile' (<768px), 'tablet' (768-1280px), or 'desktop' (>1280px)
  */
 export function useDeviceType(): DeviceType {
   const [deviceType, setDeviceType] = useState<DeviceType>(() => {
