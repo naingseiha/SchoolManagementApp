@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { GradeImportService } from "../services/grade-import.service";
 import { GradeCalculationService } from "../services/grade-calculation.service";
 import multer from "multer";
+import { randomUUID } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -553,8 +554,9 @@ export class GradeController {
             });
           }
         } else {
-          // ✅ Include maxScore in create
+          // ✅ Include maxScore, id, and updatedAt in create
           toCreate.push({
+            id: randomUUID(), // ✅ FIXED: Generate unique ID
             studentId: item.studentId,
             subjectId: item.subjectId,
             classId: classId,
@@ -562,6 +564,7 @@ export class GradeController {
             maxScore: subject.maxScore, // ✅ FIXED: Include maxScore
             year: year,
             month: month,
+            updatedAt: new Date(), // ✅ FIXED: Add updatedAt timestamp
           });
         }
       });
