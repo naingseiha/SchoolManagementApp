@@ -8,6 +8,7 @@ import {
   CalendarCheck,
   Users,
   BarChart3,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { LucideIcon } from "lucide-react";
@@ -31,11 +32,19 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "TEACHER"],
   },
   {
+    id: "grade-entry",
+    label: "Grade Entry",
+    labelKh: "បញ្ចូលពិន្ទុ",
+    icon: ClipboardList,
+    href: "/grade-entry",
+    roles: ["ADMIN", "TEACHER"],
+  },
+  {
     id: "grades",
     label: "Grades",
     labelKh: "ពិន្ទុ",
-    icon: ClipboardList,
-    href: "/grade-entry",
+    icon: BarChart3,
+    href: "/grades",
     roles: ["ADMIN", "TEACHER"],
   },
   {
@@ -58,7 +67,7 @@ const NAV_ITEMS: NavItem[] = [
     id: "reports",
     label: "Reports",
     labelKh: "របាយការណ៍",
-    icon: BarChart3,
+    icon: FileText,
     href: "/reports/monthly",
     roles: ["ADMIN", "TEACHER"],
   },
