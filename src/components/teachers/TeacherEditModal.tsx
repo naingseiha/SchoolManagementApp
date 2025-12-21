@@ -495,16 +495,6 @@ export default function TeacherEditModal({
           </form>
         )}
       </div>
-
-      {/* ✅ ADDED: Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-          duration={3000}
-        />
-      )}
     </div>
   );
 }

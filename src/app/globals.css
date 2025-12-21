@@ -31,6 +31,12 @@
     font-weight: 400;
   }
 
+  /* Khmer font for regular text - Khmer OS Battambang */
+  .khmer-text {
+    font-family: "Khmer OS Battambang", sans-serif;
+    font-weight: 400;
+  }
+
   /* English modern font */
   .english-modern {
     font-family: "Poppins", sans-serif;
