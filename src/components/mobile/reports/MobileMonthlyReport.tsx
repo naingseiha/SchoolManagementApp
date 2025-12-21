@@ -1,5 +1,3 @@
-// 📂 src/components/mobile/reports/MobileMonthlyReport.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,10 +9,10 @@ import {
   Users,
   Calendar,
   BarChart3,
-  Medal,
-  Star,
-  Download,
   Filter,
+  Download,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -45,32 +43,61 @@ interface ClassReport {
   totalStudents: number;
 }
 
+// ✅ Use same MONTHS structure as MobileGradeEntry
+const MONTHS = [
+  { value: "មករា", label: "មករា", number: 1 },
+  { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
+  { value: "មីនា", label: "មីនា", number: 3 },
+  { value: "មេសា", label: "មេសា", number: 4 },
+  { value: "ឧសភា", label: "ឧសភា", number: 5 },
+  { value: "មិថុនា", label: "មិថុនា", number: 6 },
+  { value: "កក្កដា", label: "កក្កដា", number: 7 },
+  { value: "សីហា", label: "សីហា", number: 8 },
+  { value: "កញ្ញា", label: "កញ្ញា", number: 9 },
+  { value: "តុលា", label: "តុលា", number: 10 },
+  { value: "វិច្ឆិកា", label: "វិច្ឆិកា", number: 11 },
+  { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
+];
+
+// ✅ Get current Khmer month
+const getCurrentKhmerMonth = () => {
+  const monthNumber = new Date().getMonth() + 1;
+  const month = MONTHS.find((m) => m.number === monthNumber);
+  return month?.value || "មករា";
+};
+
+// Auto-calculate academic year
+const getAcademicYearOptions = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let i = -1; i <= 2; i++) {
+    const year = currentYear + i;
+    years.push({
+      value: year.toString(),
+      label: `${year}-${year + 1}`,
+    });
+  }
+  return years;
+};
+
+const getCurrentAcademicYear = () => {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  return month >= 9 ? year : year - 1;
+};
+
 export default function MobileMonthlyReport() {
   const { classes, isLoadingClasses, refreshClasses } = useData();
 
   const [selectedClass, setSelectedClass] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Khmer string
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [reportData, setReportData] = useState<ClassReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
 
-  const monthNames = [
-    "មករា",
-    "កុម្ភៈ",
-    "មីនា",
-    "មេសា",
-    "ឧសភា",
-    "មិថុនា",
-    "កក្កដា",
-    "សីហា",
-    "កញ្ញា",
-    "តុលា",
-    "វិច្ឆិកា",
-    "ធ្នូ",
-  ];
-
-  // Grade level colors and labels
+  // Grade level helper functions
   const getGradeBadge = (gradeLevel: string, gradeLevelKh: string) => {
     const grades: Record<
       string,
@@ -143,6 +170,18 @@ export default function MobileMonthlyReport() {
     };
   };
 
+  const getKhmerGradeLevel = (level: string): string => {
+    const levels: Record<string, string> = {
+      A: "ល្អប្រសើរ",
+      B: "ល្អ",
+      C: "ល្អបុរេ",
+      D: "មធ្យម",
+      E: "ខ្សោយ",
+      F: "ខ្សោយបំផុត",
+    };
+    return levels[level] || "N/A";
+  };
+
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
       refreshClasses();
@@ -157,16 +196,27 @@ export default function MobileMonthlyReport() {
 
     setLoading(true);
     try {
-      const khmerMonth = monthNames[selectedMonth - 1];
+      console.log("📊 Loading report:", {
+        classId: selectedClass,
+        month: selectedMonth, // ✅ Already Khmer string
+        year: selectedYear,
+      });
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClass}? month=${khmerMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load report");
+        const errorText = await response.text();
+        console.error("❌ API Error:", response.status, errorText);
+        throw new Error(`HTTP ${response.status}: មានបញ្ហា`);
       }
 
       const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load report");
+      }
 
       // Calculate class average
       const students = result.data.students;
@@ -202,23 +252,11 @@ export default function MobileMonthlyReport() {
 
       setShowFilters(false);
     } catch (error: any) {
-      console.error("Error loading report:", error);
+      console.error("❌ Error loading report:", error);
       alert(`មានបញ្ហា: ${error.message}`);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getKhmerGradeLevel = (level: string): string => {
-    const levels: Record<string, string> = {
-      A: "ល្អប្រសើរ",
-      B: "ល្អ",
-      C: "ល្អបុរេ",
-      D: "មធ្យម",
-      E: "ខ្សោយ",
-      F: "ខ្សោយបំផុត",
-    };
-    return levels[level] || "N/A";
   };
 
   return (
@@ -244,7 +282,7 @@ export default function MobileMonthlyReport() {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 disabled={isLoadingClasses}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500 focus:border-transparent disabled:bg-gray-100"
+                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100"
                 style={{ fontSize: "16px" }}
               >
                 <option value="">
@@ -267,13 +305,13 @@ export default function MobileMonthlyReport() {
                 </label>
                 <select
                   value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
                   className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   style={{ fontSize: "16px" }}
                 >
-                  {monthNames.map((name, idx) => (
-                    <option key={idx} value={idx + 1}>
-                      {name}
+                  {MONTHS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
                     </option>
                   ))}
                 </select>
@@ -283,13 +321,18 @@ export default function MobileMonthlyReport() {
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
                   ឆ្នាំ • Year
                 </label>
-                <input
-                  type="number"
-                  value={selectedYear}
+                <select
+                  value={selectedYear.toString()}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                   className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   style={{ fontSize: "16px" }}
-                />
+                >
+                  {getAcademicYearOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
