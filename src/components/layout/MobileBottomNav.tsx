@@ -59,7 +59,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Reports",
     labelKh: "របាយការណ៍",
     icon: FileText,
-    href: "/reports/monthly",
+    href: "/reports/mobile",
     roles: ["ADMIN", "TEACHER"],
   },
 ];
