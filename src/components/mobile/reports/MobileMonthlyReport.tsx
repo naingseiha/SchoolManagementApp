@@ -1,3 +1,5 @@
+// 📂 src/components/mobile/reports/MobileMonthlyReport. tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,15 +9,14 @@ import {
   TrendingUp,
   Award,
   Users,
-  Calendar,
   BarChart3,
   Filter,
   Download,
-  CheckCircle2,
-  XCircle,
+  ArrowLeft,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface StudentReport {
   studentId: string;
@@ -43,7 +44,6 @@ interface ClassReport {
   totalStudents: number;
 }
 
-// ✅ Use same MONTHS structure as MobileGradeEntry
 const MONTHS = [
   { value: "មករា", label: "មករា", number: 1 },
   { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
@@ -59,14 +59,12 @@ const MONTHS = [
   { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
 ];
 
-// ✅ Get current Khmer month
 const getCurrentKhmerMonth = () => {
   const monthNumber = new Date().getMonth() + 1;
   const month = MONTHS.find((m) => m.number === monthNumber);
   return month?.value || "មករា";
 };
 
-// Auto-calculate academic year
 const getAcademicYearOptions = () => {
   const currentYear = new Date().getFullYear();
   const years = [];
@@ -89,15 +87,25 @@ const getCurrentAcademicYear = () => {
 
 export default function MobileMonthlyReport() {
   const { classes, isLoadingClasses, refreshClasses } = useData();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Khmer string
-  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+  // Get params from URL if coming from dashboard
+  const classParam = searchParams.get("class");
+  const monthParam = searchParams.get("month");
+  const yearParam = searchParams.get("year");
+
+  const [selectedClass, setSelectedClass] = useState(classParam || "");
+  const [selectedMonth, setSelectedMonth] = useState(
+    monthParam || getCurrentKhmerMonth()
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    yearParam ? parseInt(yearParam) : getCurrentAcademicYear()
+  );
   const [reportData, setReportData] = useState<ClassReport | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(!classParam);
 
-  // Grade level helper functions
   const getGradeBadge = (gradeLevel: string, gradeLevelKh: string) => {
     const grades: Record<
       string,
@@ -140,7 +148,6 @@ export default function MobileMonthlyReport() {
         icon: "📉",
       },
     };
-
     return grades[gradeLevel] || grades["F"];
   };
 
@@ -188,6 +195,13 @@ export default function MobileMonthlyReport() {
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
 
+  // Auto-load if coming from dashboard
+  useEffect(() => {
+    if (classParam && monthParam && yearParam && !reportData) {
+      loadReport();
+    }
+  }, [classParam, monthParam, yearParam]);
+
   const loadReport = async () => {
     if (!selectedClass) {
       alert("សូមជ្រើសរើសថ្នាក់");
@@ -198,7 +212,7 @@ export default function MobileMonthlyReport() {
     try {
       console.log("📊 Loading report:", {
         classId: selectedClass,
-        month: selectedMonth, // ✅ Already Khmer string
+        month: selectedMonth,
         year: selectedYear,
       });
 
@@ -218,7 +232,6 @@ export default function MobileMonthlyReport() {
         throw new Error(result.message || "Failed to load report");
       }
 
-      // Calculate class average
       const students = result.data.students;
       const classAverage =
         students.reduce(
@@ -253,10 +266,14 @@ export default function MobileMonthlyReport() {
       setShowFilters(false);
     } catch (error: any) {
       console.error("❌ Error loading report:", error);
-      alert(`មានបញ្ហា: ${error.message}`);
+      alert(`មានបញ្ហា:  ${error.message}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackToDashboard = () => {
+    router.push("/reports/mobile");
   };
 
   return (
@@ -273,7 +290,6 @@ export default function MobileMonthlyReport() {
               <Filter className="w-5 h-5 text-gray-400" />
             </div>
 
-            {/* Class */}
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
                 ថ្នាក់ • Class
@@ -282,7 +298,7 @@ export default function MobileMonthlyReport() {
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 disabled={isLoadingClasses}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100"
+                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
                 style={{ fontSize: "16px" }}
               >
                 <option value="">
@@ -297,7 +313,6 @@ export default function MobileMonthlyReport() {
               </select>
             </div>
 
-            {/* Month & Year */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
@@ -336,7 +351,6 @@ export default function MobileMonthlyReport() {
               </div>
             </div>
 
-            {/* Generate Button */}
             <button
               onClick={loadReport}
               disabled={!selectedClass || loading}
@@ -363,7 +377,13 @@ export default function MobileMonthlyReport() {
             {/* Header with Class Info */}
             <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex-1">
+                <button
+                  onClick={handleBackToDashboard}
+                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg"
+                >
+                  <ArrowLeft className="w-4 h-4 text-white" />
+                </button>
+                <div className="flex-1 text-center">
                   <h3 className="text-white text-lg font-bold">
                     {reportData.className}
                   </h3>
@@ -486,12 +506,9 @@ export default function MobileMonthlyReport() {
                         : "border-gray-200"
                     }`}
                   >
-                    {/* Student Header */}
                     <div className="p-4 pb-3">
                       <div className="flex items-start justify-between mb-2">
-                        {/* Left:  Student Info */}
                         <div className="flex items-start gap-3 flex-1">
-                          {/* Rank Badge */}
                           <div
                             className={`w-10 h-10 ${rankBadge.bg} rounded-xl flex items-center justify-center shadow-md flex-shrink-0`}
                           >
@@ -502,7 +519,6 @@ export default function MobileMonthlyReport() {
                             </span>
                           </div>
 
-                          {/* Name & Details */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="text-sm font-bold text-gray-900 truncate">
@@ -516,7 +532,6 @@ export default function MobileMonthlyReport() {
                               )}
                             </div>
 
-                            {/* Average Score */}
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-xs text-gray-600 font-medium">
                                 មធ្យមភាគ:
@@ -527,7 +542,6 @@ export default function MobileMonthlyReport() {
                               <span className="text-xs text-gray-500">/50</span>
                             </div>
 
-                            {/* Progress Bar */}
                             <div className="mt-2 w-full bg-gray-200 rounded-full h-1. 5 overflow-hidden">
                               <div
                                 className={`h-full ${gradeBadge.bg} transition-all duration-500`}
@@ -542,7 +556,6 @@ export default function MobileMonthlyReport() {
                           </div>
                         </div>
 
-                        {/* Right: Grade Badge */}
                         <div
                           className={`ml-3 px-3 py-2 ${gradeBadge.bg} rounded-lg shadow-md flex-shrink-0`}
                         >
@@ -566,7 +579,6 @@ export default function MobileMonthlyReport() {
                         </div>
                       </div>
 
-                      {/* Stats Row */}
                       <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100">
                         <div className="text-center">
                           <div className="text-xs text-gray-600 mb-0.5">
@@ -603,11 +615,11 @@ export default function MobileMonthlyReport() {
             <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => setShowFilters(true)}
+                  onClick={handleBackToDashboard}
                   className="h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all"
                 >
-                  <Filter className="w-4 h-4" />
-                  Filters
+                  <ArrowLeft className="w-4 h-4" />
+                  Dashboard
                 </button>
                 <button
                   onClick={() => window.print()}

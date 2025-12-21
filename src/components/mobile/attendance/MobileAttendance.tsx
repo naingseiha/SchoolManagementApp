@@ -1,3 +1,5 @@
+// 📂 src/components/mobile/attendance/MobileAttendance.tsx
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -35,7 +37,7 @@ interface MobileAttendanceProps {
   year?: number;
 }
 
-// ✅ FIXED: Use same MONTHS structure as MobileGradeEntry
+// ✅ Same MONTHS structure as MobileGradeEntry
 const MONTHS = [
   { value: "មករា", label: "មករា", number: 1 },
   { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
@@ -51,11 +53,30 @@ const MONTHS = [
   { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
 ];
 
-// ✅ Get current Khmer month
 const getCurrentKhmerMonth = () => {
   const monthNumber = new Date().getMonth() + 1;
   const month = MONTHS.find((m) => m.number === monthNumber);
   return month?.value || "មករា";
+};
+
+const getAcademicYearOptions = () => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let i = -1; i <= 2; i++) {
+    const year = currentYear + i;
+    years.push({
+      value: year.toString(),
+      label: `${year}-${year + 1}`,
+    });
+  }
+  return years;
+};
+
+const getCurrentAcademicYear = () => {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  return month >= 9 ? year : year - 1;
 };
 
 export default function MobileAttendance({
@@ -66,16 +87,11 @@ export default function MobileAttendance({
   const { classes, isLoadingClasses, refreshClasses } = useData();
 
   const [selectedClass, setSelectedClass] = useState(classId || "");
-  const [selectedMonth, setSelectedMonth] = useState(
-    month || getCurrentKhmerMonth() // ✅ FIXED: Use Khmer string
-  );
-  const [selectedYear, setSelectedYear] = useState(
-    year || new Date().getFullYear()
-  );
-
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [currentDay, setCurrentDay] = useState(new Date().getDate());
+
   const [students, setStudents] = useState<StudentAttendance[]>([]);
-  const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -90,13 +106,11 @@ export default function MobileAttendance({
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
 
-  // ✅ Get month number for calculations
   const selectedMonthData = MONTHS.find((m) => m.value === selectedMonth);
   const monthNumber = selectedMonthData?.number || 1;
   const daysInMonth = new Date(selectedYear, monthNumber, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // Load attendance data
   const loadAttendanceData = async () => {
     if (!selectedClass) {
       setStudents([]);
@@ -107,13 +121,13 @@ export default function MobileAttendance({
     try {
       console.log("📅 Loading attendance:", {
         classId: selectedClass,
-        month: selectedMonth, // ✅ Already Khmer string
+        month: selectedMonth,
+        monthNumber: monthNumber,
         year: selectedYear,
       });
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
-        //                                                                           ^^^^^^^^^^^^^^ Already Khmer string
       );
 
       if (!response.ok) {
@@ -176,7 +190,6 @@ export default function MobileAttendance({
     }
   };
 
-  // Toggle student status
   const toggleStudentStatus = (studentId: string) => {
     setStudents((prev) =>
       prev.map((student) => {
@@ -215,7 +228,6 @@ export default function MobileAttendance({
     }, 1500);
   };
 
-  // Save attendance
   const handleSave = async () => {
     if (!hasUnsavedChanges) return;
 
@@ -244,7 +256,7 @@ export default function MobileAttendance({
 
       console.log("💾 Saving attendance:", {
         classId: selectedClass,
-        month: selectedMonth, // ✅ Already Khmer string
+        month: selectedMonth,
         year: selectedYear,
         monthNumber: monthNumber,
         records: attendanceRecords.length,
@@ -257,7 +269,7 @@ export default function MobileAttendance({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             classId: selectedClass,
-            month: selectedMonth, // ✅ Already Khmer string
+            month: selectedMonth,
             year: selectedYear,
             monthNumber: monthNumber,
             attendance: attendanceRecords,
@@ -335,7 +347,7 @@ export default function MobileAttendance({
   return (
     <MobileLayout title="វត្តមាន • Attendance">
       <div className="flex flex-col h-full bg-gray-50">
-        {/* Filters */}
+        {/* Filters Section */}
         <div className="bg-white shadow-sm border-b border-gray-200 p-4 space-y-3">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
@@ -389,13 +401,18 @@ export default function MobileAttendance({
               <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
                 ឆ្នាំ • Year
               </label>
-              <input
-                type="number"
-                value={selectedYear}
+              <select
+                value={selectedYear.toString()}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
                 style={{ fontSize: "16px" }}
-              />
+              >
+                {getAcademicYearOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -418,8 +435,257 @@ export default function MobileAttendance({
           </button>
         </div>
 
-        {/* Rest of component continues... (day navigator, student list, etc.) */}
-        {/* Keep all the existing UI code from previous version */}
+        {/* Main Content */}
+        {students.length > 0 ? (
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Day Navigator */}
+            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-3 shadow-lg">
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={handlePrevDay}
+                  disabled={currentDay === 1}
+                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg disabled:opacity-30 transition-all active:scale-95"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+
+                <div className="text-center flex-1 px-4">
+                  <div className="text-white text-xl font-bold">
+                    ថ្ងៃទី {currentDay}
+                  </div>
+                  <div className="text-indigo-100 text-xs mt-0.5">
+                    {selectedMonth} {selectedYear}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleNextDay}
+                  disabled={currentDay === daysInMonth}
+                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg disabled:opacity-30 transition-all active:scale-95"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {/* Day Grid Selector */}
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2">
+                <div className="grid grid-cols-7 gap-1">
+                  {daysArray.map((day) => (
+                    <button
+                      key={day}
+                      onClick={() => setCurrentDay(day)}
+                      className={`h-8 rounded-md text-xs font-semibold transition-all ${
+                        day === currentDay
+                          ? "bg-white text-indigo-600 shadow-md scale-110"
+                          : "bg-white/20 text-white hover:bg-white/30"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Save Status */}
+              <div className="mt-3 flex items-center justify-center">
+                {saving ? (
+                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Loader2 className="w-3. 5 h-3.5 animate-spin text-white" />
+                    <span className="text-xs font-medium text-white">
+                      កំពុងរក្សាទុក...
+                    </span>
+                  </div>
+                ) : saveSuccess ? (
+                  <div className="flex items-center gap-2 bg-green-500/90 px-3 py-1.5 rounded-full animate-in fade-in">
+                    <Check className="w-3.5 h-3.5 text-white" />
+                    <span className="text-xs font-medium text-white">
+                      រក្សាទុករួចរាល់
+                    </span>
+                  </div>
+                ) : hasUnsavedChanges ? (
+                  <div className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1.5 rounded-full border border-yellow-300/50">
+                    <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
+                    <span className="text-xs font-medium text-white">
+                      មានការផ្លាស់ប្តូរ
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                    <span className="text-xs font-medium text-white">
+                      រួចរាល់
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="px-4 py-3 bg-white border-b border-gray-200">
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setAllStatus("PRESENT")}
+                  className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-green-200"
+                >
+                  <Check className="w-3. 5 h-3.5" />
+                  All Present
+                </button>
+                <button
+                  onClick={() => setAllStatus("ABSENT")}
+                  className="h-9 bg-red-50 hover: bg-red-100 text-red-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-red-200"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  All Absent
+                </button>
+                <button
+                  onClick={() => setAllStatus("PERMISSION")}
+                  className="h-9 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-orange-200"
+                >
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  Permission
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white rounded-lg p-2. 5 border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <Check className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-green-600">
+                        {currentDaySummary.present}
+                      </div>
+                      <div className="text-[10px] text-gray-600 uppercase font-medium">
+                        Present
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <X className="w-4 h-4 text-red-600" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-red-600">
+                        {currentDaySummary.absent}
+                      </div>
+                      <div className="text-[10px] text-gray-600 uppercase font-medium">
+                        Absent
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-bold text-orange-600">
+                        P
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-orange-600">
+                        {currentDaySummary.permission}
+                      </div>
+                      <div className="text-[10px] text-gray-600 uppercase font-medium">
+                        Permission
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Student List */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+              {students.map((student, index) => {
+                const status = student.dailyAttendance[currentDay] || "PRESENT";
+
+                return (
+                  <button
+                    key={student.studentId}
+                    onClick={() => toggleStudentStatus(student.studentId)}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-xl shadow-md transition-all active:scale-98 border-2 ${
+                      status === "PRESENT"
+                        ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300"
+                        : status === "ABSENT"
+                        ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-300"
+                        : "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md ${
+                          status === "PRESENT"
+                            ? "bg-gradient-to-br from-green-500 to-emerald-600"
+                            : status === "ABSENT"
+                            ? "bg-gradient-to-br from-red-500 to-rose-600"
+                            : "bg-gradient-to-br from-orange-500 to-amber-600"
+                        }`}
+                      >
+                        {status === "PRESENT" && (
+                          <Check className="w-6 h-6 text-white" />
+                        )}
+                        {status === "ABSENT" && (
+                          <X className="w-6 h-6 text-white" />
+                        )}
+                        {status === "PERMISSION" && (
+                          <span className="text-white font-bold text-lg">
+                            P
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-left">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-gray-500">
+                            #{index + 1}
+                          </span>
+                          <span className="text-sm font-bold text-gray-900">
+                            {student.khmerName}
+                          </span>
+                        </div>
+                        {student.rollNumber && (
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            Roll #{student.rollNumber}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs font-medium text-gray-500 bg-white/50 px-2.5 py-1 rounded-full">
+                      Tap
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : selectedClass && !loadingData ? (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-sm font-medium text-gray-600">
+                ចុច "ផ្ទុកទិន្នន័យ" ដើម្បីចាប់ផ្តើម
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-sm font-medium text-gray-600">
+                សូមជ្រើសរើសថ្នាក់ដើម្បីចាប់ផ្តើម
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </MobileLayout>
   );

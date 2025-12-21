@@ -3,16 +3,21 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useDeviceType } from "@/lib/utils/deviceDetection";
+import MobileReportsDashboard from "@/components/mobile/reports/MobileReportsDashboard";
 import MobileMonthlyReport from "@/components/mobile/reports/MobileMonthlyReport";
 import { Loader2 } from "lucide-react";
 
 export default function MobileReportsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const deviceType = useDeviceType();
+
+  // Check if we should show report or dashboard
+  const showReport = searchParams.has("class");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -20,7 +25,7 @@ export default function MobileReportsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // ✅ If accessed from desktop, redirect to desktop reports
+  // Redirect desktop users
   useEffect(() => {
     if (deviceType === "desktop" || deviceType === "tablet") {
       router.push("/reports/monthly");
@@ -40,5 +45,6 @@ export default function MobileReportsPage() {
 
   if (!isAuthenticated) return null;
 
-  return <MobileMonthlyReport />;
+  // Show report if URL params exist, otherwise show dashboard
+  return showReport ? <MobileMonthlyReport /> : <MobileReportsDashboard />;
 }
