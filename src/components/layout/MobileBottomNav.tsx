@@ -7,7 +7,6 @@ import {
   ClipboardList,
   CalendarCheck,
   Users,
-  BarChart3,
   FileText,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -37,14 +36,6 @@ const NAV_ITEMS: NavItem[] = [
     labelKh: "បញ្ចូលពិន្ទុ",
     icon: ClipboardList,
     href: "/grade-entry",
-    roles: ["ADMIN", "TEACHER"],
-  },
-  {
-    id: "grades",
-    label: "Grades",
-    labelKh: "ពិន្ទុ",
-    icon: BarChart3,
-    href: "/grades",
     roles: ["ADMIN", "TEACHER"],
   },
   {

@@ -4,12 +4,19 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
+import { useToast } from "@/hooks/useToast";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import AttendanceGridEditor from "@/components/attendance/AttendanceGridEditor";
 import { useDeviceType } from "@/lib/utils/deviceDetection";
 import dynamic from "next/dynamic";
-import { Download, Loader2, AlertCircle, CalendarCheck } from "lucide-react";
+import {
+  Download,
+  Loader2,
+  AlertCircle,
+  CalendarCheck,
+  Info,
+} from "lucide-react";
 import {
   attendanceApi,
   type AttendanceGridData,
@@ -57,6 +64,7 @@ export default function AttendancePage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes, isLoadingClasses, refreshClasses } = useData();
+  const { success, error: showError, warning, ToastContainer } = useToast();
   const deviceType = useDeviceType();
 
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -71,7 +79,7 @@ export default function AttendancePage() {
     return (
       <MobileAttendance
         classId={selectedClassId}
-        month={selectedMonth as any}
+        month={selectedMonth}
         year={selectedYear}
       />
     );
@@ -83,7 +91,7 @@ export default function AttendancePage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // ✅ Filter classes based on role - Show both homeroom (INSTRUCTOR) and teaching classes (TEACHER)
+  // ✅ Filter classes based on role
   const availableClasses = useMemo(() => {
     if (!currentUser) {
       return [];
@@ -96,7 +104,6 @@ export default function AttendancePage() {
     if (currentUser.role === "TEACHER") {
       const classIdsSet = new Set<string>();
 
-      // From teacherClasses (classes where teacher teaches subjects)
       if (currentUser.teacher?.teacherClasses) {
         currentUser.teacher.teacherClasses.forEach((tc: any) => {
           const classId = tc.classId || tc.class?.id;
@@ -106,7 +113,6 @@ export default function AttendancePage() {
         });
       }
 
-      // From homeroom class (class the teacher manages as INSTRUCTOR)
       if (currentUser.teacher?.homeroomClassId) {
         classIdsSet.add(currentUser.teacher.homeroomClassId);
       }
@@ -118,110 +124,116 @@ export default function AttendancePage() {
     return [];
   }, [currentUser, classes]);
 
-  // Proactively load classes if empty
   useEffect(() => {
-    if (isAuthenticated && !authLoading && classes.length === 0 && !isLoadingClasses) {
+    if (
+      isAuthenticated &&
+      !authLoading &&
+      classes.length === 0 &&
+      !isLoadingClasses
+    ) {
       console.log("📚 Classes array is empty, fetching classes...");
       refreshClasses();
     }
-  }, [isAuthenticated, authLoading, classes.length, isLoadingClasses, refreshClasses]);
+  }, [
+    isAuthenticated,
+    authLoading,
+    classes.length,
+    isLoadingClasses,
+    refreshClasses,
+  ]);
 
-  useEffect(() => {
-    if (selectedClassId) {
-      fetchGridData();
+  const handleLoadData = async () => {
+    if (!selectedClassId || !currentUser) {
+      warning("សូមជ្រើសរើសថ្នាក់សិន");
+      return;
     }
-  }, [selectedClassId, selectedMonth, selectedYear]);
 
-  // Update fetchGridData function:
-
-  const fetchGridData = async () => {
     setLoading(true);
     setError(null);
-    try {
-      console.log("📡 Fetching attendance grid.. .");
-      console.log("  - Class ID:", selectedClassId);
-      console.log("  - Month:", selectedMonth);
-      console.log("  - Year:", selectedYear);
+    setGridData(null);
 
+    try {
       const data = await attendanceApi.getAttendanceGrid(
         selectedClassId,
         selectedMonth,
         selectedYear
       );
 
-      // ✅ LOG EVERYTHING
-      console.log("\n📊 ===== RAW API RESPONSE =====");
-      console.log("Full response:", JSON.stringify(data, null, 2)); // ✅ Pretty print
-      console.log("Response type:", typeof data);
-      console.log("Response keys:", Object.keys(data || {}));
-
-      if (data) {
-        console.log("\n📋 Response Details:");
-        console.log("  - classId:", data.classId);
-        console.log("  - className:", data.className);
-        console.log("  - month:", data.month);
-        console.log("  - year:", data.year);
-        console.log("  - daysInMonth:", data.daysInMonth);
-        console.log("  - days:", data.days);
-        console.log("  - students:", data.students?.length || 0);
-
-        if (data.students && data.students.length > 0) {
-          console.log("\n🔍 First Student Detail:");
-          const firstStudent = data.students[0];
-          console.log("  - Name:", firstStudent.studentName);
-          console.log("  - ID:", firstStudent.studentId);
-          console.log("  - Total Absent:", firstStudent.totalAbsent);
-          console.log("  - Total Permission:", firstStudent.totalPermission);
-          console.log(
-            "  - Attendance keys:",
-            Object.keys(firstStudent.attendance || {})
-          );
-
-          // Check if any day has data
-          const sampleDays = [1, 2, 3, 4, 5];
-          console.log("\n  Sample Days (1-5):");
-          sampleDays.forEach((day) => {
-            const att = firstStudent.attendance[day];
-            console.log(`    Day ${day}:`, att);
-          });
-        }
-      } else {
-        console.error("❌ Response is null or undefined!");
-      }
-
-      console.log("================================\n");
-
       setGridData(data);
+      success(
+        `ផ្ទុកទិន្នន័យបានជោគជ័យ • ${data.daysInMonth} ថ្ងៃ • ${
+          data.students?.length || 0
+        } សិស្ស`
+      );
     } catch (err: any) {
       console.error("❌ Error fetching attendance grid:", err);
-      console.error("Error details:", {
-        message: err.message,
-        stack: err.stack,
-      });
+      showError(`មានបញ្ហាក្នុងការទាញយកទិន្នន័យ: ${err.message}`);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveAttendance = async (attendance: BulkSaveAttendanceItem[]) => {
+  // ✅ UPDATED: Silent auto-save, only toast on manual save
+  const handleSaveAttendance = async (
+    attendance: BulkSaveAttendanceItem[],
+    isAutoSave: boolean = false
+  ) => {
     if (!gridData) return;
 
     try {
-      await attendanceApi.bulkSaveAttendance(
+      if (attendance.length === 0) {
+        // ❌ NO toast for auto-save
+        if (!isAutoSave) {
+          warning("សូមបញ្ចូលវត្តមានយ៉ាងហោចណាស់មួយ");
+        }
+        return;
+      }
+
+      console.log(
+        `💾 Saving ${attendance.length} attendance${
+          isAutoSave ? " (AUTO-SAVE - SILENT)" : " (MANUAL)"
+        }`
+      );
+
+      const result = await attendanceApi.bulkSaveAttendance(
         selectedClassId,
         selectedMonth,
         selectedYear,
         gridData.monthNumber,
         attendance
       );
+
+      const savedCount = result?.savedCount ?? attendance.length;
+      const errorCount = result?.errorCount ?? 0;
+
+      // ✅ ONLY show toast for MANUAL saves
+      if (!isAutoSave) {
+        if (errorCount > 0) {
+          warning(`រក្សាទុក ${savedCount} ជោគជ័យ, ${errorCount} មានកំហុស`);
+        } else {
+          success(`រក្សាទុកបានជោគជ័យ ${savedCount} វត្តមាន`);
+        }
+      } else {
+        // ❌ NO toast for auto-save - completely silent
+        console.log(`🔇 Auto-saved ${savedCount} silently`);
+      }
     } catch (err: any) {
-      setError(err.message);
-      throw err;
+      console.error(`❌ Save failed:`, err);
+
+      // ✅ ONLY show error for manual saves
+      if (!isAutoSave) {
+        showError(
+          `មានបញ្ហាក្នុងការរក្សាទុក: ${err.message || "Unknown error"}`
+        );
+        throw err;
+      } else {
+        console.error("🔇 Auto-save failed silently");
+      }
     }
   };
 
-  if (authLoading) {
+  if (authLoading || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
@@ -235,7 +247,7 @@ export default function AttendancePage() {
   if (!isAuthenticated) return null;
 
   const classOptions = isLoadingClasses
-    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    ? [{ value: "", label: "កំពុងផ្ទុក...  - Loading..." }]
     : [
         { value: "", label: "ជ្រើសរើសថ្នាក់" },
         ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
@@ -264,6 +276,36 @@ export default function AttendancePage() {
 
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1600px] mx-auto p-6 space-y-6">
+            {/* Teacher Info Box */}
+            {currentUser.role === "TEACHER" && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900 mb-2">
+                      ព័ត៌មានគ្រូបង្រៀន • Teacher Information
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-blue-800">
+                      <div>
+                        <p>
+                          <strong>ថ្នាក់រៀន:</strong> {availableClasses.length}{" "}
+                          ថ្នាក់
+                        </p>
+                      </div>
+                      <div>
+                        {currentUser.teacher?.homeroomClass && (
+                          <p>
+                            <strong>ថ្នាក់ប្រចាំ:</strong>{" "}
+                            {currentUser.teacher.homeroomClass.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Header */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-4 mb-6">
@@ -286,9 +328,13 @@ export default function AttendancePage() {
                   </label>
                   <select
                     value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedClassId(e.target.value);
+                      setGridData(null);
+                      setError(null);
+                    }}
                     disabled={isLoadingClasses}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus: ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -296,6 +342,13 @@ export default function AttendancePage() {
                       </option>
                     ))}
                   </select>
+                  {currentUser.role === "TEACHER" &&
+                    availableClasses.length === 0 && (
+                      <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        អ្នកមិនទាន់មានថ្នាក់ដែលបានចាត់តាំងទេ
+                      </p>
+                    )}
                 </div>
 
                 <div>
@@ -304,8 +357,12 @@ export default function AttendancePage() {
                   </label>
                   <select
                     value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setSelectedMonth(e.target.value);
+                      setGridData(null);
+                      setError(null);
+                    }}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus: ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {monthOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -321,8 +378,12 @@ export default function AttendancePage() {
                   </label>
                   <select
                     value={selectedYear.toString()}
-                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    onChange={(e) => {
+                      setSelectedYear(parseInt(e.target.value));
+                      setGridData(null);
+                      setError(null);
+                    }}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {yearOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -337,14 +398,14 @@ export default function AttendancePage() {
                     ផ្ទុកទិន្នន័យ
                   </label>
                   <button
-                    onClick={fetchGridData}
+                    onClick={handleLoadData}
                     disabled={!selectedClassId || loading}
-                    className="w-full h-11 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center gap-2"
+                    className="w-full h-11 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>កំពុងផ្ទុក... </span>
+                        <span>កំពុងផ្ទុក...</span>
                       </>
                     ) : (
                       <>
@@ -410,6 +471,9 @@ export default function AttendancePage() {
           </div>
         </main>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer />
     </div>
   );
 }
