@@ -129,7 +129,7 @@ export default function MobileAttendance({
       });
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
       );
 
       if (!response.ok) {
@@ -351,10 +351,10 @@ export default function MobileAttendance({
   return (
     <MobileLayout title="វត្តមាន • Attendance">
       <div className="flex flex-col h-full bg-gray-50">
-        {/* Filters Section */}
+        {/* Filters Section - FIXED AT TOP */}
         <div className="bg-white shadow-sm border-b border-gray-200 p-4 space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
+            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
               ថ្នាក់ • Class
             </label>
             <select
@@ -364,7 +364,7 @@ export default function MobileAttendance({
                 setStudents([]);
               }}
               disabled={isLoadingClasses}
-              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
+              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               style={{ fontSize: "16px" }}
             >
               <option value="">
@@ -439,10 +439,10 @@ export default function MobileAttendance({
           </button>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content - SCROLLABLE */}
         {students.length > 0 ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Day Navigator */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Day Navigator - SCROLLS WITH CONTENT */}
             <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-3 shadow-lg">
               <div className="flex items-center justify-between mb-3">
                 <button
@@ -471,7 +471,7 @@ export default function MobileAttendance({
                 </button>
               </div>
 
-              {/* Day Grid Selector */}
+              {/* Day Grid Selector - SCROLLS WITH CONTENT */}
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-2">
                 <div className="grid grid-cols-7 gap-1">
                   {daysArray.map((day) => (
@@ -490,7 +490,7 @@ export default function MobileAttendance({
                 </div>
               </div>
 
-              {/* Save Status */}
+              {/* Save Status - SCROLLS WITH CONTENT */}
               <div className="mt-3 flex items-center justify-center">
                 {saving ? (
                   <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
@@ -524,12 +524,12 @@ export default function MobileAttendance({
               </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - SCROLLS WITH CONTENT */}
             <div className="px-4 py-3 bg-white border-b border-gray-200">
               <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setAllStatus("PRESENT")}
-                  className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1. 5 transition-all active:scale-95 border border-green-200"
+                  className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-green-200"
                 >
                   <Check className="w-3. 5 h-3.5" />
                   All Present
@@ -551,7 +551,7 @@ export default function MobileAttendance({
               </div>
             </div>
 
-            {/* Summary Cards */}
+            {/* Summary Cards - SCROLLS WITH CONTENT */}
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-white rounded-lg p-2. 5 border border-gray-200 shadow-sm">
@@ -606,8 +606,8 @@ export default function MobileAttendance({
               </div>
             </div>
 
-            {/* Student List */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {/* Student List - SCROLLS WITH CONTENT */}
+            <div className="px-4 py-3 space-y-2">
               {students.map((student, index) => {
                 const status = student.dailyAttendance[currentDay] || "PRESENT";
 

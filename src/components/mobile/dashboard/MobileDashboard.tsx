@@ -224,56 +224,6 @@ export default function MobileDashboard({
         </div>
       </CollapsibleSection>
 
-      {/* Quick Actions - 2 Column Grid */}
-      <CollapsibleSection title="ចម្លើយរហ័ស" defaultOpen={true}>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => router.push("/students")}
-            className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 text-center touch-feedback border-2 border-blue-100"
-          >
-            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl inline-flex mb-2">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-khmer-body text-xs font-bold text-gray-900 block">
-              គ្រប់គ្រងសិស្ស
-            </span>
-          </button>
-          <button
-            onClick={() => router.push("/teachers")}
-            className="bg-gradient-to-br from-green-50 to-emerald-100/50 rounded-xl p-4 text-center touch-feedback border-2 border-green-100"
-          >
-            <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl inline-flex mb-2">
-              <UserCheck className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-khmer-body text-xs font-bold text-gray-900 block">
-              គ្រប់គ្រងគ្រូ
-            </span>
-          </button>
-          <button
-            onClick={() => router.push("/classes")}
-            className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 text-center touch-feedback border-2 border-purple-100"
-          >
-            <div className="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl inline-flex mb-2">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-khmer-body text-xs font-bold text-gray-900 block">
-              គ្រប់គ្រងថ្នាក់
-            </span>
-          </button>
-          <button
-            onClick={() => router.push("/subjects")}
-            className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-4 text-center touch-feedback border-2 border-orange-100"
-          >
-            <div className="p-2.5 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl inline-flex mb-2">
-              <BookOpen className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-khmer-body text-xs font-bold text-gray-900 block">
-              គ្រប់គ្រងមុខវិជ្ជា
-            </span>
-          </button>
-        </div>
-      </CollapsibleSection>
-
       {/* Analytics - Collapsible */}
       {dashboardStats && (
         <CollapsibleSection title="ការវិភាគ" defaultOpen={false}>
