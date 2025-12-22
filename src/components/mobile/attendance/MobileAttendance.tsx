@@ -129,7 +129,7 @@ export default function MobileAttendance({
       });
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
       );
 
       if (!response.ok) {
