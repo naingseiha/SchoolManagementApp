@@ -10,7 +10,6 @@ import {
   Calendar,
   Users,
   CheckCircle2,
-  XCircle,
   AlertCircle,
   Save,
 } from "lucide-react";
@@ -90,7 +89,7 @@ export default function MobileAttendance({
   const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [selectedClass, setSelectedClass] = useState(classId || "");
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Auto-select current month
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [currentDay, setCurrentDay] = useState(new Date().getDate());
 
@@ -101,7 +100,6 @@ export default function MobileAttendance({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoLoaded = useRef(false);
 
@@ -161,6 +159,7 @@ export default function MobileAttendance({
 
     setLoadingData(true);
     setError(null);
+    setHasUnsavedChanges(false); // Reset unsaved changes when loading new data
     try {
       console.log("📅 Loading attendance:", {
         classId: selectedClass,
@@ -170,7 +169,7 @@ export default function MobileAttendance({
       });
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
       );
 
       if (!response.ok) {
@@ -224,15 +223,15 @@ export default function MobileAttendance({
       );
 
       setStudents(studentsData);
-      setHasUnsavedChanges(false);
     } catch (error: any) {
       console.error("❌ Error loading attendance:", error);
-      setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ: ${error.message}`);
+      setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ:  ${error.message}`);
     } finally {
       setLoadingData(false);
     }
   };
 
+  // ✅ Toggle student status - NO AUTO SAVE
   const toggleStudentStatus = (studentId: string) => {
     setStudents((prev) =>
       prev.map((student) => {
@@ -257,30 +256,11 @@ export default function MobileAttendance({
       })
     );
 
+    // ✅ ONLY mark as unsaved - NO AUTO SAVE
     setHasUnsavedChanges(true);
-    triggerAutoSave();
   };
 
-  const triggerAutoSave = () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave();
-    }, 1500);
-  };
-
-  // ✅ Manual Save (for button click)
-  const handleManualSave = async () => {
-    // Cancel auto-save timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    await handleSave();
-  };
-
-  // ✅ Save function
+  // ✅ Manual Save - ONLY save when button clicked
   const handleSave = async () => {
     if (!hasUnsavedChanges) {
       // If no changes, just show success briefly
@@ -295,7 +275,7 @@ export default function MobileAttendance({
     try {
       const attendanceRecords: any[] = [];
 
-      // ✅ Save ONLY current day (not all days)
+      // ✅ Save ONLY current day
       students.forEach((student) => {
         const status = student.dailyAttendance[currentDay];
 
@@ -312,7 +292,7 @@ export default function MobileAttendance({
         });
       });
 
-      console.log("💾 Saving attendance (current day only):", {
+      console.log("💾 Saving attendance (manual save):", {
         classId: selectedClass,
         month: selectedMonth,
         year: selectedYear,
@@ -364,6 +344,7 @@ export default function MobileAttendance({
     }
   };
 
+  // ✅ Set all status - NO AUTO SAVE
   const setAllStatus = (status: AttendanceStatus) => {
     setStudents((prev) =>
       prev.map((student) => ({
@@ -374,8 +355,7 @@ export default function MobileAttendance({
         },
       }))
     );
-    setHasUnsavedChanges(true);
-    triggerAutoSave();
+    setHasUnsavedChanges(true); // Mark as unsaved only
   };
 
   const handlePrevDay = () => {
@@ -390,16 +370,14 @@ export default function MobileAttendance({
     setSelectedMonth(newMonth);
     setCurrentDay(1);
     setStudents([]);
-    hasAutoLoaded.current = true; // Allow reload
-    // Will auto-load via useEffect
+    hasAutoLoaded.current = true;
     setTimeout(() => loadAttendanceData(), 100);
   };
 
   const handleYearChange = (newYear: number) => {
     setSelectedYear(newYear);
     setStudents([]);
-    hasAutoLoaded.current = true; // Allow reload
-    // Will auto-load via useEffect
+    hasAutoLoaded.current = true;
     setTimeout(() => loadAttendanceData(), 100);
   };
 
@@ -415,7 +393,6 @@ export default function MobileAttendance({
 
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
     };
   }, []);
@@ -514,9 +491,9 @@ export default function MobileAttendance({
             </div>
           </div>
 
-          {/* ✅ SAVE BUTTON - STICKY WITH FILTERS */}
+          {/* ✅ SAVE BUTTON - MANUAL SAVE ONLY */}
           <button
-            onClick={handleManualSave}
+            onClick={handleSave}
             disabled={saving || (!hasUnsavedChanges && !saveSuccess)}
             className={`w-full h-12 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-md ${
               saving
@@ -524,14 +501,14 @@ export default function MobileAttendance({
                 : saveSuccess
                 ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
                 : hasUnsavedChanges
-                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
+                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 active:scale-95"
                 : "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed"
             }`}
           >
             {saving ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">កំពុងរក្សាទុក... </span>
+                <span className="text-sm">កំពុងរក្សាទុក...</span>
               </>
             ) : saveSuccess ? (
               <>
@@ -541,15 +518,24 @@ export default function MobileAttendance({
             ) : hasUnsavedChanges ? (
               <>
                 <Save className="w-5 h-5" />
-                <span className="text-sm">រក្សាទុក • Save Now</span>
+                <span className="text-sm">រក្សាទុក • Save Changes</span>
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">រួចរាល់ • All Saved</span>
+                <span className="text-sm">រួចរាល់ • No Changes</span>
               </>
             )}
           </button>
+
+          {/* Unsaved Changes Warning */}
+          {hasUnsavedChanges && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
+              <p className="text-xs text-orange-700 text-center flex items-center justify-center gap-1">
+                ⚠️ មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក • សូមចុច "រក្សាទុក"
+              </p>
+            </div>
+          )}
 
           {/* INSTRUCTOR Badge */}
           {currentUser?.role === "TEACHER" &&
