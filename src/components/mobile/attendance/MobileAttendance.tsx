@@ -10,8 +10,8 @@ import {
   Calendar,
   Users,
   CheckCircle2,
-  XCircle,
   AlertCircle,
+  Save,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -89,18 +89,20 @@ export default function MobileAttendance({
   const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [selectedClass, setSelectedClass] = useState(classId || "");
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Auto-select current month
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [currentDay, setCurrentDay] = useState(new Date().getDate());
 
   const [students, setStudents] = useState<StudentAttendance[]>([]);
+  const [originalStudents, setOriginalStudents] = useState<StudentAttendance[]>(
+    []
+  ); // ✅ Track original data
   const [loadingData, setLoadingData] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoLoaded = useRef(false);
 
@@ -155,11 +157,15 @@ export default function MobileAttendance({
   const loadAttendanceData = async () => {
     if (!selectedClass) {
       setStudents([]);
+      setOriginalStudents([]);
       return;
     }
 
     setLoadingData(true);
     setError(null);
+    setHasUnsavedChanges(false);
+    setSaveSuccess(false);
+
     try {
       console.log("📅 Loading attendance:", {
         classId: selectedClass,
@@ -223,6 +229,7 @@ export default function MobileAttendance({
       );
 
       setStudents(studentsData);
+      setOriginalStudents(JSON.parse(JSON.stringify(studentsData))); // ✅ Deep copy for comparison
       setHasUnsavedChanges(false);
     } catch (error: any) {
       console.error("❌ Error loading attendance:", error);
@@ -232,6 +239,7 @@ export default function MobileAttendance({
     }
   };
 
+  // ✅ Toggle student status (NO AUTO-SAVE)
   const toggleStudentStatus = (studentId: string) => {
     setStudents((prev) =>
       prev.map((student) => {
@@ -256,26 +264,18 @@ export default function MobileAttendance({
       })
     );
 
+    // ✅ Mark as unsaved
     setHasUnsavedChanges(true);
-    triggerAutoSave();
+    setSaveSuccess(false);
   };
 
-  const triggerAutoSave = () => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave();
-    }, 1500);
-  };
-
-  // ✅ FIXED: Save only current day (smaller payload)
-  const handleSave = async () => {
+  // ✅ MANUAL SAVE (Button click)
+  const handleManualSave = async () => {
     if (!hasUnsavedChanges) return;
 
     setSaving(true);
     setSaveSuccess(false);
+    setError(null);
 
     try {
       const attendanceRecords: any[] = [];
@@ -287,8 +287,8 @@ export default function MobileAttendance({
         let value = "";
         if (status === "ABSENT") value = "A";
         else if (status === "PERMISSION") value = "P";
+        // Empty string for PRESENT
 
-        // Save for morning session only
         attendanceRecords.push({
           studentId: student.studentId,
           day: currentDay,
@@ -297,7 +297,7 @@ export default function MobileAttendance({
         });
       });
 
-      console.log("💾 Saving attendance (current day only):", {
+      console.log("💾 Saving attendance (manual):", {
         classId: selectedClass,
         month: selectedMonth,
         year: selectedYear,
@@ -329,26 +329,30 @@ export default function MobileAttendance({
       const result = await response.json();
 
       if (result.success) {
-        setSaveSuccess(true);
+        // ✅ Update original data after successful save
+        setOriginalStudents(JSON.parse(JSON.stringify(students)));
         setHasUnsavedChanges(false);
+        setSaveSuccess(true);
 
+        // Hide success message after 3 seconds
         if (successTimeoutRef.current) {
           clearTimeout(successTimeoutRef.current);
         }
         successTimeoutRef.current = setTimeout(() => {
           setSaveSuccess(false);
-        }, 2000);
+        }, 3000);
       } else {
         throw new Error(result.message || "Save failed");
       }
     } catch (error: any) {
       console.error("❌ Save error:", error);
-      alert(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
+      setError(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
     } finally {
       setSaving(false);
     }
   };
 
+  // ✅ Set all students to same status
   const setAllStatus = (status: AttendanceStatus) => {
     setStudents((prev) =>
       prev.map((student) => ({
@@ -360,31 +364,94 @@ export default function MobileAttendance({
       }))
     );
     setHasUnsavedChanges(true);
-    triggerAutoSave();
+    setSaveSuccess(false);
   };
 
   const handlePrevDay = () => {
-    if (currentDay > 1) setCurrentDay((prev) => prev - 1);
+    if (currentDay > 1) {
+      if (hasUnsavedChanges) {
+        if (
+          !confirm(
+            "អ្នកមានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើអ្នកចង់បន្តដែរឬទេ?\n\nYou have unsaved changes. Continue anyway?"
+          )
+        ) {
+          return;
+        }
+      }
+      setCurrentDay((prev) => prev - 1);
+      setHasUnsavedChanges(false);
+      setSaveSuccess(false);
+    }
   };
 
   const handleNextDay = () => {
-    if (currentDay < daysInMonth) setCurrentDay((prev) => prev + 1);
+    if (currentDay < daysInMonth) {
+      if (hasUnsavedChanges) {
+        if (
+          !confirm(
+            "អ្នកមានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើអ្នកចង់បន្តដែរឬទេ?\n\nYou have unsaved changes. Continue anyway?"
+          )
+        ) {
+          return;
+        }
+      }
+      setCurrentDay((prev) => prev + 1);
+      setHasUnsavedChanges(false);
+      setSaveSuccess(false);
+    }
+  };
+
+  const handleDaySelect = (day: number) => {
+    if (hasUnsavedChanges) {
+      if (
+        !confirm(
+          "អ្នកមានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើអ្នកចង់បន្តដែរឬទេ?\n\nYou have unsaved changes. Continue anyway?"
+        )
+      ) {
+        return;
+      }
+    }
+    setCurrentDay(day);
+    setHasUnsavedChanges(false);
+    setSaveSuccess(false);
   };
 
   const handleMonthChange = (newMonth: string) => {
+    if (hasUnsavedChanges) {
+      if (
+        !confirm(
+          "អ្នកមានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើអ្នកចង់បន្តដែរឬទេ?\n\nYou have unsaved changes. Continue anyway?"
+        )
+      ) {
+        return;
+      }
+    }
     setSelectedMonth(newMonth);
     setCurrentDay(1);
     setStudents([]);
-    hasAutoLoaded.current = true; // Allow reload
-    // Will auto-load via useEffect
+    setOriginalStudents([]);
+    setHasUnsavedChanges(false);
+    setSaveSuccess(false);
+    hasAutoLoaded.current = true;
     setTimeout(() => loadAttendanceData(), 100);
   };
 
   const handleYearChange = (newYear: number) => {
+    if (hasUnsavedChanges) {
+      if (
+        !confirm(
+          "អ្នកមានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក។ តើអ្នកចង់បន្តដែរឬទេ?\n\nYou have unsaved changes. Continue anyway?"
+        )
+      ) {
+        return;
+      }
+    }
     setSelectedYear(newYear);
     setStudents([]);
-    hasAutoLoaded.current = true; // Allow reload
-    // Will auto-load via useEffect
+    setOriginalStudents([]);
+    setHasUnsavedChanges(false);
+    setSaveSuccess(false);
+    hasAutoLoaded.current = true;
     setTimeout(() => loadAttendanceData(), 100);
   };
 
@@ -400,7 +467,6 @@ export default function MobileAttendance({
 
   useEffect(() => {
     return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
     };
   }, []);
@@ -534,7 +600,7 @@ export default function MobileAttendance({
 
         {/* Main Content - SCROLLABLE */}
         {!loadingData && students.length > 0 ? (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto pb-20">
             {/* Day Navigator - SCROLLS WITH CONTENT */}
             <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-3 shadow-lg">
               <div className="flex items-center justify-between mb-3">
@@ -570,7 +636,7 @@ export default function MobileAttendance({
                   {daysArray.map((day) => (
                     <button
                       key={day}
-                      onClick={() => setCurrentDay(day)}
+                      onClick={() => handleDaySelect(day)}
                       className={`h-8 rounded-md text-xs font-semibold transition-all ${
                         day === currentDay
                           ? "bg-white text-indigo-600 shadow-md scale-110"
@@ -583,27 +649,20 @@ export default function MobileAttendance({
                 </div>
               </div>
 
-              {/* Save Status - SCROLLS WITH CONTENT */}
+              {/* Save Status Indicator */}
               <div className="mt-3 flex items-center justify-center">
-                {saving ? (
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                    <Loader2 className="w-3. 5 h-3.5 animate-spin text-white" />
+                {hasUnsavedChanges ? (
+                  <div className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1.5 rounded-full border border-yellow-300/50">
+                    <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
                     <span className="text-xs font-medium text-white">
-                      កំពុងរក្សាទុក...
+                      មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
                     </span>
                   </div>
                 ) : saveSuccess ? (
                   <div className="flex items-center gap-2 bg-green-500/90 px-3 py-1.5 rounded-full animate-in fade-in">
-                    <Check className="w-3.5 h-3.5 text-white" />
+                    <Check className="w-3. 5 h-3.5 text-white" />
                     <span className="text-xs font-medium text-white">
                       រក្សាទុករួចរាល់
-                    </span>
-                  </div>
-                ) : hasUnsavedChanges ? (
-                  <div className="flex items-center gap-2 bg-yellow-500/30 px-3 py-1.5 rounded-full border border-yellow-300/50">
-                    <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse" />
-                    <span className="text-xs font-medium text-white">
-                      មានការផ្លាស់ប្តូរ
                     </span>
                   </div>
                 ) : (
@@ -769,11 +828,43 @@ export default function MobileAttendance({
             <div className="text-center">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-sm font-medium text-gray-600">
-                ទិន្នន័យកំពុងផ្ទុក...
+                ទិន្នន័យកំពុងផ្ទុក...{" "}
               </p>
             </div>
           </div>
         ) : null}
+
+        {/* ✅ FIXED SAVE BUTTON AT BOTTOM */}
+        {!loadingData && students.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 shadow-2xl z-50">
+            <button
+              onClick={handleManualSave}
+              disabled={!hasUnsavedChanges || saving}
+              className={`w-full h-14 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg ${
+                hasUnsavedChanges
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white active:scale-98"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>កំពុងរក្សាទុក...</span>
+                </>
+              ) : hasUnsavedChanges ? (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>រក្សាទុក • Save Changes</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>រួចរាល់ • All Saved</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </MobileLayout>
   );
