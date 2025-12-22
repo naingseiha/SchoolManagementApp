@@ -1,8 +1,6 @@
-// 📂 src/components/mobile/attendance/MobileAttendance.tsx
-
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,6 +15,7 @@ import {
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
+import { useAuth } from "@/context/AuthContext";
 
 type AttendanceStatus = "PRESENT" | "ABSENT" | "PERMISSION";
 
@@ -87,6 +86,7 @@ export default function MobileAttendance({
   year,
 }: MobileAttendanceProps) {
   const { classes, isLoadingClasses, refreshClasses } = useData();
+  const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [selectedClass, setSelectedClass] = useState(classId || "");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Auto-select current month
@@ -98,9 +98,11 @@ export default function MobileAttendance({
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasAutoLoaded = useRef(false);
 
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
@@ -108,10 +110,47 @@ export default function MobileAttendance({
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
 
+  // ✅ Get homeroom class ID for INSTRUCTOR
+  const teacherHomeroomClassId = useMemo(() => {
+    if (currentUser?.role === "TEACHER") {
+      return currentUser.teacher?.homeroomClassId || null;
+    }
+    return null;
+  }, [currentUser]);
+
+  // ✅ Get class name
+  const selectedClassName = useMemo(() => {
+    const classObj = classes.find((c) => c.id === selectedClass);
+    return classObj?.name || "";
+  }, [classes, selectedClass]);
+
   const selectedMonthData = MONTHS.find((m) => m.value === selectedMonth);
   const monthNumber = selectedMonthData?.number || 1;
   const daysInMonth = new Date(selectedYear, monthNumber, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // ✅ Auto-select class for INSTRUCTOR and auto-load
+  useEffect(() => {
+    if (
+      !authLoading &&
+      currentUser &&
+      teacherHomeroomClassId &&
+      !selectedClass &&
+      !hasAutoLoaded.current
+    ) {
+      console.log("✅ Auto-selecting homeroom class:", teacherHomeroomClassId);
+      setSelectedClass(teacherHomeroomClassId);
+      hasAutoLoaded.current = true;
+    }
+  }, [authLoading, currentUser, teacherHomeroomClassId, selectedClass]);
+
+  // ✅ Auto-load data when class is selected
+  useEffect(() => {
+    if (selectedClass && !loadingData && hasAutoLoaded.current) {
+      console.log("✅ Auto-loading attendance data");
+      loadAttendanceData();
+    }
+  }, [selectedClass]);
 
   const loadAttendanceData = async () => {
     if (!selectedClass) {
@@ -120,6 +159,7 @@ export default function MobileAttendance({
     }
 
     setLoadingData(true);
+    setError(null);
     try {
       console.log("📅 Loading attendance:", {
         classId: selectedClass,
@@ -186,7 +226,7 @@ export default function MobileAttendance({
       setHasUnsavedChanges(false);
     } catch (error: any) {
       console.error("❌ Error loading attendance:", error);
-      alert(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ: ${error.message}`);
+      setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ: ${error.message}`);
     } finally {
       setLoadingData(false);
     }
@@ -331,6 +371,23 @@ export default function MobileAttendance({
     if (currentDay < daysInMonth) setCurrentDay((prev) => prev + 1);
   };
 
+  const handleMonthChange = (newMonth: string) => {
+    setSelectedMonth(newMonth);
+    setCurrentDay(1);
+    setStudents([]);
+    hasAutoLoaded.current = true; // Allow reload
+    // Will auto-load via useEffect
+    setTimeout(() => loadAttendanceData(), 100);
+  };
+
+  const handleYearChange = (newYear: number) => {
+    setSelectedYear(newYear);
+    setStudents([]);
+    hasAutoLoaded.current = true; // Allow reload
+    // Will auto-load via useEffect
+    setTimeout(() => loadAttendanceData(), 100);
+  };
+
   const currentDaySummary = {
     present: students.filter((s) => s.dailyAttendance[currentDay] === "PRESENT")
       .length,
@@ -348,48 +405,70 @@ export default function MobileAttendance({
     };
   }, []);
 
+  // ✅ Loading state
+  if (authLoading) {
+    return (
+      <MobileLayout title="វត្តមាន • Attendance">
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  // ✅ No permission state
+  if (
+    currentUser &&
+    !teacherHomeroomClassId &&
+    currentUser.role === "TEACHER"
+  ) {
+    return (
+      <MobileLayout title="វត្តមាន • Attendance">
+        <div className="flex items-center justify-center h-full p-8">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+            <p className="text-sm font-semibold text-gray-800 mb-2">
+              អ្នកមិនមានសិទ្ធិចូលប្រើប្រាស់
+            </p>
+            <p className="text-xs text-gray-600">
+              មានតែគ្រូប្រចាំថ្នាក់ (INSTRUCTOR) ទើបអាចបញ្ចូលអវត្តមានបាន
+            </p>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
+
   return (
     <MobileLayout title="វត្តមាន • Attendance">
       <div className="flex flex-col h-full bg-gray-50">
-        {/* Filters Section - FIXED AT TOP */}
+        {/* Filters Section - ONLY Month & Year (NO Class selector) */}
         <div className="bg-white shadow-sm border-b border-gray-200 p-4 space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-              ថ្នាក់ • Class
-            </label>
-            <select
-              value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setStudents([]);
-              }}
-              disabled={isLoadingClasses}
-              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              style={{ fontSize: "16px" }}
-            >
-              <option value="">
-                {isLoadingClasses ? "កំពុងផ្ទុក..." : "-- ជ្រើសរើសថ្នាក់ --"}
-              </option>
-              {!isLoadingClasses &&
-                classes.map((cls) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+          {/* Class Info (Read-only) */}
+          {selectedClassName && (
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-3">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-indigo-600" />
+                <div>
+                  <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
+                    ថ្នាក់របស់អ្នក • Your Class
+                  </p>
+                  <p className="text-sm font-bold text-gray-900 mt-0.5">
+                    {selectedClassName}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
                 ខែ • Month
               </label>
               <select
                 value={selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(e.target.value);
-                  setCurrentDay(1);
-                }}
+                onChange={(e) => handleMonthChange(e.target.value)}
                 className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 style={{ fontSize: "16px" }}
               >
@@ -407,8 +486,8 @@ export default function MobileAttendance({
               </label>
               <select
                 value={selectedYear.toString()}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
+                onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 style={{ fontSize: "16px" }}
               >
                 {getAcademicYearOptions().map((option) => (
@@ -420,27 +499,41 @@ export default function MobileAttendance({
             </div>
           </div>
 
-          <button
-            onClick={loadAttendanceData}
-            disabled={!selectedClass || loadingData}
-            className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg shadow-md flex items-center justify-center gap-2 transition-all"
-          >
-            {loadingData ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">កំពុងផ្ទុក...</span>
-              </>
-            ) : (
-              <>
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm">ផ្ទុកទិន្នន័យ</span>
-              </>
+          {/* INSTRUCTOR Badge */}
+          {currentUser?.role === "TEACHER" &&
+            teacherHomeroomClassId === selectedClass && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-2">
+                <p className="text-xs text-green-700 text-center flex items-center justify-center gap-1">
+                  🏠 អ្នកគឺជា INSTRUCTOR - គ្រប់គ្រងអវត្តមានថ្នាក់នេះ
+                </p>
+              </div>
             )}
-          </button>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3 m-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loadingData && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-3" />
+              <p className="text-sm font-medium text-gray-600">
+                កំពុងផ្ទុកទិន្នន័យ...{" "}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Main Content - SCROLLABLE */}
-        {students.length > 0 ? (
+        {!loadingData && students.length > 0 ? (
           <div className="flex-1 overflow-y-auto">
             {/* Day Navigator - SCROLLS WITH CONTENT */}
             <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-3 shadow-lg">
@@ -671,25 +764,16 @@ export default function MobileAttendance({
               })}
             </div>
           </div>
-        ) : selectedClass && !loadingData ? (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-sm font-medium text-gray-600">
-                ចុច "ផ្ទុកទិន្នន័យ" ដើម្បីចាប់ផ្តើម
-              </p>
-            </div>
-          </div>
-        ) : (
+        ) : !loadingData && !error ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-sm font-medium text-gray-600">
-                សូមជ្រើសរើសថ្នាក់ដើម្បីចាប់ផ្តើម
+                ទិន្នន័យកំពុងផ្ទុក...
               </p>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </MobileLayout>
   );
