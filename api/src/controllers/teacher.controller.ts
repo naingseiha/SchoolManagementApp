@@ -77,7 +77,9 @@ export const getTeachersLightweight = async (req: Request, res: Response) => {
       teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
     }));
 
-    console.log(`⚡ Fetched ${transformedTeachers.length} teachers (lightweight)`);
+    console.log(
+      `⚡ Fetched ${transformedTeachers.length} teachers (lightweight)`
+    );
 
     res.json({
       success: true,
@@ -347,7 +349,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       phone,
       gender,
       role,
-      employeeId, // Can be null - will auto-generate
+      employeeId,
       position,
       address,
       dateOfBirth,
@@ -355,7 +357,6 @@ export const createTeacher = async (req: Request, res: Response) => {
       homeroomClassId,
       subjectIds,
       teachingClassIds,
-      // Additional fields
       workingLevel,
       salaryRange,
       major1,
@@ -383,7 +384,6 @@ export const createTeacher = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Phone is REQUIRED for login
     if (!phone || phone.trim() === "") {
       return res.status(400).json({
         success: false,
@@ -497,10 +497,7 @@ export const createTeacher = async (req: Request, res: Response) => {
     let finalEmployeeId = employeeId?.trim() || null;
 
     if (!finalEmployeeId) {
-      // Get current year
-      const year = new Date().getFullYear().toString().slice(-2); // "25" for 2025
-
-      // Get count of teachers created this year
+      const year = new Date().getFullYear().toString().slice(-2);
       const teacherCount = await prisma.teacher.count({
         where: {
           createdAt: {
@@ -508,21 +505,24 @@ export const createTeacher = async (req: Request, res: Response) => {
           },
         },
       });
-
-      // Generate:  T + YY + 4-digit sequence
-      // Example: T2500001, T2500002, etc.
       const sequence = (teacherCount + 1).toString().padStart(5, "0");
       finalEmployeeId = `T${year}${sequence}`;
 
       console.log(`🆔 Auto-generated Employee ID: ${finalEmployeeId}`);
     }
 
-    // ✅ Create teacher + User account in transaction with LONGER timeout
+    // ✅ Create teacher + User account in transaction
     const result = await prisma.$transaction(
       async (tx) => {
         // 1. Create Teacher
+        const now = new Date();
+        const teacherId = randomUUID();
+
         const teacher = await tx.teacher.create({
           data: {
+            id: teacherId,
+            createdAt: now,
+            updatedAt: now,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             khmerName: khmerName?.trim() || null,
@@ -531,13 +531,11 @@ export const createTeacher = async (req: Request, res: Response) => {
             phone: phone.trim(),
             gender: gender || null,
             role: role || "TEACHER",
-            employeeId: finalEmployeeId, // ✅ Auto-generated or provided
+            employeeId: finalEmployeeId,
             position: position?.trim() || null,
             address: address?.trim() || null,
             dateOfBirth: dateOfBirth || null,
             hireDate: hireDate || null,
-
-            // New fields
             workingLevel: workingLevel || null,
             salaryRange: salaryRange?.trim() || null,
             major1: major1?.trim() || null,
@@ -548,20 +546,25 @@ export const createTeacher = async (req: Request, res: Response) => {
             passport: passport?.trim() || null,
             emergencyContact: emergencyContact?.trim() || null,
             emergencyPhone: emergencyPhone?.trim() || null,
-
             homeroomClassId: homeroomClassId || null,
 
             // Subject assignments
             subjectTeachers: {
               create: (subjectIds || []).map((subjectId: string) => ({
+                id: randomUUID(),
                 subjectId,
+                createdAt: now,
+                updatedAt: now,
               })),
             },
 
             // Teaching class assignments
             teacherClasses: {
               create: (teachingClassIds || []).map((classId: string) => ({
+                id: randomUUID(),
                 classId,
+                createdAt: now,
+                updatedAt: now,
               })),
             },
           },
@@ -576,19 +579,21 @@ export const createTeacher = async (req: Request, res: Response) => {
           },
         });
 
-        // 2. Create User account (phone login)
-        // ✅ Default password = phone number
+        // 2. Create User account
         const hashedPassword = await bcrypt.hash(phone.trim(), 10);
 
         const user = await tx.user.create({
           data: {
+            id: randomUUID(),
+            createdAt: now,
+            updatedAt: now,
             phone: phone.trim(),
             email: email?.trim() || null,
             password: hashedPassword,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
             role: "TEACHER",
-            teacherId: teacher.id,
+            teacherId: teacherId,
             permissions: {
               canEnterGrades: true,
               canMarkAttendance: true,
@@ -602,8 +607,8 @@ export const createTeacher = async (req: Request, res: Response) => {
         return { teacher, user, defaultPassword: phone.trim() };
       },
       {
-        maxWait: 15000, // ✅ Wait up to 15 seconds to acquire transaction
-        timeout: 20000, // ✅ Transaction can run up to 20 seconds
+        maxWait: 15000,
+        timeout: 20000,
       }
     );
 
@@ -620,7 +625,7 @@ export const createTeacher = async (req: Request, res: Response) => {
       loginInfo: {
         phone: result.user.phone,
         email: result.user.email,
-        employeeId: result.teacher.employeeId, // ✅ Include in response
+        employeeId: result.teacher.employeeId,
         defaultPassword: result.defaultPassword,
         message:
           "លេខទូរស័ព្ទ = ឈ្មោះប្រើប្រាស់\nពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នានឹងលេខទូរស័ព្ទ\nអាចប្តូរពាក្យសម្ងាត់នៅពេលក្រោយ",
@@ -1217,6 +1222,9 @@ export const bulkCreateTeachers = async (req: Request, res: Response) => {
 
             await tx.user.create({
               data: {
+                id: randomUUID(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
                 phone: teacherData.phone.trim(),
                 email: teacherData.email?.trim() || null,
                 password: hashedPassword,
@@ -1449,7 +1457,9 @@ export const bulkUpdateTeachers = async (req: Request, res: Response) => {
           });
 
           console.log(
-            `  ✅ Updated: ${updatedTeacher.khmerName || updatedTeacher.firstName}`
+            `  ✅ Updated: ${
+              updatedTeacher.khmerName || updatedTeacher.firstName
+            }`
           );
         } catch (error: any) {
           results.failed.push({

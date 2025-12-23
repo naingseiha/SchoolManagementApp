@@ -186,18 +186,18 @@ function Sidebar() {
       } relative flex flex-col h-screen`}
     >
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Khmer+OS+Muol+Light&family=Khmer+OS+Battambang&family=Khmer+OS+Koulen&display=swap');
+        @import url("https://fonts.googleapis.com/css2?family=Battambang:wght@100;300;400;700;900&family=Bokor&family=Koulen&family=Metal&family=Moul&display=swap");
 
         .font-khmer-title {
-          font-family: 'Khmer OS Muol Light', serif;
+          font-family: "Khmer OS Muol Light", "Muol", serif;
         }
 
         .font-khmer-menu {
-          font-family: 'Khmer OS Koulen', sans-serif;
+          font-family: "Khmer OS Koulen", "Koulen", sans-serif;
         }
 
         .font-khmer-body {
-          font-family: 'Khmer OS Battambang', sans-serif;
+          font-family: "Khmer OS Battambang", sans-serif;
         }
       `}</style>
 
@@ -244,7 +244,10 @@ function Sidebar() {
               មិនមានម៉ឺនុយ
             </p>
             <p className="font-khmer-body text-xs text-white/70 mb-3">
-              តួនាទី: <span className="font-medium text-yellow-300">{userRole || "មិនស្គាល់"}</span>
+              តួនាទី:{" "}
+              <span className="font-medium text-yellow-300">
+                {userRole || "មិនស្គាល់"}
+              </span>
             </p>
           </div>
         ) : (

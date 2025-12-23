@@ -14,26 +14,26 @@
 
   /* Khmer heading font - Dashboard titles */
   .khmer-title {
-    font-family: "Khmer OS Muol Light", serif;
+    font-family: "Khmer OS Muol Light", "Muol", serif;
     font-weight: 300;
   }
 
   /* Khmer font for Header - Khmer OS Bokor */
   .khmer-header {
-    font-family: "Khmer OS Bokor", cursive;
+    font-family: "Khmer OS Bokor", "Bokor", cursive;
     font-weight: 400;
     letter-spacing: 1px;
   }
 
   /* Khmer font for Sidebar - Metal Chrieng */
   .khmer-sidebar {
-    font-family: "Khmer OS Metal Chrieng", cursive;
+    font-family: "Khmer OS Metal Chrieng", "Metal Chrieng", cursive;
     font-weight: 400;
   }
 
   /* Khmer font for regular text - Khmer OS Battambang */
   .khmer-text {
-    font-family: "Khmer OS Battambang", sans-serif;
+    font-family: "Khmer OS Battambang", "Battambang", sans-serif;
     font-weight: 400;
   }
 
