@@ -2,44 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+/* Import Google Fonts - Khmer & English */
+@import url('https://fonts.googleapis.com/css2?family=Moul&family=Bokor&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50;
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
+    @apply bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50 font-battambang;
   }
 
-  /* Khmer heading font - Dashboard titles */
+  /* Heading 1 - Moul (Display/Title) */
+  h1, .heading-1 {
+    @apply font-moul;
+    font-weight: 400;
+  }
+
+  /* Heading 2 - Bokor (Subtitle) */
+  h2, .heading-2 {
+    @apply font-bokor;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  /* Heading 3-6 - Battambang Bold */
+  h3, h4, h5, h6, .heading-3, .heading-4, .heading-5, .heading-6 {
+    @apply font-battambang font-bold;
+  }
+
+  /* Legacy class names for backward compatibility */
   .khmer-title {
-    font-family: "Khmer OS Muol Light", "Muol", serif;
-    font-weight: 300;
+    @apply font-moul;
   }
 
-  /* Khmer font for Header - Khmer OS Bokor */
   .khmer-header {
-    font-family: "Khmer OS Bokor", "Bokor", cursive;
-    font-weight: 400;
-    letter-spacing: 1px;
+    @apply font-bokor;
+    letter-spacing: 0.5px;
   }
 
-  /* Khmer font for Sidebar - Metal Chrieng */
   .khmer-sidebar {
-    font-family: "Khmer OS Metal Chrieng", "Metal Chrieng", cursive;
-    font-weight: 400;
+    @apply font-koulen;
   }
 
-  /* Khmer font for regular text - Khmer OS Battambang */
   .khmer-text {
-    font-family: "Khmer OS Battambang", "Battambang", sans-serif;
-    font-weight: 400;
+    @apply font-battambang;
   }
 
   /* English modern font */
   .english-modern {
-    font-family: "Poppins", sans-serif;
+    @apply font-poppins;
   }
 
   /* ============================================

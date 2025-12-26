@@ -71,18 +71,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Khmer+OS+Muol+Light&family=Khmer+OS+Battambang&display=swap');
-
-        .font-khmer-title {
-          font-family: 'Khmer OS Muol Light', serif;
-        }
-
-        .font-khmer-body {
-          font-family: 'Khmer OS Battambang', sans-serif;
-        }
-      `}</style>
-
       {/* Animated Background Pattern */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-30">

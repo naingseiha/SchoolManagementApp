@@ -185,21 +185,6 @@ function Sidebar() {
         isCollapsed ? "w-20" : "w-72"
       } relative flex flex-col h-screen`}
     >
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Battambang:wght@100;300;400;700;900&family=Bokor&family=Koulen&family=Metal&family=Moul&display=swap");
-
-        .font-khmer-title {
-          font-family: "Khmer OS Muol Light", "Muol", serif;
-        }
-
-        .font-khmer-menu {
-          font-family: "Khmer OS Koulen", "Koulen", sans-serif;
-        }
-
-        .font-khmer-body {
-          font-family: "Khmer OS Battambang", sans-serif;
-        }
-      `}</style>
 
       {/* Sidebar Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-white/20 bg-black/10 backdrop-blur-md">
@@ -212,7 +197,7 @@ function Sidebar() {
               <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
             </div>
             <div>
-              <h1 className="font-khmer-title text-base text-white drop-shadow-lg">
+              <h1 className="font-moul text-base text-white drop-shadow-lg">
                 ប្រព័ន្ធគ្រប់គ្រង
               </h1>
             </div>
@@ -240,10 +225,10 @@ function Sidebar() {
                 <span className="text-4xl">⚠️</span>
               </div>
             </div>
-            <p className="font-khmer-body font-semibold text-white mb-2">
+            <p className="font-battambang font-semibold text-white mb-2">
               មិនមានម៉ឺនុយ
             </p>
-            <p className="font-khmer-body text-xs text-white/70 mb-3">
+            <p className="font-battambang text-xs text-white/70 mb-3">
               តួនាទី:{" "}
               <span className="font-medium text-yellow-300">
                 {userRole || "មិនស្គាល់"}
@@ -298,7 +283,7 @@ function Sidebar() {
                 {!isCollapsed && (
                   <div className="flex-1 relative z-10">
                     <p
-                      className={`font-khmer-menu text-sm transition-colors ${
+                      className={`font-koulen text-sm transition-colors ${
                         isActive ? "text-indigo-600" : "text-white"
                       }`}
                     >
@@ -347,12 +332,12 @@ function Sidebar() {
             {/* User Details */}
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="font-khmer-body text-xs font-bold text-white truncate mb-1">
+                <p className="font-battambang text-xs font-bold text-white truncate mb-1">
                   {currentUser.firstName} {currentUser.lastName}
                 </p>
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-khmer-body font-semibold bg-white/20 text-white`}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-battambang font-semibold bg-white/20 text-white`}
                   >
                     <Sparkles className="w-2.5 h-2.5 mr-0.5" />
                     {roleInfo.khmerLabel}

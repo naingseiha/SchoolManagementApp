@@ -153,18 +153,6 @@ export default function DashboardPage() {
   return (
     <ErrorBoundary>
       <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
-        <style jsx global>{`
-          @import url("https://fonts.googleapis.com/css2?family=Battambang:wght@100;300;400;700;900&family=Bokor&family=Koulen&family=Metal&family=Moul&display=swap");
-
-          .font-khmer-title {
-            font-family: "Khmer OS Muol Light", "Muol", serif;
-          }
-
-          .font-khmer-body {
-            font-family: "Khmer OS Battambang", "Battambang", sans-serif;
-          }
-        `}</style>
-
         <Sidebar />
         <div className="flex-1">
           <Header />
