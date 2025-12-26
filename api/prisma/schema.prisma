@@ -8,14 +8,14 @@ datasource db {
 }
 
 model Attendance {
-  id        String            @id
+  id        String            @id @default(cuid())
   studentId String
   classId   String?
   date      DateTime
   status    AttendanceStatus
   remarks   String?
   createdAt DateTime          @default(now())
-  updatedAt DateTime
+  updatedAt DateTime          @updatedAt
   session   AttendanceSession @default(MORNING)
   class     Class?            @relation(fields: [classId], references: [id])
   student   Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -26,7 +26,7 @@ model Attendance {
 }
 
 model Class {
-  id                        String                   @id
+  id                        String                   @id @default(cuid())
   classId                   String?                  @unique
   name                      String
   grade                     String
@@ -34,7 +34,7 @@ model Class {
   academicYear              String                   @default("2024-2025")
   capacity                  Int?
   createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime
+  updatedAt                 DateTime                 @updatedAt
   track                     String?
   homeroomTeacherId         String?                  @unique
   attendance                Attendance[]
@@ -48,7 +48,7 @@ model Class {
 }
 
 model Grade {
-  id            String   @id
+  id            String   @id @default(cuid())
   studentId     String
   subjectId     String
   classId       String
@@ -61,7 +61,7 @@ model Grade {
   weightedScore Float?
   remarks       String?
   createdAt     DateTime @default(now())
-  updatedAt     DateTime
+  updatedAt     DateTime @updatedAt
   class         Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
   student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
@@ -72,7 +72,7 @@ model Grade {
 }
 
 model StudentMonthlySummary {
-  id                 String   @id
+  id                 String   @id @default(cuid())
   studentId          String
   classId            String
   month              String
@@ -86,7 +86,7 @@ model StudentMonthlySummary {
   classRank          Int?
   gradeLevel         String?
   createdAt          DateTime @default(now())
-  updatedAt          DateTime
+  updatedAt          DateTime @updatedAt
   class              Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
   student            Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -96,7 +96,7 @@ model StudentMonthlySummary {
 }
 
 model Student {
-  id                        String                   @id
+  id                        String                   @id @default(cuid())
   studentId                 String?                  @unique
   firstName                 String
   lastName                  String
@@ -117,7 +117,7 @@ model Student {
   remarks                   String?
   photoUrl                  String?
   createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime
+  updatedAt                 DateTime                 @updatedAt
   grade12ExamCenter         String?
   grade12ExamDesk           String?
   grade12ExamRoom           String?
@@ -142,11 +142,11 @@ model Student {
 }
 
 model SubjectTeacher {
-  id        String   @id
+  id        String   @id @default(cuid())
   subjectId String
   teacherId String
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
@@ -155,7 +155,7 @@ model SubjectTeacher {
 }
 
 model Subject {
-  id              String           @id
+  id              String           @id @default(cuid())
   name            String
   nameKh          String
   nameEn          String?
@@ -170,7 +170,7 @@ model Subject {
   coefficient     Float            @default(1.0)
   isActive        Boolean          @default(true)
   createdAt       DateTime         @default(now())
-  updatedAt       DateTime
+  updatedAt       DateTime         @updatedAt
   grades          Grade[]
   subjectTeachers SubjectTeacher[]
 
@@ -178,11 +178,11 @@ model Subject {
 }
 
 model TeacherClass {
-  id        String   @id
+  id        String   @id @default(cuid())
   teacherId String
   classId   String
   createdAt DateTime @default(now())
-  updatedAt DateTime
+  updatedAt DateTime @updatedAt
   class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
@@ -191,7 +191,7 @@ model TeacherClass {
 }
 
 model Teacher {
-  id               String           @id
+  id               String           @id @default(cuid())
   teacherId        String?          @unique
   firstName        String
   lastName         String
@@ -203,7 +203,7 @@ model Teacher {
   dateOfBirth      String?
   position         String?
   createdAt        DateTime         @default(now())
-  updatedAt        DateTime
+  updatedAt        DateTime         @updatedAt
   address          String?
   hireDate         String?
   homeroomClassId  String?          @unique
@@ -229,13 +229,13 @@ model Teacher {
 }
 
 model User {
-  id             String    @id
+  id             String    @id @default(cuid())
   email          String?   @unique
   password       String
   firstName      String
   lastName       String
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime
+  updatedAt      DateTime  @updatedAt
   failedAttempts Int       @default(0)
   isActive       Boolean   @default(true)
   lastLogin      DateTime?
