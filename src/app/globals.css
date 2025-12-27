@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Import Google Fonts - Khmer & English */
-@import url('https://fonts.googleapis.com/css2?family=Moul&family=Bokor&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Moul&family=Bokor&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 
 @layer base {
   body {
@@ -11,20 +11,29 @@
   }
 
   /* Heading 1 - Moul (Display/Title) */
-  h1, .heading-1 {
+  h1,
+  .heading-1 {
     @apply font-moul;
     font-weight: 400;
   }
 
   /* Heading 2 - Bokor (Subtitle) */
-  h2, .heading-2 {
+  h2,
+  .heading-2 {
     @apply font-bokor;
     font-weight: 400;
     letter-spacing: 0.5px;
   }
 
   /* Heading 3-6 - Battambang Bold */
-  h3, h4, h5, h6, .heading-3, .heading-4, .heading-5, .heading-6 {
+  h3,
+  h4,
+  h5,
+  h6,
+  .heading-3,
+  .heading-4,
+  .heading-5,
+  .heading-6 {
     @apply font-battambang font-bold;
   }
 

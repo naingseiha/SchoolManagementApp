@@ -2,8 +2,8 @@ export function getKhmerShortName(code: string): string {
   const baseCode = code.split("-")[0];
 
   const khmerNames: { [key: string]: string } = {
-    WRITING: "តែង.  ក្តី",
-    WRITER: "ស.  អាន",
+    WRITING: "ស.  អាន",
+    WRITER: "តែង.  ក្តី",
     DICTATION: "ចំ. តាម",
     KHM: "ភាសាខ្មែរ",
     MATH: "គណិត",

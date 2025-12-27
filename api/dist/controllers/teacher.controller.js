@@ -327,10 +327,7 @@ const createTeacher = async (req, res) => {
         console.log("📥 CREATE TEACHER - Request body:");
         console.log(JSON.stringify(req.body, null, 2));
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        const { firstName, lastName, khmerName, englishName, email, phone, gender, role, employeeId, // Can be null - will auto-generate
-        position, address, dateOfBirth, hireDate, homeroomClassId, subjectIds, teachingClassIds, 
-        // Additional fields
-        workingLevel, salaryRange, major1, major2, degree, nationality, idCard, passport, emergencyContact, emergencyPhone, } = req.body;
+        const { firstName, lastName, khmerName, englishName, email, phone, gender, role, employeeId, position, address, dateOfBirth, hireDate, homeroomClassId, subjectIds, teachingClassIds, workingLevel, salaryRange, major1, major2, degree, nationality, idCard, passport, emergencyContact, emergencyPhone, } = req.body;
         // ✅ Validate required fields
         if (!firstName || firstName.trim() === "") {
             return res.status(400).json({
@@ -344,7 +341,6 @@ const createTeacher = async (req, res) => {
                 message: "Last name is required",
             });
         }
-        // ✅ Phone is REQUIRED for login
         if (!phone || phone.trim() === "") {
             return res.status(400).json({
                 success: false,
@@ -442,9 +438,7 @@ const createTeacher = async (req, res) => {
         // ✅ AUTO-GENERATE Employee ID if not provided
         let finalEmployeeId = employeeId?.trim() || null;
         if (!finalEmployeeId) {
-            // Get current year
-            const year = new Date().getFullYear().toString().slice(-2); // "25" for 2025
-            // Get count of teachers created this year
+            const year = new Date().getFullYear().toString().slice(-2);
             const teacherCount = await prisma.teacher.count({
                 where: {
                     createdAt: {
@@ -452,17 +446,20 @@ const createTeacher = async (req, res) => {
                     },
                 },
             });
-            // Generate:  T + YY + 4-digit sequence
-            // Example: T2500001, T2500002, etc.
             const sequence = (teacherCount + 1).toString().padStart(5, "0");
             finalEmployeeId = `T${year}${sequence}`;
             console.log(`🆔 Auto-generated Employee ID: ${finalEmployeeId}`);
         }
-        // ✅ Create teacher + User account in transaction with LONGER timeout
+        // ✅ Create teacher + User account in transaction
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create Teacher
+            const now = new Date();
+            const teacherId = (0, crypto_1.randomUUID)();
             const teacher = await tx.teacher.create({
                 data: {
+                    id: teacherId,
+                    createdAt: now,
+                    updatedAt: now,
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
                     khmerName: khmerName?.trim() || null,
@@ -471,12 +468,11 @@ const createTeacher = async (req, res) => {
                     phone: phone.trim(),
                     gender: gender || null,
                     role: role || "TEACHER",
-                    employeeId: finalEmployeeId, // ✅ Auto-generated or provided
+                    employeeId: finalEmployeeId,
                     position: position?.trim() || null,
                     address: address?.trim() || null,
                     dateOfBirth: dateOfBirth || null,
                     hireDate: hireDate || null,
-                    // New fields
                     workingLevel: workingLevel || null,
                     salaryRange: salaryRange?.trim() || null,
                     major1: major1?.trim() || null,
@@ -491,13 +487,19 @@ const createTeacher = async (req, res) => {
                     // Subject assignments
                     subjectTeachers: {
                         create: (subjectIds || []).map((subjectId) => ({
+                            id: (0, crypto_1.randomUUID)(),
                             subjectId,
+                            createdAt: now,
+                            updatedAt: now,
                         })),
                     },
                     // Teaching class assignments
                     teacherClasses: {
                         create: (teachingClassIds || []).map((classId) => ({
+                            id: (0, crypto_1.randomUUID)(),
                             classId,
+                            createdAt: now,
+                            updatedAt: now,
                         })),
                     },
                 },
@@ -511,18 +513,20 @@ const createTeacher = async (req, res) => {
                     },
                 },
             });
-            // 2. Create User account (phone login)
-            // ✅ Default password = phone number
+            // 2. Create User account
             const hashedPassword = await bcryptjs_1.default.hash(phone.trim(), 10);
             const user = await tx.user.create({
                 data: {
+                    id: (0, crypto_1.randomUUID)(),
+                    createdAt: now,
+                    updatedAt: now,
                     phone: phone.trim(),
                     email: email?.trim() || null,
                     password: hashedPassword,
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
                     role: "TEACHER",
-                    teacherId: teacher.id,
+                    teacherId: teacherId,
                     permissions: {
                         canEnterGrades: true,
                         canMarkAttendance: true,
@@ -534,8 +538,8 @@ const createTeacher = async (req, res) => {
             });
             return { teacher, user, defaultPassword: phone.trim() };
         }, {
-            maxWait: 15000, // ✅ Wait up to 15 seconds to acquire transaction
-            timeout: 20000, // ✅ Transaction can run up to 20 seconds
+            maxWait: 15000,
+            timeout: 20000,
         });
         console.log("✅ Teacher created successfully:", result.teacher.id);
         console.log("✅ Employee ID:", result.teacher.employeeId);
@@ -549,7 +553,7 @@ const createTeacher = async (req, res) => {
             loginInfo: {
                 phone: result.user.phone,
                 email: result.user.email,
-                employeeId: result.teacher.employeeId, // ✅ Include in response
+                employeeId: result.teacher.employeeId,
                 defaultPassword: result.defaultPassword,
                 message: "លេខទូរស័ព្ទ = ឈ្មោះប្រើប្រាស់\nពាក្យសម្ងាត់លើកដំបូគឺដូចគ្នានឹងលេខទូរស័ព្ទ\nអាចប្តូរពាក្យសម្ងាត់នៅពេលក្រោយ",
             },
@@ -1031,6 +1035,9 @@ const bulkCreateTeachers = async (req, res) => {
                     const hashedPassword = await bcryptjs_1.default.hash(teacherData.phone.trim(), 10);
                     await tx.user.create({
                         data: {
+                            id: (0, crypto_1.randomUUID)(),
+                            createdAt: new Date(),
+                            updatedAt: new Date(),
                             phone: teacherData.phone.trim(),
                             email: teacherData.email?.trim() || null,
                             password: hashedPassword,

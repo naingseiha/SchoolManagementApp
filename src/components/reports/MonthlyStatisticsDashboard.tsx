@@ -75,7 +75,7 @@ export default function MonthlyStatisticsDashboard({
             <BarChart3 className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h2 className="text-3xl font-black">📊 ស្ថិតិថ្នាក់</h2>
+            <h3 className="text-3xl font-black">📊 ស្ថិតិថ្នាក់</h3>
             <p className="text-white/90 text-lg font-semibold">
               {data.className} • {data.month} {data.year}
             </p>

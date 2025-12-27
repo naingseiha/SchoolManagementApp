@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AttendanceController = void 0;
 const client_1 = require("@prisma/client");
+const uuid_1 = require("uuid");
 const prisma = new client_1.PrismaClient();
 // api/src/controllers/attendance.controller.ts
 class AttendanceController {
@@ -200,35 +201,55 @@ class AttendanceController {
                                 session: sessionEnum,
                             },
                         });
+                        savedCount++; // Count deletions as successful
                     }
                     else {
-                        // ✅ FIXED: Use correct unique constraint name
-                        await prisma.attendance.upsert({
+                        // ✅ FIXED: Check if record exists first
+                        const existingRecord = await prisma.attendance.findFirst({
                             where: {
-                                studentId_classId_date_session: {
-                                    // ⭐ This will work after migration
+                                studentId,
+                                classId,
+                                date: {
+                                    gte: new Date(year, monthNumber - 1, day, 0, 0, 0),
+                                    lt: new Date(year, monthNumber - 1, day + 1, 0, 0, 0),
+                                },
+                                session: sessionEnum,
+                            },
+                        });
+                        if (existingRecord) {
+                            // ✅ UPDATE existing record
+                            await prisma.attendance.update({
+                                where: {
+                                    id: existingRecord.id,
+                                },
+                                data: {
+                                    status,
+                                    updatedAt: new Date(),
+                                },
+                            });
+                            console.log(`✅ Updated existing record: ${existingRecord.id}`);
+                        }
+                        else {
+                            // ✅ CREATE new record with generated ID
+                            const newId = (0, uuid_1.v4)();
+                            await prisma.attendance.create({
+                                data: {
+                                    id: newId, // ✅ CRITICAL: Generate UUID
                                     studentId,
                                     classId,
                                     date,
                                     session: sessionEnum,
+                                    status,
+                                    updatedAt: new Date(),
                                 },
-                            },
-                            update: {
-                                status,
-                            },
-                            create: {
-                                studentId,
-                                classId,
-                                date,
-                                session: sessionEnum,
-                                status,
-                            },
-                        });
+                            });
+                            console.log(`✅ Created new record: ${newId}`);
+                        }
+                        savedCount++;
                     }
-                    savedCount++;
                 }
                 catch (err) {
-                    console.error("Error saving attendance:", err);
+                    console.error("❌ Error saving attendance:", err);
                     errorCount++;
                     errors.push({ item, error: err.message });
                 }

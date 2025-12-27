@@ -12,13 +12,13 @@
  */
 export const SUBJECT_ORDER_GRADE_7_8_9: { [key: string]: number } = {
   // 1.  តែងសេចក្ដី
-  WRITING: 1,
+  WRITER: 1,
   តែងសេចក្ដី: 1,
   តែង: 1,
   "តែង. ក្តី": 1,
 
   // 2. សរសេរតាមអាន
-  WRITER: 2,
+  WRITING: 2,
   DICTATION: 2,
   សរសេរតាមអាន: 2,
   "ស. អាន": 2,

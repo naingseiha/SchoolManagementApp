@@ -157,7 +157,7 @@ const startServer = async () => {
         await (0, database_1.connectDatabase)();
         console.log("✅ Database connected successfully");
         (0, database_1.startKeepAlive)();
-        app.listen(PORT, () => {
+        const server = app.listen(PORT, () => {
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -166,6 +166,23 @@ const startServer = async () => {
             console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
             console.log(`🔌 Connection pool: 20 connections available`);
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        });
+        // Handle port conflict
+        server.on("error", (error) => {
+            if (error.code === "EADDRINUSE") {
+                console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                console.error(`❌ Port ${PORT} is already in use!`);
+                console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                console.error("💡 Solutions:");
+                console.error(`   1. Kill existing process: lsof -ti:${PORT} | xargs kill -9`);
+                console.error(`   2. Use a different port in your .env file`);
+                console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+                process.exit(1);
+            }
+            else {
+                console.error("❌ Server error:", error);
+                process.exit(1);
+            }
         });
     }
     catch (error) {

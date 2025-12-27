@@ -186,8 +186,8 @@ export class GradeController {
         // Grades 7, 8
         if (gradeNum === 7 || gradeNum === 8) {
           return {
-            WRITING: { order: 1, shortCode: "W" },
-            WRITER: { order: 2, shortCode: "R" },
+            WRITER: { order: 1, shortCode: "W" },
+            WRITING: { order: 2, shortCode: "R" },
             DICTATION: { order: 3, shortCode: "D" },
             MATH: { order: 4, shortCode: "M" },
             PHY: { order: 5, shortCode: "P" },
@@ -209,8 +209,8 @@ export class GradeController {
         // Grade 9
         if (gradeNum === 9) {
           return {
-            WRITING: { order: 1, shortCode: "W" },
-            WRITER: { order: 2, shortCode: "R" },
+            WRITER: { order: 1, shortCode: "W" },
+            WRITING: { order: 2, shortCode: "R" },
             DICTATION: { order: 3, shortCode: "D" },
             MATH: { order: 4, shortCode: "M" },
             PHY: { order: 5, shortCode: "P" },
