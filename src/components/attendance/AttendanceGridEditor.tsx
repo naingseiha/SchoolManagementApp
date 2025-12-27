@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Save, Check } from "lucide-react";
 import type {
   AttendanceGridData,
   BulkSaveAttendanceItem,
 } from "@/lib/api/attendance";
+import { FloatingSavePanel } from "./FloatingSavePanel";
 
 interface AttendanceGridEditorProps {
   gridData: AttendanceGridData;
-  onSave: (attendance: BulkSaveAttendanceItem[]) => Promise<void>;
+  onSave: (attendance: BulkSaveAttendanceItem[], isAutoSave?: boolean) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -36,6 +37,58 @@ export default function AttendanceGridEditor({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement }>({});
+
+  // Refs to capture latest state for auto-save
+  const cellsRef = useRef(cells);
+  const pendingChangesRef = useRef(pendingChanges);
+
+  // Paste mode states
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pastedCells, setPastedCells] = useState<Set<string>>(new Set());
+  const [editedCells, setEditedCells] = useState<Set<string>>(new Set());
+  const [allPendingChanges, setAllPendingChanges] = useState<
+    Map<string, BulkSaveAttendanceItem>
+  >(new Map());
+  const [saving, setSaving] = useState(false);
+
+  // Update refs whenever state changes
+  useEffect(() => {
+    cellsRef.current = cells;
+  }, [cells]);
+
+  useEffect(() => {
+    pendingChangesRef.current = pendingChanges;
+  }, [pendingChanges]);
+
+  // Calculate real-time totals for each student
+  const studentTotals = useMemo(() => {
+    const totals: {
+      [studentId: string]: { absent: number; permission: number };
+    } = {};
+
+    gridData.students.forEach((student) => {
+      let absent = 0;
+      let permission = 0;
+
+      gridData.days.forEach((day) => {
+        // Check morning session
+        const morningKey = `${student.studentId}_${day}_M`;
+        const morningCell = cells[morningKey];
+        if (morningCell?.value === "A") absent++;
+        if (morningCell?.value === "P") permission++;
+
+        // Check afternoon session
+        const afternoonKey = `${student.studentId}_${day}_A`;
+        const afternoonCell = cells[afternoonKey];
+        if (afternoonCell?.value === "A") absent++;
+        if (afternoonCell?.value === "P") permission++;
+      });
+
+      totals[student.studentId] = { absent, permission };
+    });
+
+    return totals;
+  }, [cells, gridData.students, gridData.days]);
 
   // Initialize cells with session support
   useEffect(() => {
@@ -82,30 +135,41 @@ export default function AttendanceGridEditor({
     setCells(initialCells);
   }, [gridData]);
 
-  // Auto-save logic
+  // Auto-save logic (disabled when in paste mode)
   useEffect(() => {
-    if (pendingChanges.size > 0) {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
+    // Don't auto-save if in paste mode or no changes
+    if (pasteMode || pendingChanges.size === 0) return;
 
-      saveTimeoutRef.current = setTimeout(() => {
-        handleAutoSave();
-      }, 1000);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      handleAutoSave();
+    }, 1000);
 
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [pendingChanges]);
+  }, [pendingChanges, pasteMode]);
 
   const handleAutoSave = async () => {
-    const changes: BulkSaveAttendanceItem[] = [];
+    // Use refs to get the latest state
+    const currentCells = cellsRef.current;
+    const currentPendingChanges = pendingChangesRef.current;
 
-    pendingChanges.forEach((cellKey) => {
-      const cell = cells[cellKey];
+    if (currentPendingChanges.size === 0) {
+      console.log("⏭️ No pending changes to save");
+      return;
+    }
+
+    const changes: BulkSaveAttendanceItem[] = [];
+    const cellKeysToSave: string[] = [];
+
+    currentPendingChanges.forEach((cellKey) => {
+      const cell = currentCells[cellKey];
       if (cell && cell.isModified) {
         changes.push({
           studentId: cell.studentId,
@@ -113,22 +177,30 @@ export default function AttendanceGridEditor({
           session: cell.session,
           value: cell.value,
         });
+        cellKeysToSave.push(cellKey);
       }
     });
 
-    if (changes.length === 0) return;
+    if (changes.length === 0) {
+      console.log("⏭️ No modified cells to save");
+      return;
+    }
+
+    console.log(`💾 Auto-saving ${changes.length} attendance records...`);
 
     try {
       setIsSaving(true);
       setSaveSuccess(false);
 
-      await onSave(changes);
+      // Pass isAutoSave=true for silent auto-save
+      await onSave(changes, true);
 
-      // Mark as saved
+      console.log(`✅ Auto-saved ${changes.length} records successfully`);
+
+      // Mark as saved - use functional update to get latest state
       setCells((prev) => {
         const updated = { ...prev };
-        changes.forEach((change) => {
-          const cellKey = `${change.studentId}_${change.day}_${change.session}`;
+        cellKeysToSave.forEach((cellKey) => {
           if (updated[cellKey]) {
             updated[cellKey] = {
               ...updated[cellKey],
@@ -141,7 +213,12 @@ export default function AttendanceGridEditor({
         return updated;
       });
 
-      setPendingChanges(new Set());
+      // Remove saved changes from pending
+      setPendingChanges((prev) => {
+        const remaining = new Set(prev);
+        cellKeysToSave.forEach((key) => remaining.delete(key));
+        return remaining;
+      });
 
       // Show success state
       setIsSaving(false);
@@ -155,7 +232,7 @@ export default function AttendanceGridEditor({
         setSaveSuccess(false);
       }, 2000);
     } catch (error: any) {
-      console.error("Auto-save error:", error);
+      console.error("❌ Auto-save error:", error);
       setIsSaving(false);
       setSaveSuccess(false);
     }
@@ -188,34 +265,113 @@ export default function AttendanceGridEditor({
       },
     }));
 
-    // Mark for save
-    setPendingChanges((prev) => new Set(prev).add(cellKey));
+    // If in paste mode, track as edited cell and add to allPendingChanges
+    if (pasteMode) {
+      setEditedCells((prev) => new Set(prev).add(cellKey));
+      setAllPendingChanges((prev) => {
+        const updated = new Map(prev);
+        updated.set(cellKey, {
+          studentId,
+          day,
+          session,
+          value: sanitized,
+        });
+        return updated;
+      });
+    } else {
+      // Normal mode: mark for auto-save
+      setPendingChanges((prev) => new Set(prev).add(cellKey));
+    }
   };
 
-  // Handle Enter key to move to next row
+  // Handle keyboard navigation
   const handleKeyDown = (
     e: React.KeyboardEvent,
     studentId: string,
     day: number,
     session: "M" | "A"
   ) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
+    const currentStudentIndex = gridData.students.findIndex(
+      (s) => s.studentId === studentId
+    );
+    const currentDayIndex = gridData.days.indexOf(day);
 
-      const currentStudentIndex = gridData.students.findIndex(
-        (s) => s.studentId === studentId
-      );
+    let nextCellKey: string | null = null;
 
-      // Move to next student (same day, same session)
-      if (currentStudentIndex < gridData.students.length - 1) {
-        const nextStudent = gridData.students[currentStudentIndex + 1];
-        const nextCellKey = `${nextStudent.studentId}_${day}_${session}`;
-        const nextInput = inputRefs.current[nextCellKey];
-
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.select();
+    switch (e.key) {
+      case "Enter":
+      case "ArrowDown":
+        e.preventDefault();
+        // Move to next student (same day, same session)
+        if (currentStudentIndex < gridData.students.length - 1) {
+          const nextStudent = gridData.students[currentStudentIndex + 1];
+          nextCellKey = `${nextStudent.studentId}_${day}_${session}`;
         }
+        break;
+
+      case "ArrowUp":
+        e.preventDefault();
+        // Move to previous student (same day, same session)
+        if (currentStudentIndex > 0) {
+          const prevStudent = gridData.students[currentStudentIndex - 1];
+          nextCellKey = `${prevStudent.studentId}_${day}_${session}`;
+        }
+        break;
+
+      case "ArrowRight":
+        e.preventDefault();
+        // Move to next session or next day
+        if (session === "M") {
+          // Move to afternoon of same day
+          nextCellKey = `${studentId}_${day}_A`;
+        } else if (currentDayIndex < gridData.days.length - 1) {
+          // Move to morning of next day
+          const nextDay = gridData.days[currentDayIndex + 1];
+          nextCellKey = `${studentId}_${nextDay}_M`;
+        }
+        break;
+
+      case "ArrowLeft":
+        e.preventDefault();
+        // Move to previous session or previous day
+        if (session === "A") {
+          // Move to morning of same day
+          nextCellKey = `${studentId}_${day}_M`;
+        } else if (currentDayIndex > 0) {
+          // Move to afternoon of previous day
+          const prevDay = gridData.days[currentDayIndex - 1];
+          nextCellKey = `${studentId}_${prevDay}_A`;
+        }
+        break;
+
+      case "Tab":
+        e.preventDefault();
+        // Tab moves right, Shift+Tab moves left
+        if (e.shiftKey) {
+          // Same as ArrowLeft
+          if (session === "A") {
+            nextCellKey = `${studentId}_${day}_M`;
+          } else if (currentDayIndex > 0) {
+            const prevDay = gridData.days[currentDayIndex - 1];
+            nextCellKey = `${studentId}_${prevDay}_A`;
+          }
+        } else {
+          // Same as ArrowRight
+          if (session === "M") {
+            nextCellKey = `${studentId}_${day}_A`;
+          } else if (currentDayIndex < gridData.days.length - 1) {
+            const nextDay = gridData.days[currentDayIndex + 1];
+            nextCellKey = `${studentId}_${nextDay}_M`;
+          }
+        }
+        break;
+    }
+
+    if (nextCellKey) {
+      const nextInput = inputRefs.current[nextCellKey];
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
       }
     }
   };
@@ -238,6 +394,8 @@ export default function AttendanceGridEditor({
     if (studentIndex === -1) return;
 
     const updates: { [key: string]: string } = {};
+    const pastedCellKeys = new Set<string>();
+    const changes = new Map<string, BulkSaveAttendanceItem>();
 
     rows.forEach((row, rowOffset) => {
       const cols = row.split("\t");
@@ -257,6 +415,15 @@ export default function AttendanceGridEditor({
 
         if (sanitized === "" || sanitized === "A" || sanitized === "P") {
           updates[cellKey] = sanitized;
+          pastedCellKeys.add(cellKey);
+
+          // Add to pending changes
+          changes.set(cellKey, {
+            studentId: targetStudent.studentId,
+            day: targetDay,
+            session: session,
+            value: sanitized,
+          });
         }
       });
     });
@@ -276,14 +443,87 @@ export default function AttendanceGridEditor({
       return updated;
     });
 
-    // Mark all changed cells as pending
-    Object.keys(updates).forEach((key) => {
-      pendingChanges.add(key);
-    });
-    setPendingChanges(new Set(pendingChanges));
+    // Enter paste mode
+    setPasteMode(true);
+    setPastedCells(pastedCellKeys);
+    setAllPendingChanges(changes);
+    setPendingChanges(new Set()); // Clear auto-save pending changes
+
+    console.log(`📋 Pasted ${pastedCellKeys.size} cells - waiting for manual save`);
   };
 
-  const getCellClassName = (cell: CellState) => {
+  // Save All handler for paste mode
+  const handleSaveAll = async () => {
+    if (allPendingChanges.size === 0) return;
+
+    try {
+      const changesToSave = Array.from(allPendingChanges.values());
+      setSaving(true);
+      console.log(`💾 Saving ${changesToSave.length} pasted attendance records`);
+
+      await onSave(changesToSave, false); // isAutoSave = false for manual save
+
+      // Mark all as saved
+      setCells((prev) => {
+        const updated = { ...prev };
+        allPendingChanges.forEach((change, cellKey) => {
+          if (updated[cellKey]) {
+            updated[cellKey] = {
+              ...updated[cellKey],
+              originalValue: change.value,
+              value: change.value,
+              isModified: false,
+              isSaving: false,
+              error: null,
+            };
+          }
+        });
+        return updated;
+      });
+
+      // Exit paste mode
+      setPasteMode(false);
+      setPastedCells(new Set());
+      setEditedCells(new Set());
+      setAllPendingChanges(new Map());
+
+      console.log(`✅ Successfully saved ${changesToSave.length} attendance records`);
+    } catch (error: any) {
+      console.error("❌ Save failed:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Cancel paste handler
+  const handleCancelPaste = () => {
+    // Revert all pasted cells to original values
+    setCells((prev) => {
+      const reverted = { ...prev };
+      allPendingChanges.forEach((_, cellKey) => {
+        const cell = prev[cellKey];
+        if (cell) {
+          reverted[cellKey] = {
+            ...cell,
+            value: cell.originalValue,
+            isModified: false,
+            error: null,
+          };
+        }
+      });
+      return reverted;
+    });
+
+    // Exit paste mode
+    setPasteMode(false);
+    setPastedCells(new Set());
+    setEditedCells(new Set());
+    setAllPendingChanges(new Map());
+
+    console.log("🚫 Cancelled paste - reverted changes");
+  };
+
+  const getCellClassName = (cell: CellState, cellKey: string) => {
     let base =
       "w-12 h-9 text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:z-10 font-semibold text-sm transition-colors ";
 
@@ -293,6 +533,16 @@ export default function AttendanceGridEditor({
 
     if (cell.error) {
       return base + "bg-red-50 text-red-700";
+    }
+
+    // Pasted cells (in paste mode)
+    if (pastedCells.has(cellKey)) {
+      return base + "bg-yellow-100 text-yellow-900 border-2 border-yellow-400";
+    }
+
+    // Edited cells after paste (in paste mode)
+    if (editedCells.has(cellKey)) {
+      return base + "bg-orange-100 text-orange-900 border-2 border-orange-400";
     }
 
     if (cell.isModified) {
@@ -367,28 +617,59 @@ export default function AttendanceGridEditor({
       </div>
 
       {/* Instructions */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-indigo-100 px-6 py-3">
+      <div className={`border-b px-6 py-3 ${
+        pasteMode
+          ? "bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200"
+          : "bg-gradient-to-r from-blue-50 to-indigo-50 border-indigo-100"
+      }`}>
         <div className="flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-indigo-900">
-            <p className="font-semibold mb-1">
-              វិធីប្រើប្រាស់ (២វេន: ព្រឹក + ល្ងាច):
-            </p>
-            <ul className="list-disc list-inside space-y-0.5 text-xs text-indigo-700">
-              <li>
-                <strong>A</strong> = អវត្តមានអត់ច្បាប់ • <strong>P</strong> =
-                អវត្តមានមានច្បាប់ • <strong>ទទេ</strong> = មករៀន
-              </li>
-              <li>
-                <strong>Enter</strong> = ចុះទៅ row ខាងក្រោម •{" "}
-                <strong>Ctrl+V</strong> = Paste ពី Excel (ច្រើន rows/columns)
-              </li>
-              <li>
-                <strong>វេនព្រឹក (M)</strong> + <strong>វេនល្ងាច (A)</strong> =
-                ២ columns ក្នុង១ថ្ងៃ • <strong>រក្សាទុកស្វ័យប្រវត្តិ</strong>{" "}
-                ក្រោយ 1 វិនាទី
-              </li>
-            </ul>
+          <AlertCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+            pasteMode ? "text-yellow-600" : "text-indigo-600"
+          }`} />
+          <div className={`text-sm ${pasteMode ? "text-yellow-900" : "text-indigo-900"}`}>
+            {pasteMode ? (
+              <>
+                <p className="font-bold mb-1 text-lg">
+                  📋 ទម្រង់បញ្ចូលពី Excel - សូមពិនិត្យ ហើយចុច "រក្សាទុកទាំងអស់"
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 text-xs text-yellow-800">
+                  <li>
+                    <strong className="text-yellow-600">ពណ៌លឿង</strong> = បានបញ្ចូលពី Excel •{" "}
+                    <strong className="text-orange-600">ពណ៌ទឹកក្រូច</strong> = បានកែសម្រួលបន្ថែម
+                  </li>
+                  <li>
+                    ទិន្នន័យនឹងមិនរក្សាទុកភ្លាមៗទេ - សូមពិនិត្យ ហើយចុច{" "}
+                    <strong>"រក្សាទុកទាំងអស់"</strong> ខាងក្រោម
+                  </li>
+                  <li>
+                    អ្នកអាចបន្តកែសម្រួលបាន ឬ ចុច <strong>"បោះបង់"</strong>{" "}
+                    ដើម្បីលុបចោលការផ្លាស់ប្តូរទាំងអស់
+                  </li>
+                </ul>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold mb-1">
+                  វិធីប្រើប្រាស់ (២វេន: ព្រឹក + ល្ងាច):
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 text-xs text-indigo-700">
+                  <li>
+                    <strong>A</strong> = អវត្តមានអត់ច្បាប់ • <strong>P</strong> =
+                    អវត្តមានមានច្បាប់ • <strong>ទទេ</strong> = មករៀន
+                  </li>
+                  <li>
+                    <strong>វាយបញ្ចូលម្តងមួយ</strong> = រក្សាទុកស្វ័យប្រវត្តិ ក្រោយ 1 វិនាទី
+                  </li>
+                  <li>
+                    <strong>Paste ពី Excel</strong> (Ctrl+V) = រង់ចាំសម្រាប់ចុច "រក្សាទុកទាំងអស់"
+                  </li>
+                  <li>
+                    <strong>Enter</strong> = ចុះទៅសិស្សបន្ទាប់ • អាច paste ច្រើន
+                    rows/columns ក្នុងពេលតែមួយ
+                  </li>
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -508,7 +789,7 @@ export default function AttendanceGridEditor({
                             onPaste={(e) =>
                               handlePaste(e, student.studentId, day, "M")
                             }
-                            className={getCellClassName(morningCell)}
+                            className={getCellClassName(morningCell, morningKey)}
                             maxLength={1}
                             disabled={isLoading}
                           />
@@ -541,7 +822,7 @@ export default function AttendanceGridEditor({
                             onPaste={(e) =>
                               handlePaste(e, student.studentId, day, "A")
                             }
-                            className={getCellClassName(afternoonCell)}
+                            className={getCellClassName(afternoonCell, afternoonKey)}
                             maxLength={1}
                             disabled={isLoading}
                           />
@@ -554,12 +835,12 @@ export default function AttendanceGridEditor({
                 {/* Total */}
                 <td className="sticky right-0 z-10 bg-inherit border-l-2 border-gray-300 px-4 py-2 min-w-[180px]">
                   <div className="flex items-center justify-center gap-4">
-                    <div className="flex items-center gap-1. 5">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
                         អត់ច្បាប់:
                       </span>
                       <span className="text-sm font-bold text-red-600 bg-red-50 px-2.5 py-0.5 rounded min-w-[32px] text-center">
-                        {student.totalAbsent}
+                        {studentTotals[student.studentId]?.absent || 0}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -567,7 +848,7 @@ export default function AttendanceGridEditor({
                         មានច្បាប់:
                       </span>
                       <span className="text-sm font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded min-w-[32px] text-center">
-                        {student.totalPermission}
+                        {studentTotals[student.studentId]?.permission || 0}
                       </span>
                     </div>
                   </div>
@@ -609,6 +890,18 @@ export default function AttendanceGridEditor({
           </div>
         </div>
       </div>
+
+      {/* Floating Save Panel for Paste Mode */}
+      {pasteMode && allPendingChanges.size > 0 && (
+        <FloatingSavePanel
+          pastedCount={pastedCells.size}
+          editedCount={editedCells.size}
+          totalChanges={allPendingChanges.size}
+          saving={saving}
+          onSave={handleSaveAll}
+          onCancel={handleCancelPaste}
+        />
+      )}
     </div>
   );
 }

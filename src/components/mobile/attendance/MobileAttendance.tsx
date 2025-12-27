@@ -17,7 +17,7 @@ import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
 
-type AttendanceStatus = "PRESENT" | "ABSENT" | "PERMISSION";
+type AttendanceValue = "" | "A" | "P"; // Empty = Present, A = Absent, P = Permission
 
 interface StudentAttendance {
   studentId: string;
@@ -25,8 +25,11 @@ interface StudentAttendance {
   khmerName: string;
   rollNumber?: number;
   gender: string;
-  dailyAttendance: {
-    [day: number]: AttendanceStatus;
+  morningAttendance: {
+    [day: number]: AttendanceValue;
+  };
+  afternoonAttendance: {
+    [day: number]: AttendanceValue;
   };
 }
 
@@ -188,7 +191,8 @@ export default function MobileAttendance({
 
       const studentsData: StudentAttendance[] = gridData.students.map(
         (student: any) => {
-          const dailyAttendance: { [day: number]: AttendanceStatus } = {};
+          const morningAttendance: { [day: number]: AttendanceValue } = {};
+          const afternoonAttendance: { [day: number]: AttendanceValue } = {};
 
           daysArray.forEach((day) => {
             const morningKey = `${day}_M`;
@@ -197,19 +201,11 @@ export default function MobileAttendance({
             const morningData = student.attendance[morningKey];
             const afternoonData = student.attendance[afternoonKey];
 
-            if (
-              morningData?.displayValue === "A" ||
-              afternoonData?.displayValue === "A"
-            ) {
-              dailyAttendance[day] = "ABSENT";
-            } else if (
-              morningData?.displayValue === "P" ||
-              afternoonData?.displayValue === "P"
-            ) {
-              dailyAttendance[day] = "PERMISSION";
-            } else {
-              dailyAttendance[day] = "PRESENT";
-            }
+            // Morning session
+            morningAttendance[day] = (morningData?.displayValue || "") as AttendanceValue;
+
+            // Afternoon session
+            afternoonAttendance[day] = (afternoonData?.displayValue || "") as AttendanceValue;
           });
 
           return {
@@ -217,7 +213,8 @@ export default function MobileAttendance({
             studentName: student.studentName,
             khmerName: student.studentName,
             gender: student.gender,
-            dailyAttendance,
+            morningAttendance,
+            afternoonAttendance,
           };
         }
       );
@@ -231,28 +228,38 @@ export default function MobileAttendance({
     }
   };
 
-  // ✅ Toggle student status - NO AUTO SAVE
-  const toggleStudentStatus = (studentId: string) => {
+  // ✅ Toggle student status for morning or afternoon - NO AUTO SAVE
+  const toggleStudentStatus = (studentId: string, session: "M" | "A") => {
     setStudents((prev) =>
       prev.map((student) => {
         if (student.studentId !== studentId) return student;
 
-        const currentStatus = student.dailyAttendance[currentDay] || "PRESENT";
-        const statusCycle: AttendanceStatus[] = [
-          "PRESENT",
-          "ABSENT",
-          "PERMISSION",
-        ];
-        const currentIndex = statusCycle.indexOf(currentStatus);
-        const nextIndex = (currentIndex + 1) % statusCycle.length;
+        const attendanceMap = session === "M" ? student.morningAttendance : student.afternoonAttendance;
+        const currentValue = attendanceMap[currentDay] || "";
 
-        return {
-          ...student,
-          dailyAttendance: {
-            ...student.dailyAttendance,
-            [currentDay]: statusCycle[nextIndex],
-          },
-        };
+        // Cycle through: "" (Present) -> "A" (Absent) -> "P" (Permission) -> "" (Present)
+        const valueCycle: AttendanceValue[] = ["", "A", "P"];
+        const currentIndex = valueCycle.indexOf(currentValue);
+        const nextIndex = (currentIndex + 1) % valueCycle.length;
+        const nextValue = valueCycle[nextIndex];
+
+        if (session === "M") {
+          return {
+            ...student,
+            morningAttendance: {
+              ...student.morningAttendance,
+              [currentDay]: nextValue,
+            },
+          };
+        } else {
+          return {
+            ...student,
+            afternoonAttendance: {
+              ...student.afternoonAttendance,
+              [currentDay]: nextValue,
+            },
+          };
+        }
       })
     );
 
@@ -275,20 +282,25 @@ export default function MobileAttendance({
     try {
       const attendanceRecords: any[] = [];
 
-      // ✅ Save ONLY current day
+      // ✅ Save BOTH morning and afternoon sessions for current day
       students.forEach((student) => {
-        const status = student.dailyAttendance[currentDay];
+        const morningValue = student.morningAttendance[currentDay] || "";
+        const afternoonValue = student.afternoonAttendance[currentDay] || "";
 
-        let value = "";
-        if (status === "ABSENT") value = "A";
-        else if (status === "PERMISSION") value = "P";
-
-        // Save for morning session only
+        // Save morning session
         attendanceRecords.push({
           studentId: student.studentId,
           day: currentDay,
           session: "M",
-          value: value,
+          value: morningValue,
+        });
+
+        // Save afternoon session
+        attendanceRecords.push({
+          studentId: student.studentId,
+          day: currentDay,
+          session: "A",
+          value: afternoonValue,
         });
       });
 
@@ -344,16 +356,28 @@ export default function MobileAttendance({
     }
   };
 
-  // ✅ Set all status - NO AUTO SAVE
-  const setAllStatus = (status: AttendanceStatus) => {
+  // ✅ Set all status for a specific session - NO AUTO SAVE
+  const setAllStatus = (value: AttendanceValue, session: "M" | "A") => {
     setStudents((prev) =>
-      prev.map((student) => ({
-        ...student,
-        dailyAttendance: {
-          ...student.dailyAttendance,
-          [currentDay]: status,
-        },
-      }))
+      prev.map((student) => {
+        if (session === "M") {
+          return {
+            ...student,
+            morningAttendance: {
+              ...student.morningAttendance,
+              [currentDay]: value,
+            },
+          };
+        } else {
+          return {
+            ...student,
+            afternoonAttendance: {
+              ...student.afternoonAttendance,
+              [currentDay]: value,
+            },
+          };
+        }
+      })
     );
     setHasUnsavedChanges(true); // Mark as unsaved only
   };
@@ -381,15 +405,34 @@ export default function MobileAttendance({
     setTimeout(() => loadAttendanceData(), 100);
   };
 
-  const currentDaySummary = {
-    present: students.filter((s) => s.dailyAttendance[currentDay] === "PRESENT")
-      .length,
-    absent: students.filter((s) => s.dailyAttendance[currentDay] === "ABSENT")
-      .length,
-    permission: students.filter(
-      (s) => s.dailyAttendance[currentDay] === "PERMISSION"
-    ).length,
-  };
+  // ✅ Calculate totals with real-time counts (A or P can be 0, 1, or 2 per student per day)
+  const currentDaySummary = useMemo(() => {
+    let totalAbsent = 0;
+    let totalPermission = 0;
+    let totalPresent = 0;
+
+    students.forEach((student) => {
+      const morningValue = student.morningAttendance[currentDay] || "";
+      const afternoonValue = student.afternoonAttendance[currentDay] || "";
+
+      // Count A and P for both sessions
+      if (morningValue === "A") totalAbsent++;
+      if (afternoonValue === "A") totalAbsent++;
+      if (morningValue === "P") totalPermission++;
+      if (afternoonValue === "P") totalPermission++;
+
+      // Count as present only if both sessions are present (no A or P)
+      if (morningValue === "" && afternoonValue === "") {
+        totalPresent++;
+      }
+    });
+
+    return {
+      present: totalPresent,
+      absent: totalAbsent,
+      permission: totalPermission,
+    };
+  }, [students, currentDay]);
 
   useEffect(() => {
     return () => {
@@ -622,37 +665,15 @@ export default function MobileAttendance({
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="px-4 py-3 bg-white border-b border-gray-200">
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setAllStatus("PRESENT")}
-                  className="h-9 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-green-200"
-                >
-                  <Check className="w-3. 5 h-3.5" />
-                  All Present
-                </button>
-                <button
-                  onClick={() => setAllStatus("ABSENT")}
-                  className="h-9 bg-red-50 hover: bg-red-100 text-red-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-red-200"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  All Absent
-                </button>
-                <button
-                  onClick={() => setAllStatus("PERMISSION")}
-                  className="h-9 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg font-medium text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 border border-orange-200"
-                >
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  Permission
-                </button>
-              </div>
-            </div>
+            {/* Quick Actions - Removed (not needed with individual session controls) */}
 
             {/* Summary Cards */}
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-white rounded-lg p-2. 5 border border-gray-200 shadow-sm">
+            <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-indigo-200">
+              <div className="text-xs font-semibold text-indigo-700 mb-2 text-center">
+                📊 សង្ខេបសរុប • Daily Summary
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                       <Check className="w-4 h-4 text-green-600" />
@@ -662,7 +683,7 @@ export default function MobileAttendance({
                         {currentDaySummary.present}
                       </div>
                       <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Present
+                        Students
                       </div>
                     </div>
                   </div>
@@ -678,7 +699,7 @@ export default function MobileAttendance({
                         {currentDaySummary.absent}
                       </div>
                       <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Absent
+                        A Count
                       </div>
                     </div>
                   </div>
@@ -696,75 +717,103 @@ export default function MobileAttendance({
                         {currentDaySummary.permission}
                       </div>
                       <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Permission
+                        P Count
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+              <div className="bg-indigo-100 rounded-lg p-2">
+                <p className="text-xs text-indigo-800 text-center">
+                  💡 A/P can be 0-2 per student (M+A sessions)
+                </p>
+              </div>
             </div>
 
-            {/* Student List */}
-            <div className="px-4 py-3 space-y-2 pb-6">
+            {/* Student List - with Morning/Afternoon Sessions */}
+            <div className="px-4 py-3 space-y-3 pb-6">
               {students.map((student, index) => {
-                const status = student.dailyAttendance[currentDay] || "PRESENT";
+                const morningValue = student.morningAttendance[currentDay] || "";
+                const afternoonValue = student.afternoonAttendance[currentDay] || "";
+
+                // Helper to get button style
+                const getButtonStyle = (value: AttendanceValue) => {
+                  if (value === "A") {
+                    return "bg-red-500 text-white border-red-600";
+                  } else if (value === "P") {
+                    return "bg-orange-500 text-white border-orange-600";
+                  } else {
+                    return "bg-green-500 text-white border-green-600";
+                  }
+                };
+
+                // Helper to get button label
+                const getButtonLabel = (value: AttendanceValue) => {
+                  if (value === "A") return "A";
+                  if (value === "P") return "P";
+                  return "✓";
+                };
 
                 return (
-                  <button
+                  <div
                     key={student.studentId}
-                    onClick={() => toggleStudentStatus(student.studentId)}
-                    className={`w-full flex items-center justify-between p-3.5 rounded-xl shadow-md transition-all active:scale-98 border-2 ${
-                      status === "PRESENT"
-                        ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-300"
-                        : status === "ABSENT"
-                        ? "bg-gradient-to-r from-red-50 to-rose-50 border-red-300"
-                        : "bg-gradient-to-r from-orange-50 to-amber-50 border-orange-300"
-                    }`}
+                    className="bg-white rounded-xl shadow-md border border-gray-200 p-4"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md ${
-                          status === "PRESENT"
-                            ? "bg-gradient-to-br from-green-500 to-emerald-600"
-                            : status === "ABSENT"
-                            ? "bg-gradient-to-br from-red-500 to-rose-600"
-                            : "bg-gradient-to-br from-orange-500 to-amber-600"
-                        }`}
-                      >
-                        {status === "PRESENT" && (
-                          <Check className="w-6 h-6 text-white" />
-                        )}
-                        {status === "ABSENT" && (
-                          <X className="w-6 h-6 text-white" />
-                        )}
-                        {status === "PERMISSION" && (
-                          <span className="text-white font-bold text-lg">
-                            P
-                          </span>
-                        )}
+                    {/* Student Info */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                        {index + 1}
                       </div>
-
-                      <div className="text-left">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-gray-500">
-                            #{index + 1}
-                          </span>
-                          <span className="text-sm font-bold text-gray-900">
-                            {student.khmerName}
-                          </span>
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-gray-900">
+                          {student.khmerName}
                         </div>
-                        {student.rollNumber && (
-                          <div className="text-xs text-gray-600 mt-0.5">
-                            Roll #{student.rollNumber}
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {student.gender === "M" ? "ប្រុស" : "ស្រី"}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-xs font-medium text-gray-500 bg-white/50 px-2.5 py-1 rounded-full">
-                      Tap
+                    {/* Session Controls */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Morning */}
+                      <div>
+                        <div className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
+                          🌅 ព្រឹក • Morning
+                        </div>
+                        <button
+                          onClick={() => toggleStudentStatus(student.studentId, "M")}
+                          className={`w-full h-12 rounded-lg font-bold text-lg shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
+                            morningValue
+                          )}`}
+                        >
+                          {getButtonLabel(morningValue)}
+                        </button>
+                      </div>
+
+                      {/* Afternoon */}
+                      <div>
+                        <div className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
+                          🌆 ល្ងាច • Afternoon
+                        </div>
+                        <button
+                          onClick={() => toggleStudentStatus(student.studentId, "A")}
+                          className={`w-full h-12 rounded-lg font-bold text-lg shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
+                            afternoonValue
+                          )}`}
+                        >
+                          {getButtonLabel(afternoonValue)}
+                        </button>
+                      </div>
                     </div>
-                  </button>
+
+                    {/* Hint */}
+                    <div className="mt-3 text-center">
+                      <p className="text-xs text-gray-500">
+                        Tap: ✓ (Present) → A (Absent) → P (Permission)
+                      </p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
