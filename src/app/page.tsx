@@ -36,7 +36,7 @@ import {
 
 // Lazy load mobile dashboard for code splitting
 const MobileDashboard = dynamic(
-  () => import("@/components/mobile/dashboard/MobileDashboard"),
+  () => import("@/components/mobile/dashboard/NewMobileDashboard"),
   { ssr: false }
 );
 
@@ -137,13 +137,7 @@ export default function DashboardPage() {
     return (
       <ErrorBoundary>
         <MobileLayout title="ផ្ទាំង">
-          <MobileDashboard
-            currentUser={currentUser}
-            stats={stats}
-            completionRate={completionRate}
-            dashboardStats={dashboardStats}
-            isLoadingStats={isLoadingStats}
-          />
+          <MobileDashboard currentUser={currentUser} />
         </MobileLayout>
       </ErrorBoundary>
     );

@@ -16,4 +16,7 @@ router.get("/teacher/:teacherId", DashboardController.getTeacherDashboard);
 // Get student-specific dashboard
 router.get("/student/:studentId", DashboardController.getStudentDashboard);
 
+// Get grade-level statistics (for grades 7-12)
+router.get("/grade-stats", DashboardController.getGradeLevelStats);
+
 export default router;
