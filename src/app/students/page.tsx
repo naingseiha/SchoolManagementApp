@@ -2,14 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
+import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import MobileLayout from "@/components/layout/MobileLayout";
 import StudentListView from "@/components/students/StudentListView";
 import BulkImportView from "@/components/students/BulkImportView";
 import { studentsApi } from "@/lib/api/students";
 import { Users, Upload } from "lucide-react";
+
+const MobileStudentsPage = dynamic(
+  () => import("@/components/mobile/students/MobileStudentsPage"),
+  { ssr: false }
+);
 
 type ViewMode = "list" | "bulk-import";
 
@@ -17,6 +25,7 @@ export default function StudentsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { classes, students: contextStudents, refreshStudents } = useData();
   const router = useRouter();
+  const deviceType = useDeviceType();
 
   const [activeTab, setActiveTab] = useState<ViewMode>("list");
   const [students, setStudents] = useState<any[]>([]);
@@ -70,6 +79,16 @@ export default function StudentsPage() {
     );
   }
 
+  // Mobile layout
+  if (deviceType === "mobile") {
+    return (
+      <MobileLayout title="សិស្ស">
+        <MobileStudentsPage />
+      </MobileLayout>
+    );
+  }
+
+  // Desktop layout
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
       <Sidebar />

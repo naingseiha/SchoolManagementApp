@@ -36,7 +36,7 @@ import {
 
 // Lazy load mobile dashboard for code splitting
 const MobileDashboard = dynamic(
-  () => import("@/components/mobile/dashboard/ModernMobileDashboard"),
+  () => import("@/components/mobile/dashboard/SimpleMobileDashboard"),
   { ssr: false }
 );
 
