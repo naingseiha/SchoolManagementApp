@@ -123,6 +123,7 @@ export interface GradeLevelStats {
       completedSubjects: number;
       completionPercentage: number;
       averageScore: number;
+      teacherName: string;
     }>;
   }>;
 }
