@@ -98,6 +98,10 @@ export default function MobileGradeEntry() {
   const [savingStudents, setSavingStudents] = useState<Set<string>>(new Set());
   const [savedStudents, setSavedStudents] = useState<Set<string>>(new Set());
   const saveTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  // ✅ FIX: Add queue for batch saves to prevent concurrent API calls
+  const saveQueueRef = useRef<Map<string, number | null>>(new Map());
+  const batchSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isBatchSavingRef = useRef(false);
 
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
@@ -256,56 +260,101 @@ export default function MobileGradeEntry() {
     setStudents(studentGrades);
   }, [gridData, selectedSubject, subjects]);
 
-  // ✅ Auto-save function
+  // ✅ FIX: Batch save function to save multiple students at once
+  const executeBatchSave = useCallback(async () => {
+    if (!selectedClass || !selectedSubject) return;
+    if (isBatchSavingRef.current) return;
+    if (saveQueueRef.current.size === 0) return;
+
+    // ✅ Snapshot the queue
+    const studentsToSave = new Map(saveQueueRef.current);
+    saveQueueRef.current.clear();
+
+    isBatchSavingRef.current = true;
+
+    // Mark all as saving
+    setSavingStudents(
+      (prev) => new Set([...prev, ...studentsToSave.keys()])
+    );
+
+    try {
+      const gradesToSave = Array.from(studentsToSave.entries()).map(
+        ([studentId, score]) => ({
+          studentId,
+          subjectId: selectedSubject,
+          score: score!,
+        })
+      );
+
+      console.log(
+        "💾 Batch saving",
+        gradesToSave.length,
+        "grades"
+      );
+
+      await gradeApi.bulkSaveGrades(
+        selectedClass,
+        selectedMonth,
+        selectedYear,
+        gradesToSave
+      );
+
+      // Remove from saving state
+      setSavingStudents((prev) => {
+        const next = new Set(prev);
+        studentsToSave.forEach((_, studentId) => next.delete(studentId));
+        return next;
+      });
+
+      // Add to saved state
+      setSavedStudents((prev) => new Set([...prev, ...studentsToSave.keys()]));
+
+      // Clear saved indicators after 2 seconds
+      setTimeout(() => {
+        setSavedStudents((prev) => {
+          const next = new Set(prev);
+          studentsToSave.forEach((_, studentId) => next.delete(studentId));
+          return next;
+        });
+      }, 2000);
+
+      console.log("✅ Batch save completed successfully");
+    } catch (error: any) {
+      console.error("❌ Batch save error:", error);
+      setSavingStudents((prev) => {
+        const next = new Set(prev);
+        studentsToSave.forEach((_, studentId) => next.delete(studentId));
+        return next;
+      });
+      alert(`មានបញ្ហា: ${error.message}`);
+    } finally {
+      isBatchSavingRef.current = false;
+
+      // ✅ If more changes were queued during save, trigger another batch
+      if (saveQueueRef.current.size > 0) {
+        console.log("🔄 More changes queued, scheduling another batch save");
+        batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 500);
+      }
+    }
+  }, [selectedClass, selectedSubject, selectedMonth, selectedYear]);
+
+  // ✅ Auto-save function - now queues for batch save
   const autoSaveScore = useCallback(
-    async (studentId: string, score: number | null) => {
+    (studentId: string, score: number | null) => {
       if (!selectedClass || !selectedSubject) return;
 
-      setSavingStudents((prev) => new Set(prev).add(studentId));
+      // ✅ Add to batch queue
+      saveQueueRef.current.set(studentId, score);
 
-      try {
-        const gradesToSave = [
-          {
-            studentId,
-            subjectId: selectedSubject,
-            score: score!,
-          },
-        ];
-
-        await gradeApi.bulkSaveGrades(
-          selectedClass,
-          selectedMonth,
-          selectedYear,
-          gradesToSave
-        );
-
-        setSavingStudents((prev) => {
-          const next = new Set(prev);
-          next.delete(studentId);
-          return next;
-        });
-
-        setSavedStudents((prev) => new Set(prev).add(studentId));
-
-        // Clear saved indicator after 2 seconds
-        setTimeout(() => {
-          setSavedStudents((prev) => {
-            const next = new Set(prev);
-            next.delete(studentId);
-            return next;
-          });
-        }, 2000);
-      } catch (error: any) {
-        console.error("Auto-save error:", error);
-        setSavingStudents((prev) => {
-          const next = new Set(prev);
-          next.delete(studentId);
-          return next;
-        });
-        alert(`មានបញ្ហា: ${error.message}`);
+      // ✅ Clear existing batch timeout
+      if (batchSaveTimeoutRef.current) {
+        clearTimeout(batchSaveTimeoutRef.current);
       }
+
+      // ✅ Schedule batch save after 1 second of inactivity
+      batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 1000);
     },
-    [selectedClass, selectedSubject, selectedMonth, selectedYear]
+    [selectedClass, selectedSubject, executeBatchSave]
   );
 
   // ✅ Handle score change with auto-save
@@ -324,28 +373,21 @@ export default function MobileGradeEntry() {
         )
       );
 
-      // Clear existing timeout for this student
-      const existingTimeout = saveTimeouts.current.get(studentId);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-      }
-
-      // Set new timeout for auto-save (1 second debounce)
+      // ✅ FIX: Remove per-student timeout, use batch queue instead
       if (score !== null) {
-        const timeout = setTimeout(() => {
-          autoSaveScore(studentId, score);
-        }, 1000);
-
-        saveTimeouts.current.set(studentId, timeout);
+        autoSaveScore(studentId, score);
       }
     },
     [autoSaveScore]
   );
 
-  // Cleanup timeouts on unmount
+  // ✅ FIX: Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       saveTimeouts.current.forEach((timeout) => clearTimeout(timeout));
+      if (batchSaveTimeoutRef.current) {
+        clearTimeout(batchSaveTimeoutRef.current);
+      }
     };
   }, []);
 

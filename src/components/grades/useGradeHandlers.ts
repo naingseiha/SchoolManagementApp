@@ -40,6 +40,8 @@ export function useGradeHandlers(
         value !==
         (cell.originalValue !== null ? String(cell.originalValue) : "");
 
+      // ✅ FIX: If user edits a cell that's currently saving, clear the saving state
+      // This prevents the spinner from getting stuck
       setCells((prev) => ({
         ...prev,
         [cellKey]: {
@@ -47,6 +49,7 @@ export function useGradeHandlers(
           value,
           isModified,
           error,
+          isSaving: false, // ✅ Clear saving state when user edits
         },
       }));
 
