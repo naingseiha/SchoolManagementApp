@@ -94,6 +94,39 @@ export interface StudentDashboard {
   totalAttendanceRecords: number;
 }
 
+export interface GradeLevelStats {
+  currentMonth: string;
+  currentYear: number;
+  grades: Array<{
+    grade: string;
+    totalStudents: number;
+    totalClasses: number;
+    totalSubjects: number;
+    averageScore: number;
+    passPercentage: number;
+    passCount: number;
+    failCount: number;
+    gradeDistribution: {
+      A: number;
+      B: number;
+      C: number;
+      D: number;
+      E: number;
+    };
+    subjectCompletionPercentage: number;
+    classes: Array<{
+      id: string;
+      name: string;
+      section: string;
+      studentCount: number;
+      totalSubjects: number;
+      completedSubjects: number;
+      completionPercentage: number;
+      averageScore: number;
+    }>;
+  }>;
+}
+
 export const dashboardApi = {
   /**
    * Get general dashboard statistics (cached for 2 minutes)
@@ -138,10 +171,25 @@ export const dashboardApi = {
   },
 
   /**
+   * Get grade-level statistics (cached for 2 minutes)
+   */
+  getGradeLevelStats: async (): Promise<GradeLevelStats> => {
+    return apiCache.getOrFetch(
+      "dashboard:grade-stats",
+      async () => {
+        const response = await apiClient.get("/dashboard/grade-stats");
+        return response.data;
+      },
+      2 * 60 * 1000 // 2 minutes cache
+    );
+  },
+
+  /**
    * Clear dashboard cache (call after data updates)
    */
   clearCache: () => {
     apiCache.delete("dashboard:stats");
+    apiCache.delete("dashboard:grade-stats");
     // Clear all dashboard-related caches
     console.log("🧹 Dashboard cache cleared");
   },

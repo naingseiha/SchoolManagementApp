@@ -296,7 +296,7 @@ export class DashboardController {
             totalStudents: uniqueStudentIds.size,
             subjects: teacher.subjectTeachers.map((st) => ({
               id: st.subject.id,
-              name: st.subject.khmerName || st.subject.name,
+              name: st.subject.nameKh || st.subject.name,
               code: st.subject.code,
             })),
           },
@@ -310,6 +310,166 @@ export class DashboardController {
       res.status(500).json({
         success: false,
         message: "Failed to fetch teacher dashboard",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
+   * Get grade-level statistics (for grades 7-12)
+   */
+  static async getGradeLevelStats(req: Request, res: Response) {
+    try {
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Intl.DateTimeFormat("en-US", {
+        month: "long",
+      }).format(new Date());
+
+      // Get all grades 7-12
+      const grades = ["7", "8", "9", "10", "11", "12"];
+
+      const gradeStats = await Promise.all(
+        grades.map(async (grade) => {
+          // Get all classes for this grade
+          const classes = await prisma.class.findMany({
+            where: { grade },
+            include: {
+              students: true,
+              _count: {
+                select: { students: true }
+              }
+            },
+          });
+
+          const classIds = classes.map(c => c.id);
+          const totalStudents = classes.reduce((sum, c) => sum + c.students.length, 0);
+
+          // Get all subjects for this grade
+          const subjects = await prisma.subject.findMany({
+            where: {
+              grade,
+              isActive: true
+            },
+            orderBy: { code: "asc" }
+          });
+
+          const totalSubjects = subjects.length;
+
+          // Get grades for current month and year for this grade level
+          const gradesData = await prisma.grade.findMany({
+            where: {
+              classId: { in: classIds },
+              month: currentMonth,
+              year: currentYear,
+            },
+            select: {
+              percentage: true,
+              studentId: true,
+              subjectId: true,
+              classId: true,
+            },
+          });
+
+          // Calculate statistics
+          const validGrades = gradesData.filter(g => g.percentage !== null);
+          const totalGrades = validGrades.length;
+
+          // Grade distribution
+          const gradeDistribution = {
+            A: validGrades.filter((g) => (g.percentage || 0) >= 80).length,
+            B: validGrades.filter(
+              (g) => (g.percentage || 0) >= 70 && (g.percentage || 0) < 80
+            ).length,
+            C: validGrades.filter(
+              (g) => (g.percentage || 0) >= 60 && (g.percentage || 0) < 70
+            ).length,
+            D: validGrades.filter(
+              (g) => (g.percentage || 0) >= 50 && (g.percentage || 0) < 60
+            ).length,
+            E: validGrades.filter((g) => (g.percentage || 0) < 50).length,
+          };
+
+          // Calculate average across all subjects
+          const averageScore = totalGrades > 0
+            ? validGrades.reduce((sum, g) => sum + (g.percentage || 0), 0) / totalGrades
+            : 0;
+
+          // Pass/Fail counts
+          const passCount = validGrades.filter(g => (g.percentage || 0) >= 50).length;
+          const failCount = validGrades.filter(g => (g.percentage || 0) < 50).length;
+          const passPercentage = totalGrades > 0 ? (passCount / totalGrades) * 100 : 0;
+
+          // Subject completion by class
+          const classDetails = await Promise.all(
+            classes.map(async (cls) => {
+              const classGrades = gradesData.filter(g => g.classId === cls.id);
+              const uniqueSubjects = new Set(classGrades.map(g => g.subjectId));
+              const completedSubjects = uniqueSubjects.size;
+              const completionPercentage = totalSubjects > 0
+                ? (completedSubjects / totalSubjects) * 100
+                : 0;
+
+              // Get class average
+              const classValidGrades = classGrades.filter(g => g.percentage !== null);
+              const classAverage = classValidGrades.length > 0
+                ? classValidGrades.reduce((sum, g) => sum + (g.percentage || 0), 0) / classValidGrades.length
+                : 0;
+
+              return {
+                id: cls.id,
+                name: cls.name,
+                section: cls.section,
+                studentCount: cls.students.length,
+                totalSubjects,
+                completedSubjects,
+                completionPercentage: Math.round(completionPercentage),
+                averageScore: Math.round(classAverage * 10) / 10,
+              };
+            })
+          );
+
+          // Calculate overall subject completion for this grade
+          const totalPossibleEntries = totalStudents * totalSubjects;
+          const completedEntries = gradesData.length;
+          const overallCompletion = totalPossibleEntries > 0
+            ? (completedEntries / totalPossibleEntries) * 100
+            : 0;
+
+          return {
+            grade,
+            totalStudents,
+            totalClasses: classes.length,
+            totalSubjects,
+            averageScore: Math.round(averageScore * 10) / 10,
+            passPercentage: Math.round(passPercentage * 10) / 10,
+            passCount,
+            failCount,
+            gradeDistribution: {
+              A: totalGrades > 0 ? Math.round((gradeDistribution.A / totalGrades) * 1000) / 10 : 0,
+              B: totalGrades > 0 ? Math.round((gradeDistribution.B / totalGrades) * 1000) / 10 : 0,
+              C: totalGrades > 0 ? Math.round((gradeDistribution.C / totalGrades) * 1000) / 10 : 0,
+              D: totalGrades > 0 ? Math.round((gradeDistribution.D / totalGrades) * 1000) / 10 : 0,
+              E: totalGrades > 0 ? Math.round((gradeDistribution.E / totalGrades) * 1000) / 10 : 0,
+            },
+            subjectCompletionPercentage: Math.round(overallCompletion * 10) / 10,
+            classes: classDetails.sort((a, b) => a.name.localeCompare(b.name)),
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: {
+          currentMonth,
+          currentYear,
+          grades: gradeStats,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching grade level stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch grade level statistics",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -388,7 +548,7 @@ export class DashboardController {
             averageGrade: parseFloat(averageGrade.toFixed(2)),
           },
           recentGrades: student.grades.map((g) => ({
-            subject: g.subject.khmerName || g.subject.name,
+            subject: g.subject.nameKh || g.subject.name,
             score: g.score,
             maxScore: g.maxScore,
             percentage: g.percentage,
