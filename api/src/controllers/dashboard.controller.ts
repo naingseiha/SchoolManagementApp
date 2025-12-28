@@ -408,11 +408,12 @@ export class DashboardController {
 
           // Grade distribution (based on average scores)
           const gradeDistribution = {
-            A: studentSummaries.filter(s => (s.average || 0) >= 80).length,
-            B: studentSummaries.filter(s => (s.average || 0) >= 70 && (s.average || 0) < 80).length,
-            C: studentSummaries.filter(s => (s.average || 0) >= 60 && (s.average || 0) < 70).length,
-            D: studentSummaries.filter(s => (s.average || 0) >= 50 && (s.average || 0) < 60).length,
-            E: studentSummaries.filter(s => (s.average || 0) < 50).length,
+            A: studentSummaries.filter(s => (s.average || 0) >= 45).length,
+            B: studentSummaries.filter(s => (s.average || 0) >= 40 && (s.average || 0) < 45).length,
+            C: studentSummaries.filter(s => (s.average || 0) >= 35 && (s.average || 0) < 40).length,
+            D: studentSummaries.filter(s => (s.average || 0) >= 30 && (s.average || 0) < 35).length,
+            E: studentSummaries.filter(s => (s.average || 0) >= 25 && (s.average || 0) < 30).length,
+            F: studentSummaries.filter(s => (s.average || 0) < 25).length,
           };
 
           // Calculate average across all students
@@ -420,9 +421,9 @@ export class DashboardController {
             ? studentSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / totalSummaries
             : 0;
 
-          // Pass/Fail counts (passing is >= 50)
-          const passCount = studentSummaries.filter(s => (s.average || 0) >= 50).length;
-          const failCount = studentSummaries.filter(s => (s.average || 0) < 50).length;
+          // Pass/Fail counts (passing is >= 25)
+          const passCount = studentSummaries.filter(s => (s.average || 0) >= 25).length;
+          const failCount = studentSummaries.filter(s => (s.average || 0) < 25).length;
           const passPercentage = totalSummaries > 0 ? (passCount / totalSummaries) * 100 : 0;
 
           // Subject completion by class
@@ -611,6 +612,7 @@ export class DashboardController {
   /**
    * Get comprehensive statistics with month/year filter and gender breakdown
    * For mobile statistics dashboard
+   * ✅ FIXED: Calculate average = totalScore / totalCoefficient (same as Results screen)
    */
   static async getComprehensiveStats(req: Request, res: Response) {
     try {
@@ -624,6 +626,7 @@ export class DashboardController {
 
       const currentMonth = month ? String(month) : monthNames[new Date().getMonth()];
       const currentYear = year ? parseInt(String(year)) : new Date().getFullYear();
+      const monthNumber = monthNames.indexOf(currentMonth) + 1;
 
       // Get all grades 7-12
       const grades = ["7", "8", "9", "10", "11", "12"];
@@ -662,123 +665,193 @@ export class DashboardController {
           const maleStudents = allStudents.filter(s => s.gender === "MALE").length;
           const femaleStudents = allStudents.filter(s => s.gender === "FEMALE").length;
 
-          // Get all student monthly summaries for current month
-          const studentSummaries = await prisma.studentMonthlySummary.findMany({
+          // ✅ Get all grades (raw scores) for this month/year
+          const allGrades = await prisma.grade.findMany({
             where: {
               classId: { in: classIds },
-              month: currentMonth,
+              OR: [
+                { month: currentMonth },
+                { month: monthNumber.toString() },
+                { monthNumber: monthNumber },
+              ],
               year: currentYear,
             },
-            include: {
-              student: {
-                select: {
-                  gender: true,
-                }
-              }
+            select: {
+              studentId: true,
+              subjectId: true,
+              score: true,
+              classId: true,
             },
           });
 
-          const totalSummaries = studentSummaries.length;
+          // ✅ Calculate averages for each student (same as Results screen)
+          interface StudentData {
+            studentId: string;
+            classId: string;
+            totalScore: number;
+            totalCoefficient: number;
+            average: number;
+            gender: string;
+          }
 
-          // Pass/Fail with gender breakdown (passing is >= 50)
-          const passedStudents = studentSummaries.filter(s => (s.average || 0) >= 50);
-          const failedStudents = studentSummaries.filter(s => (s.average || 0) < 50);
+          const studentDataMap = new Map<string, StudentData>();
 
-          const passedMale = passedStudents.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE").length;
-          const passedFemale = passedStudents.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE").length;
-          const failedMale = failedStudents.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE").length;
-          const failedFemale = failedStudents.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE").length;
+          // Process each class to calculate student averages
+          for (const cls of classes) {
+            // ✅ Get subjects for this class (considering track for grades 11-12)
+            const whereClause: any = {
+              grade: cls.grade,
+              isActive: true,
+            };
 
-          // Grade distribution with gender breakdown
-          const getGenderBreakdown = (students: any[], gradeFilter: (avg: number) => boolean) => {
-            const filtered = students.filter(s => gradeFilter(s.average || 0));
+            const gradeNum = parseInt(cls.grade);
+            if ((gradeNum === 11 || gradeNum === 12) && (cls as any).track) {
+              whereClause.OR = [
+                { track: (cls as any).track },
+                { track: null },
+                { track: "common" },
+              ];
+            }
+
+            const subjects = await prisma.subject.findMany({
+              where: whereClause,
+              select: {
+                id: true,
+                coefficient: true,
+              },
+            });
+
+            // ✅ Calculate total coefficient for this class
+            const totalCoefficient = subjects.reduce((sum, s) => sum + s.coefficient, 0);
+
+            // ✅ For each student in this class
+            for (const student of cls.students) {
+              const studentGrades = allGrades.filter(
+                g => g.studentId === student.id && g.classId === cls.id
+              );
+
+              // ✅ Calculate total score
+              const totalScore = studentGrades.reduce(
+                (sum, g) => sum + (g.score || 0),
+                0
+              );
+
+              // ✅ Calculate average = totalScore / totalCoefficient
+              const average = totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+
+              studentDataMap.set(student.id, {
+                studentId: student.id,
+                classId: cls.id,
+                totalScore,
+                totalCoefficient,
+                average,
+                gender: student.gender || "MALE",
+              });
+            }
+          }
+
+          const studentData = Array.from(studentDataMap.values());
+
+          // ✅ Pass/Fail with gender breakdown (passing is >= 25)
+          const passedStudents = studentData.filter(s => s.average >= 25);
+          const failedStudents = studentData.filter(s => s.average < 25);
+
+          const passedMale = passedStudents.filter(s => s.gender === "MALE").length;
+          const passedFemale = passedStudents.filter(s => s.gender === "FEMALE").length;
+          const failedMale = failedStudents.filter(s => s.gender === "MALE").length;
+          const failedFemale = failedStudents.filter(s => s.gender === "FEMALE").length;
+
+          // ✅ Grade distribution with gender breakdown
+          const getGenderBreakdown = (students: StudentData[], gradeFilter: (avg: number) => boolean) => {
+            const filtered = students.filter(s => gradeFilter(s.average));
             return {
               total: filtered.length,
-              male: filtered.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE").length,
-              female: filtered.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE").length,
+              male: filtered.filter(s => s.gender === "MALE").length,
+              female: filtered.filter(s => s.gender === "FEMALE").length,
             };
           };
 
           const gradeDistribution = {
-            A: getGenderBreakdown(studentSummaries, avg => avg >= 80),
-            B: getGenderBreakdown(studentSummaries, avg => avg >= 70 && avg < 80),
-            C: getGenderBreakdown(studentSummaries, avg => avg >= 60 && avg < 70),
-            D: getGenderBreakdown(studentSummaries, avg => avg >= 50 && avg < 60),
-            E: getGenderBreakdown(studentSummaries, avg => avg >= 40 && avg < 50),
-            F: getGenderBreakdown(studentSummaries, avg => avg < 40),
+            A: getGenderBreakdown(studentData, avg => avg >= 45),
+            B: getGenderBreakdown(studentData, avg => avg >= 40 && avg < 45),
+            C: getGenderBreakdown(studentData, avg => avg >= 35 && avg < 40),
+            D: getGenderBreakdown(studentData, avg => avg >= 30 && avg < 35),
+            E: getGenderBreakdown(studentData, avg => avg >= 25 && avg < 30),
+            F: getGenderBreakdown(studentData, avg => avg < 25),
           };
 
-          // Calculate average scores
-          const averageScore = totalSummaries > 0
-            ? studentSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / totalSummaries
+          // ✅ Calculate average scores
+          const averageScore = studentData.length > 0
+            ? studentData.reduce((sum, s) => sum + s.average, 0) / studentData.length
             : 0;
 
-          const maleAverage = passedMale + failedMale > 0
-            ? studentSummaries.filter(s => String(s.student.gender) === "ប" || s.student.gender === "MALE")
-                .reduce((sum, s) => sum + (s.average || 0), 0) / (passedMale + failedMale)
+          const maleData = studentData.filter(s => s.gender === "MALE");
+          const femaleData = studentData.filter(s => s.gender === "FEMALE");
+
+          const maleAverage = maleData.length > 0
+            ? maleData.reduce((sum, s) => sum + s.average, 0) / maleData.length
             : 0;
 
-          const femaleAverage = passedFemale + failedFemale > 0
-            ? studentSummaries.filter(s => String(s.student.gender) === "ស" || s.student.gender === "FEMALE")
-                .reduce((sum, s) => sum + (s.average || 0), 0) / (passedFemale + failedFemale)
+          const femaleAverage = femaleData.length > 0
+            ? femaleData.reduce((sum, s) => sum + s.average, 0) / femaleData.length
             : 0;
 
-          // Calculate pass percentage
-          const passPercentage = totalSummaries > 0 ? (passedStudents.length / totalSummaries) * 100 : 0;
-          const malePassPercentage = (passedMale + failedMale) > 0 ? (passedMale / (passedMale + failedMale)) * 100 : 0;
-          const femalePassPercentage = (passedFemale + failedFemale) > 0 ? (passedFemale / (passedFemale + failedFemale)) * 100 : 0;
+          // ✅ Calculate pass percentage
+          const passPercentage = studentData.length > 0 ? (passedStudents.length / studentData.length) * 100 : 0;
+          const malePassPercentage = maleData.length > 0 ? (passedMale / maleData.length) * 100 : 0;
+          const femalePassPercentage = femaleData.length > 0 ? (passedFemale / femaleData.length) * 100 : 0;
 
-          // Class-level statistics
+          // ✅ Class-level statistics
           const classDetails = await Promise.all(classes.map(async (cls) => {
-            const classSummaries = studentSummaries.filter(s => s.classId === cls.id);
+            const classStudentData = studentData.filter(s => s.classId === cls.id);
             const classStudents = cls.students;
 
-            const classPassed = classSummaries.filter(s => (s.average || 0) >= 50);
-            const classPassPercentage = classSummaries.length > 0
-              ? (classPassed.length / classSummaries.length) * 100
+            const classPassed = classStudentData.filter(s => s.average >= 25);
+            const classPassPercentage = classStudentData.length > 0
+              ? (classPassed.length / classStudentData.length) * 100
               : 0;
 
-            const classAverage = classSummaries.length > 0
-              ? classSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / classSummaries.length
+            const classAverage = classStudentData.length > 0
+              ? classStudentData.reduce((sum, s) => sum + s.average, 0) / classStudentData.length
               : 0;
 
             const classMale = classStudents.filter(s => s.gender === "MALE").length;
             const classFemale = classStudents.filter(s => s.gender === "FEMALE").length;
 
-            const classPassedMale = classSummaries.filter(s =>
-              (s.average || 0) >= 50 && s.student.gender === "MALE"
+            const classPassedMale = classStudentData.filter(s =>
+              s.average >= 25 && s.gender === "MALE"
             ).length;
-            const classPassedFemale = classSummaries.filter(s =>
-              (s.average || 0) >= 50 && s.student.gender === "FEMALE"
+            const classPassedFemale = classStudentData.filter(s =>
+              s.average >= 25 && s.gender === "FEMALE"
             ).length;
 
-            const classMaleCount = classSummaries.filter(s => s.student.gender === "MALE").length;
-            const classFemaleCount = classSummaries.filter(s => s.student.gender === "FEMALE").length;
+            const classMaleData = classStudentData.filter(s => s.gender === "MALE");
+            const classFemaleData = classStudentData.filter(s => s.gender === "FEMALE");
 
-            const classMalePassPercentage = classMaleCount > 0
-              ? (classPassedMale / classMaleCount) * 100
+            const classMalePassPercentage = classMaleData.length > 0
+              ? (classPassedMale / classMaleData.length) * 100
               : 0;
-            const classFemalePassPercentage = classFemaleCount > 0
-              ? (classPassedFemale / classFemaleCount) * 100
+            const classFemalePassPercentage = classFemaleData.length > 0
+              ? (classPassedFemale / classFemaleData.length) * 100
               : 0;
 
-            // Calculate class-level grade distribution with gender breakdown
-            const getClassGenderBreakdown = (students: any[], gradeFilter: (avg: number) => boolean) => {
-              const filtered = students.filter(s => gradeFilter(s.average || 0));
+            // ✅ Calculate class-level grade distribution with gender breakdown
+            const getClassGenderBreakdown = (students: StudentData[], gradeFilter: (avg: number) => boolean) => {
+              const filtered = students.filter(s => gradeFilter(s.average));
               return {
                 total: filtered.length,
-                male: filtered.filter(s => s.student.gender === "MALE").length,
-                female: filtered.filter(s => s.student.gender === "FEMALE").length,
+                male: filtered.filter(s => s.gender === "MALE").length,
+                female: filtered.filter(s => s.gender === "FEMALE").length,
               };
             };
 
             const classGradeDistribution = {
-              A: getClassGenderBreakdown(classSummaries, avg => avg >= 80),
-              B: getClassGenderBreakdown(classSummaries, avg => avg >= 70 && avg < 80),
-              C: getClassGenderBreakdown(classSummaries, avg => avg >= 60 && avg < 70),
-              D: getClassGenderBreakdown(classSummaries, avg => avg >= 50 && avg < 60),
-              E: getClassGenderBreakdown(classSummaries, avg => avg >= 40 && avg < 50),
-              F: getClassGenderBreakdown(classSummaries, avg => avg < 40),
+              A: getClassGenderBreakdown(classStudentData, avg => avg >= 45),
+              B: getClassGenderBreakdown(classStudentData, avg => avg >= 40 && avg < 45),
+              C: getClassGenderBreakdown(classStudentData, avg => avg >= 35 && avg < 40),
+              D: getClassGenderBreakdown(classStudentData, avg => avg >= 30 && avg < 35),
+              E: getClassGenderBreakdown(classStudentData, avg => avg >= 25 && avg < 30),
+              F: getClassGenderBreakdown(classStudentData, avg => avg < 25),
             };
 
             return {
@@ -795,7 +868,7 @@ export class DashboardController {
               malePassPercentage: Math.round(classMalePassPercentage * 10) / 10,
               femalePassPercentage: Math.round(classFemalePassPercentage * 10) / 10,
               passedCount: classPassed.length,
-              failedCount: classSummaries.length - classPassed.length,
+              failedCount: classStudentData.length - classPassed.length,
               gradeDistribution: classGradeDistribution,
               teacherName: cls.homeroomTeacher?.khmerName ||
                           `${cls.homeroomTeacher?.firstName || ""} ${cls.homeroomTeacher?.lastName || ""}`.trim() ||

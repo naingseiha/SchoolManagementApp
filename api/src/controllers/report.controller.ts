@@ -1098,7 +1098,7 @@ export class ReportController {
           .length,
         maleStudents: sortedStudents.filter((s) => s.gender === "MALE").length,
 
-        // Overall Pass/Fail (Average >= 25 = Pass)
+        // Overall Pass/Fail (Average >= 50 = Pass)
         totalPassed: 0,
         femalePassed: 0,
         malePassed: 0,
@@ -1219,13 +1219,13 @@ export class ReportController {
         const average =
           totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
 
-        // ✅ Determine overall grade level (same thresholds as monthly report)
+        // ✅ FIXED: Use correct grade level thresholds
         let overallGradeLevel = "F";
-        if (average >= 45) overallGradeLevel = "A";
-        else if (average >= 40) overallGradeLevel = "B";
-        else if (average >= 35) overallGradeLevel = "C";
-        else if (average >= 30) overallGradeLevel = "D";
-        else if (average >= 25) overallGradeLevel = "E";
+        if (average >= 80) overallGradeLevel = "A";
+        else if (average >= 70) overallGradeLevel = "B";
+        else if (average >= 60) overallGradeLevel = "C";
+        else if (average >= 50) overallGradeLevel = "D";
+        else if (average >= 40) overallGradeLevel = "E";
 
         // ✅ Update overall grade distribution
         const gradeLevelKey =
@@ -1237,8 +1237,8 @@ export class ReportController {
           statistics.gradeDistribution[gradeLevelKey].male++;
         }
 
-        // ✅ Update pass/fail statistics (Pass = Average >= 25)
-        if (average >= 25) {
+        // ✅ FIXED: Update pass/fail statistics (Pass = Average >= 50)
+        if (average >= 50) {
           statistics.totalPassed++;
           if (student.gender === "FEMALE") {
             statistics.femalePassed++;
