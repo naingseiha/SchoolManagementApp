@@ -128,6 +128,88 @@ export interface GradeLevelStats {
   }>;
 }
 
+export interface ComprehensiveStats {
+  month: string;
+  year: number;
+  grades: Array<{
+    grade: string;
+    totalStudents: number;
+    maleStudents: number;
+    femaleStudents: number;
+    totalClasses: number;
+    averageScore: number;
+    maleAverageScore: number;
+    femaleAverageScore: number;
+    passPercentage: number;
+    malePassPercentage: number;
+    femalePassPercentage: number;
+    passedCount: number;
+    passedMale: number;
+    passedFemale: number;
+    failedCount: number;
+    failedMale: number;
+    failedFemale: number;
+    gradeDistribution: {
+      A: { total: number; male: number; female: number };
+      B: { total: number; male: number; female: number };
+      C: { total: number; male: number; female: number };
+      D: { total: number; male: number; female: number };
+      E: { total: number; male: number; female: number };
+      F: { total: number; male: number; female: number };
+    };
+    classes: Array<{
+      id: string;
+      name: string;
+      section: string;
+      grade: string;
+      track: string | null;
+      studentCount: number;
+      maleCount: number;
+      femaleCount: number;
+      averageScore: number;
+      passPercentage: number;
+      malePassPercentage: number;
+      femalePassPercentage: number;
+      passedCount: number;
+      failedCount: number;
+      gradeDistribution: {
+        A: { total: number; male: number; female: number };
+        B: { total: number; male: number; female: number };
+        C: { total: number; male: number; female: number };
+        D: { total: number; male: number; female: number };
+        E: { total: number; male: number; female: number };
+        F: { total: number; male: number; female: number };
+      };
+      teacherName: string;
+    }>;
+  }>;
+  topPerformingClasses: Array<{
+    id: string;
+    name: string;
+    section: string;
+    grade: string;
+    track: string | null;
+    studentCount: number;
+    maleCount: number;
+    femaleCount: number;
+    averageScore: number;
+    passPercentage: number;
+    malePassPercentage: number;
+    femalePassPercentage: number;
+    passedCount: number;
+    failedCount: number;
+    gradeDistribution: {
+      A: { total: number; male: number; female: number };
+      B: { total: number; male: number; female: number };
+      C: { total: number; male: number; female: number };
+      D: { total: number; male: number; female: number };
+      E: { total: number; male: number; female: number };
+      F: { total: number; male: number; female: number };
+    };
+    teacherName: string;
+  }>;
+}
+
 export const dashboardApi = {
   /**
    * Get general dashboard statistics (cached for 2 minutes)
@@ -191,12 +273,40 @@ export const dashboardApi = {
   },
 
   /**
+   * Get comprehensive statistics with month/year filter and gender breakdown
+   */
+  getComprehensiveStats: async (month?: string, year?: number): Promise<ComprehensiveStats> => {
+    const cacheKey = `dashboard:comprehensive-stats:${month || 'current'}:${year || 'current'}`;
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        const params = new URLSearchParams();
+        if (month) params.append('month', month);
+        if (year) params.append('year', year.toString());
+
+        const queryString = params.toString();
+        const url = `/dashboard/comprehensive-stats${queryString ? `?${queryString}` : ''}`;
+
+        const data = await apiClient.get(url);
+        console.log("📊 Comprehensive Stats API: Data received:", data);
+        return data;
+      },
+      2 * 60 * 1000 // 2 minutes cache
+    );
+  },
+
+  /**
    * Clear dashboard cache (call after data updates)
    */
   clearCache: () => {
     apiCache.delete("dashboard:stats");
     apiCache.delete("dashboard:grade-stats");
-    // Clear all dashboard-related caches
+    // Clear all comprehensive stats caches
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('dashboard:comprehensive-stats:')) {
+        apiCache.delete(key);
+      }
+    });
     console.log("🧹 Dashboard cache cleared");
   },
 };

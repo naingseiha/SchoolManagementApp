@@ -659,8 +659,8 @@ export class DashboardController {
           // Get all students with their gender
           const allStudents = classes.flatMap(c => c.students);
           const totalStudents = allStudents.length;
-          const maleStudents = allStudents.filter(s => s.gender === "MALE").length;
-          const femaleStudents = allStudents.filter(s => s.gender === "FEMALE").length;
+          const maleStudents = allStudents.filter(s => String(s.gender) === "ប" || s.gender === "MALE").length;
+          const femaleStudents = allStudents.filter(s => String(s.gender) === "ស" || s.gender === "FEMALE").length;
 
           // Get all student monthly summaries for current month
           const studentSummaries = await prisma.studentMonthlySummary.findMany({
@@ -742,18 +742,18 @@ export class DashboardController {
               ? classSummaries.reduce((sum, s) => sum + (s.average || 0), 0) / classSummaries.length
               : 0;
 
-            const classMale = classStudents.filter(s => s.gender === "MALE").length;
-            const classFemale = classStudents.filter(s => s.gender === "FEMALE").length;
+            const classMale = classStudents.filter(s => s.gender === "ប").length;
+            const classFemale = classStudents.filter(s => s.gender === "ส").length;
 
             const classPassedMale = classSummaries.filter(s =>
-              (s.average || 0) >= 50 && s.student.gender === "MALE"
+              (s.average || 0) >= 50 && s.student.gender === "ប"
             ).length;
             const classPassedFemale = classSummaries.filter(s =>
-              (s.average || 0) >= 50 && s.student.gender === "FEMALE"
+              (s.average || 0) >= 50 && s.student.gender === "ส"
             ).length;
 
-            const classMaleCount = classSummaries.filter(s => s.student.gender === "MALE").length;
-            const classFemaleCount = classSummaries.filter(s => s.student.gender === "FEMALE").length;
+            const classMaleCount = classSummaries.filter(s => s.student.gender === "ប").length;
+            const classFemaleCount = classSummaries.filter(s => s.student.gender === "ស").length;
 
             const classMalePassPercentage = classMaleCount > 0
               ? (classPassedMale / classMaleCount) * 100
@@ -761,25 +761,6 @@ export class DashboardController {
             const classFemalePassPercentage = classFemaleCount > 0
               ? (classPassedFemale / classFemaleCount) * 100
               : 0;
-
-            // Calculate class-level grade distribution with gender breakdown
-            const getClassGenderBreakdown = (students: any[], gradeFilter: (avg: number) => boolean) => {
-              const filtered = students.filter(s => gradeFilter(s.average || 0));
-              return {
-                total: filtered.length,
-                male: filtered.filter(s => s.student.gender === "MALE").length,
-                female: filtered.filter(s => s.student.gender === "FEMALE").length,
-              };
-            };
-
-            const classGradeDistribution = {
-              A: getClassGenderBreakdown(classSummaries, avg => avg >= 80),
-              B: getClassGenderBreakdown(classSummaries, avg => avg >= 70 && avg < 80),
-              C: getClassGenderBreakdown(classSummaries, avg => avg >= 60 && avg < 70),
-              D: getClassGenderBreakdown(classSummaries, avg => avg >= 50 && avg < 60),
-              E: getClassGenderBreakdown(classSummaries, avg => avg >= 40 && avg < 50),
-              F: getClassGenderBreakdown(classSummaries, avg => avg < 40),
-            };
 
             return {
               id: cls.id,
@@ -796,7 +777,6 @@ export class DashboardController {
               femalePassPercentage: Math.round(classFemalePassPercentage * 10) / 10,
               passedCount: classPassed.length,
               failedCount: classSummaries.length - classPassed.length,
-              gradeDistribution: classGradeDistribution,
               teacherName: cls.homeroomTeacher?.khmerName ||
                           `${cls.homeroomTeacher?.firstName || ""} ${cls.homeroomTeacher?.lastName || ""}`.trim() ||
                           "គ្មានគ្រូថ្នាក់",

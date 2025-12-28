@@ -400,7 +400,7 @@ export default function SimpleMobileDashboard({
           </button>
 
           <button
-            onClick={() => router.push("/teachers")}
+            onClick={() => router.push("/teachers/mobile")}
             className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform"
           >
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-md">
@@ -412,7 +412,7 @@ export default function SimpleMobileDashboard({
           </button>
 
           <button
-            onClick={() => router.push("/grade-entry")}
+            onClick={() => router.push("/results/mobile")}
             className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform"
           >
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-md">
@@ -424,7 +424,7 @@ export default function SimpleMobileDashboard({
           </button>
 
           <button
-            onClick={() => router.push("/reports/mobile")}
+            onClick={() => router.push("/statistics/mobile")}
             className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform"
           >
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-md">
@@ -440,7 +440,7 @@ export default function SimpleMobileDashboard({
       {/* Grade Selector */}
       <div className="px-5 pt-4 pb-3">
         <h3 className="font-koulen text-lg text-gray-900 mb-3">
-          ថ្នាក់រៀនទាំងអស់
+          បច្ចុប្បន្នភាពពិន្ទុតាមថ្នាក់
         </h3>
         <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
           {["7", "8", "9", "10", "11", "12"].map((grade) => {
