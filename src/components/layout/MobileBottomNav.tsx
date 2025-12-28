@@ -93,17 +93,17 @@ export default function MobileBottomNav() {
             <Link
               key={item.id}
               href={item.href}
-              className={`flex flex-col items-center justify-center touch-feedback transition-colors ${
+              className={`flex flex-col items-center justify-center touch-feedback transition-all ${
                 isActive
-                  ? "text-indigo-600"
-                  : "text-gray-600 hover:text-gray-800"
+                  ? "text-blue-600"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
               aria-label={item.label}
             >
               <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
               <span
-                className={`text-xs mt-1 font-medium ${
-                  isActive ? "font-semibold" : ""
+                className={`text-xs mt-1 font-battambang ${
+                  isActive ? "font-bold" : "font-medium"
                 }`}
               >
                 {item.labelKh}
