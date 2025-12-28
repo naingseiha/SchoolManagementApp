@@ -424,7 +424,7 @@ export default function SimpleMobileDashboard({
           </button>
 
           <button
-            onClick={() => router.push("/reports")}
+            onClick={() => router.push("/reports/mobile")}
             className="flex flex-col items-center gap-2 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform"
           >
             <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center shadow-md">
@@ -482,7 +482,9 @@ export default function SimpleMobileDashboard({
                 >
                   {/* Header with Gradient */}
                   <div
-                    className={`bg-gradient-to-r ${getCompletionColor(completion)} p-4 relative overflow-hidden`}
+                    className={`bg-gradient-to-r ${getCompletionColor(
+                      completion
+                    )} p-4 relative overflow-hidden`}
                   >
                     {/* Decorative circles */}
                     <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/20 rounded-full"></div>
@@ -565,7 +567,9 @@ export default function SimpleMobileDashboard({
                       {/* Progress Bar */}
                       <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className={`h-full bg-gradient-to-r ${getCompletionColor(completion)} rounded-full transition-all duration-700`}
+                          className={`h-full bg-gradient-to-r ${getCompletionColor(
+                            completion
+                          )} rounded-full transition-all duration-700`}
                           style={{ width: `${completion}%` }}
                         ></div>
                       </div>
