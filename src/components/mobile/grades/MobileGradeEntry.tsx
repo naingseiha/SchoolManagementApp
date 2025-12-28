@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Loader2,
   Download,
@@ -77,13 +78,24 @@ const getCurrentAcademicYear = () => {
   return month >= 9 ? year : year - 1;
 };
 
-export default function MobileGradeEntry() {
+interface MobileGradeEntryProps {
+  classId?: string;
+  month?: string;
+  year?: number;
+}
+
+export default function MobileGradeEntry({ classId: propClassId, month: propMonth, year: propYear }: MobileGradeEntryProps = {}) {
   const { classes, isLoadingClasses, refreshClasses } = useData();
   const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
 
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth()); // ✅ Auto-select current month
-  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+  // ✅ Read classId from URL params or props
+  const urlClassId = searchParams?.get("classId");
+  const initialClassId = urlClassId || propClassId || "";
+
+  const [selectedClass, setSelectedClass] = useState(initialClassId);
+  const [selectedMonth, setSelectedMonth] = useState(propMonth || getCurrentKhmerMonth()); // ✅ Auto-select current month
+  const [selectedYear, setSelectedYear] = useState(propYear || getCurrentAcademicYear());
   const [selectedSubject, setSelectedSubject] = useState("");
 
   const [gridData, setGridData] = useState<GradeGridData | null>(null);
@@ -103,11 +115,20 @@ export default function MobileGradeEntry() {
   const batchSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isBatchSavingRef = useRef(false);
 
+  // ✅ Load classes if empty
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
       refreshClasses();
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
+
+  // ✅ Auto-load data when class is pre-selected from URL/props
+  useEffect(() => {
+    if (initialClassId && classes.length > 0 && !dataLoaded && !loading && currentUser) {
+      console.log("🎯 Auto-loading data for pre-selected class:", initialClassId);
+      handleLoadData();
+    }
+  }, [initialClassId, classes.length, currentUser]);
 
   const availableClasses = useMemo(() => {
     if (!currentUser) return [];

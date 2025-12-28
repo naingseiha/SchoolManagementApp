@@ -136,8 +136,9 @@ export const dashboardApi = {
     return apiCache.getOrFetch(
       "dashboard:stats",
       async () => {
-        const response = await apiClient.get("/dashboard/stats");
-        return response.data;
+        // apiClient.get already unwraps .data, so just return the response directly
+        const data = await apiClient.get("/dashboard/stats");
+        return data;
       },
       2 * 60 * 1000 // 2 minutes cache
     );
@@ -150,8 +151,9 @@ export const dashboardApi = {
     return apiCache.getOrFetch(
       `dashboard:teacher:${teacherId}`,
       async () => {
-        const response = await apiClient.get(`/dashboard/teacher/${teacherId}`);
-        return response.data;
+        // apiClient.get already unwraps .data, so just return the response directly
+        const data = await apiClient.get(`/dashboard/teacher/${teacherId}`);
+        return data;
       },
       3 * 60 * 1000 // 3 minutes cache
     );
@@ -164,8 +166,9 @@ export const dashboardApi = {
     return apiCache.getOrFetch(
       `dashboard:student:${studentId}`,
       async () => {
-        const response = await apiClient.get(`/dashboard/student/${studentId}`);
-        return response.data;
+        // apiClient.get already unwraps .data, so just return the response directly
+        const data = await apiClient.get(`/dashboard/student/${studentId}`);
+        return data;
       },
       3 * 60 * 1000 // 3 minutes cache
     );
@@ -178,8 +181,10 @@ export const dashboardApi = {
     return apiCache.getOrFetch(
       "dashboard:grade-stats",
       async () => {
-        const response = await apiClient.get("/dashboard/grade-stats");
-        return response.data;
+        // apiClient.get already unwraps .data, so just return the response directly
+        const data = await apiClient.get("/dashboard/grade-stats");
+        console.log("📊 Dashboard API: Data after unwrapping:", data);
+        return data;
       },
       2 * 60 * 1000 // 2 minutes cache
     );
