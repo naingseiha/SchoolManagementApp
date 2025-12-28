@@ -125,7 +125,6 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
   // ✅ Auto-load data when class is pre-selected from URL/props
   useEffect(() => {
     if (initialClassId && classes.length > 0 && !dataLoaded && !loading && currentUser) {
-      console.log("🎯 Auto-loading data for pre-selected class:", initialClassId);
       handleLoadData();
     }
   }, [initialClassId, classes.length, currentUser]);
@@ -307,12 +306,6 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
         })
       );
 
-      console.log(
-        "💾 Batch saving",
-        gradesToSave.length,
-        "grades"
-      );
-
       await gradeApi.bulkSaveGrades(
         selectedClass,
         selectedMonth,
@@ -338,10 +331,7 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
           return next;
         });
       }, 2000);
-
-      console.log("✅ Batch save completed successfully");
     } catch (error: any) {
-      console.error("❌ Batch save error:", error);
       setSavingStudents((prev) => {
         const next = new Set(prev);
         studentsToSave.forEach((_, studentId) => next.delete(studentId));
@@ -353,7 +343,6 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
 
       // ✅ If more changes were queued during save, trigger another batch
       if (saveQueueRef.current.size > 0) {
-        console.log("🔄 More changes queued, scheduling another batch save");
         batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 500);
       }
     }

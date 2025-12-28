@@ -210,19 +210,11 @@ export default function MobileMonthlyReport() {
 
     setLoading(true);
     try {
-      console.log("📊 Loading report:", {
-        classId: selectedClass,
-        month: selectedMonth,
-        year: selectedYear,
-      });
-
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClass}? month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ API Error:", response.status, errorText);
         throw new Error(`HTTP ${response.status}: មានបញ្ហា`);
       }
 
@@ -265,8 +257,7 @@ export default function MobileMonthlyReport() {
 
       setShowFilters(false);
     } catch (error: any) {
-      console.error("❌ Error loading report:", error);
-      alert(`មានបញ្ហា:  ${error.message}`);
+      alert(`មានបញ្ហា: ${error.message}`);
     } finally {
       setLoading(false);
     }

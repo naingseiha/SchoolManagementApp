@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Save,
+  RefreshCw,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -102,9 +103,13 @@ export default function MobileAttendance({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoLoaded = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const touchStartRef = useRef<number>(0);
+  const touchMoveRef = useRef<number>(0);
 
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
@@ -140,44 +145,45 @@ export default function MobileAttendance({
       !selectedClass &&
       !hasAutoLoaded.current
     ) {
-      console.log("✅ Auto-selecting homeroom class:", teacherHomeroomClassId);
       setSelectedClass(teacherHomeroomClassId);
       hasAutoLoaded.current = true;
     }
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [authLoading, currentUser, teacherHomeroomClassId, selectedClass]);
 
-  // ✅ Auto-load data when class is selected
-  useEffect(() => {
-    if (selectedClass && !loadingData && hasAutoLoaded.current) {
-      console.log("✅ Auto-loading attendance data");
-      loadAttendanceData();
-    }
-  }, [selectedClass]);
-
-  const loadAttendanceData = async () => {
+  const loadAttendanceData = useCallback(async (refresh = false) => {
     if (!selectedClass) {
       setStudents([]);
       return;
     }
 
-    setLoadingData(true);
+    if (refresh) {
+      setIsRefreshing(true);
+    } else {
+      setLoadingData(true);
+    }
     setError(null);
-    setHasUnsavedChanges(false); // Reset unsaved changes when loading new data
+    setHasUnsavedChanges(false);
+
     try {
-      console.log("📅 Loading attendance:", {
-        classId: selectedClass,
-        month: selectedMonth,
-        monthNumber: monthNumber,
-        year: selectedYear,
-      });
+      // Abort previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`,
+        { signal: abortControllerRef.current.signal }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("❌ API Error:", response.status, errorText);
         throw new Error(`មានបញ្ហា:  ${errorText}`);
       }
 
@@ -221,12 +227,14 @@ export default function MobileAttendance({
 
       setStudents(studentsData);
     } catch (error: any) {
-      console.error("❌ Error loading attendance:", error);
-      setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ:  ${error.message}`);
+      if (error.name !== 'AbortError') {
+        setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ:  ${error.message}`);
+      }
     } finally {
       setLoadingData(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [selectedClass, selectedMonth, selectedYear, monthNumber, daysArray]);
 
   // ✅ Toggle student status for morning or afternoon - NO AUTO SAVE
   const toggleStudentStatus = (studentId: string, session: "M" | "A") => {
@@ -304,15 +312,6 @@ export default function MobileAttendance({
         });
       });
 
-      console.log("💾 Saving attendance (manual save):", {
-        classId: selectedClass,
-        month: selectedMonth,
-        year: selectedYear,
-        currentDay: currentDay,
-        monthNumber: monthNumber,
-        records: attendanceRecords.length,
-      });
-
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/attendance/bulk-save`,
         {
@@ -349,7 +348,6 @@ export default function MobileAttendance({
         throw new Error(result.message || "Save failed");
       }
     } catch (error: any) {
-      console.error("❌ Save error:", error);
       alert(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
     } finally {
       setSaving(false);

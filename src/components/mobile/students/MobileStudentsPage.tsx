@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
@@ -13,6 +13,8 @@ import {
   Sparkles,
   GraduationCap,
   School,
+  Copy,
+  Check,
 } from "lucide-react";
 import { studentsApi, Student } from "@/lib/api/students";
 
@@ -20,39 +22,57 @@ export default function MobileStudentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [students, setStudents] = useState<Student[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [searchQuery, setSearchQuery] = useState(
     searchParams?.get("search") || ""
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const touchStartRef = useRef<number>(0);
+  const touchMoveRef = useRef<number>(0);
 
   useEffect(() => {
     loadStudents();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    filterStudents();
-  }, [searchQuery, selectedGrade, students]);
-
-  const loadStudents = async () => {
+  const loadStudents = useCallback(async (refresh = false) => {
     try {
-      setIsLoading(true);
+      if (refresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
       setError(null);
-      console.log("📚 Loading students...");
+
+      // Abort previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       const data = await studentsApi.getAllLightweight();
-      console.log("✅ Loaded students:", data.length);
       setStudents(data);
     } catch (error: any) {
-      console.error("❌ Error loading students:", error);
-      setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យសិស្ស");
+      if (error.name !== 'AbortError') {
+        setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យសិស្ស");
+      }
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, []);
 
-  const filterStudents = () => {
+  // Memoized filtered students
+  const filteredStudents = useMemo(() => {
     let filtered = students;
 
     // Filter by search query
@@ -85,26 +105,54 @@ export default function MobileStudentsPage() {
       });
     }
 
-    console.log(
-      `🔍 Filtered: ${filtered.length} / ${students.length} students`
-    );
-    setFilteredStudents(filtered);
-  };
+    return filtered;
+  }, [students, searchQuery, selectedGrade]);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchQuery("");
     setSelectedGrade("all");
-  };
+  }, []);
+
+  const handleCopy = useCallback((studentId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(studentId);
+    setCopiedId(studentId);
+    setTimeout(() => setCopiedId(null), 2000);
+  }, []);
+
+  // Pull to refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    touchMoveRef.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const touchDiff = touchMoveRef.current - touchStartRef.current;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+    if (scrollTop === 0 && touchDiff > 100 && !isRefreshing && !isLoading) {
+      loadStudents(true);
+    }
+
+    touchStartRef.current = 0;
+    touchMoveRef.current = 0;
+  }, [isRefreshing, isLoading, loadStudents]);
 
   const grades = ["7", "8", "9", "10", "11", "12"];
 
-  // Statistics
-  const stats = {
-    total: students.length,
-    male: students.filter((s) => s.gender === "male").length,
-    female: students.filter((s) => s.gender === "female").length,
-    withClass: students.filter((s) => s.classId).length,
-  };
+  // Memoized Statistics
+  const stats = useMemo(
+    () => ({
+      total: students.length,
+      male: students.filter((s) => s.gender === "male").length,
+      female: students.filter((s) => s.gender === "female").length,
+      withClass: students.filter((s) => s.classId).length,
+    }),
+    [students]
+  );
 
   if (isLoading) {
     return (
@@ -147,8 +195,8 @@ export default function MobileStudentsPage() {
           </h2>
           <p className="font-khmer-body text-gray-600 mb-6">{error}</p>
           <button
-            onClick={loadStudents}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-khmer-body font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
+            onClick={() => loadStudents(false)}
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-khmer-body font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all active:scale-95"
           >
             ព្យាយាមម្តងទៀត
           </button>
@@ -158,7 +206,19 @@ export default function MobileStudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20">
+    <div
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to Refresh Indicator */}
+      {isRefreshing && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2 animate-fadeIn">
+          <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="font-khmer-body text-sm text-gray-700">កំពុងបន្ទាន់សម័យ...</span>
+        </div>
+      )}
       {/* Modern Header with Stats */}
       <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 px-4 pt-8 pb-20 relative overflow-hidden">
         {/* Background Pattern */}
@@ -323,22 +383,21 @@ export default function MobileStudentsPage() {
             return (
               <button
                 key={student.id}
-                onClick={() => {
-                  console.log("👤 Student clicked:", student.khmerName);
-                  router.push(`/students/${student.id}`);
-                }}
-                className={`w-full bg-gradient-to-br ${gradientClass} border rounded-2xl p-4 hover:shadow-lg transition-all text-left transform hover:scale-[1.02] active:scale-[0.98]`}
+                onClick={() => router.push(`/students/${student.id}`)}
+                className={`w-full bg-gradient-to-br ${gradientClass} border rounded-2xl p-4 hover:shadow-lg transition-all text-left transform hover:scale-[1.02] active:scale-[0.98] animate-fadeIn`}
               >
                 <div className="flex items-center gap-3">
-                  {/* Avatar */}
+                  {/* Avatar with decorative elements */}
                   <div
-                    className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center ${
+                    className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center relative overflow-hidden ${
                       student.gender === "male"
                         ? "bg-gradient-to-br from-blue-500 to-indigo-500"
                         : "bg-gradient-to-br from-pink-500 to-rose-500"
                     }`}
                   >
-                    <User className="w-7 h-7 text-white" />
+                    <div className="absolute -top-4 -right-4 w-8 h-8 bg-white/20 rounded-full"></div>
+                    <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-white/10 rounded-full"></div>
+                    <User className="w-7 h-7 text-white relative z-10" />
                   </div>
 
                   {/* Info */}
@@ -348,9 +407,19 @@ export default function MobileStudentsPage() {
                         `${student.firstName} ${student.lastName}`}
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-sm font-semibold text-indigo-600 bg-white/60 backdrop-blur-sm px-2 py-0.5 rounded-lg">
-                        {student.studentId}
-                      </span>
+                      <div className="flex items-center gap-1 text-sm font-semibold text-indigo-600 bg-white/60 backdrop-blur-sm px-2 py-0.5 rounded-lg">
+                        <span>{student.studentId}</span>
+                        <button
+                          onClick={(e) => handleCopy(student.studentId, e)}
+                          className="hover:scale-110 transition-transform"
+                        >
+                          {copiedId === student.studentId ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-indigo-500" />
+                          )}
+                        </button>
+                      </div>
                       {student.class?.name && (
                         <>
                           <span className="w-1 h-1 bg-gray-400 rounded-full"></span>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Search, User, Users, X } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, User, Users, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface SearchResult {
@@ -22,6 +22,8 @@ export default function SearchBar({ onResultClick }: SearchBarProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,26 +37,42 @@ export default function SearchBar({ onResultClick }: SearchBarProps) {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    const performSearch = async () => {
-      if (query.trim().length < 2) {
-        setResults([]);
-        setShowResults(false);
-        return;
+  const performSearch = useCallback(async () => {
+    if (query.trim().length < 2) {
+      setResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowResults(true);
+
+    try {
+      // Abort previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+      abortControllerRef.current = new AbortController();
 
-      setIsSearching(true);
-      setShowResults(true);
-
-      try {
-        // Search both students and teachers
-        const [studentsResponse, teachersResponse] = await Promise.all([
-          fetch(`/api/students/lightweight`).then((res) => res.json()),
-          fetch(`/api/teachers`).then((res) => res.json()),
-        ]);
+      const [studentsResponse, teachersResponse] = await Promise.all([
+        fetch(`/api/students/lightweight`, {
+          signal: abortControllerRef.current.signal
+        }).then((res) => res.json()),
+        fetch(`/api/teachers`, {
+          signal: abortControllerRef.current.signal
+        }).then((res) => res.json()),
+      ]);
 
         const students = studentsResponse.data || [];
         const teachers = teachersResponse.data || [];
@@ -98,18 +116,31 @@ export default function SearchBar({ onResultClick }: SearchBarProps) {
               : "គ្រូបង្រៀន",
           }));
 
-        setResults([...studentResults, ...teacherResults]);
-      } catch (error) {
-        console.error("Search error:", error);
+      setResults([...studentResults, ...teacherResults]);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
         setResults([]);
-      } finally {
-        setIsSearching(false);
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  }, [query]);
+
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      performSearch();
+    }, 400);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
     };
-
-    const debounceTimer = setTimeout(performSearch, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [query]);
+  }, [query, performSearch]);
 
   const handleResultClick = (result: SearchResult) => {
     setShowResults(false);

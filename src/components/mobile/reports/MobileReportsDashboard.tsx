@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Loader2,
   BarChart3,
@@ -96,6 +96,12 @@ export default function MobileReportsDashboard() {
   );
   const [loading, setLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [classInfo, setClassInfo] = useState<{
+    className: string;
+    grade: string;
+    track?: string;
+  } | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
@@ -103,50 +109,54 @@ export default function MobileReportsDashboard() {
     }
   }, [classes.length, isLoadingClasses, refreshClasses]);
 
-  const loadSubjectStatus = async () => {
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const loadSubjectStatus = useCallback(async () => {
     if (!selectedClass) {
       alert("សូមជ្រើសរើសថ្នាក់");
       return;
     }
 
+    // Abort previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setLoading(true);
     setSelectedSubject(null);
     try {
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("📊 LOADING SUBJECT STATUS:");
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("Request params:", {
-        classId: selectedClass,
-        month: selectedMonth,
-        monthType: typeof selectedMonth,
-        year: selectedYear,
-        yearType: typeof selectedYear,
-      });
-
       const gridData = await gradeApi.getGradesGrid(
         selectedClass,
         selectedMonth,
         selectedYear
       );
 
-      console.log("✅ Grid data received:", {
+      // Get track from the selected class
+      const selectedClassData = classes.find((c) => c.id === selectedClass);
+
+      // Store class info including track
+      setClassInfo({
         className: gridData.className,
-        month: selectedMonth,
-        year: selectedYear,
-        studentsCount: gridData.students.length,
-        subjectsCount: gridData.subjects.length,
+        grade: gridData.grade,
+        track: (gridData as any).track || selectedClassData?.track,
       });
 
       const totalStudents = gridData.students.length;
 
-      console.log("🔍 Processing grades for each subject:");
-
       const subjectStatusList: SubjectStatus[] = gridData.subjects.map(
-        (subject: any, idx: number) => {
+        (subject: any) => {
           const studentGrades: StudentGrade[] = [];
           let studentsWithGrades = 0;
 
-          gridData.students.forEach((student: any, studentIdx: number) => {
+          gridData.students.forEach((student: any) => {
             const gradeData = student.grades[subject.id];
             const score = gradeData?.score ?? null;
 
@@ -161,14 +171,6 @@ export default function MobileReportsDashboard() {
             if (score !== null && score !== undefined) {
               studentsWithGrades++;
             }
-
-            if (studentIdx === 0) {
-              console.log(`  Subject ${idx + 1} (${subject.nameKh}):`, {
-                firstStudent: student.studentName,
-                score: score,
-                hasScore: score !== null,
-              });
-            }
           });
 
           const completionRate =
@@ -177,10 +179,6 @@ export default function MobileReportsDashboard() {
               : 0;
 
           const isComplete = studentsWithGrades === totalStudents;
-
-          console.log(
-            `  ✅ ${subject.nameKh}:  ${studentsWithGrades}/${totalStudents} (${completionRate}%)`
-          );
 
           return {
             subjectId: subject.id,
@@ -198,20 +196,16 @@ export default function MobileReportsDashboard() {
         }
       );
 
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      console.log("✅ Subject status loaded successfully");
-      console.log("Total subjects:", subjectStatusList.length);
-      console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
       setSubjects(subjectStatusList);
       setDataLoaded(true);
     } catch (error: any) {
-      console.error("❌ Error loading subject status:", error);
-      alert(`មានបញ្ហា: ${error.message}`);
+      if (error.name !== 'AbortError') {
+        alert(`មានបញ្ហា: ${error.message}`);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedClass, selectedMonth, selectedYear, classes]);
 
   const handleViewReport = () => {
     const params = new URLSearchParams({
@@ -498,6 +492,27 @@ export default function MobileReportsDashboard() {
             {/* Summary Header */}
             <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
+                {/* Track Indicator for Grade 11/12 */}
+                {classInfo && (classInfo.grade === "11" || classInfo.grade === "12") && (
+                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/20">
+                    <span className="text-xs text-indigo-100 font-medium">
+                      {classInfo.className}
+                    </span>
+                    {classInfo.track && (
+                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        classInfo.track === 'science'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-orange-500 text-white'
+                      }`}>
+                        {classInfo.track === 'science' ? '🔬 វិទ្យាសាស្ត្រ' : '🌍 សង្គម'}
+                      </div>
+                    )}
+                    <span className="ml-auto text-xs text-indigo-100">
+                      {totalSubjects} មុខវិជ្ជា
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-indigo-100 font-medium">
                     ភាពពេញលេញ
@@ -514,7 +529,7 @@ export default function MobileReportsDashboard() {
                 </div>
                 <div className="flex items-center justify-between mt-2 text-xs text-indigo-100">
                   <span>
-                    {completedSubjects} / {totalSubjects} មុខវិជ្ជា
+                    {completedSubjects} / {totalSubjects} បានបញ្ចូល
                   </span>
                   <span>{subjects[0]?.totalStudents || 0} សិស្ស</span>
                 </div>
