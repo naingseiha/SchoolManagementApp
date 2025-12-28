@@ -321,9 +321,13 @@ export class DashboardController {
   static async getGradeLevelStats(req: Request, res: Response) {
     try {
       const currentYear = new Date().getFullYear();
-      const currentMonth = new Intl.DateTimeFormat("en-US", {
-        month: "long",
-      }).format(new Date());
+
+      // Get Khmer month name (grades are stored in Khmer)
+      const monthNames = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+      const currentMonth = monthNames[new Date().getMonth()];
 
       // Get all grades 7-12
       const grades = ["7", "8", "9", "10", "11", "12"];
