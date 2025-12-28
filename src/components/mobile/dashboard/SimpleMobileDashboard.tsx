@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -12,9 +12,11 @@ import {
   Award,
   Target,
   BarChart3,
-  GraduationCap
+  GraduationCap,
+  CheckCircle
 } from "lucide-react";
 import { dashboardApi, GradeLevelStats } from "@/lib/api/dashboard";
+import DashboardSkeleton from "./DashboardSkeleton";
 
 interface SimpleMobileDashboardProps {
   currentUser: any;
@@ -29,48 +31,56 @@ export default function SimpleMobileDashboard({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const touchStartRef = useRef<number>(0);
+  const touchMoveRef = useRef<number>(0);
 
   useEffect(() => {
-    // Clear cache on mount to ensure fresh data
-    console.log("🧹 Clearing dashboard cache...");
-    dashboardApi.clearCache();
     loadGradeStats();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
-  const loadGradeStats = async () => {
+  const loadGradeStats = useCallback(async (refresh = false) => {
     try {
-      setIsLoading(true);
+      if (refresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
       setError(null);
+
+      // Abort previous request if exists
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
 
       // Check if token exists
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      console.log("🔑 Token exists:", !!token);
-      if (token) {
-        console.log("🔑 Token preview:", token.substring(0, 20) + "...");
-      } else {
-        console.error("❌ No token found in localStorage!");
+      if (!token) {
         setError("ការផ្ទៀងផ្ទាត់មិនត្រឹមត្រូវ • Not authenticated");
         setIsLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
-      console.log("🔄 Loading grade stats...");
-      console.log("👤 Current user:", currentUser);
+      // Clear cache if refreshing
+      if (refresh) {
+        dashboardApi.clearCache();
+      }
+
       const data = await dashboardApi.getGradeLevelStats();
-      console.log("✅ Grade stats loaded successfully!");
-      console.log("📊 Data structure:", {
-        hasData: !!data,
-        hasGrades: !!data?.grades,
-        gradesLength: data?.grades?.length,
-        currentMonth: data?.currentMonth,
-        currentYear: data?.currentYear,
-        firstGrade: data?.grades?.[0]
-      });
 
       if (!data || !data.grades) {
-        console.error("❌ Invalid data structure:", data);
         setError("ទិន្នន័យមិនត្រឹមត្រូវ • Invalid data structure");
         setIsLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
@@ -78,52 +88,106 @@ export default function SimpleMobileDashboard({
       // Select first grade with classes
       const gradeWithClasses = data.grades.find(g => g.totalClasses > 0);
       if (gradeWithClasses) {
-        console.log("✅ Selected grade:", gradeWithClasses.grade);
         setSelectedGrade(gradeWithClasses.grade);
-      } else {
-        console.warn("⚠️ No grades with classes found");
       }
     } catch (error: any) {
-      console.error("❌ Error loading grade stats:", error);
-      setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យ");
+      if (error.name !== 'AbortError') {
+        setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យ");
+      }
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, []);
 
-  const selectedGradeData = gradeStats?.grades.find(
-    (g) => g.grade === selectedGrade
+  // Memoized color calculation functions
+  const getGradientClass = useCallback((avg: number) => {
+    if (avg >= 80) return "from-green-500 to-emerald-500";
+    if (avg >= 70) return "from-blue-500 to-indigo-500";
+    if (avg >= 60) return "from-yellow-500 to-orange-500";
+    if (avg >= 50) return "from-orange-500 to-red-500";
+    return "from-red-500 to-rose-500";
+  }, []);
+
+  const getBgClass = useCallback((avg: number) => {
+    if (avg >= 80) return "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200";
+    if (avg >= 70) return "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200";
+    if (avg >= 60) return "bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200";
+    if (avg >= 50) return "bg-gradient-to-br from-orange-50 to-red-50 border-orange-200";
+    return "bg-gradient-to-br from-red-50 to-rose-50 border-red-200";
+  }, []);
+
+  const getCompletionColor = useCallback((percentage: number) => {
+    if (percentage >= 80) return "from-green-500 to-emerald-500";
+    if (percentage >= 60) return "from-blue-500 to-indigo-500";
+    if (percentage >= 40) return "from-yellow-500 to-orange-500";
+    return "from-red-500 to-rose-500";
+  }, []);
+
+  const selectedGradeData = useMemo(
+    () => gradeStats?.grades.find((g) => g.grade === selectedGrade),
+    [gradeStats, selectedGrade]
   );
 
   // Calculate overall statistics
-  const totalStats = gradeStats?.grades.reduce(
-    (acc, grade) => ({
-      students: acc.students + grade.totalStudents,
-      classes: acc.classes + grade.totalClasses,
-      avgScore: acc.avgScore + grade.averageScore,
-      passRate: acc.passRate + grade.passPercentage,
-    }),
-    { students: 0, classes: 0, avgScore: 0, passRate: 0 }
+  const totalStats = useMemo(
+    () =>
+      gradeStats?.grades.reduce(
+        (acc, grade) => ({
+          students: acc.students + grade.totalStudents,
+          classes: acc.classes + grade.totalClasses,
+          avgScore: acc.avgScore + grade.averageScore,
+          passRate: acc.passRate + grade.passPercentage,
+        }),
+        { students: 0, classes: 0, avgScore: 0, passRate: 0 }
+      ),
+    [gradeStats]
   );
 
-  const overallAvg = totalStats && gradeStats
-    ? (totalStats.avgScore / gradeStats.grades.length).toFixed(1)
-    : "0";
+  const overallAvg = useMemo(
+    () =>
+      totalStats && gradeStats
+        ? (totalStats.avgScore / gradeStats.grades.length).toFixed(1)
+        : "0",
+    [totalStats, gradeStats]
+  );
 
-  const overallPassRate = totalStats && gradeStats
-    ? (totalStats.passRate / gradeStats.grades.length).toFixed(1)
-    : "0";
+  const overallPassRate = useMemo(
+    () =>
+      totalStats && gradeStats
+        ? (totalStats.passRate / gradeStats.grades.length).toFixed(1)
+        : "0",
+    [totalStats, gradeStats]
+  );
 
-  const handleSearch = (e?: React.FormEvent) => {
+  const handleSearch = useCallback((e?: React.FormEvent) => {
     e?.preventDefault();
-    console.log("🔍 Search initiated:", searchQuery);
     if (searchQuery.trim()) {
-      console.log("✅ Navigating to students page with search:", searchQuery);
       router.push(`/students?search=${encodeURIComponent(searchQuery)}`);
-    } else {
-      console.log("⚠️ Search query is empty");
     }
-  };
+  }, [searchQuery, router]);
+
+  // Pull to refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    touchMoveRef.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const touchDiff = touchMoveRef.current - touchStartRef.current;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+    // If user is at top and pulled down more than 100px, refresh
+    if (scrollTop === 0 && touchDiff > 100 && !isRefreshing && !isLoading) {
+      loadGradeStats(true);
+    }
+
+    touchStartRef.current = 0;
+    touchMoveRef.current = 0;
+  }, [isRefreshing, isLoading, loadGradeStats]);
 
   // Error state
   if (error) {
@@ -140,7 +204,7 @@ export default function SimpleMobileDashboard({
             {error}
           </p>
           <button
-            onClick={loadGradeStats}
+            onClick={() => loadGradeStats(false)}
             className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-khmer-body font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all"
           >
             ព្យាយាមម្តងទៀត
@@ -151,18 +215,24 @@ export default function SimpleMobileDashboard({
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-khmer-body text-gray-700 text-lg">កំពុងផ្ទុក...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pb-20">
+    <div
+      className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pb-20"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to Refresh Indicator */}
+      {isRefreshing && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="font-khmer-body text-sm text-gray-700">កំពុងបន្ទាន់សម័យ...</span>
+        </div>
+      )}
+
       {/* Modern Gradient Header */}
       <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 px-4 pt-8 pb-24 relative overflow-hidden">
         {/* Background Pattern */}
@@ -240,10 +310,7 @@ export default function SimpleMobileDashboard({
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => {
-                    console.log("🗑️ Clearing search");
-                    setSearchQuery("");
-                  }}
+                  onClick={() => setSearchQuery("")}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg"
                 >
                   <X className="w-4 h-4" />
@@ -299,7 +366,7 @@ export default function SimpleMobileDashboard({
         </div>
       )}
 
-      {/* Grade Tabs - Modern Pills */}
+      {/* Grade Tabs - Enhanced with Student Counts */}
       <div className="px-4 mb-4">
         <div className="flex items-center gap-2 mb-3">
           <Target className="w-5 h-5 text-gray-600" />
@@ -315,19 +382,21 @@ export default function SimpleMobileDashboard({
                 key={grade}
                 onClick={() => setSelectedGrade(grade)}
                 disabled={!hasClasses}
-                className={`flex-shrink-0 px-5 py-3 rounded-xl font-khmer-body text-sm font-bold transition-all duration-200 ${
+                className={`flex-shrink-0 px-4 py-3 rounded-xl font-khmer-body text-sm font-bold transition-all duration-200 ${
                   selectedGrade === grade
                     ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105"
                     : hasClasses
-                    ? "bg-white text-gray-700 border border-gray-200 hover:border-indigo-300 hover:shadow-md"
+                    ? "bg-white text-gray-700 border border-gray-200 hover:border-indigo-300 hover:shadow-md active:scale-95"
                     : "bg-gray-100 text-gray-400 cursor-not-allowed"
                 }`}
               >
-                <div className="text-center">
-                  <div>ថ្នាក់ {grade}</div>
+                <div className="text-center min-w-max">
+                  <div className="mb-1">ថ្នាក់ {grade}</div>
                   {hasClasses && (
-                    <div className="text-xs opacity-80 mt-0.5">
-                      {gradeData.totalClasses} ថ្នាក់
+                    <div className="text-xs opacity-80 flex items-center gap-1 justify-center">
+                      <span>{gradeData.totalClasses} ថ្នាក់</span>
+                      <span>•</span>
+                      <span>{gradeData.totalStudents} សិស្ស</span>
                     </div>
                   )}
                 </div>
@@ -337,7 +406,7 @@ export default function SimpleMobileDashboard({
         </div>
       </div>
 
-      {/* Classes List */}
+      {/* Horizontal Class Cards */}
       {selectedGradeData && (
         <div className="px-4">
           <div className="flex items-center justify-between mb-3">
@@ -360,119 +429,125 @@ export default function SimpleMobileDashboard({
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {selectedGradeData.classes.map((cls, index) => {
-                // Determine card color based on average score
-                const getGradientClass = (avg: number) => {
-                  if (avg >= 80) return "from-green-500 to-emerald-500";
-                  if (avg >= 70) return "from-blue-500 to-indigo-500";
-                  if (avg >= 60) return "from-yellow-500 to-orange-500";
-                  if (avg >= 50) return "from-orange-500 to-red-500";
-                  return "from-red-500 to-rose-500";
-                };
+            <div className="overflow-x-auto hide-scrollbar -mx-4 px-4">
+              <div className="flex gap-4 pb-2">
+                {selectedGradeData.classes.map((cls) => {
+                  const completion = cls.completionPercentage;
 
-                const getBgClass = (avg: number) => {
-                  if (avg >= 80) return "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200";
-                  if (avg >= 70) return "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200";
-                  if (avg >= 60) return "bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200";
-                  if (avg >= 50) return "bg-gradient-to-br from-orange-50 to-red-50 border-orange-200";
-                  return "bg-gradient-to-br from-red-50 to-rose-50 border-red-200";
-                };
+                  return (
+                    <button
+                      key={cls.id}
+                      onClick={() => router.push(`/grade-entry?classId=${cls.id}`)}
+                      className="flex-shrink-0 w-80 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-100 group"
+                    >
+                      {/* Header with gradient */}
+                      <div
+                        className={`bg-gradient-to-r ${getCompletionColor(completion)} p-4 relative overflow-hidden`}
+                      >
+                        {/* Decorative circles */}
+                        <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/20 rounded-full"></div>
+                        <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/10 rounded-full"></div>
 
-                const completion = cls.completionPercentage;
+                        <div className="relative z-10">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="bg-white/25 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-white/30">
+                              <span className="font-khmer-title text-white text-sm font-bold">
+                                {cls.name}
+                              </span>
+                            </div>
+                            <div className="bg-white/25 backdrop-blur-sm rounded-lg p-1.5 border border-white/30">
+                              <Users className="w-4 h-4 text-white" />
+                            </div>
+                          </div>
 
-                return (
-                  <button
-                    key={cls.id}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      console.log("🎯 Class clicked:", cls.name, "ID:", cls.id);
-                      const url = `/grade-entry?classId=${cls.id}`;
-                      console.log("🔗 Navigating to:", url);
-                      router.push(url);
-                    }}
-                    className={`w-full ${getBgClass(cls.averageScore)} border rounded-2xl p-4 hover:shadow-lg transition-all duration-200 text-left transform hover:scale-[1.02] active:scale-[0.98]`}
-                  >
-                    {/* Header with gradient accent */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className={`w-1 h-8 rounded-full bg-gradient-to-b ${getGradientClass(cls.averageScore)}`}></div>
-                          <div>
-                            <h3 className="font-khmer-title text-lg font-bold text-gray-900">
-                              {cls.name}
-                            </h3>
-                            <p className="font-khmer-body text-sm text-gray-600">
-                              គ្រូ: {cls.teacherName}
-                            </p>
+                          <div className="flex items-center gap-2">
+                            <div className="bg-white/25 backdrop-blur-sm rounded-full px-3 py-1 border border-white/30">
+                              <span className="font-khmer-body text-white text-xs font-semibold">
+                                {cls.studentCount} សិស្ស
+                              </span>
+                            </div>
+                            <div className="bg-white/25 backdrop-blur-sm rounded-full px-2 py-1 border border-white/30">
+                              <span className="font-khmer-body text-white text-xs">
+                                គ្រូ: {cls.teacherName}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        {cls.averageScore > 0 && (
-                          <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getGradientClass(cls.averageScore)} text-white text-sm font-bold`}>
+
+                      {/* Body */}
+                      <div className="p-4 space-y-3">
+                        {/* Average Score */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-100 rounded-lg">
+                              <TrendingUp className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="font-khmer-body text-xs font-semibold text-gray-700">
+                              មធ្យមភាគថ្នាក់
+                            </span>
+                          </div>
+                          <div
+                            className={`px-3 py-1 rounded-lg border font-black text-sm ${
+                              cls.averageScore >= 80
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : cls.averageScore >= 70
+                                ? "text-blue-600 bg-blue-50 border-blue-200"
+                                : cls.averageScore >= 60
+                                ? "text-yellow-600 bg-yellow-50 border-yellow-200"
+                                : cls.averageScore >= 50
+                                ? "text-orange-600 bg-orange-50 border-orange-200"
+                                : "text-red-600 bg-red-50 border-red-200"
+                            }`}
+                          >
                             {cls.averageScore.toFixed(1)}
                           </div>
+                        </div>
+
+                        {/* Subject Completion */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="p-1.5 bg-purple-100 rounded-lg">
+                                <BookOpen className="w-4 h-4 text-purple-600" />
+                              </div>
+                              <span className="font-khmer-body text-xs font-semibold text-gray-700">
+                                បញ្ចូលពិន្ទុ
+                              </span>
+                            </div>
+                            <span className="font-khmer-body text-xs font-bold text-gray-600">
+                              {cls.completedSubjects}/{cls.totalSubjects}
+                            </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="relative h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-gradient-to-r ${getCompletionColor(completion)} rounded-full transition-all duration-700`}
+                              style={{ width: `${completion}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex items-center justify-end mt-1">
+                            <span className="font-black text-xs text-gray-600">
+                              {completion}%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        {completion === 100 && (
+                          <div className="flex items-center justify-center gap-1 bg-green-50 border border-green-200 rounded-lg py-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="font-khmer-body text-xs font-bold text-green-700">
+                              បានបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
+                            </span>
+                          </div>
                         )}
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
                       </div>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-3 gap-3 mb-3">
-                      <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-xl p-2">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Users className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-gray-900">
-                            {cls.studentCount}
-                          </p>
-                          <p className="font-khmer-body text-xs text-gray-500">
-                            សិស្ស
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-xl p-2">
-                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <BookOpen className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-gray-900">
-                            {cls.completedSubjects}/{cls.totalSubjects}
-                          </p>
-                          <p className="font-khmer-body text-xs text-gray-500">
-                            មុខវិជ្ជា
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm rounded-xl p-2">
-                        <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Target className="w-4 h-4 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-gray-900">
-                            {completion}%
-                          </p>
-                          <p className="font-khmer-body text-xs text-gray-500">
-                            បញ្ចប់
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="w-full bg-gray-200/50 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-full bg-gradient-to-r ${getGradientClass(cls.averageScore)} transition-all duration-500 rounded-full`}
-                        style={{ width: `${completion}%` }}
-                      ></div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

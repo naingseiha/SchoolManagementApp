@@ -61,7 +61,9 @@ export default function MobileStudentDetails({
 
   const handleDelete = async () => {
     if (!isAdmin) {
-      alert("អ្នកមិនមានសិទ្ធិលុបសិស្សទេ • You don't have permission to delete students");
+      alert(
+        "អ្នកមិនមានសិទ្ធិលុបសិស្សទេ • You don't have permission to delete students"
+      );
       return;
     }
 
@@ -186,19 +188,17 @@ export default function MobileStudentDetails({
               {/* Avatar */}
               <div
                 className={`w-24 h-24 rounded-2xl flex items-center justify-center mb-4 ${
-                  student.gender === "male"
-                    ? "bg-blue-500"
-                    : "bg-pink-500"
+                  student.gender === "male" ? "bg-blue-500" : "bg-pink-500"
                 }`}
               >
                 <User className="w-12 h-12 text-white" />
               </div>
 
               {/* Name */}
-              <h2 className="font-khmer-title text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="font-khmer-title text-2xl font-bold text-gray-900 mb-2">
                 {student.khmerName ||
                   `${student.firstName} ${student.lastName}`}
-              </h2>
+              </h1>
 
               {/* Student ID */}
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full mb-4">
@@ -401,7 +401,8 @@ export default function MobileStudentDetails({
           <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
             <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
             <p className="font-khmer-body text-xs text-gray-600">
-              អ្នកមិនមានសិទ្ធិកែប្រែព័ត៌មានសិស្សទេ • You can only view student information
+              អ្នកមិនមានសិទ្ធិកែប្រែព័ត៌មានសិស្សទេ • You can only view student
+              information
             </p>
           </div>
         )}
