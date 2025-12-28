@@ -199,7 +199,7 @@ export default function MobileReportsDashboard() {
       setSubjects(subjectStatusList);
       setDataLoaded(true);
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
+      if (error.name !== "AbortError") {
         alert(`មានបញ្ហា: ${error.message}`);
       }
     } finally {
@@ -225,6 +225,9 @@ export default function MobileReportsDashboard() {
 
   // ✅ Subject Detail View
   if (selectedSubject) {
+    // Check if we should treat blank scores as absences (completion > 90%)
+    const treatBlanksAsAbsent = selectedSubject.completionRate >= 90;
+
     return (
       <MobileLayout title="ពិន្ទុសិស្ស • Student Grades">
         <div className="flex flex-col h-full bg-gray-50">
@@ -269,6 +272,15 @@ export default function MobileReportsDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Absence Notice */}
+            {treatBlanksAsAbsent && (
+              <div className="mt-3 bg-orange-500/20 backdrop-blur-sm rounded-lg p-2 border border-orange-300/30">
+                <p className="text-xs text-white text-center">
+                  ⚠️ សិស្សដែលគ្មានពិន្ទុ = អវត្តមាន (A) • Blank scores = Absent
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Student List */}
@@ -276,6 +288,7 @@ export default function MobileReportsDashboard() {
             {selectedSubject.studentGrades.map((student, index) => {
               const hasScore =
                 student.score !== null && student.score !== undefined;
+              const isAbsent = !hasScore && treatBlanksAsAbsent;
 
               return (
                 <div
@@ -283,6 +296,8 @@ export default function MobileReportsDashboard() {
                   className={`bg-white rounded-lg shadow-sm border-2 p-3 ${
                     hasScore
                       ? "border-green-200 bg-green-50/30"
+                      : isAbsent
+                      ? "border-orange-200 bg-orange-50/30"
                       : "border-gray-200"
                   }`}
                 >
@@ -293,6 +308,8 @@ export default function MobileReportsDashboard() {
                         className={`w-8 h-8 rounded-full flex items-center justify-center ${
                           hasScore
                             ? "bg-green-100 text-green-700"
+                            : isAbsent
+                            ? "bg-orange-100 text-orange-700"
                             : "bg-gray-100 text-gray-500"
                         }`}
                       >
@@ -324,6 +341,17 @@ export default function MobileReportsDashboard() {
                             /{student.maxScore}
                           </span>
                         </div>
+                      ) : isAbsent ? (
+                        <div className="flex flex-col items-end">
+                          <div className="px-3 py-1 bg-orange-100 border-2 border-orange-300 rounded-lg">
+                            <span className="text-lg font-bold text-orange-700">
+                              A
+                            </span>
+                          </div>
+                          <span className="text-xs text-orange-600 mt-1 font-medium">
+                            អវត្តមាន
+                          </span>
+                        </div>
                       ) : (
                         <div className="text-sm font-semibold text-gray-400">
                           មិនទាន់បញ្ចូល
@@ -334,7 +362,7 @@ export default function MobileReportsDashboard() {
 
                   {/* Progress Bar */}
                   {hasScore && (
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1. 5 overflow-hidden">
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
                         style={{
@@ -353,9 +381,9 @@ export default function MobileReportsDashboard() {
 
           {/* Summary Footer */}
           <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-sm mb-2">
               <div>
-                <span className="text-gray-600">បានបញ្ចូល: </span>{" "}
+                <span className="text-gray-600">បានបញ្ចូល: </span>
                 <span className="font-bold text-green-600">
                   {selectedSubject.studentsWithGrades}
                 </span>
@@ -377,6 +405,20 @@ export default function MobileReportsDashboard() {
                 )}
               </div>
             </div>
+            {treatBlanksAsAbsent && !selectedSubject.isComplete && (
+              <div className="pt-2 border-t border-gray-200">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-orange-600 font-medium">
+                    អវត្តមាន (A):
+                  </span>
+                  <span className="font-bold text-orange-700">
+                    {selectedSubject.totalStudents -
+                      selectedSubject.studentsWithGrades}{" "}
+                    សិស្ស
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </MobileLayout>
@@ -390,10 +432,10 @@ export default function MobileReportsDashboard() {
         {/* Filters Section */}
         <div className="bg-white shadow-lg border-b border-gray-200 p-4 space-y-3">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-indigo-600" />
               ស្ថានភាពបញ្ចូលពិន្ទុ
-            </h2>
+            </h1>
             <Filter className="w-5 h-5 text-gray-400" />
           </div>
 
@@ -493,25 +535,30 @@ export default function MobileReportsDashboard() {
             <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
               <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
                 {/* Track Indicator for Grade 11/12 */}
-                {classInfo && (classInfo.grade === "11" || classInfo.grade === "12") && (
-                  <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/20">
-                    <span className="text-xs text-indigo-100 font-medium">
-                      {classInfo.className}
-                    </span>
-                    {classInfo.track && (
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        classInfo.track === 'science'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-orange-500 text-white'
-                      }`}>
-                        {classInfo.track === 'science' ? '🔬 វិទ្យាសាស្ត្រ' : '🌍 សង្គម'}
-                      </div>
-                    )}
-                    <span className="ml-auto text-xs text-indigo-100">
-                      {totalSubjects} មុខវិជ្ជា
-                    </span>
-                  </div>
-                )}
+                {classInfo &&
+                  (classInfo.grade === "11" || classInfo.grade === "12") && (
+                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/20">
+                      <span className="text-xs text-indigo-100 font-medium">
+                        {classInfo.className}
+                      </span>
+                      {classInfo.track && (
+                        <div
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            classInfo.track === "science"
+                              ? "bg-blue-500 text-white"
+                              : "bg-orange-500 text-white"
+                          }`}
+                        >
+                          {classInfo.track === "science"
+                            ? "🔬 វិទ្យាសាស្ត្រ"
+                            : "🌍 សង្គម"}
+                        </div>
+                      )}
+                      <span className="ml-auto text-xs text-indigo-100">
+                        {totalSubjects} មុខវិជ្ជា
+                      </span>
+                    </div>
+                  )}
 
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-indigo-100 font-medium">
@@ -637,19 +684,30 @@ export default function MobileReportsDashboard() {
                         {subject.studentsWithGrades}/{subject.totalStudents}{" "}
                         សិស្ស
                       </span>
-                      {isComplete ? (
-                        <span className="text-green-700 font-semibold">
-                          ✓ បញ្ចូលពិន្ទុរួចរាល់
-                        </span>
-                      ) : isPartial ? (
-                        <span className="text-yellow-700 font-semibold">
-                          ⚠ បញ្ចូលមិនទាន់ចប់
-                        </span>
-                      ) : (
-                        <span className="text-gray-500 font-semibold">
-                          ✗ មិនទាន់បានបញ្ចូល
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-0.5">
+                        {isComplete ? (
+                          <span className="text-green-700 font-semibold">
+                            ✓ បញ្ចូលពិន្ទុរួចរាល់
+                          </span>
+                        ) : isPartial ? (
+                          <>
+                            <span className="text-yellow-700 font-semibold">
+                              ⚠ បញ្ចូលមិនទាន់ចប់
+                            </span>
+                            {subject.completionRate >= 90 && (
+                              <span className="text-orange-600 font-medium text-[10px]">
+                                {subject.totalStudents -
+                                  subject.studentsWithGrades}{" "}
+                                សិស្ស = អវត្តមាន (A)
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-gray-500 font-semibold">
+                            ✗ មិនទាន់បានបញ្ចូល
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 );
