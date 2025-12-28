@@ -161,20 +161,20 @@ export default function MobileStudentDetails({
 
   if (error || !student) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center border border-gray-200">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-8 h-8 text-red-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-gray-100">
+          <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg">
+            <X className="w-10 h-10 text-red-600" />
           </div>
-          <h2 className="font-khmer-title text-xl font-bold text-gray-900 mb-2">
+          <h2 className="font-koulen text-2xl text-gray-900 mb-2">
             មានបញ្ហា
           </h2>
-          <p className="font-khmer-body text-gray-600 mb-6">
+          <p className="font-battambang text-gray-600 mb-6 leading-relaxed">
             {error || "រកមិនឃើញសិស្ស"}
           </p>
           <button
             onClick={() => router.back()}
-            className="w-full bg-gray-900 text-white font-khmer-body font-semibold py-3 px-6 rounded-xl hover:bg-gray-800 transition-all"
+            className="w-full h-12 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-battambang font-bold rounded-2xl hover:from-gray-900 hover:to-black transition-all active:scale-95 shadow-lg"
           >
             ត្រឡប់ក្រោយ
           </button>
@@ -184,97 +184,92 @@ export default function MobileStudentDetails({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Clean Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.back()}
-                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-700" />
-              </button>
-              <div>
-                <h1 className="font-khmer-title text-lg font-bold text-gray-900">
-                  ព័ត៌មានសិស្ស
-                </h1>
-                <p className="font-khmer-body text-xs text-gray-500">
-                  Student Details
-                </p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      {/* Clean Modern Header */}
+      <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="w-11 h-11 bg-gradient-to-br from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 rounded-2xl flex items-center justify-center transition-all active:scale-95 shadow-sm"
+            >
+              <ArrowLeft className="w-5 h-5 text-blue-700" />
+            </button>
+            <div>
+              <h1 className="font-koulen text-xl text-gray-900 leading-tight">
+                ព័ត៌មានសិស្ស
+              </h1>
+              <p className="font-battambang text-xs text-gray-500">
+                Student Details
+              </p>
             </div>
-            {!isAdmin && (
-              <div className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 rounded-lg">
-                <Info className="w-4 h-4 text-blue-600" />
-                <span className="font-khmer-body text-xs text-blue-700 font-medium">
-                  មើលប៉ុណ្ណោះ
-                </span>
-              </div>
-            )}
           </div>
+          {!isAdmin && (
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+              <Info className="w-4 h-4 text-blue-600" />
+              <span className="font-battambang text-xs text-blue-700 font-semibold">
+                មើលប៉ុណ្ណោះ
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="p-4 space-y-4 max-w-2xl mx-auto">
-        {/* Profile Card - Modern Gradient Design */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-fadeIn">
-          <div className="p-6">
+      <div className="px-5 pt-5 pb-24 space-y-4 max-w-2xl mx-auto">
+        {/* Profile Card - Enhanced Modern Design */}
+        <div className="relative overflow-hidden">
+          {/* Gradient Background */}
+          <div className={`absolute inset-0 rounded-3xl ${
+            student.gender === "male"
+              ? "bg-gradient-to-br from-blue-500 via-indigo-600 to-blue-700"
+              : "bg-gradient-to-br from-pink-500 via-rose-600 to-pink-700"
+          }`}></div>
+
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+
+          {/* Content */}
+          <div className="relative p-6">
             <div className="flex flex-col items-center text-center">
-              {/* Avatar with Gradient */}
-              <div
-                className={`w-24 h-24 rounded-2xl flex items-center justify-center mb-4 relative overflow-hidden ${
-                  student.gender === "male"
-                    ? "bg-gradient-to-br from-blue-500 to-indigo-600"
-                    : "bg-gradient-to-br from-pink-500 to-rose-600"
-                }`}
-              >
-                {/* Decorative circles */}
-                <div className="absolute -top-6 -right-6 w-16 h-16 bg-white/20 rounded-full"></div>
-                <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-white/10 rounded-full"></div>
-                <User className="w-12 h-12 text-white relative z-10" />
+              {/* Avatar */}
+              <div className="w-28 h-28 bg-white/20 backdrop-blur-sm border-4 border-white/40 rounded-3xl flex items-center justify-center mb-4 shadow-2xl">
+                <User className="w-14 h-14 text-white" />
               </div>
 
               {/* Name */}
-              <h1 className="font-khmer-title text-2xl font-bold text-gray-900 mb-3">
+              <h1 className="font-koulen text-3xl text-white mb-2 leading-tight drop-shadow-lg">
                 {student.khmerName ||
                   `${student.firstName} ${student.lastName}`}
               </h1>
 
               {/* Student ID with Copy */}
               <div className="inline-flex items-center gap-2 mb-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full">
-                  <span className="font-mono font-bold text-sm">
+                <div className="flex items-center gap-2 px-5 py-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl shadow-lg">
+                  <span className="font-mono font-bold text-base text-white">
                     {student.studentId}
                   </span>
                 </div>
                 <button
                   onClick={() => handleCopy(student.studentId, "studentId")}
-                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors active:scale-95"
+                  className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 rounded-2xl transition-all active:scale-95 shadow-lg"
                 >
                   {copiedField === "studentId" ? (
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-5 h-5 text-white" />
                   ) : (
-                    <Copy className="w-4 h-4 text-gray-600" />
+                    <Copy className="w-5 h-5 text-white" />
                   )}
                 </button>
               </div>
 
               {/* Quick Info Tags */}
               <div className="flex flex-wrap gap-2 justify-center">
-                <span
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-                    student.gender === "male"
-                      ? "bg-blue-50 text-blue-700"
-                      : "bg-pink-50 text-pink-700"
-                  }`}
-                >
+                <span className="px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl font-battambang text-sm font-semibold text-white shadow-lg">
                   {student.gender === "male" ? "ប្រុស • Male" : "ស្រី • Female"}
                 </span>
                 {student.class && (
-                  <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">
+                  <span className="px-4 py-2 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl font-battambang text-sm font-semibold text-white shadow-lg">
                     {student.class.name}
                   </span>
                 )}
@@ -283,13 +278,15 @@ export default function MobileStudentDetails({
           </div>
         </div>
 
-        {/* Information Grid - Clean Sections */}
+        {/* Information Grid - Modern Sections */}
         <div className="space-y-3">
           {/* Personal Information */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 animate-fadeIn">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h3 className="font-khmer-title text-sm font-bold text-gray-900 flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-600" />
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
+              <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                  <User className="w-4 h-4 text-white" />
+                </div>
                 ព័ត៌មានផ្ទាល់ខ្លួន
               </h3>
             </div>
@@ -326,10 +323,12 @@ export default function MobileStudentDetails({
             student.phone ||
             student.currentAddress ||
             student.address) && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 animate-fadeIn">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h3 className="font-khmer-title text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-gray-600" />
+            <div className="bg-white rounded-3xl shadow-md border border-gray-100">
+              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
+                <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Phone className="w-4 h-4 text-white" />
+                  </div>
                   ទំនាក់ទំនង
                 </h3>
               </div>
@@ -409,10 +408,12 @@ export default function MobileStudentDetails({
           )}
 
           {/* Academic Information */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 animate-fadeIn">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h3 className="font-khmer-title text-sm font-bold text-gray-900 flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-gray-600" />
+          <div className="bg-white rounded-3xl shadow-md border border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
+              <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                  <GraduationCap className="w-4 h-4 text-white" />
+                </div>
                 ព័ត៌មានសិក្សា
               </h3>
             </div>
@@ -422,17 +423,17 @@ export default function MobileStudentDetails({
                   <CleanInfoRow
                     label="ថ្នាក់រៀន"
                     value={student.class.name}
-                    icon={<School className="w-4 h-4 text-gray-400" />}
+                    icon={<School className="w-4 h-4 text-purple-500" />}
                   />
                   <CleanInfoRow
                     label="កម្រិត"
                     value={`ថ្នាក់ទី${student.class.grade}`}
-                    icon={<BookOpen className="w-4 h-4 text-gray-400" />}
+                    icon={<BookOpen className="w-4 h-4 text-purple-500" />}
                   />
                 </>
               ) : (
-                <div className="text-center py-4">
-                  <p className="font-khmer-body text-sm text-gray-500">
+                <div className="text-center py-6">
+                  <p className="font-battambang text-sm text-gray-500">
                     សិស្សមិនទាន់ចុះឈ្មោះថ្នាក់
                   </p>
                 </div>
@@ -442,10 +443,12 @@ export default function MobileStudentDetails({
 
           {/* Guardian Information */}
           {(student.guardianName || student.guardianPhone) && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 animate-fadeIn">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <h3 className="font-khmer-title text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-600" />
+            <div className="bg-white rounded-3xl shadow-md border border-gray-100">
+              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
+                <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center shadow-sm">
+                    <Users className="w-4 h-4 text-white" />
+                  </div>
                   អាណាព្យាបាល
                 </h3>
               </div>
@@ -473,25 +476,34 @@ export default function MobileStudentDetails({
         {isAdmin && (
           <div className="pt-2 space-y-3">
             {/* Permission Notice */}
-            <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 rounded-xl border border-blue-100">
-              <Shield className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              <p className="font-khmer-body text-xs text-blue-700">
-                អ្នកមានសិទ្ធិគ្រប់គ្រងសិស្សនេះ • You have admin permissions
-              </p>
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border border-blue-200 rounded-3xl p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-xs font-semibold text-blue-900 mb-0.5">
+                    អ្នកមានសិទ្ធិគ្រប់គ្រង
+                  </p>
+                  <p className="font-battambang text-[10px] text-blue-600">
+                    You have admin permissions
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => router.push(`/students/edit/${student.id}`)}
-                className="flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 text-white font-khmer-body font-semibold rounded-xl hover:bg-gray-800 transition-all active:scale-95"
+                className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-battambang font-bold rounded-2xl hover:from-gray-900 hover:to-black transition-all active:scale-95 shadow-lg"
               >
                 <Edit className="w-5 h-5" />
                 កែប្រែ
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex items-center justify-center gap-2 px-6 py-4 bg-red-600 text-white font-khmer-body font-semibold rounded-xl hover:bg-red-700 transition-all active:scale-95"
+                className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-red-600 to-rose-600 text-white font-battambang font-bold rounded-2xl hover:from-red-700 hover:to-rose-700 transition-all active:scale-95 shadow-lg"
               >
                 <Trash2 className="w-5 h-5" />
                 លុប
@@ -502,63 +514,72 @@ export default function MobileStudentDetails({
 
         {/* Non-Admin Notice */}
         {!isAdmin && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl border border-gray-200">
-            <Info className="w-5 h-5 text-gray-500 flex-shrink-0" />
-            <p className="font-khmer-body text-xs text-gray-600">
-              អ្នកមិនមានសិទ្ធិកែប្រែព័ត៌មានសិស្សទេ • You can only view student
-              information
-            </p>
+          <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-3xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Info className="w-5 h-5 text-gray-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-battambang text-xs font-semibold text-gray-700 mb-0.5">
+                  អ្នកមិនមានសិទ្ធិកែប្រែ
+                </p>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  You can only view student information
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {/* Modern Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleIn">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scaleIn">
             {/* Header */}
-            <div className="bg-gradient-to-r from-red-500 to-rose-600 p-6 relative overflow-hidden">
-              <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full"></div>
-              <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/5 rounded-full"></div>
+            <div className="bg-gradient-to-br from-red-500 via-rose-600 to-red-700 p-8 relative overflow-hidden">
+              <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+              <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
               <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-3">
-                  <Trash2 className="w-8 h-8 text-white" />
+                <div className="w-20 h-20 bg-white/20 backdrop-blur-sm border-2 border-white/40 rounded-3xl flex items-center justify-center mb-4 shadow-2xl">
+                  <Trash2 className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="font-khmer-title text-xl font-bold text-white">
+                <h2 className="font-koulen text-2xl text-white leading-tight drop-shadow-lg">
                   លុបសិស្ស
                 </h2>
-                <p className="text-white/80 text-sm mt-1">Delete Student</p>
+                <p className="font-battambang text-white/90 text-sm mt-1">Delete Student</p>
               </div>
             </div>
 
             {/* Content */}
             <div className="p-6">
-              <p className="font-khmer-body text-gray-700 text-center mb-2">
+              <p className="font-battambang text-gray-700 text-center mb-2">
                 តើអ្នកប្រាកដថាចង់លុបសិស្ស
               </p>
-              <p className="font-khmer-title text-lg font-bold text-gray-900 text-center mb-2">
+              <p className="font-koulen text-xl text-gray-900 text-center mb-2">
                 {student?.khmerName ||
                   `${student?.firstName} ${student?.lastName}`}
               </p>
-              <p className="font-khmer-body text-sm text-gray-500 text-center mb-6">
-                ទិន្នន័យនឹងត្រូវលុបជាអចិន្ត្រៃយ៍
-                <br />
-                <span className="text-xs">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-3 mb-6">
+                <p className="font-battambang text-sm text-red-700 text-center font-semibold mb-1">
+                  ទិន្នន័យនឹងត្រូវលុបជាអចិន្ត្រៃយ៍
+                </p>
+                <p className="font-battambang text-xs text-red-600 text-center">
                   This action cannot be undone
-                </span>
-              </p>
+                </p>
+              </div>
 
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-khmer-body font-semibold rounded-xl transition-all active:scale-95"
+                  className="h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 font-battambang font-bold rounded-2xl transition-all active:scale-95"
                 >
                   បោះបង់
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-khmer-body font-semibold rounded-xl transition-all active:scale-95"
+                  className="h-12 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-battambang font-bold rounded-2xl transition-all active:scale-95 shadow-lg"
                 >
                   លុប
                 </button>
@@ -582,14 +603,14 @@ function CleanInfoRow({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2">
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-gray-50 last:border-0">
       <div className="flex items-center gap-2 min-w-0 flex-1">
         {icon && <div className="flex-shrink-0">{icon}</div>}
-        <span className="font-khmer-body text-xs text-gray-500 flex-shrink-0">
+        <span className="font-battambang text-xs text-gray-500 flex-shrink-0 font-medium">
           {label}
         </span>
       </div>
-      <span className="font-khmer-body text-sm font-semibold text-gray-900 text-right break-words">
+      <span className="font-battambang text-sm font-bold text-gray-900 text-right break-words">
         {value}
       </span>
     </div>

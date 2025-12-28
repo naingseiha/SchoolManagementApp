@@ -361,6 +361,8 @@ export class DashboardController {
           const totalStudents = classes.reduce((sum, c) => sum + c.students.length, 0);
 
           // Get all subjects for this grade
+          // ✅ For grades 11 & 12, we need to calculate per-track subject count
+          // Instead of getting all subjects, we'll calculate based on each class's track
           const subjects = await prisma.subject.findMany({
             where: {
               grade,
@@ -368,6 +370,8 @@ export class DashboardController {
             orderBy: { code: "asc" }
           });
 
+          // For display purposes, show total unique subjects
+          // But for calculations, we'll use track-specific counts per class
           const totalSubjects = subjects.length;
 
           // Get all student monthly summaries for current month
@@ -426,8 +430,21 @@ export class DashboardController {
             const classGrades = allGrades.filter(g => g.classId === cls.id);
             const uniqueSubjects = new Set(classGrades.map(g => g.subjectId));
             const completedSubjects = uniqueSubjects.size;
-            const completionPercentage = totalSubjects > 0
-              ? (completedSubjects / totalSubjects) * 100
+
+            // ✅ Calculate track-specific total subjects for grades 11 & 12
+            let classSpecificTotalSubjects = totalSubjects;
+            const gradeNum = parseInt(grade);
+
+            if ((gradeNum === 11 || gradeNum === 12) && cls.track) {
+              // Filter subjects for this class's track
+              const trackSubjects = subjects.filter(subj => {
+                return subj.track === cls.track || subj.track === null || subj.track === "common";
+              });
+              classSpecificTotalSubjects = trackSubjects.length;
+            }
+
+            const completionPercentage = classSpecificTotalSubjects > 0
+              ? (completedSubjects / classSpecificTotalSubjects) * 100
               : 0;
 
             // Get class average from summaries
@@ -441,7 +458,7 @@ export class DashboardController {
               name: cls.name,
               section: cls.section || "",
               studentCount: cls.students.length,
-              totalSubjects,
+              totalSubjects: classSpecificTotalSubjects, // ✅ Use track-specific count
               completedSubjects,
               completionPercentage: Math.round(completionPercentage),
               averageScore: Math.round(classAverage * 10) / 10,

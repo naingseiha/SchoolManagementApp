@@ -2,8 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import Google Fonts - Khmer & English */
-@import url("https://fonts.googleapis.com/css2?family=Moul&family=Bokor&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+/* ============================================
+   LOCAL KHMER FONTS (Primary - for PWA/Mobile)
+   ============================================ */
+
+/* Battambang - Regular (400) */
+@font-face {
+  font-family: 'Battambang';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/khmer/Battambang-Regular.woff2') format('woff2');
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
+/* Battambang - Bold (700) */
+@font-face {
+  font-family: 'Battambang';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/khmer/Battambang-Bold.woff2') format('woff2');
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
+/* Moul - Regular */
+@font-face {
+  font-family: 'Moul';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/khmer/Moul-Regular.woff2') format('woff2');
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
+/* Koulen - Additional weight for compatibility */
+@font-face {
+  font-family: 'Koulen';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/khmer/Koulen-Regular.woff2') format('woff2');
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
+/* Koulen - Regular */
+@font-face {
+  font-family: 'Koulen';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/khmer/Koulen-Regular.woff2') format('woff2');
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
+/* Import Google Fonts as FALLBACK (for web browsers) */
+@import url("https://fonts.googleapis.com/css2?family=Moul&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 
 @layer base {
   body {
@@ -17,10 +71,10 @@
     font-weight: 400;
   }
 
-  /* Heading 2 - Bokor (Subtitle) */
+  /* Heading 2 - Koulen (Subtitle) */
   h2,
   .heading-2 {
-    @apply font-bokor;
+    @apply font-koulen;
     font-weight: 400;
     letter-spacing: 0.5px;
   }
@@ -43,7 +97,7 @@
   }
 
   .khmer-header {
-    @apply font-bokor;
+    @apply font-koulen;
     letter-spacing: 0.5px;
   }
 

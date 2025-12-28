@@ -13,6 +13,9 @@ import {
   AlertCircle,
   Save,
   RefreshCw,
+  Download,
+  ClipboardCheck,
+  TrendingUp,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -104,6 +107,7 @@ export default function MobileAttendance({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false); // ✅ Track if data has been loaded
 
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoLoaded = useRef(false);
@@ -136,7 +140,7 @@ export default function MobileAttendance({
   const daysInMonth = new Date(selectedYear, monthNumber, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // ✅ Auto-select class for INSTRUCTOR and auto-load
+  // ✅ Auto-select class for INSTRUCTOR (but don't auto-load)
   useEffect(() => {
     if (
       !authLoading &&
@@ -226,6 +230,7 @@ export default function MobileAttendance({
       );
 
       setStudents(studentsData);
+      setDataLoaded(true); // ✅ Mark as loaded
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ:  ${error.message}`);
@@ -392,15 +397,13 @@ export default function MobileAttendance({
     setSelectedMonth(newMonth);
     setCurrentDay(1);
     setStudents([]);
-    hasAutoLoaded.current = true;
-    setTimeout(() => loadAttendanceData(), 100);
+    setDataLoaded(false); // ✅ Reset data loaded state
   };
 
   const handleYearChange = (newYear: number) => {
     setSelectedYear(newYear);
     setStudents([]);
-    hasAutoLoaded.current = true;
-    setTimeout(() => loadAttendanceData(), 100);
+    setDataLoaded(false); // ✅ Reset data loaded state
   };
 
   // ✅ Calculate totals with real-time counts (A or P can be 0, 1, or 2 per student per day)
@@ -474,19 +477,38 @@ export default function MobileAttendance({
 
   return (
     <MobileLayout title="វត្តមាន • Attendance">
-      <div className="flex flex-col h-full bg-gray-50">
-        {/* ✅ FIXED Filters Section - STICKY AT TOP */}
-        <div className="bg-white shadow-sm border-b border-gray-200 p-4 space-y-3">
-          {/* Class Info (Read-only) */}
+      {/* Clean Modern Header */}
+      <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <ClipboardCheck className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="font-koulen text-xl text-gray-900 leading-tight">
+              វត្តមាន
+            </h1>
+            <p className="font-battambang text-xs text-gray-500">
+              Attendance Tracking
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+        {/* Modern Filters Section */}
+        <div className="px-4 pt-4 pb-3 space-y-3">
+          {/* Class Info Card */}
           {selectedClassName && (
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-3">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-600" />
-                <div>
-                  <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
+            <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 border border-green-200 rounded-3xl p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-xs text-green-700 font-semibold mb-0.5">
                     ថ្នាក់របស់អ្នក • Your Class
                   </p>
-                  <p className="text-sm font-bold text-gray-900 mt-0.5">
+                  <p className="font-koulen text-base text-gray-900">
                     {selectedClassName}
                   </p>
                 </div>
@@ -494,15 +516,21 @@ export default function MobileAttendance({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
-                ខែ • Month
+          {/* Month & Year Card */}
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-indigo-600" />
+              </div>
+              <label className="font-battambang text-sm font-semibold text-gray-700">
+                ខែ និងឆ្នាំ • Month & Year
               </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <select
                 value={selectedMonth}
                 onChange={(e) => handleMonthChange(e.target.value)}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
                 {MONTHS.map((m) => (
@@ -511,16 +539,11 @@ export default function MobileAttendance({
                   </option>
                 ))}
               </select>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                ឆ្នាំ • Year
-              </label>
               <select
                 value={selectedYear.toString()}
                 onChange={(e) => handleYearChange(parseInt(e.target.value))}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
                 {getAcademicYearOptions().map((option) => (
@@ -532,48 +555,70 @@ export default function MobileAttendance({
             </div>
           </div>
 
-          {/* ✅ SAVE BUTTON - MANUAL SAVE ONLY */}
+          {/* Load Data Button */}
           <button
-            onClick={handleSave}
-            disabled={saving || (!hasUnsavedChanges && !saveSuccess)}
-            className={`w-full h-12 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-md ${
-              saving
-                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
-                : saveSuccess
-                ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-                : hasUnsavedChanges
-                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 active:scale-95"
-                : "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed"
-            }`}
+            onClick={() => loadAttendanceData()}
+            disabled={!selectedClass || loadingData}
+            className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-battambang font-semibold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
           >
-            {saving ? (
+            {loadingData ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">កំពុងរក្សាទុក...</span>
-              </>
-            ) : saveSuccess ? (
-              <>
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">រក្សាទុករួចរាល់ ✓</span>
-              </>
-            ) : hasUnsavedChanges ? (
-              <>
-                <Save className="w-5 h-5" />
-                <span className="text-sm">រក្សាទុក • Save Changes</span>
+                កំពុងផ្ទុក...
               </>
             ) : (
               <>
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-sm">រួចរាល់ • No Changes</span>
+                <Download className="w-5 h-5" />
+                ផ្ទុកទិន្នន័យ
               </>
             )}
           </button>
 
+          {/* Modern Save Button */}
+          {dataLoaded && (
+            <button
+              onClick={handleSave}
+              disabled={saving || (!hasUnsavedChanges && !saveSuccess)}
+              className={`w-full h-14 rounded-2xl font-battambang font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
+                saving
+                  ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
+                  : saveSuccess
+                  ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
+                  : hasUnsavedChanges
+                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 active:scale-95"
+                  : "bg-gradient-to-r from-gray-400 to-gray-500 text-white cursor-not-allowed"
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>កំពុងរក្សាទុក...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>រក្សាទុករួចរាល់ ✓</span>
+                </>
+              ) : hasUnsavedChanges ? (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>រក្សាទុក • Save</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>រួចរាល់ • Saved</span>
+                </>
+              )}
+            </button>
+          )}
+
           {/* Unsaved Changes Warning */}
           {hasUnsavedChanges && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-2">
-              <p className="text-xs text-orange-700 text-center flex items-center justify-center gap-1">
-                ⚠️ មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក • សូមចុច "រក្សាទុក"
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3 shadow-sm">
+              <p className="font-battambang text-xs text-orange-700 text-center flex items-center justify-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក • សូមចុច "រក្សាទុក"
               </p>
             </div>
           )}
@@ -581,9 +626,10 @@ export default function MobileAttendance({
           {/* INSTRUCTOR Badge */}
           {currentUser?.role === "TEACHER" &&
             teacherHomeroomClassId === selectedClass && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-2">
-                <p className="text-xs text-green-700 text-center flex items-center justify-center gap-1">
-                  🏠 អ្នកគឺជា INSTRUCTOR - គ្រប់គ្រងអវត្តមានថ្នាក់នេះ
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-3 shadow-sm">
+                <p className="font-battambang text-xs text-green-700 text-center flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  អ្នកគឺជា INSTRUCTOR - គ្រប់គ្រងអវត្តមានថ្នាក់នេះ
                 </p>
               </div>
             )}
@@ -591,21 +637,26 @@ export default function MobileAttendance({
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3 m-4">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+          <div className="mx-4 mt-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <p className="font-battambang text-sm text-red-700 flex-1 pt-2">{error}</p>
             </div>
           </div>
         )}
 
         {/* Loading State */}
         {loadingData && (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center">
-              <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-3" />
-              <p className="text-sm font-medium text-gray-600">
+              <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
+              <p className="font-battambang text-sm font-semibold text-gray-700">
                 កំពុងផ្ទុកទិន្នន័យ...
+              </p>
+              <p className="font-battambang text-xs text-gray-500 mt-1">
+                Loading attendance data
               </p>
             </div>
           </div>
@@ -614,116 +665,117 @@ export default function MobileAttendance({
         {/* Main Content - SCROLLABLE */}
         {!loadingData && students.length > 0 ? (
           <div className="flex-1 overflow-y-auto">
-            {/* Day Navigator */}
-            <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-3 shadow-lg">
-              <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={handlePrevDay}
-                  disabled={currentDay === 1}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg disabled:opacity-30 transition-all active:scale-95"
-                >
-                  <ChevronLeft className="w-5 h-5 text-white" />
-                </button>
+            {/* Modern Day Navigator */}
+            <div className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
 
-                <div className="text-center flex-1 px-4">
-                  <div className="text-white text-xl font-bold">
-                    ថ្ងៃទី {currentDay}
+              <div className="relative px-4 py-4">
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={handlePrevDay}
+                    disabled={currentDay === 1}
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl disabled:opacity-30 transition-all active:scale-95 shadow-lg"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                  </button>
+
+                  <div className="text-center flex-1 px-4">
+                    <div className="font-koulen text-3xl text-white drop-shadow-lg">
+                      ថ្ងៃទី {currentDay}
+                    </div>
+                    <div className="font-battambang text-xs text-green-100 mt-1">
+                      {selectedMonth} {selectedYear}
+                    </div>
                   </div>
-                  <div className="text-indigo-100 text-xs mt-0.5">
-                    {selectedMonth} {selectedYear}
-                  </div>
+
+                  <button
+                    onClick={handleNextDay}
+                    disabled={currentDay === daysInMonth}
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl disabled:opacity-30 transition-all active:scale-95 shadow-lg"
+                  >
+                    <ChevronRight className="w-5 h-5 text-white" />
+                  </button>
                 </div>
 
-                <button
-                  onClick={handleNextDay}
-                  disabled={currentDay === daysInMonth}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg disabled:opacity-30 transition-all active:scale-95"
-                >
-                  <ChevronRight className="w-5 h-5 text-white" />
-                </button>
-              </div>
-
-              {/* Day Grid Selector */}
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2">
-                <div className="grid grid-cols-7 gap-1">
-                  {daysArray.map((day) => (
-                    <button
-                      key={day}
-                      onClick={() => setCurrentDay(day)}
-                      className={`h-8 rounded-md text-xs font-semibold transition-all ${
-                        day === currentDay
-                          ? "bg-white text-indigo-600 shadow-md scale-110"
-                          : "bg-white/20 text-white hover:bg-white/30"
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
+                {/* Day Grid Selector */}
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-2.5">
+                  <div className="grid grid-cols-7 gap-1.5">
+                    {daysArray.map((day) => (
+                      <button
+                        key={day}
+                        onClick={() => setCurrentDay(day)}
+                        className={`h-9 rounded-xl font-battambang text-sm font-semibold transition-all ${
+                          day === currentDay
+                            ? "bg-white text-green-700 shadow-lg scale-110"
+                            : "bg-white/20 text-white hover:bg-white/30 active:scale-95"
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions - Removed (not needed with individual session controls) */}
 
-            {/* Summary Cards */}
-            <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-indigo-200">
-              <div className="text-xs font-semibold text-indigo-700 mb-2 text-center">
-                📊 សង្ខេបសរុប • Daily Summary
+            {/* Modern Summary Cards */}
+            <div className="px-4 py-4 bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100 border-b border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-gray-600" />
+                <h3 className="font-koulen text-base text-gray-900">
+                  សង្ខេបសរុប
+                </h3>
               </div>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-green-600" />
+              <div className="grid grid-cols-3 gap-2.5 mb-3">
+                <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                      <Check className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                      <div className="text-lg font-bold text-green-600">
-                        {currentDaySummary.present}
-                      </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        Students
-                      </div>
+                    <div className="font-koulen text-2xl text-green-600">
+                      {currentDaySummary.present}
+                    </div>
+                    <div className="font-battambang text-[9px] text-gray-600 font-medium mt-0.5">
+                      Present
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                      <X className="w-4 h-4 text-red-600" />
+                <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                      <X className="w-5 h-5 text-white" />
                     </div>
-                    <div>
-                      <div className="text-lg font-bold text-red-600">
-                        {currentDaySummary.absent}
-                      </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        A Count
-                      </div>
+                    <div className="font-koulen text-2xl text-red-600">
+                      {currentDaySummary.absent}
+                    </div>
+                    <div className="font-battambang text-[9px] text-gray-600 font-medium mt-0.5">
+                      Absent
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-orange-600">
-                        P
-                      </span>
+                <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                      <span className="font-koulen text-base text-white">P</span>
                     </div>
-                    <div>
-                      <div className="text-lg font-bold text-orange-600">
-                        {currentDaySummary.permission}
-                      </div>
-                      <div className="text-[10px] text-gray-600 uppercase font-medium">
-                        P Count
-                      </div>
+                    <div className="font-koulen text-2xl text-orange-600">
+                      {currentDaySummary.permission}
+                    </div>
+                    <div className="font-battambang text-[9px] text-gray-600 font-medium mt-0.5">
+                      Permission
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="bg-indigo-100 rounded-lg p-2">
-                <p className="text-xs text-indigo-800 text-center">
-                  💡 A/P can be 0-2 per student (M+A sessions)
+              <div className="bg-gradient-to-r from-indigo-100 to-blue-100 border border-indigo-200 rounded-xl p-2.5">
+                <p className="font-battambang text-xs text-indigo-800 text-center">
+                  A/P can be 0-2 per student (M+A sessions)
                 </p>
               </div>
             </div>
@@ -755,18 +807,22 @@ export default function MobileAttendance({
                 return (
                   <div
                     key={student.studentId}
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-4"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
                   >
                     {/* Student Info */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-koulen text-base shadow-md">
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-bold text-gray-900">
+                        <div className="font-battambang text-sm font-bold text-gray-900">
                           {student.khmerName}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
+                        <div className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium mt-1 ${
+                          student.gender === "M"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-pink-100 text-pink-700"
+                        }`}>
                           {student.gender === "M" ? "ប្រុស" : "ស្រី"}
                         </div>
                       </div>
@@ -776,12 +832,12 @@ export default function MobileAttendance({
                     <div className="grid grid-cols-2 gap-3">
                       {/* Morning */}
                       <div>
-                        <div className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
-                          🌅 ព្រឹក • Morning
+                        <div className="font-battambang text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
+                          🌅 ព្រឹក
                         </div>
                         <button
                           onClick={() => toggleStudentStatus(student.studentId, "M")}
-                          className={`w-full h-12 rounded-lg font-bold text-lg shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
+                          className={`w-full h-13 rounded-xl font-koulen text-xl shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
                             morningValue
                           )}`}
                         >
@@ -791,12 +847,12 @@ export default function MobileAttendance({
 
                       {/* Afternoon */}
                       <div>
-                        <div className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
-                          🌆 ល្ងាច • Afternoon
+                        <div className="font-battambang text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
+                          🌆 ល្ងាច
                         </div>
                         <button
                           onClick={() => toggleStudentStatus(student.studentId, "A")}
-                          className={`w-full h-12 rounded-lg font-bold text-lg shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
+                          className={`w-full h-13 rounded-xl font-koulen text-xl shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
                             afternoonValue
                           )}`}
                         >
@@ -807,8 +863,8 @@ export default function MobileAttendance({
 
                     {/* Hint */}
                     <div className="mt-3 text-center">
-                      <p className="text-xs text-gray-500">
-                        Tap: ✓ (Present) → A (Absent) → P (Permission)
+                      <p className="font-battambang text-xs text-gray-500">
+                        Tap: ✓ → A → P
                       </p>
                     </div>
                   </div>
@@ -816,12 +872,20 @@ export default function MobileAttendance({
               })}
             </div>
           </div>
-        ) : !loadingData && !error ? (
+        ) : !loadingData && !error && !dataLoaded ? (
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-sm font-medium text-gray-600">
-                ទិន្នន័យកំពុងផ្ទុក...
+            <div className="text-center max-w-xs">
+              <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <ClipboardCheck className="w-12 h-12 text-green-600" />
+              </div>
+              <h3 className="font-koulen text-lg text-gray-900 mb-2">
+                ជ្រើសរើសថ្នាក់រៀន
+              </h3>
+              <p className="font-battambang text-sm text-gray-600 leading-relaxed mb-1">
+                សូមជ្រើសរើសខែ និងឆ្នាំ
+              </p>
+              <p className="font-battambang text-xs text-gray-500">
+                ហើយចុច "ផ្ទុកទិន្នន័យ" ដើម្បីចាប់ផ្តើម
               </p>
             </div>
           </div>

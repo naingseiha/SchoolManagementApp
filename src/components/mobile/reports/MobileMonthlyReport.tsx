@@ -269,27 +269,42 @@ export default function MobileMonthlyReport() {
 
   return (
     <MobileLayout title="របាយការណ៍ • Monthly Report">
-      <div className="flex flex-col h-full bg-gray-50">
-        {/* Filters Section */}
-        {showFilters && (
-          <div className="bg-white shadow-lg border-b border-gray-200 p-4 space-y-3">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-indigo-600" />
-                របាយការណ៍ប្រចាំខែ
-              </h2>
-              <Filter className="w-5 h-5 text-gray-400" />
-            </div>
+      {/* Clean Modern Header */}
+      <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="font-koulen text-xl text-gray-900 leading-tight">
+              របាយការណ៍ប្រចាំខែ
+            </h1>
+            <p className="font-battambang text-xs text-gray-500">
+              Monthly Report
+            </p>
+          </div>
+        </div>
+      </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
-                ថ្នាក់ • Class
-              </label>
+      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+        {/* Modern Filters Section */}
+        {showFilters && (
+          <div className="px-4 pt-4 pb-3 space-y-3">
+            {/* Class Selection Card */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4 text-purple-600" />
+                </div>
+                <label className="font-battambang text-sm font-semibold text-gray-700">
+                  ថ្នាក់ • Class
+                </label>
+              </div>
               <select
                 value={selectedClass}
                 onChange={(e) => setSelectedClass(e.target.value)}
                 disabled={isLoadingClasses}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus: ring-indigo-500"
+                className="w-full h-12 px-4 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 transition-all"
                 style={{ fontSize: "16px" }}
               >
                 <option value="">
@@ -304,15 +319,21 @@ export default function MobileMonthlyReport() {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                  ខែ • Month
+            {/* Month & Year Card */}
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <Filter className="w-4 h-4 text-indigo-600" />
+                </div>
+                <label className="font-battambang text-sm font-semibold text-gray-700">
+                  ខែ និងឆ្នាំ • Month & Year
                 </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   style={{ fontSize: "16px" }}
                 >
                   {MONTHS.map((m) => (
@@ -321,16 +342,11 @@ export default function MobileMonthlyReport() {
                     </option>
                   ))}
                 </select>
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                  ឆ្នាំ • Year
-                </label>
                 <select
                   value={selectedYear.toString()}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   style={{ fontSize: "16px" }}
                 >
                   {getAcademicYearOptions().map((option) => (
@@ -342,20 +358,21 @@ export default function MobileMonthlyReport() {
               </div>
             </div>
 
+            {/* Generate Report Button */}
             <button
               onClick={loadReport}
               disabled={!selectedClass || loading}
-              className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg shadow-md flex items-center justify-center gap-2 transition-all"
+              className="w-full h-14 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-battambang font-semibold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">កំពុងបង្កើត...</span>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  កំពុងបង្កើត...
                 </>
               ) : (
                 <>
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="text-sm">បង្កើតរបាយការណ៍</span>
+                  <BarChart3 className="w-5 h-5" />
+                  បង្កើតរបាយការណ៍
                 </>
               )}
             </button>
@@ -365,98 +382,115 @@ export default function MobileMonthlyReport() {
         {/* Report Content */}
         {reportData ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Header with Class Info */}
-            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
-              <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={handleBackToDashboard}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg"
-                >
-                  <ArrowLeft className="w-4 h-4 text-white" />
-                </button>
-                <div className="flex-1 text-center">
-                  <h3 className="text-white text-lg font-bold">
-                    {reportData.className}
-                  </h3>
-                  <p className="text-indigo-100 text-xs mt-0.5">
-                    {reportData.month} {reportData.year}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowFilters(true)}
-                  className="p-2 bg-white/20 backdrop-blur-sm rounded-lg"
-                >
-                  <Filter className="w-4 h-4 text-white" />
-                </button>
-              </div>
+            {/* Modern Header with Class Info */}
+            <div className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
 
-              {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="w-4 h-4 text-white" />
-                    <span className="text-xs text-indigo-100 font-medium">
-                      សិស្សសរុប
-                    </span>
+              <div className="relative px-4 py-4">
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={handleBackToDashboard}
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-lg"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <div className="flex-1 text-center px-4">
+                    <h3 className="font-koulen text-xl text-white leading-tight drop-shadow-lg">
+                      {reportData.className}
+                    </h3>
+                    <p className="font-battambang text-xs text-purple-100 mt-1">
+                      {reportData.month} {reportData.year}
+                    </p>
                   </div>
-                  <div className="text-2xl font-bold text-white">
-                    {reportData.totalStudents}
-                  </div>
-                  <div className="text-xs text-indigo-200 mt-0.5">Students</div>
+                  <button
+                    onClick={() => setShowFilters(true)}
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-lg"
+                  >
+                    <Filter className="w-5 h-5 text-white" />
+                  </button>
                 </div>
 
-                <div className="bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20">
-                  <div className="flex items-center gap-2 mb-1">
-                    <TrendingUp className="w-4 h-4 text-white" />
-                    <span className="text-xs text-indigo-100 font-medium">
-                      មធ្យមភាគថ្នាក់
-                    </span>
+                {/* Modern Stats Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="font-battambang text-xs text-purple-100 font-semibold">
+                        សិស្សសរុប
+                      </span>
+                    </div>
+                    <div className="font-koulen text-3xl text-white mb-1">
+                      {reportData.totalStudents}
+                    </div>
+                    <div className="font-battambang text-xs text-purple-200">Students</div>
                   </div>
-                  <div className="text-2xl font-bold text-white">
-                    {reportData.classAverage.toFixed(2)}
-                  </div>
-                  <div className="text-xs text-indigo-200 mt-0.5">
-                    Class Average
+
+                  <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                        <TrendingUp className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="font-battambang text-xs text-purple-100 font-semibold">
+                        មធ្យមភាគថ្នាក់
+                      </span>
+                    </div>
+                    <div className="font-koulen text-3xl text-white mb-1">
+                      {reportData.classAverage.toFixed(2)}
+                    </div>
+                    <div className="font-battambang text-xs text-purple-200">
+                      Class Average
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Top 3 Students Banner */}
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-4 py-3 border-b border-amber-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-4 h-4 text-amber-600" />
-                <span className="text-xs font-semibold text-amber-900 uppercase tracking-wide">
-                  Top Performers
-                </span>
+            {/* Modern Top 3 Students Banner */}
+            <div className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 px-4 py-4 border-b border-amber-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Award className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-koulen text-base text-gray-900">
+                    Top Performers
+                  </h3>
+                  <p className="font-battambang text-[10px] text-amber-700">
+                    សិស្សពូកែបំផុត
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-3 overflow-x-auto pb-2">
                 {reportData.students.slice(0, 3).map((student) => {
                   const rankBadge = getRankBadge(student.rank);
                   return (
                     <div
                       key={student.studentId}
-                      className="flex-shrink-0 w-40 bg-white rounded-lg p-2.5 shadow-md border-2 border-amber-200"
+                      className="flex-shrink-0 w-44 bg-white rounded-2xl p-3 shadow-md border-2 border-amber-200"
                     >
-                      <div className="flex items-center gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 mb-2">
                         <div
-                          className={`w-7 h-7 ${rankBadge.bg} rounded-full flex items-center justify-center text-sm font-bold ${rankBadge.text} shadow-md`}
+                          className={`w-9 h-9 ${rankBadge.bg} rounded-xl flex items-center justify-center font-koulen text-base ${rankBadge.text} shadow-md`}
                         >
                           {rankBadge.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-gray-900 truncate">
+                          <div className="font-battambang text-xs font-bold text-gray-900 truncate">
                             {student.studentName}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-bold text-indigo-600">
+                      <div className="flex items-baseline gap-1 mb-2">
+                        <span className="font-koulen text-xl text-indigo-600">
                           {student.average.toFixed(2)}
                         </span>
-                        <span className="text-xs text-gray-500">/50</span>
+                        <span className="font-battambang text-xs text-gray-500">/50</span>
                       </div>
-                      <div className="mt-1">
+                      <div>
                         {(() => {
                           const badge = getGradeBadge(
                             student.gradeLevel,
@@ -464,7 +498,7 @@ export default function MobileMonthlyReport() {
                           );
                           return (
                             <div
-                              className={`inline-flex items-center gap-1 ${badge.bg} ${badge.text} px-2 py-0.5 rounded-full text-xs font-bold shadow-sm`}
+                              className={`inline-flex items-center gap-1 ${badge.bg} ${badge.text} px-2.5 py-1 rounded-xl font-battambang text-xs font-bold shadow-sm`}
                             >
                               <span>{badge.icon}</span>
                               <span>{student.gradeLevel}</span>
@@ -491,28 +525,28 @@ export default function MobileMonthlyReport() {
                 return (
                   <div
                     key={student.studentId}
-                    className={`bg-white rounded-xl shadow-md border-2 transition-all hover:shadow-lg ${
+                    className={`bg-white rounded-2xl shadow-sm border-2 transition-all hover:shadow-md ${
                       isTopThree
                         ? "border-amber-300 bg-gradient-to-r from-amber-50/30 to-yellow-50/30"
-                        : "border-gray-200"
+                        : "border-gray-100"
                     }`}
                   >
-                    <div className="p-4 pb-3">
-                      <div className="flex items-start justify-between mb-2">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex items-start gap-3 flex-1">
                           <div
-                            className={`w-10 h-10 ${rankBadge.bg} rounded-xl flex items-center justify-center shadow-md flex-shrink-0`}
+                            className={`w-11 h-11 ${rankBadge.bg} rounded-2xl flex items-center justify-center shadow-md flex-shrink-0`}
                           >
                             <span
-                              className={`text-sm font-bold ${rankBadge.text}`}
+                              className={`font-koulen text-base ${rankBadge.text}`}
                             >
                               {rankBadge.icon}
                             </span>
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-sm font-bold text-gray-900 truncate">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <h4 className="font-battambang text-sm font-bold text-gray-900 truncate">
                                 {student.studentName}
                               </h4>
                               {student.gender === "FEMALE" && (
@@ -523,17 +557,17 @@ export default function MobileMonthlyReport() {
                               )}
                             </div>
 
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xs text-gray-600 font-medium">
+                            <div className="flex items-baseline gap-1.5 mb-2">
+                              <span className="font-battambang text-xs text-gray-600 font-medium">
                                 មធ្យមភាគ:
                               </span>
-                              <span className="text-lg font-bold text-indigo-600">
+                              <span className="font-koulen text-xl text-indigo-600">
                                 {student.average.toFixed(2)}
                               </span>
-                              <span className="text-xs text-gray-500">/50</span>
+                              <span className="font-battambang text-xs text-gray-500">/50</span>
                             </div>
 
-                            <div className="mt-2 w-full bg-gray-200 rounded-full h-1. 5 overflow-hidden">
+                            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
                               <div
                                 className={`h-full ${gradeBadge.bg} transition-all duration-500`}
                                 style={{
@@ -548,21 +582,21 @@ export default function MobileMonthlyReport() {
                         </div>
 
                         <div
-                          className={`ml-3 px-3 py-2 ${gradeBadge.bg} rounded-lg shadow-md flex-shrink-0`}
+                          className={`ml-3 px-3.5 py-2.5 ${gradeBadge.bg} rounded-2xl shadow-md flex-shrink-0`}
                         >
                           <div className="text-center">
                             <div
-                              className={`text-lg font-bold ${gradeBadge.text} leading-none`}
+                              className={`text-xl font-bold ${gradeBadge.text} leading-none`}
                             >
                               {gradeBadge.icon}
                             </div>
                             <div
-                              className={`text-xl font-bold ${gradeBadge.text} leading-none mt-1`}
+                              className={`font-koulen text-2xl ${gradeBadge.text} leading-none mt-1.5`}
                             >
                               {student.gradeLevel}
                             </div>
                             <div
-                              className={`text-[10px] ${gradeBadge.text} mt-1 opacity-90`}
+                              className={`font-battambang text-[10px] ${gradeBadge.text} mt-1 opacity-90`}
                             >
                               {student.gradeLevelKh}
                             </div>
@@ -572,26 +606,26 @@ export default function MobileMonthlyReport() {
 
                       <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100">
                         <div className="text-center">
-                          <div className="text-xs text-gray-600 mb-0.5">
+                          <div className="font-battambang text-xs text-gray-600 mb-1">
                             Score
                           </div>
-                          <div className="text-sm font-bold text-gray-900">
+                          <div className="font-koulen text-base text-gray-900">
                             {student.totalScore.toFixed(1)}
                           </div>
                         </div>
                         <div className="text-center border-l border-r border-gray-200">
-                          <div className="text-xs text-red-600 mb-0.5">
+                          <div className="font-battambang text-xs text-red-600 mb-1">
                             អវត្តមាន
                           </div>
-                          <div className="text-sm font-bold text-red-600">
+                          <div className="font-koulen text-base text-red-600">
                             {student.absent + student.permission}
                           </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xs text-gray-600 mb-0.5">
+                          <div className="font-battambang text-xs text-gray-600 mb-1">
                             Rank
                           </div>
-                          <div className="text-sm font-bold text-indigo-600">
+                          <div className="font-koulen text-base text-indigo-600">
                             #{student.rank}
                           </div>
                         </div>
@@ -602,19 +636,19 @@ export default function MobileMonthlyReport() {
               })}
             </div>
 
-            {/* Footer Actions */}
+            {/* Modern Footer Actions */}
             <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={handleBackToDashboard}
-                  className="h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all"
+                  className="h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-battambang font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Dashboard
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md"
+                  className="h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl font-battambang font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
                 >
                   <Download className="w-4 h-4" />
                   Export
@@ -624,10 +658,18 @@ export default function MobileMonthlyReport() {
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-sm font-medium text-gray-600">
-                សូមជ្រើសរើសថ្នាក់ និងខែ ដើម្បីបង្កើតរបាយការណ៍
+            <div className="text-center max-w-xs">
+              <div className="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <BarChart3 className="w-12 h-12 text-indigo-600" />
+              </div>
+              <h3 className="font-koulen text-lg text-gray-900 mb-2">
+                ជ្រើសរើសថ្នាក់
+              </h3>
+              <p className="font-battambang text-sm text-gray-600 leading-relaxed mb-1">
+                សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ
+              </p>
+              <p className="font-battambang text-xs text-gray-500">
+                ដើម្បីបង្កើតរបាយការណ៍ប្រចាំខែ
               </p>
             </div>
           </div>

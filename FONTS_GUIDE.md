@@ -124,25 +124,46 @@ body {
 ## 🌍 Cross-Device Support
 
 ### Desktop
-- ✅ Uses Google Fonts (Moul, Bokor, Koulen, Battambang)
-- ✅ Falls back to local "Khmer OS" fonts if available
+- ✅ Uses **LOCAL fonts first** (from `/public/fonts/khmer/`)
+- ✅ Falls back to Google Fonts CDN if local fonts fail
 - ✅ Fast loading with font-display: swap
 
-### Mobile (iOS/Android)
-- ✅ Google Fonts downloaded and cached
-- ✅ Works offline after first load
-- ✅ Optimized for mobile browsers
+### Mobile (iOS/Android) & PWA
+- ✅ **LOCAL fonts bundled with app** - works offline!
+- ✅ No internet required for fonts to load
+- ✅ Optimized woff2 format for mobile browsers
+- ✅ Falls back to Google Fonts CDN if local fonts fail
 
 ### Tablet
 - ✅ Same as desktop/mobile
 - ✅ Responsive font sizes
+- ✅ Offline-first font loading
 
 ## 🚀 Performance Optimization
 
-1. **Font Display Strategy**: `display=swap` prevents FOIT (Flash of Invisible Text)
-2. **Font Subsetting**: Only Khmer characters loaded (reduces file size)
-3. **Browser Caching**: Fonts cached for 1 year
-4. **Fallback Fonts**: Local "Khmer OS" fonts used if Google Fonts fails
+1. **Local-First Strategy**: Fonts loaded from local files (fastest)
+2. **Font Display Strategy**: `display=swap` prevents FOIT (Flash of Invisible Text)
+3. **Font Subsetting**: Only Khmer unicode range loaded (U+1780-17FF)
+4. **woff2 Format**: Modern, compressed format (smallest file size)
+5. **Fallback Chain**: Local → Google Fonts → System Fonts
+6. **PWA Support**: Fonts cached with service worker for true offline use
+
+## 📦 Font Files
+
+Local Khmer fonts are stored in: `/public/fonts/khmer/`
+
+- ✅ `Battambang-Regular.woff2` (1.6 KB)
+- ✅ `Battambang-Bold.woff2` (1.6 KB)
+- ✅ `Moul-Regular.woff2` (1.6 KB)
+- ✅ `Bokor-Regular.woff2` (1.6 KB)
+- ✅ `Koulen-Regular.woff2` (1.6 KB)
+
+**Total size: ~8 KB** (extremely lightweight!)
+
+To re-download fonts, run:
+```bash
+bash scripts/download-fonts.sh
+```
 
 ## 🧪 Testing
 

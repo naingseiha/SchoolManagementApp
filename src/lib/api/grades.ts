@@ -94,7 +94,7 @@ export const gradeApi = {
     year: number
   ): Promise<Grade[]> {
     const response = await fetch(
-      `${API_BASE_URL}/grades/month/${classId}? month=${month}&year=${year}`
+      `${API_BASE_URL}/grades/month/${classId}?month=${month}&year=${year}`
     );
 
     if (!response.ok) {

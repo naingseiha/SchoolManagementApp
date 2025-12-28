@@ -14,6 +14,14 @@ import {
   ChevronRight,
   ArrowLeft,
   Users,
+  Search,
+  Bell,
+  MapPin,
+  Sparkles,
+  BookOpen,
+  Target,
+  Calendar,
+  TrendingUp,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -101,347 +109,254 @@ export default function MobileReportsDashboard() {
     grade: string;
     track?: string;
   } | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    if (classes.length === 0 && !isLoadingClasses) {
-      refreshClasses();
-    }
-  }, [classes.length, isLoadingClasses, refreshClasses]);
+  const loadSubjectStatus = async () => {
+    if (!selectedClass) return;
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  const loadSubjectStatus = useCallback(async () => {
-    if (!selectedClass) {
-      alert("សូមជ្រើសរើសថ្នាក់");
-      return;
-    }
-
-    // Abort previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    setLoading(true);
-    setSelectedSubject(null);
     try {
-      const gridData = await gradeApi.getGradesGrid(
+      setLoading(true);
+      const classData = classes.find((c) => c.id === selectedClass);
+
+      if (!classData) {
+        throw new Error("Class not found");
+      }
+
+      const response = await gradeApi.getGradesGrid(
         selectedClass,
         selectedMonth,
         selectedYear
       );
 
-      // Get track from the selected class
-      const selectedClassData = classes.find((c) => c.id === selectedClass);
-
-      // Store class info including track
-      setClassInfo({
-        className: gridData.className,
-        grade: gridData.grade,
-        track: (gridData as any).track || selectedClassData?.track,
-      });
-
-      const totalStudents = gridData.students.length;
-
-      const subjectStatusList: SubjectStatus[] = gridData.subjects.map(
+      const subjectStatuses: SubjectStatus[] = response.subjects.map(
         (subject: any) => {
-          const studentGrades: StudentGrade[] = [];
-          let studentsWithGrades = 0;
-
-          gridData.students.forEach((student: any) => {
-            const gradeData = student.grades[subject.id];
-            const score = gradeData?.score ?? null;
-
-            studentGrades.push({
-              studentId: student.studentId,
-              studentName: student.studentName,
-              gender: student.gender,
-              score: score,
-              maxScore: subject.maxScore,
-            });
-
-            if (score !== null && score !== undefined) {
-              studentsWithGrades++;
+          const studentGrades: StudentGrade[] = response.students.map(
+            (student: any) => {
+              // ✅ FIX: grades is an object with subject IDs as keys, not an array
+              const grade = student.grades?.[subject.id];
+              return {
+                studentId: student.studentId,
+                // ✅ FIX: Use studentName field if khmerName is not available
+                studentName:
+                  student.studentName || student.khmerName || student.studentId,
+                gender: student.gender,
+                score: grade?.score ?? null,
+                maxScore: subject.maxScore,
+              };
             }
-          });
+          );
 
+          const studentsWithGrades = studentGrades.filter(
+            (sg) => sg.score !== null
+          ).length;
+          const totalStudents = studentGrades.length;
           const completionRate =
             totalStudents > 0
               ? Math.round((studentsWithGrades / totalStudents) * 100)
               : 0;
 
-          const isComplete = studentsWithGrades === totalStudents;
+          // ✅ Mark blank scores as "A" (Absent) when >90% have scores
+          const updatedStudentGrades = studentGrades.map((sg) => {
+            if (sg.score === null && completionRate > 90) {
+              return {
+                ...sg,
+                studentName: `${sg.studentName} (A)`,
+              };
+            }
+            return sg;
+          });
 
           return {
-            subjectId: subject.id,
-            subjectName: subject.name,
+            subjectId: subject.code,
+            subjectName: subject.nameEn,
             subjectNameKh: subject.nameKh,
             subjectCode: subject.code,
             maxScore: subject.maxScore,
             coefficient: subject.coefficient,
-            totalStudents: totalStudents,
-            studentsWithGrades: studentsWithGrades,
-            completionRate: completionRate,
-            isComplete: isComplete,
-            studentGrades: studentGrades,
+            totalStudents,
+            studentsWithGrades,
+            completionRate,
+            isComplete: studentsWithGrades === totalStudents,
+            studentGrades: updatedStudentGrades,
           };
         }
       );
 
-      setSubjects(subjectStatusList);
+      setSubjects(subjectStatuses);
+      setClassInfo({
+        className: classData.name,
+        grade: classData.grade,
+        track: (classData as any).track || undefined,
+      });
       setDataLoaded(true);
-    } catch (error: any) {
-      if (error.name !== "AbortError") {
-        alert(`មានបញ្ហា: ${error.message}`);
-      }
+    } catch (error) {
+      console.error("Error loading subject status:", error);
+      alert("Failed to load data. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [selectedClass, selectedMonth, selectedYear, classes]);
-
-  const handleViewReport = () => {
-    const params = new URLSearchParams({
-      class: selectedClass,
-      month: selectedMonth,
-      year: selectedYear.toString(),
-    });
-    router.push(`/reports/mobile? ${params.toString()}`);
   };
 
-  const completedSubjects = subjects.filter((s) => s.isComplete).length;
   const totalSubjects = subjects.length;
+  const completedSubjects = subjects.filter((s) => s.isComplete).length;
   const overallCompletion =
     totalSubjects > 0
       ? Math.round((completedSubjects / totalSubjects) * 100)
       : 0;
 
-  // ✅ Subject Detail View
+  const handleViewReport = () => {
+    router.push(
+      `/reports/monthly-class-report?classId=${selectedClass}&month=${selectedMonth}&year=${selectedYear}`
+    );
+  };
+
+  // ✅ Subject Detail Modal
   if (selectedSubject) {
-    // Check if we should treat blank scores as absences (completion > 90%)
-    const treatBlanksAsAbsent = selectedSubject.completionRate >= 90;
-
     return (
-      <MobileLayout title="ពិន្ទុសិស្ស • Student Grades">
-        <div className="flex flex-col h-full bg-gray-50">
+      <MobileLayout title="ព័ត៌មានលម្អិត">
+        <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-gray-100">
           {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <button
-                onClick={() => setSelectedSubject(null)}
-                className="p-2 bg-white/20 backdrop-blur-sm rounded-lg"
-              >
-                <ArrowLeft className="w-4 h-4 text-white" />
-              </button>
-              <div className="flex-1 text-center px-4">
-                <h3 className="text-white text-lg font-bold truncate">
-                  {selectedSubject.subjectNameKh}
-                </h3>
-                <p className="text-indigo-100 text-xs mt-0.5">
-                  {selectedSubject.subjectCode}
-                </p>
-              </div>
-              <div className="w-10" />
-            </div>
+          <div className="bg-white px-4 pt-6 pb-4 shadow-sm">
+            <button
+              onClick={() => setSelectedSubject(null)}
+              className="flex items-center gap-2 text-indigo-600 font-battambang font-semibold mb-4 active:scale-95 transition-transform"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>ត្រឡប់ក្រោយ</span>
+            </button>
+            <h3 className="font-koulen text-xl text-gray-900 mb-1">
+              {selectedSubject.subjectNameKh}
+            </h3>
+            <p className="font-battambang text-sm text-gray-600">
+              Max: {selectedSubject.maxScore}
+            </p>
+          </div>
 
-            {/* Subject Stats */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20">
-                <div className="text-xs text-indigo-100 mb-0.5">Max</div>
-                <div className="text-lg font-bold text-white">
-                  {selectedSubject.maxScore}
+          {/* Stats */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <p className="font-koulen text-xs text-gray-500 mb-1">
+                    សិស្ស
+                  </p>
+                  <p className="font-koulen text-2xl text-gray-900">
+                    {selectedSubject.totalStudents}
+                  </p>
                 </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20">
-                <div className="text-xs text-indigo-100 mb-0.5">មេគុណ</div>
-                <div className="text-lg font-bold text-white">
-                  ×{selectedSubject.coefficient}
+                <div className="text-center border-x border-gray-200">
+                  <p className="font-koulen text-xs text-gray-500 mb-1">
+                    បានបញ្ចូល
+                  </p>
+                  <p className="font-koulen text-2xl text-green-600">
+                    {selectedSubject.studentsWithGrades}
+                  </p>
                 </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-2 border border-white/20">
-                <div className="text-xs text-indigo-100 mb-0.5">Status</div>
-                <div className="text-lg font-bold text-white">
-                  {selectedSubject.completionRate}%
+                <div className="text-center">
+                  <p className="font-koulen text-xs text-gray-500 mb-1">
+                    ភាគរយ
+                  </p>
+                  <p className="font-koulen text-2xl text-indigo-600">
+                    {selectedSubject.completionRate}%
+                  </p>
                 </div>
               </div>
             </div>
-
-            {/* Absence Notice */}
-            {treatBlanksAsAbsent && (
-              <div className="mt-3 bg-orange-500/20 backdrop-blur-sm rounded-lg p-2 border border-orange-300/30">
-                <p className="text-xs text-white text-center">
-                  ⚠️ សិស្សដែលគ្មានពិន្ទុ = អវត្តមាន (A) • Blank scores = Absent
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Student List */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-            {selectedSubject.studentGrades.map((student, index) => {
-              const hasScore =
-                student.score !== null && student.score !== undefined;
-              const isAbsent = !hasScore && treatBlanksAsAbsent;
-
-              return (
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <h3 className="font-koulen text-lg text-gray-900 mb-3 mt-2">
+              បញ្ជីសិស្ស
+            </h3>
+            <div className="space-y-2">
+              {selectedSubject.studentGrades.map((student, index) => (
                 <div
                   key={student.studentId}
-                  className={`bg-white rounded-lg shadow-sm border-2 p-3 ${
-                    hasScore
-                      ? "border-green-200 bg-green-50/30"
-                      : isAbsent
-                      ? "border-orange-200 bg-orange-50/30"
-                      : "border-gray-200"
-                  }`}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4"
                 >
                   <div className="flex items-center justify-between">
-                    {/* Student Info */}
                     <div className="flex items-center gap-3 flex-1">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          hasScore
-                            ? "bg-green-100 text-green-700"
-                            : isAbsent
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        <span className="text-xs font-bold">{index + 1}</span>
+                      <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {index + 1}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {student.studentName}
-                          </p>
-                          {student.gender === "FEMALE" && (
-                            <span className="text-pink-500 text-xs">♀</span>
-                          )}
-                          {student.gender === "MALE" && (
-                            <span className="text-blue-500 text-xs">♂</span>
-                          )}
-                        </div>
+                      <div className="flex-1">
+                        <p className="font-battambang text-sm font-bold text-gray-900">
+                          {student.studentName}
+                        </p>
+                        <p className="font-battambang text-xs text-gray-500">
+                          {student.gender === "ប" ? "ប្រុស" : "ស្រី"}
+                        </p>
                       </div>
                     </div>
-
-                    {/* Score Display */}
                     <div className="text-right">
-                      {hasScore ? (
+                      {student.score !== null ? (
                         <div className="flex items-baseline gap-1">
-                          <span className="text-xl font-bold text-green-600">
+                          <span className="font-koulen text-2xl text-green-600">
                             {student.score}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="font-battambang text-xs text-gray-400">
                             /{student.maxScore}
                           </span>
                         </div>
-                      ) : isAbsent ? (
-                        <div className="flex flex-col items-end">
-                          <div className="px-3 py-1 bg-orange-100 border-2 border-orange-300 rounded-lg">
-                            <span className="text-lg font-bold text-orange-700">
-                              A
-                            </span>
-                          </div>
-                          <span className="text-xs text-orange-600 mt-1 font-medium">
-                            អវត្តមាន
-                          </span>
-                        </div>
                       ) : (
-                        <div className="text-sm font-semibold text-gray-400">
+                        <span className="font-battambang text-xs text-red-500 font-semibold">
                           មិនទាន់បញ្ចូល
-                        </div>
+                        </span>
                       )}
                     </div>
                   </div>
-
-                  {/* Progress Bar */}
-                  {hasScore && (
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-green-500 to-emerald-600 transition-all duration-500"
-                        style={{
-                          width: `${Math.min(
-                            ((student.score || 0) / student.maxScore) * 100,
-                            100
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Summary Footer */}
-          <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
-            <div className="flex items-center justify-between text-sm mb-2">
-              <div>
-                <span className="text-gray-600">បានបញ្ចូល: </span>
-                <span className="font-bold text-green-600">
-                  {selectedSubject.studentsWithGrades}
-                </span>
-                <span className="text-gray-500">
-                  /{selectedSubject.totalStudents}
-                </span>
-              </div>
-              <div>
-                {selectedSubject.isComplete ? (
-                  <span className="flex items-center gap-1 text-green-600 font-semibold">
-                    <CheckCircle2 className="w-4 h-4" />
-                    រួចរាល់
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-orange-600 font-semibold">
-                    <AlertCircle className="w-4 h-4" />
-                    មិនទាន់ចប់
-                  </span>
-                )}
-              </div>
+              ))}
             </div>
-            {treatBlanksAsAbsent && !selectedSubject.isComplete && (
-              <div className="pt-2 border-t border-gray-200">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-orange-600 font-medium">
-                    អវត្តមាន (A):
-                  </span>
-                  <span className="font-bold text-orange-700">
-                    {selectedSubject.totalStudents -
-                      selectedSubject.studentsWithGrades}{" "}
-                    សិស្ស
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </MobileLayout>
     );
   }
 
-  // ✅ Main Dashboard View
+  // ✅ Main Dashboard View - Modern Style
   return (
     <MobileLayout title="របាយការណ៍ • Reports">
-      <div className="flex flex-col h-full bg-gray-50">
-        {/* Filters Section */}
-        <div className="bg-white shadow-lg border-b border-gray-200 p-4 space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-indigo-600" />
-              ស្ថានភាពបញ្ចូលពិន្ទុ
-            </h1>
-            <Filter className="w-5 h-5 text-gray-400" />
+      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+        {/* Clean Modern Header */}
+        <div className="bg-white px-5 pt-6 pb-5 shadow-sm">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-koulen text-orange-500 text-sm leading-tight">
+                  របាយការណ៍
+                </p>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  Grade Entry Reports
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="w-9 h-9 bg-gradient-to-br from-orange-100 to-pink-100 rounded-full flex items-center justify-center">
+                <Bell className="w-4 h-4 text-orange-600" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Section - Clean Cards */}
+        <div className="px-5 pt-4 pb-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-5 h-5 text-gray-600" />
+            <h3 className="font-koulen text-lg text-gray-900">
+              ជ្រើសរើសថ្នាក់
+            </h3>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1. 5 uppercase tracking-wide">
-              ថ្នាក់ • Class
+          {/* Class Selector */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-3">
+            <label className="block font-battambang text-xs text-gray-600 font-semibold mb-2 flex items-center gap-1.5">
+              <Users className="w-3 h-3" />
+              ថ្នាក់រៀន • Class
             </label>
             <select
               value={selectedClass}
@@ -450,7 +365,7 @@ export default function MobileReportsDashboard() {
                 setDataLoaded(false);
               }}
               disabled={isLoadingClasses}
-              className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-11 px-3 text-sm font-battambang font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-transparent transition-all"
               style={{ fontSize: "16px" }}
             >
               <option value="">
@@ -465,10 +380,12 @@ export default function MobileReportsDashboard() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                ខែ • Month
+          {/* Month & Year */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+              <label className="block font-battambang text-xs text-gray-600 font-semibold mb-2 flex items-center gap-1.5">
+                <Calendar className="w-3 h-3" />
+                ខែ
               </label>
               <select
                 value={selectedMonth}
@@ -476,7 +393,7 @@ export default function MobileReportsDashboard() {
                   setSelectedMonth(e.target.value);
                   setDataLoaded(false);
                 }}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-11 px-3 text-sm font-battambang font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all"
                 style={{ fontSize: "16px" }}
               >
                 {MONTHS.map((m) => (
@@ -487,9 +404,9 @@ export default function MobileReportsDashboard() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-                ឆ្នាំ • Year
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+              <label className="block font-battambang text-xs text-gray-600 font-semibold mb-2">
+                ឆ្នាំ
               </label>
               <select
                 value={selectedYear.toString()}
@@ -497,7 +414,7 @@ export default function MobileReportsDashboard() {
                   setSelectedYear(parseInt(e.target.value));
                   setDataLoaded(false);
                 }}
-                className="w-full h-11 px-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-11 px-3 text-sm font-battambang font-semibold bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 transition-all"
                 style={{ fontSize: "16px" }}
               >
                 {getAcademicYearOptions().map((option) => (
@@ -509,20 +426,21 @@ export default function MobileReportsDashboard() {
             </div>
           </div>
 
+          {/* Check Button */}
           <button
             onClick={loadSubjectStatus}
             disabled={!selectedClass || loading}
-            className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg shadow-md flex items-center justify-center gap-2 transition-all"
+            className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-battambang font-bold rounded-2xl shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 transition-all"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">កំពុងពិនិត្យ...</span>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>កំពុងពិនិត្យ...</span>
               </>
             ) : (
               <>
-                <BarChart3 className="w-4 h-4" />
-                <span className="text-sm">ពិនិត្យស្ថានភាព</span>
+                <Sparkles className="w-5 h-5" />
+                <span>ពិនិត្យស្ថានភាព</span>
               </>
             )}
           </button>
@@ -530,219 +448,215 @@ export default function MobileReportsDashboard() {
 
         {/* Content */}
         {dataLoaded && subjects.length > 0 ? (
-          <div className="flex-1 overflow-y-auto">
-            {/* Summary Header */}
-            <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-4 py-4 shadow-lg">
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
-                {/* Track Indicator for Grade 11/12 */}
-                {classInfo &&
-                  (classInfo.grade === "11" || classInfo.grade === "12") && (
-                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-white/20">
-                      <span className="text-xs text-indigo-100 font-medium">
-                        {classInfo.className}
-                      </span>
-                      {classInfo.track && (
-                        <div
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            classInfo.track === "science"
-                              ? "bg-blue-500 text-white"
-                              : "bg-orange-500 text-white"
-                          }`}
-                        >
-                          {classInfo.track === "science"
-                            ? "🔬 វិទ្យាសាស្ត្រ"
-                            : "🌍 សង្គម"}
-                        </div>
-                      )}
-                      <span className="ml-auto text-xs text-indigo-100">
-                        {totalSubjects} មុខវិជ្ជា
-                      </span>
-                    </div>
-                  )}
+          <div className="flex-1 overflow-y-auto pb-6">
+            {/* Summary Card */}
+            <div className="px-5 pt-3 pb-4">
+              <div className="bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100 rounded-3xl p-5 shadow-lg border border-gray-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200 to-pink-200 rounded-full opacity-20 blur-3xl"></div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-indigo-100 font-medium">
-                    ភាពពេញលេញ
-                  </span>
-                  <span className="text-2xl font-bold text-white">
-                    {overallCompletion}%
-                  </span>
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="h-full bg-white transition-all duration-500"
-                    style={{ width: `${overallCompletion}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-indigo-100">
-                  <span>
-                    {completedSubjects} / {totalSubjects} បានបញ្ចូល
-                  </span>
-                  <span>{subjects[0]?.totalStudents || 0} សិស្ស</span>
+                <div className="relative z-10">
+                  {/* Track Indicator for Grade 11/12 */}
+                  {classInfo &&
+                    (classInfo.grade === "11" || classInfo.grade === "12") && (
+                      <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200">
+                        <div className="flex-1">
+                          <p className="font-battambang text-xs text-gray-500 font-semibold mb-1">
+                            ថ្នាក់
+                          </p>
+                          <p className="font-koulen text-base text-gray-900">
+                            {classInfo.className}
+                          </p>
+                        </div>
+                        {classInfo.track && (
+                          <div
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold shadow-md ${
+                              classInfo.track === "science"
+                                ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+                                : "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+                            }`}
+                          >
+                            {classInfo.track === "science"
+                              ? "🔬 វិទ្យាសាស្ត្រ"
+                              : "🌍 សង្គម"}
+                          </div>
+                        )}
+                        <div className="text-right">
+                          <p className="font-battambang text-xs text-gray-500 font-semibold mb-1">
+                            មុខវិជ្ជា
+                          </p>
+                          <p className="font-koulen text-base text-gray-900">
+                            {totalSubjects}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Progress */}
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
+                      <p className="font-battambang text-[10px] text-gray-600 font-semibold mb-1">
+                        ភាពពេញលេញ
+                      </p>
+                      <p className="font-koulen text-3xl text-orange-600">
+                        {overallCompletion}%
+                      </p>
+                    </div>
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
+                      <p className="font-battambang text-[10px] text-gray-600 font-semibold mb-1">
+                        បានបញ្ចូល
+                      </p>
+                      <div className="flex items-baseline gap-1">
+                        <p className="font-koulen text-3xl text-green-600">
+                          {completedSubjects}
+                        </p>
+                        <p className="font-battambang text-sm text-gray-400">
+                          /{totalSubjects}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-500 to-pink-500 rounded-full transition-all duration-500"
+                      style={{ width: `${overallCompletion}%` }}
+                    />
+                  </div>
+
+                  {/* Student Count */}
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <span className="font-battambang text-xs text-gray-600 font-semibold">
+                      សិស្សសរុប: {subjects[0]?.totalStudents || 0} នាក់
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Subject Cards */}
-            <div className="px-4 py-3 space-y-2">
-              {subjects.map((subject, index) => {
-                const isComplete = subject.isComplete;
-                const isPartial = subject.studentsWithGrades > 0 && !isComplete;
-                const isEmpty = subject.studentsWithGrades === 0;
+            {/* Subject List */}
+            <div className="px-5">
+              <h3 className="font-koulen text-lg text-gray-900 mb-3">
+                មុខវិជ្ជាទាំងអស់
+              </h3>
+              <div className="space-y-3">
+                {subjects.map((subject, index) => {
+                  const isComplete = subject.isComplete;
+                  const isPartial =
+                    subject.studentsWithGrades > 0 && !isComplete;
 
-                return (
-                  <button
-                    key={subject.subjectId}
-                    onClick={() => setSelectedSubject(subject)}
-                    className={`w-full bg-white rounded-xl shadow-md border-2 p-4 transition-all active:scale-98 ${
-                      isComplete
-                        ? "border-green-300 bg-gradient-to-r from-green-50/30 to-emerald-50/30"
-                        : isPartial
-                        ? "border-yellow-300 bg-gradient-to-r from-yellow-50/30 to-amber-50/30"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start gap-3 flex-1">
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ${
-                            isComplete
-                              ? "bg-gradient-to-br from-green-500 to-emerald-600"
-                              : isPartial
-                              ? "bg-gradient-to-br from-yellow-500 to-amber-600"
-                              : "bg-gradient-to-br from-gray-400 to-gray-500"
-                          }`}
-                        >
-                          <span className="text-white font-bold text-sm">
-                            {index + 1}
-                          </span>
-                        </div>
-
-                        <div className="flex-1 min-w-0 text-left">
-                          <h4 className="text-sm font-bold text-gray-900 mb-0.5">
-                            {subject.subjectNameKh}
-                          </h4>
-                          <p className="text-xs text-gray-600">
-                            {subject.subjectCode}
-                          </p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
-                            <span>Max: {subject.maxScore}</span>
-                            <span>•</span>
-                            <span>មេគុណ: ×{subject.coefficient}</span>
-                          </div>
-                        </div>
+                  return (
+                    <button
+                      key={subject.subjectId}
+                      onClick={() => setSelectedSubject(subject)}
+                      className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all active:scale-[0.98] flex items-center gap-3"
+                    >
+                      {/* Number Badge */}
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${
+                          isComplete
+                            ? "bg-gradient-to-br from-green-500 to-emerald-600"
+                            : isPartial
+                            ? "bg-gradient-to-br from-yellow-500 to-orange-600"
+                            : "bg-gradient-to-br from-gray-400 to-gray-500"
+                        }`}
+                      >
+                        <span className="text-white font-bold text-sm">
+                          {index + 1}
+                        </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${
-                            isComplete
-                              ? "bg-green-100"
-                              : isPartial
-                              ? "bg-yellow-100"
-                              : "bg-gray-100"
-                          }`}
-                        >
-                          {isComplete ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                          ) : isPartial ? (
-                            <AlertCircle className="w-4 h-4 text-yellow-600" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-gray-500" />
-                          )}
-                          <span
-                            className={`text-xs font-bold ${
-                              isComplete
-                                ? "text-green-700"
-                                : isPartial
-                                ? "text-yellow-700"
-                                : "text-gray-600"
-                            }`}
-                          >
+                      {/* Content */}
+                      <div className="flex-1 text-left">
+                        <h4 className="font-battambang text-sm font-bold text-gray-900 mb-1">
+                          {subject.subjectNameKh}
+                        </h4>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-battambang text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                            {subject.subjectCode}
+                          </span>
+                          <span className="font-battambang text-xs text-gray-500">
+                            •
+                          </span>
+                          <span className="font-battambang text-xs text-indigo-600 font-semibold">
+                            {subject.maxScore} ពិន្ទុ
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                isComplete
+                                  ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                                  : isPartial
+                                  ? "bg-gradient-to-r from-yellow-500 to-orange-600"
+                                  : "bg-gray-300"
+                              }`}
+                              style={{ width: `${subject.completionRate}%` }}
+                            />
+                          </div>
+                          <span className="font-battambang text-xs text-gray-600 font-bold min-w-[45px] text-right">
                             {subject.completionRate}%
                           </span>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
                       </div>
-                    </div>
 
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-500 ${
-                          isComplete
-                            ? "bg-gradient-to-r from-green-500 to-emerald-600"
-                            : isPartial
-                            ? "bg-gradient-to-r from-yellow-500 to-amber-600"
-                            : "bg-gray-300"
-                        }`}
-                        style={{ width: `${subject.completionRate}%` }}
-                      />
-                    </div>
-
-                    <div className="mt-2 flex items-center justify-between text-xs">
-                      <span className="text-gray-600">
-                        {subject.studentsWithGrades}/{subject.totalStudents}{" "}
-                        សិស្ស
-                      </span>
-                      <div className="flex flex-col items-end gap-0.5">
+                      {/* Status Icon */}
+                      <div>
                         {isComplete ? (
-                          <span className="text-green-700 font-semibold">
-                            ✓ បញ្ចូលពិន្ទុរួចរាល់
-                          </span>
+                          <CheckCircle2 className="w-6 h-6 text-green-600" />
                         ) : isPartial ? (
-                          <>
-                            <span className="text-yellow-700 font-semibold">
-                              ⚠ បញ្ចូលមិនទាន់ចប់
-                            </span>
-                            {subject.completionRate >= 90 && (
-                              <span className="text-orange-600 font-medium text-[10px]">
-                                {subject.totalStudents -
-                                  subject.studentsWithGrades}{" "}
-                                សិស្ស = អវត្តមាន (A)
-                              </span>
-                            )}
-                          </>
+                          <AlertCircle className="w-6 h-6 text-yellow-600" />
                         ) : (
-                          <span className="text-gray-500 font-semibold">
-                            ✗ មិនទាន់បានបញ្ចូល
-                          </span>
+                          <XCircle className="w-6 h-6 text-gray-400" />
                         )}
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* View Report Button */}
-            {completedSubjects === totalSubjects && (
-              <div className="px-4 py-4 bg-white border-t border-gray-200">
+            <div className="px-5 pt-4 pb-2">
+              {completedSubjects === totalSubjects ? (
                 <button
                   onClick={handleViewReport}
-                  className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md flex items-center justify-center gap-2 transition-all"
+                  className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-battambang font-bold rounded-2xl shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 transition-all"
                 >
                   <Award className="w-5 h-5" />
                   <span>មើលរបាយការណ៍ពេញលេញ</span>
                 </button>
-              </div>
-            )}
-
-            {completedSubjects < totalSubjects && (
-              <div className="px-4 py-4 bg-white border-t border-gray-200">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
-                  <p className="text-sm text-yellow-800">
-                    <AlertCircle className="w-4 h-4 inline mr-1" />
-                    សូមបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជាជាមុនសិន
-                  </p>
+              ) : (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-amber-200 rounded-full flex items-center justify-center flex-shrink-0">
+                      <AlertCircle className="w-5 h-5 text-amber-700" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-battambang text-sm font-bold text-amber-900 mb-1">
+                        មិនទាន់ពេញលេញ
+                      </p>
+                      <p className="font-battambang text-xs text-amber-700">
+                        សូមបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជាជាមុនសិន
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-sm font-medium text-gray-600">
+            <div className="text-center max-w-xs">
+              <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <BarChart3 className="w-12 h-12 text-orange-400" />
+              </div>
+              <h3 className="font-koulen text-lg text-gray-900 mb-2">
+                ជ្រើសរើសថ្នាក់រៀន
+              </h3>
+              <p className="font-battambang text-sm text-gray-600 leading-relaxed">
                 សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ ដើម្បីពិនិត្យស្ថានភាព
               </p>
             </div>

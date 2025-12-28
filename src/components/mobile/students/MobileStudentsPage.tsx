@@ -15,6 +15,9 @@ import {
   School,
   Copy,
   Check,
+  Bell,
+  MapPin,
+  Mic,
 } from "lucide-react";
 import { studentsApi, Student } from "@/lib/api/students";
 
@@ -156,26 +159,19 @@ export default function MobileStudentsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 p-4">
         <div className="animate-pulse space-y-4">
           {/* Header skeleton */}
-          <div className="h-32 bg-white/60 backdrop-blur-sm rounded-2xl"></div>
+          <div className="h-32 bg-white rounded-2xl"></div>
           {/* Search skeleton */}
-          <div className="h-14 bg-white/60 backdrop-blur-sm rounded-xl"></div>
-          {/* Filters skeleton */}
-          <div className="flex gap-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-10 w-20 bg-white/60 backdrop-blur-sm rounded-lg"
-              ></div>
-            ))}
-          </div>
+          <div className="h-14 bg-white rounded-xl"></div>
+          {/* Stats skeleton */}
+          <div className="h-40 bg-white rounded-2xl"></div>
           {/* Student cards skeleton */}
-          {[...Array(8)].map((_, i) => (
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="h-20 bg-white/60 backdrop-blur-sm rounded-xl"
+              className="h-20 bg-white rounded-xl"
             ></div>
           ))}
         </div>
@@ -185,18 +181,18 @@ export default function MobileStudentsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="w-8 h-8 text-red-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-10 h-10 text-red-600" />
           </div>
-          <h2 className="font-khmer-title text-xl font-bold text-gray-900 mb-2">
+          <h2 className="font-koulen text-2xl text-gray-900 mb-2">
             មានបញ្ហា
           </h2>
-          <p className="font-khmer-body text-gray-600 mb-6">{error}</p>
+          <p className="font-battambang text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => loadStudents(false)}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-khmer-body font-semibold py-3 px-6 rounded-xl hover:shadow-lg transition-all active:scale-95"
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-battambang font-semibold py-3 px-6 rounded-2xl hover:shadow-lg transition-all active:scale-95"
           >
             ព្យាយាមម្តងទៀត
           </button>
@@ -207,159 +203,175 @@ export default function MobileStudentsPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pb-20"
+      className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 pb-24"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Pull to Refresh Indicator */}
       {isRefreshing && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2 animate-fadeIn">
-          <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="font-khmer-body text-sm text-gray-700">កំពុងបន្ទាន់សម័យ...</span>
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="font-battambang text-sm text-gray-700 font-semibold">កំពុងបន្ទាន់សម័យ...</span>
         </div>
       )}
-      {/* Modern Header with Stats */}
-      <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 px-4 pt-8 pb-20 relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
-        </div>
 
-        {/* Header Content */}
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-6">
+      {/* Clean Modern Header */}
+      <div className="bg-white px-5 pt-6 pb-5 shadow-sm">
+        {/* Top Bar */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <h1 className="font-khmer-title text-2xl text-white font-bold mb-1">
+              <p className="font-koulen text-blue-500 text-sm leading-tight">
                 សិស្សសរុប
-              </h1>
-              <p className="font-khmer-body text-sm text-indigo-100">
-                Student List • បញ្ជីសិស្ស
+              </p>
+              <p className="font-battambang text-[10px] text-gray-500">
+                Student List
               </p>
             </div>
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-white" />
-            </div>
           </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-4 h-4 text-white/80" />
-                <p className="font-khmer-body text-xs text-white/80">
-                  សិស្សសរុប
-                </p>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.total}</p>
-            </div>
-
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <School className="w-4 h-4 text-white/80" />
-                <p className="font-khmer-body text-xs text-white/80">
-                  មានថ្នាក់
-                </p>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.withClass}</p>
-            </div>
-
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <UserCircle2 className="w-4 h-4 text-white/80" />
-                <p className="font-khmer-body text-xs text-white/80">ប្រុស</p>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.male}</p>
-            </div>
-
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <UserCircle2 className="w-4 h-4 text-white/80" />
-                <p className="font-khmer-body text-xs text-white/80">ស្រី</p>
-              </div>
-              <p className="text-3xl font-bold text-white">{stats.female}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search Card - Elevated */}
-      <div className="px-4 -mt-12 relative z-20 mb-4">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4">
-          {/* Search Input */}
-          <div className="relative mb-3">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ស្វែងរកតាមឈ្មោះ ឬលេខសម្គាល់..."
-              className="w-full pl-12 pr-12 py-4 bg-gray-50 border-0 rounded-xl text-base font-khmer-body focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <Search className="w-5 h-5 text-indigo-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-            {searchQuery && (
-              <button
-                onClick={clearFilters}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-
-          {/* Grade Filter Pills */}
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
-            <button
-              onClick={() => setSelectedGrade("all")}
-              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold font-khmer-body transition-all ${
-                selectedGrade === "all"
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              ទាំងអស់
+          <div className="flex items-center gap-2">
+            <button className="w-9 h-9 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
+              <Bell className="w-4 h-4 text-blue-600" />
             </button>
-            {grades.map((grade) => (
-              <button
-                key={grade}
-                onClick={() => setSelectedGrade(grade)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold font-khmer-body transition-all ${
-                  selectedGrade === grade
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                ថ្នាក់ {grade}
-              </button>
-            ))}
+          </div>
+        </div>
+
+        {/* Search Bar - Top Priority */}
+        <div className="relative mb-4">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && {}}
+            placeholder="Search Students..."
+            className="w-full pl-11 pr-11 py-3.5 rounded-xl font-battambang text-sm text-gray-900 bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all"
+          />
+          <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
+          {searchQuery && (
+            <button
+              onClick={clearFilters}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              <X className="w-3.5 h-3.5 text-gray-600" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Stats Banner */}
+      <div className="px-5 pt-4 pb-3">
+        <div className="bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100 rounded-3xl p-5 shadow-lg border border-gray-200 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full opacity-20 blur-3xl"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-blue-500" />
+              <p className="font-koulen text-blue-500 text-sm">ស្ថិតិសិស្ស</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                    <Users className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 font-semibold">
+                    សរុប
+                  </p>
+                </div>
+                <p className="font-koulen text-2xl text-gray-900">{stats.total}</p>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center">
+                    <School className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 font-semibold">
+                    មានថ្នាក់
+                  </p>
+                </div>
+                <p className="font-koulen text-2xl text-gray-900">{stats.withClass}</p>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center">
+                    <UserCircle2 className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 font-semibold">
+                    ប្រុស
+                  </p>
+                </div>
+                <p className="font-koulen text-2xl text-gray-900">{stats.male}</p>
+              </div>
+
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-6 h-6 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
+                    <UserCircle2 className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 font-semibold">
+                    ស្រី
+                  </p>
+                </div>
+                <p className="font-koulen text-2xl text-gray-900">{stats.female}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Results Header */}
-      <div className="px-4 mb-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-khmer-title text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-indigo-600" />
-            លទ្ធផល
-          </h2>
-          <span className="font-khmer-body text-sm text-gray-500 bg-white px-3 py-1.5 rounded-full border border-gray-200">
+      {/* Grade Filters */}
+      <div className="px-5 pt-4 pb-3">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-koulen text-lg text-gray-900">Filter by Grade</h3>
+          <span className="font-battambang text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
             {filteredStudents.length} សិស្ស
           </span>
+        </div>
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+          <button
+            onClick={() => setSelectedGrade("all")}
+            className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-battambang text-xs font-bold transition-all ${
+              selectedGrade === "all"
+                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                : "bg-white text-gray-700 border border-gray-200 shadow-sm active:scale-95"
+            }`}
+          >
+            ទាំងអស់
+          </button>
+          {grades.map((grade) => (
+            <button
+              key={grade}
+              onClick={() => setSelectedGrade(grade)}
+              className={`flex-shrink-0 px-5 py-2.5 rounded-xl font-battambang text-xs font-bold transition-all ${
+                selectedGrade === grade
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                  : "bg-white text-gray-700 border border-gray-200 shadow-sm active:scale-95"
+              }`}
+            >
+              ថ្នាក់ {grade}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Student List */}
-      <div className="px-4 space-y-2">
+      <div className="px-5 pb-6">
         {filteredStudents.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
-            <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-gray-400" />
+            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <User className="w-12 h-12 text-gray-400" />
             </div>
-            <p className="font-khmer-body text-gray-500 font-medium mb-2">
+            <h3 className="font-koulen text-lg text-gray-900 mb-2">
               មិនមានសិស្ស
-            </p>
-            <p className="font-khmer-body text-xs text-gray-400 mb-4">
+            </h3>
+            <p className="font-battambang text-sm text-gray-600 mb-4">
               {searchQuery || selectedGrade !== "all"
                 ? "សូមសាកល្បងផ្លាស់ប្តូរការស្វែងរក"
                 : "មិនមានទិន្នន័យសិស្ស"}
@@ -367,87 +379,78 @@ export default function MobileStudentsPage() {
             {(searchQuery || selectedGrade !== "all") && (
               <button
                 onClick={clearFilters}
-                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-khmer-body font-semibold rounded-xl hover:shadow-lg transition-all"
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-battambang font-semibold rounded-xl hover:shadow-lg transition-all active:scale-95"
               >
                 សម្អាតការស្វែងរក
               </button>
             )}
           </div>
         ) : (
-          filteredStudents.map((student, index) => {
-            const isOdd = index % 2 === 1;
-            const gradientClass = isOdd
-              ? "from-blue-50 to-indigo-50 border-blue-200"
-              : "from-purple-50 to-pink-50 border-purple-200";
-
-            return (
+          <div className="space-y-3">
+            {filteredStudents.map((student, index) => (
               <button
                 key={student.id}
                 onClick={() => router.push(`/students/${student.id}`)}
-                className={`w-full bg-gradient-to-br ${gradientClass} border rounded-2xl p-4 hover:shadow-lg transition-all text-left transform hover:scale-[1.02] active:scale-[0.98] animate-fadeIn`}
+                className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all active:scale-[0.98] flex items-center gap-3"
               >
-                <div className="flex items-center gap-3">
-                  {/* Avatar with decorative elements */}
-                  <div
-                    className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center relative overflow-hidden ${
-                      student.gender === "male"
-                        ? "bg-gradient-to-br from-blue-500 to-indigo-500"
-                        : "bg-gradient-to-br from-pink-500 to-rose-500"
-                    }`}
-                  >
-                    <div className="absolute -top-4 -right-4 w-8 h-8 bg-white/20 rounded-full"></div>
-                    <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-white/10 rounded-full"></div>
-                    <User className="w-7 h-7 text-white relative z-10" />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-khmer-body font-bold text-gray-900 truncate text-base">
-                      {student.khmerName ||
-                        `${student.firstName} ${student.lastName}`}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex items-center gap-1 text-sm font-semibold text-indigo-600 bg-white/60 backdrop-blur-sm px-2 py-0.5 rounded-lg">
-                        <span>{student.studentId}</span>
-                        <button
-                          onClick={(e) => handleCopy(student.studentId, e)}
-                          className="hover:scale-110 transition-transform"
-                        >
-                          {copiedId === student.studentId ? (
-                            <Check className="w-3 h-3 text-green-600" />
-                          ) : (
-                            <Copy className="w-3 h-3 text-indigo-500" />
-                          )}
-                        </button>
-                      </div>
-                      {student.class?.name && (
-                        <>
-                          <span className="w-1 h-1 bg-gray-400 rounded-full"></span>
-                          <span className="font-khmer-body text-sm text-gray-600 bg-white/60 backdrop-blur-sm px-2 py-0.5 rounded-lg">
-                            {student.class.name}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className={`text-xs font-khmer-body px-2 py-0.5 rounded-full ${
-                          student.gender === "male"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-pink-100 text-pink-700"
-                        }`}
-                      >
-                        {student.gender === "male" ? "ប្រុស" : "ស្រី"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                {/* Avatar */}
+                <div
+                  className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-md ${
+                    student.gender === "male"
+                      ? "bg-gradient-to-br from-blue-500 to-indigo-500"
+                      : "bg-gradient-to-br from-pink-500 to-rose-500"
+                  }`}
+                >
+                  <User className="w-6 h-6 text-white" />
                 </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 text-left">
+                  <h3 className="font-battambang font-bold text-sm text-gray-900 truncate mb-1">
+                    {student.khmerName ||
+                      `${student.firstName} ${student.lastName}`}
+                  </h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-lg">
+                      <span className="font-battambang text-xs text-blue-700 font-semibold">
+                        {student.studentId}
+                      </span>
+                      <button
+                        onClick={(e) => handleCopy(student.studentId, e)}
+                        className="hover:scale-110 transition-transform"
+                      >
+                        {copiedId === student.studentId ? (
+                          <Check className="w-3 h-3 text-green-600" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-blue-500" />
+                        )}
+                      </button>
+                    </div>
+                    {student.class?.name && (
+                      <>
+                        <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                        <span className="font-battambang text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded-lg">
+                          {student.class.name}
+                        </span>
+                      </>
+                    )}
+                    <span
+                      className={`font-battambang text-xs px-2 py-0.5 rounded-full ${
+                        student.gender === "male"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-pink-100 text-pink-700"
+                      }`}
+                    >
+                      {student.gender === "male" ? "ប្រុស" : "ស្រី"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
               </button>
-            );
-          })
+            ))}
+          </div>
         )}
       </div>
 

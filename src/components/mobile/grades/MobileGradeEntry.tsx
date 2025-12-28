@@ -8,6 +8,10 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  GraduationCap,
+  BookOpen,
+  Calendar,
+  Users,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -415,17 +419,36 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
 
   return (
     <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ">
-      <div className="p-4 space-y-4 pb-24">
-        {/* Filters Section */}
-        <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            ជ្រើសរើស • Selection
-          </h3>
-
+      {/* Clean Modern Header */}
+      <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <GraduationCap className="w-6 h-6 text-white" />
+          </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2">
-              ថ្នាក់ • Class
-            </label>
+            <h1 className="font-koulen text-xl text-gray-900 leading-tight">
+              បញ្ចូលពិន្ទុ
+            </h1>
+            <p className="font-battambang text-xs text-gray-500">
+              Grade Entry System
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 pt-4 pb-24 space-y-4">
+        {/* Modern Filter Cards */}
+        <div className="space-y-3">
+          {/* Class Selection Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Users className="w-4 h-4 text-purple-600" />
+              </div>
+              <label className="font-battambang text-sm font-semibold text-gray-700">
+                ថ្នាក់ • Class
+              </label>
+            </div>
             <select
               value={selectedClass}
               onChange={(e) => {
@@ -434,7 +457,7 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                 setSelectedSubject("");
               }}
               disabled={isLoadingClasses}
-              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              className="w-full h-12 px-4 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 transition-all"
               style={{ fontSize: "16px" }}
             >
               <option value="">
@@ -448,18 +471,24 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-2">
-                ខែ • Month
+          {/* Month & Year Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-indigo-600" />
+              </div>
+              <label className="font-battambang text-sm font-semibold text-gray-700">
+                ខែ និងឆ្នាំ • Month & Year
               </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <select
                 value={selectedMonth}
                 onChange={(e) => {
                   setSelectedMonth(e.target.value);
                   setDataLoaded(false);
                 }}
-                className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
                 {MONTHS.map((m) => (
@@ -468,19 +497,14 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                   </option>
                 ))}
               </select>
-            </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-2">
-                ឆ្នាំសិក្សា • Academic Year
-              </label>
               <select
                 value={selectedYear.toString()}
                 onChange={(e) => {
                   setSelectedYear(parseInt(e.target.value));
                   setDataLoaded(false);
                 }}
-                className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
                 {getAcademicYearOptions().map((option) => (
@@ -492,10 +516,11 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
             </div>
           </div>
 
+          {/* Load Button */}
           <button
             onClick={handleLoadData}
             disabled={!selectedClass || loading}
-            className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-lg font-semibold flex items-center justify-center gap-2 touch-feedback"
+            className="w-full h-14 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-battambang font-semibold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
           >
             {loading ? (
               <>
@@ -505,32 +530,45 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
             ) : (
               <>
                 <Download className="w-5 h-5" />
-                ផ្ទុកទិន្នន័យ • Load Data
+                ផ្ទុកទិន្នន័យ
               </>
             )}
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <p className="font-battambang text-sm text-red-700 flex-1 pt-2">{error}</p>
             </div>
           </div>
         )}
 
-        {/* Subject Selector */}
+        {/* Subject Selector - Modern Design */}
         {dataLoaded && subjects.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <label className="block text-xs font-semibold text-gray-600 mb-2">
-              មុខវិជ្ជា • Subject{" "}
-              {subjects.length > 1 && `(${subjects.length})`}
-            </label>
+          <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-2xl shadow-md border border-purple-100 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <label className="font-battambang text-sm font-bold text-gray-800">
+                  មុខវិជ្ជា • Subject
+                </label>
+                {subjects.length > 1 && (
+                  <p className="font-battambang text-xs text-purple-600">
+                    {subjects.length} មុខវិជ្ជា
+                  </p>
+                )}
+              </div>
+            </div>
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full h-12 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-13 px-4 font-battambang bg-white border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm transition-all"
               style={{ fontSize: "16px" }}
             >
               <option value="">-- ជ្រើសរើសមុខវិជ្ជា --</option>
@@ -542,35 +580,67 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
             </select>
             {currentUser?.role === "TEACHER" &&
               teacherHomeroomClassId === selectedClass && (
-                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                  🏠 អ្នកគឺជា INSTRUCTOR - អាចបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
-                </p>
+                <div className="mt-3 bg-green-100 border border-green-200 rounded-xl p-3">
+                  <p className="font-battambang text-xs text-green-700 flex items-center gap-2">
+                    <div className="w-6 h-6 bg-green-200 rounded-lg flex items-center justify-center">
+                      🏠
+                    </div>
+                    អ្នកគឺជា INSTRUCTOR - អាចបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
+                  </p>
+                </div>
               )}
           </div>
         )}
 
         {/* Students List - Show ALL students */}
         {selectedSubject && students.length > 0 && currentSubject && (
-          <div className="space-y-3">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-md p-4 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold">{currentSubject.nameKh}</h3>
-                  <p className="text-sm text-indigo-100 mt-1">
-                    {students.length} សិស្ស • Max: {currentSubject.maxScore}{" "}
-                    ពិន្ទុ
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-indigo-100">Auto-save</p>
-                  <p className="text-sm font-semibold">រក្សាស្វ័យប្រវត្តិ</p>
+          <div className="space-y-4">
+            {/* Modern Stats Banner */}
+            <div className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-indigo-600 to-purple-700 rounded-3xl"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+
+              <div className="relative p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
+                        <BookOpen className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-koulen text-lg text-white leading-tight">
+                          {currentSubject.nameKh}
+                        </h3>
+                        <p className="font-battambang text-xs text-purple-100">
+                          {currentSubject.nameEn}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 mt-3">
+                      <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1.5">
+                        <p className="font-battambang text-xs text-purple-100">សិស្សសរុប</p>
+                        <p className="font-koulen text-lg text-white">{students.length}</p>
+                      </div>
+                      <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1.5">
+                        <p className="font-battambang text-xs text-purple-100">ពិន្ទុអតិបរមា</p>
+                        <p className="font-koulen text-lg text-white">{currentSubject.maxScore}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl px-4 py-3">
+                      <CheckCircle className="w-6 h-6 text-white mx-auto mb-1" />
+                      <p className="font-battambang text-xs text-purple-100 whitespace-nowrap">Auto-Save</p>
+                      <p className="font-battambang text-[10px] text-white/90">ស្វ័យប្រវត្តិ</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* All Students List */}
-            <div className="space-y-2">
+            {/* Modern Student Cards */}
+            <div className="space-y-2.5">
               {students.map((student, index) => {
                 const isSaving = savingStudents.has(student.studentId);
                 const isSaved = savedStudents.has(student.studentId);
@@ -578,28 +648,34 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                 return (
                   <div
                     key={student.studentId}
-                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-3"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center gap-3">
-                      {/* Student Number */}
-                      <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-bold text-indigo-700">
+                      {/* Student Number Badge */}
+                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
+                        <span className="font-koulen text-base text-purple-700">
                           {index + 1}
                         </span>
                       </div>
 
-                      {/* Student Name */}
+                      {/* Student Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
+                        <p className="font-battambang text-sm font-semibold text-gray-900 truncate mb-0.5">
                           {student.khmerName}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {student.gender === "MALE" ? "ប្រុស" : "ស្រី"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium ${
+                            student.gender === "MALE"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-pink-100 text-pink-700"
+                          }`}>
+                            {student.gender === "MALE" ? "ប្រុស" : "ស្រី"}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Score Input */}
-                      <div className="flex-shrink-0 w-24 relative">
+                      <div className="flex-shrink-0 w-20 relative">
                         <input
                           type="number"
                           value={student.score ?? ""}
@@ -610,7 +686,7 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                               student.maxScore
                             )
                           }
-                          className="w-full h-11 px-3 text-center border-2 border-gray-300 rounded-lg text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="w-full h-12 px-2 text-center font-battambang bg-purple-50 border-2 border-purple-200 rounded-xl text-base font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-400 focus:bg-white transition-all"
                           placeholder="0"
                           min="0"
                           max={student.maxScore}
@@ -619,14 +695,18 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                         />
                       </div>
 
-                      {/* Save Status */}
-                      <div className="flex-shrink-0 w-8">
+                      {/* Save Status Icon */}
+                      <div className="flex-shrink-0 w-8 flex items-center justify-center">
                         {isSaving ? (
-                          <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
+                          <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
                         ) : isSaved ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          </div>
                         ) : student.score !== null ? (
-                          <Clock className="w-5 h-5 text-gray-300" />
+                          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
+                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                          </div>
                         ) : null}
                       </div>
                     </div>
@@ -635,25 +715,45 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
               })}
             </div>
 
-            {/* Info Footer */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-700 text-center">
-                💡 ពិន្ទុរក្សាទុកដោយស្វ័យប្រវត្តិ • Scores auto-save after
-                typing
-              </p>
+            {/* Modern Info Footer */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-xs text-blue-800 font-semibold mb-0.5">
+                    ពិន្ទុរក្សាទុកដោយស្វ័យប្រវត្តិ
+                  </p>
+                  <p className="font-battambang text-[10px] text-blue-600">
+                    Scores automatically save after typing
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Modern Empty State */}
         {!dataLoaded && !loading && (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <p className="text-sm text-gray-600 mb-2">
-              សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ ហើយចុច "ផ្ទុកទិន្នន័យ"
-            </p>
-            <p className="text-xs text-gray-500">
-              Select class, month, year and click "Load Data"
-            </p>
+          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-3xl shadow-sm border border-gray-200 p-12 text-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-full opacity-30 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-indigo-100 rounded-full opacity-30 blur-2xl"></div>
+
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <BookOpen className="w-8 h-8 text-white" />
+              </div>
+              <p className="font-battambang text-sm text-gray-700 mb-2 font-semibold">
+                សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ
+              </p>
+              <p className="font-battambang text-xs text-gray-500">
+                ហើយចុច "ផ្ទុកទិន្នន័យ" ដើម្បីចាប់ផ្តើម
+              </p>
+              <p className="font-battambang text-[10px] text-gray-400 mt-1">
+                Select class, month & year, then click "Load Data"
+              </p>
+            </div>
           </div>
         )}
       </div>
