@@ -480,7 +480,7 @@ export default function MobileAttendance({
       {/* Clean Modern Header */}
       <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-md">
             <ClipboardCheck className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -494,7 +494,7 @@ export default function MobileAttendance({
         </div>
       </div>
 
-      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      <div className="flex flex-col min-h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
         {/* Modern Filters Section */}
         <div className="px-4 pt-4 pb-3 space-y-3">
           {/* Class Info Card */}
@@ -559,7 +559,7 @@ export default function MobileAttendance({
           <button
             onClick={() => loadAttendanceData()}
             disabled={!selectedClass || loadingData}
-            className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-battambang font-semibold text-base flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all"
+            className="w-full h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-2xl font-battambang font-semibold text-base flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all"
           >
             {loadingData ? (
               <>
@@ -579,7 +579,7 @@ export default function MobileAttendance({
             <button
               onClick={handleSave}
               disabled={saving || (!hasUnsavedChanges && !saveSuccess)}
-              className={`w-full h-14 rounded-2xl font-battambang font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${
+              className={`w-full h-14 rounded-2xl font-battambang font-bold flex items-center justify-center gap-2 transition-all shadow-md ${
                 saving
                   ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
                   : saveSuccess
@@ -664,7 +664,7 @@ export default function MobileAttendance({
 
         {/* Main Content - SCROLLABLE */}
         {!loadingData && students.length > 0 ? (
-          <div className="flex-1 overflow-y-auto">
+          <div className="w-full pb-20">
             {/* Modern Day Navigator */}
             <div className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600"></div>
@@ -676,7 +676,7 @@ export default function MobileAttendance({
                   <button
                     onClick={handlePrevDay}
                     disabled={currentDay === 1}
-                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl disabled:opacity-30 transition-all active:scale-95 shadow-lg"
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl disabled:opacity-30 transition-all active:scale-95 shadow-md"
                   >
                     <ChevronLeft className="w-5 h-5 text-white" />
                   </button>
@@ -693,7 +693,7 @@ export default function MobileAttendance({
                   <button
                     onClick={handleNextDay}
                     disabled={currentDay === daysInMonth}
-                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl disabled:opacity-30 transition-all active:scale-95 shadow-lg"
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl disabled:opacity-30 transition-all active:scale-95 shadow-md"
                   >
                     <ChevronRight className="w-5 h-5 text-white" />
                   </button>
@@ -781,7 +781,7 @@ export default function MobileAttendance({
             </div>
 
             {/* Student List - with Morning/Afternoon Sessions */}
-            <div className="px-4 py-3 space-y-3 pb-6">
+            <div className="px-4 py-3 space-y-3">
               {students.map((student, index) => {
                 const morningValue = student.morningAttendance[currentDay] || "";
                 const afternoonValue = student.afternoonAttendance[currentDay] || "";
@@ -875,7 +875,7 @@ export default function MobileAttendance({
         ) : !loadingData && !error && !dataLoaded ? (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center max-w-xs">
-              <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md">
                 <ClipboardCheck className="w-12 h-12 text-green-600" />
               </div>
               <h3 className="font-koulen text-lg text-gray-900 mb-2">
