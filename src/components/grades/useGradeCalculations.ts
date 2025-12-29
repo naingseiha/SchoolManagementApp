@@ -20,6 +20,7 @@ export function useGradeCalculations(
         if (cell && cell.value.trim() !== "" && !cell.error) {
           const score = parseFloat(cell.value);
           if (!isNaN(score)) {
+            // Include ALL scores (including 0) in calculations
             totalScore += score;
             totalMaxScore += subject.maxScore;
           }

@@ -157,12 +157,22 @@ export default function MonthlyReportViewer({
                   {/* Grade Cells */}
                   {data.subjects.map((subject) => {
                     const score = student.grades[subject.id];
+                    const isAbsent = score === 0;
                     return (
                       <td
                         key={subject.id}
-                        className="px-3 py-2. 5 text-center text-sm font-semibold border-b border-r border-gray-200"
+                        className={`px-3 py-2.5 text-center text-sm font-semibold border-b border-r border-gray-200 ${
+                          isAbsent ? "bg-red-50 text-red-700 relative" : ""
+                        }`}
                       >
-                        {score !== null ? score.toFixed(1) : "-"}
+                        <div className="relative inline-block">
+                          {score !== null ? score.toFixed(1) : "-"}
+                          {isAbsent && (
+                            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">
+                              A
+                            </span>
+                          )}
+                        </div>
                       </td>
                     );
                   })}
@@ -201,7 +211,7 @@ export default function MonthlyReportViewer({
 
       {/* Footer */}
       <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-        <div className="flex items-center justify-between text-xs text-gray-600">
+        <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
           <div>
             <p className="font-semibold">និទ្ទេស:</p>
             <p className="mt-1">
@@ -213,11 +223,17 @@ export default function MonthlyReportViewer({
               <span className="text-red-800 font-bold"> F (&lt;25)</span>
             </p>
           </div>
-          <div className="text-right">
+          <div>
             <p className="font-semibold">អត្ថន័យ:</p>
             <p className="mt-1">
               <span className="font-bold">អ.ច</span> = អវត្តមានអត់ច្បាប់ •
               <span className="font-bold"> ម.ច</span> = អវត្តមានមានច្បាប់
+            </p>
+            <p className="mt-1 flex items-center gap-1">
+              <span className="inline-flex items-center justify-center bg-red-500 text-white text-[8px] font-bold px-1 rounded-full">
+                A
+              </span>
+              <span>= អវត្តមាន (ពិន្ទុ 0 មិនបញ្ចូលក្នុងការគណនា)</span>
             </p>
           </div>
         </div>

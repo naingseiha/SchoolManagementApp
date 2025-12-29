@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Loader2, Check, X, Lock } from "lucide-react";
 import type { CellState } from "./types";
 
@@ -42,12 +43,20 @@ export function GradeCell({
   onPaste,
   inputRef,
 }: GradeCellProps) {
+  // Check if this is an absent score (0)
+  const isAbsent = cell.value === "0" || cell.value === "0.0";
+
   const getCellClassName = () => {
     const baseClass =
       "w-16 h-9 px-2 text-center text-sm font-semibold border rounded focus:outline-none focus:ring-2 transition-all";
 
     if (!cell.isEditable) {
       return `${baseClass} bg-gray-100 border-gray-300 text-gray-500 cursor-not-allowed`;
+    }
+
+    // Special styling for absent scores (0)
+    if (isAbsent && !cell.isModified && !cell.error) {
+      return `${baseClass} bg-red-50 border-red-300 text-red-700 focus:ring-red-400 font-bold`;
     }
 
     if (pasteMode) {
@@ -75,7 +84,7 @@ export function GradeCell({
 
   const getStatusIcon = () => {
     if (!cell.isEditable) {
-      return <Lock className="w-3. 5 h-3.5 text-gray-400" />;
+      return <Lock className="w-3.5 h-3.5 text-gray-400" />;
     }
     if (cell.isSaving)
       return <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin" />;
@@ -86,21 +95,33 @@ export function GradeCell({
   };
 
   return (
-    <div className="flex items-center justify-center gap-1. 5">
-      <input
-        ref={inputRef}
-        type="text"
-        value={cell.value}
-        onChange={(e) => onCellChange(cellKey, e.target.value)}
-        onKeyDown={(e) => onKeyDown(e, studentIndex, subjectIndex)}
-        onPaste={(e) => onPaste(e, studentIndex, subjectIndex)}
-        disabled={isLoading || saving || !cell.isEditable}
-        className={getCellClassName()}
-        placeholder="-"
-        title={
-          !cell.isEditable ? "មើលប៉ុណ្ណោះ - អ្នកមិនអាចកែមុខវិជ្ជានេះបានទេ" : ""
-        }
-      />
+    <div className="flex items-center justify-center gap-1.5">
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={cell.value}
+          onChange={(e) => onCellChange(cellKey, e.target.value)}
+          onKeyDown={(e) => onKeyDown(e, studentIndex, subjectIndex)}
+          onPaste={(e) => onPaste(e, studentIndex, subjectIndex)}
+          disabled={isLoading || saving || !cell.isEditable}
+          className={getCellClassName()}
+          placeholder="-"
+          title={
+            isAbsent
+              ? "អវត្តមាន (Absent) - ពិន្ទុ 0 មិនបញ្ចូលក្នុងការគណនាមធ្យមភាគ"
+              : !cell.isEditable
+              ? "មើលប៉ុណ្ណោះ - អ្នកមិនអាចកែមុខវិជ្ជានេះបានទេ"
+              : ""
+          }
+        />
+        {/* Absent indicator badge */}
+        {isAbsent && !cell.isModified && !cell.error && (
+          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1 rounded-full leading-tight">
+            A
+          </div>
+        )}
+      </div>
       <div className="w-3.5 flex-shrink-0">{getStatusIcon()}</div>
     </div>
   );

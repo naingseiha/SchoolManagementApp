@@ -89,6 +89,7 @@ export class GradeCalculationService {
         coefficient
       );
 
+      // Include ALL scores (including 0) in calculations
       totalScore += grade.score;
       totalMaxScore += grade.maxScore;
       totalWeightedScore += weightedScore;

@@ -86,7 +86,9 @@ export async function generateMonthlyReportPDF(data: MonthlyReportData) {
       student.gender === "MALE" ? "ប" : "ស",
       ...data.subjects.map((subject) => {
         const score = student.grades[subject.id];
-        return score !== null ? score.toFixed(1) : "-";
+        if (score === null) return "-";
+        if (score === 0) return "0 (A)"; // Show 0 with absent indicator
+        return score.toFixed(1);
       }),
       student.totalScore,
       student.average,
@@ -157,7 +159,7 @@ export async function generateMonthlyReportPDF(data: MonthlyReportData) {
     finalY + 10
   );
   doc.text(
-    `អត្ថន័យ: អ.ច = អវត្តមានអត់ច្បាប់ • ម.ច = អវត្តមានមានច្បាប់`,
+    `អត្ថន័យ: អ.ច = អវត្តមានអត់ច្បាប់ • ម.ច = អវត្តមានមានច្បាប់ • (A) = អវត្តមាន (ពិន្ទុ 0 មិនបញ្ចូលក្នុងការគណនា)`,
     14,
     finalY + 15
   );

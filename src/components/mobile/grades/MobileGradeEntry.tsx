@@ -276,7 +276,7 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
         lastName: "",
         gender: student.gender,
         rollNumber: undefined,
-        score: gradeData?.score || null,
+        score: gradeData?.score !== undefined && gradeData?.score !== null ? gradeData.score : null,
         maxScore: subject.maxScore,
       };
     });
@@ -677,8 +677,9 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                       {/* Score Input */}
                       <div className="flex-shrink-0 w-20 relative">
                         <input
-                          type="number"
-                          value={student.score ?? ""}
+                          type="text"
+                          inputMode="decimal"
+                          value={student.score !== null ? student.score.toString() : ""}
                           onChange={(e) =>
                             handleScoreChange(
                               student.studentId,
@@ -686,13 +687,20 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                               student.maxScore
                             )
                           }
-                          className="w-full h-12 px-2 text-center font-battambang bg-purple-50 border-2 border-purple-200 rounded-xl text-base font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-400 focus:bg-white transition-all"
+                          className={`w-full h-12 px-2 text-center font-battambang border-2 rounded-xl text-base font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-400 focus:bg-white transition-all ${
+                            student.score === 0
+                              ? "bg-red-50 border-red-300 text-red-700"
+                              : "bg-purple-50 border-purple-200"
+                          }`}
                           placeholder="0"
-                          min="0"
-                          max={student.maxScore}
-                          step="0.5"
                           style={{ fontSize: "16px" }}
                         />
+                        {/* Absent indicator badge */}
+                        {student.score === 0 && (
+                          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-tight shadow-md">
+                            A
+                          </div>
+                        )}
                       </div>
 
                       {/* Save Status Icon */}
