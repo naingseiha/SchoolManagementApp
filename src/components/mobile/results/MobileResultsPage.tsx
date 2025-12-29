@@ -46,36 +46,11 @@ export default function MobileResultsPage() {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("rank");
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
 
   // Load all classes on mount
   useEffect(() => {
     loadClasses();
   }, []);
-
-  // Handle scroll for auto-hide header
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      if (currentScrollY < 50) {
-        // Always show header at the top
-        setIsHeaderVisible(true);
-      } else if (currentScrollY > lastScrollY) {
-        // Scrolling down - hide header
-        setIsHeaderVisible(false);
-      } else {
-        // Scrolling up - show header
-        setIsHeaderVisible(true);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
 
   const loadClasses = async () => {
     try {
@@ -347,10 +322,8 @@ export default function MobileResultsPage() {
     return (
       <MobileLayout title={`លទ្ធផល • ថ្នាក់ទី${selectedGrade}`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/40 pb-24">
-          {/* Header */}
-          <div className={`bg-white px-5 pt-6 pb-5 shadow-sm sticky top-0 z-20 transition-transform duration-300 ${
-            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-          }`}>
+          {/* Header - Now scrolls with content */}
+          <div className="bg-white px-5 pt-6 pb-5 shadow-sm">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 mb-4 text-gray-600 active:text-indigo-600 transition-colors"
@@ -465,10 +438,8 @@ export default function MobileResultsPage() {
     return (
       <MobileLayout title={`លទ្ធផល • ថ្នាក់ទី${selectedGrade} (រួម)`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/40 pb-24">
-          {/* Header */}
-          <div className={`bg-white px-5 pt-6 pb-4 shadow-sm sticky top-0 z-20 transition-transform duration-300 ${
-            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-          }`}>
+          {/* Header - Now scrolls with content */}
+          <div className="bg-white px-5 pt-6 pb-4 shadow-sm">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 mb-4 text-gray-600 active:text-indigo-600 transition-colors"
@@ -575,16 +546,16 @@ export default function MobileResultsPage() {
 
           {/* Student Results List */}
           {isLoading ? (
-            <div className="px-5 pt-4 space-y-3">
+            <div className="px-5 pt-4 space-y-2.5">
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-3xl p-5 shadow-lg animate-pulse"
+                  className="bg-white rounded-2xl p-3 shadow-md animate-pulse"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gray-200 rounded-full" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-3.5 bg-gray-200 rounded w-3/4" />
                       <div className="h-3 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
@@ -592,35 +563,37 @@ export default function MobileResultsPage() {
               ))}
             </div>
           ) : (
-            <div className="px-5 pt-4 space-y-3">
+            <div className="px-5 pt-4 space-y-2.5">
               {sortedStudents.map((student, index) => {
                 const rankBadge = getRankBadge(student.rank);
                 return (
                   <div
                     key={`${student.studentId}-${index}`}
-                    className={`bg-white rounded-3xl shadow-lg border-2 ${
+                    className={`bg-white rounded-2xl shadow-md hover:shadow-lg border ${
                       student.rank <= 3 ? getGradeBgColor(student.gradeLevel) : "border-gray-100"
-                    } p-5 relative overflow-hidden transition-all hover:shadow-xl`}
+                    } p-3 relative overflow-hidden transition-all active:scale-[0.98]`}
                   >
                     {/* Top Rank Decoration */}
                     {student.rank <= 3 && (
-                      <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-                        <div className={`absolute top-0 right-0 w-full h-full bg-gradient-to-br ${rankBadge.color} rounded-full blur-2xl`}></div>
+                      <div className="absolute top-0 right-0 w-24 h-24 opacity-10">
+                        <div className={`absolute top-0 right-0 w-full h-full bg-gradient-to-br ${rankBadge.color} rounded-full blur-xl`}></div>
                       </div>
                     )}
 
-                    <div className="flex items-start gap-4 relative z-10">
-                      {/* Rank Badge */}
-                      <div className={`w-16 h-16 bg-gradient-to-br ${rankBadge.color} rounded-2xl flex items-center justify-center shadow-lg ${rankBadge.glow} flex-shrink-0`}>
+                    <div className="flex items-start gap-3 relative z-10">
+                      {/* Rank Badge - Smaller */}
+                      <div className={`w-12 h-12 bg-gradient-to-br ${rankBadge.color} rounded-xl flex items-center justify-center shadow-md ${rankBadge.glow} flex-shrink-0`}>
                         {student.rank <= 3 ? (
                           <div className="text-center">
-                            {rankBadge.icon}
-                            <p className={`font-koulen text-xs ${rankBadge.text} mt-0.5`}>
+                            <div className="w-4 h-4 mx-auto mb-0.5">
+                              {rankBadge.icon}
+                            </div>
+                            <p className={`font-koulen text-[10px] ${rankBadge.text} leading-none`}>
                               #{student.rank}
                             </p>
                           </div>
                         ) : (
-                          <p className={`font-koulen text-2xl ${rankBadge.text}`}>
+                          <p className={`font-koulen text-xl ${rankBadge.text}`}>
                             {student.rank}
                           </p>
                         )}
@@ -628,74 +601,74 @@ export default function MobileResultsPage() {
 
                       {/* Student Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-battambang text-base font-bold text-gray-900 mb-1 truncate">
+                            <h3 className="font-battambang text-sm font-bold text-gray-900 mb-1 truncate">
                               {student.studentName}
                             </h3>
                             {student.className && (
-                              <div className="inline-flex items-center px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-700 text-[10px] font-battambang font-bold">
-                                <Users className="w-3 h-3 mr-1" />
+                              <div className="inline-flex items-center px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-700 text-[9px] font-battambang font-bold">
+                                <Users className="w-2.5 h-2.5 mr-1" />
                                 {student.className}
                               </div>
                             )}
                           </div>
-                          {/* Grade Level Badge */}
+                          {/* Grade Level Badge - Smaller */}
                           <div
-                            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeColor(
+                            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${getGradeColor(
                               student.gradeLevel
-                            )} flex items-center justify-center shadow-lg ml-2 flex-shrink-0`}
+                            )} flex items-center justify-center shadow-md ml-2 flex-shrink-0`}
                           >
-                            <span className="text-white font-koulen text-xl">
+                            <span className="text-white font-koulen text-lg">
                               {student.gradeLevel}
                             </span>
                           </div>
                         </div>
 
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-3 gap-2 mb-3">
+                        {/* Stats Grid - More Compact */}
+                        <div className="grid grid-cols-3 gap-1.5 mb-2">
                           {/* Rank */}
-                          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-2.5">
-                            <p className="font-battambang text-[10px] text-purple-600 font-semibold mb-0.5">
+                          <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-1.5">
+                            <p className="font-battambang text-[9px] text-purple-600 font-semibold mb-0.5">
                               ចំណាត់ថ្នាក់
                             </p>
-                            <p className="font-koulen text-xl text-purple-700">
+                            <p className="font-koulen text-base text-purple-700 leading-none">
                               {student.rank}
                             </p>
                           </div>
 
                           {/* Average */}
-                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-2.5">
-                            <p className="font-battambang text-[10px] text-indigo-600 font-semibold mb-0.5">
+                          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-lg p-1.5">
+                            <p className="font-battambang text-[9px] text-indigo-600 font-semibold mb-0.5">
                               មធ្យម
                             </p>
-                            <p className="font-koulen text-xl text-indigo-700">
+                            <p className="font-koulen text-base text-indigo-700 leading-none">
                               {student.average}
                             </p>
                           </div>
 
                           {/* Total Score */}
-                          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-2.5">
-                            <p className="font-battambang text-[10px] text-orange-600 font-semibold mb-0.5">
+                          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-1.5">
+                            <p className="font-battambang text-[9px] text-orange-600 font-semibold mb-0.5">
                               សរុប
                             </p>
-                            <p className="font-battambang text-base font-bold text-orange-700">
+                            <p className="font-battambang text-sm font-bold text-orange-700 leading-none">
                               {student.totalScore}
                             </p>
                           </div>
                         </div>
 
-                        {/* Attendance */}
+                        {/* Attendance - More Compact */}
                         {(student.absent > 0 || student.permission > 0) && (
-                          <div className="flex items-center gap-3 text-xs bg-gray-50 rounded-xl p-2 border border-gray-200">
+                          <div className="flex items-center gap-2 text-[10px] bg-gray-50 rounded-lg p-1.5 border border-gray-200">
                             {student.absent > 0 && (
                               <span className="font-battambang text-red-600 font-semibold">
-                                អវត្តមាន: {student.absent} ថ្ងៃ
+                                អវត្តមាន: {student.absent}
                               </span>
                             )}
                             {student.permission > 0 && (
                               <span className="font-battambang text-orange-600 font-semibold">
-                                ច្បាប់: {student.permission} ថ្ងៃ
+                                ច្បាប់: {student.permission}
                               </span>
                             )}
                           </div>
@@ -727,10 +700,8 @@ export default function MobileResultsPage() {
     return (
       <MobileLayout title={`លទ្ធផល • ${selectedClass.name}`}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/40 pb-24">
-          {/* Header */}
-          <div className={`bg-white px-5 pt-6 pb-4 shadow-sm sticky top-0 z-20 transition-transform duration-300 ${
-            isHeaderVisible ? "translate-y-0" : "-translate-y-full"
-          }`}>
+          {/* Header - Now scrolls with content */}
+          <div className="bg-white px-5 pt-6 pb-4 shadow-sm">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 mb-4 text-gray-600 active:text-indigo-600 transition-colors"
@@ -811,16 +782,16 @@ export default function MobileResultsPage() {
 
           {/* Student Results List */}
           {isLoading ? (
-            <div className="px-5 pt-4 space-y-3">
+            <div className="px-5 pt-4 space-y-2.5">
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-3xl p-5 shadow-lg animate-pulse"
+                  className="bg-white rounded-2xl p-3 shadow-md animate-pulse"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gray-200 rounded-full" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-200 rounded-xl" />
                     <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
+                      <div className="h-3.5 bg-gray-200 rounded w-3/4" />
                       <div className="h-3 bg-gray-200 rounded w-1/2" />
                     </div>
                   </div>
@@ -828,35 +799,37 @@ export default function MobileResultsPage() {
               ))}
             </div>
           ) : (
-            <div className="px-5 pt-4 space-y-3">
+            <div className="px-5 pt-4 space-y-2.5">
               {sortedStudents.map((student, index) => {
                 const rankBadge = getRankBadge(student.rank);
                 return (
                   <div
                     key={student.studentId}
-                    className={`bg-white rounded-3xl shadow-lg border-2 ${
+                    className={`bg-white rounded-2xl shadow-md hover:shadow-lg border ${
                       student.rank <= 3 ? getGradeBgColor(student.gradeLevel) : "border-gray-100"
-                    } p-5 relative overflow-hidden transition-all hover:shadow-xl`}
+                    } p-3 relative overflow-hidden transition-all active:scale-[0.98]`}
                   >
                     {/* Top Rank Decoration */}
                     {student.rank <= 3 && (
-                      <div className="absolute top-0 right-0 w-32 h-32 opacity-10">
-                        <div className={`absolute top-0 right-0 w-full h-full bg-gradient-to-br ${rankBadge.color} rounded-full blur-2xl`}></div>
+                      <div className="absolute top-0 right-0 w-24 h-24 opacity-10">
+                        <div className={`absolute top-0 right-0 w-full h-full bg-gradient-to-br ${rankBadge.color} rounded-full blur-xl`}></div>
                       </div>
                     )}
 
-                    <div className="flex items-start gap-4 relative z-10">
-                      {/* Rank Badge */}
-                      <div className={`w-16 h-16 bg-gradient-to-br ${rankBadge.color} rounded-2xl flex items-center justify-center shadow-lg ${rankBadge.glow} flex-shrink-0`}>
+                    <div className="flex items-start gap-3 relative z-10">
+                      {/* Rank Badge - Smaller */}
+                      <div className={`w-12 h-12 bg-gradient-to-br ${rankBadge.color} rounded-xl flex items-center justify-center shadow-md ${rankBadge.glow} flex-shrink-0`}>
                         {student.rank <= 3 ? (
                           <div className="text-center">
-                            {rankBadge.icon}
-                            <p className={`font-koulen text-xs ${rankBadge.text} mt-0.5`}>
+                            <div className="w-4 h-4 mx-auto mb-0.5">
+                              {rankBadge.icon}
+                            </div>
+                            <p className={`font-koulen text-[10px] ${rankBadge.text} leading-none`}>
                               #{student.rank}
                             </p>
                           </div>
                         ) : (
-                          <p className={`font-koulen text-2xl ${rankBadge.text}`}>
+                          <p className={`font-koulen text-xl ${rankBadge.text}`}>
                             {student.rank}
                           </p>
                         )}
@@ -864,66 +837,66 @@ export default function MobileResultsPage() {
 
                       {/* Student Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-battambang text-base font-bold text-gray-900 truncate flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-battambang text-sm font-bold text-gray-900 truncate flex-1">
                             {student.studentName}
                           </h3>
-                          {/* Grade Level Badge */}
+                          {/* Grade Level Badge - Smaller */}
                           <div
-                            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradeColor(
+                            className={`w-10 h-10 rounded-lg bg-gradient-to-br ${getGradeColor(
                               student.gradeLevel
-                            )} flex items-center justify-center shadow-lg ml-2 flex-shrink-0`}
+                            )} flex items-center justify-center shadow-md ml-2 flex-shrink-0`}
                           >
-                            <span className="text-white font-koulen text-xl">
+                            <span className="text-white font-koulen text-lg">
                               {student.gradeLevel}
                             </span>
                           </div>
                         </div>
 
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-3 gap-2 mb-3">
+                        {/* Stats Grid - More Compact */}
+                        <div className="grid grid-cols-3 gap-1.5 mb-2">
                           {/* Rank */}
-                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-2.5">
-                            <p className="font-battambang text-[10px] text-indigo-600 font-semibold mb-0.5">
+                          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-1.5">
+                            <p className="font-battambang text-[9px] text-indigo-600 font-semibold mb-0.5">
                               ចំណាត់ថ្នាក់
                             </p>
-                            <p className="font-koulen text-xl text-indigo-700">
+                            <p className="font-koulen text-base text-indigo-700 leading-none">
                               {student.rank}
                             </p>
                           </div>
 
                           {/* Average */}
-                          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-2.5">
-                            <p className="font-battambang text-[10px] text-blue-600 font-semibold mb-0.5">
+                          <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-1.5">
+                            <p className="font-battambang text-[9px] text-blue-600 font-semibold mb-0.5">
                               មធ្យម
                             </p>
-                            <p className="font-koulen text-xl text-blue-700">
+                            <p className="font-koulen text-base text-blue-700 leading-none">
                               {student.average}
                             </p>
                           </div>
 
                           {/* Total Score */}
-                          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-2.5">
-                            <p className="font-battambang text-[10px] text-orange-600 font-semibold mb-0.5">
+                          <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-1.5">
+                            <p className="font-battambang text-[9px] text-orange-600 font-semibold mb-0.5">
                               សរុប
                             </p>
-                            <p className="font-battambang text-base font-bold text-orange-700">
+                            <p className="font-battambang text-sm font-bold text-orange-700 leading-none">
                               {student.totalScore}
                             </p>
                           </div>
                         </div>
 
-                        {/* Attendance */}
+                        {/* Attendance - More Compact */}
                         {(student.absent > 0 || student.permission > 0) && (
-                          <div className="flex items-center gap-3 text-xs bg-gray-50 rounded-xl p-2 border border-gray-200">
+                          <div className="flex items-center gap-2 text-[10px] bg-gray-50 rounded-lg p-1.5 border border-gray-200">
                             {student.absent > 0 && (
                               <span className="font-battambang text-red-600 font-semibold">
-                                អវត្តមាន: {student.absent} ថ្ងៃ
+                                អវត្តមាន: {student.absent}
                               </span>
                             )}
                             {student.permission > 0 && (
                               <span className="font-battambang text-orange-600 font-semibold">
-                                ច្បាប់: {student.permission} ថ្ងៃ
+                                ច្បាប់: {student.permission}
                               </span>
                             )}
                           </div>
