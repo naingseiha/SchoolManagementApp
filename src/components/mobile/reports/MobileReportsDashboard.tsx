@@ -213,7 +213,7 @@ export default function MobileReportsDashboard() {
   if (selectedSubject) {
     return (
       <MobileLayout title="ព័ត៌មានលម្អិត">
-        <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-gray-100">
+        <div className="flex flex-col min-h-full bg-gradient-to-br from-slate-50 to-gray-100">
           {/* Header */}
           <div className="bg-white px-4 pt-6 pb-4 shadow-sm">
             <button
@@ -264,7 +264,7 @@ export default function MobileReportsDashboard() {
           </div>
 
           {/* Student List */}
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="px-4 pb-20">
             <h3 className="font-koulen text-lg text-gray-900 mb-3 mt-2">
               បញ្ជីសិស្ស
             </h3>
@@ -317,13 +317,13 @@ export default function MobileReportsDashboard() {
   // ✅ Main Dashboard View - Modern Style
   return (
     <MobileLayout title="របាយការណ៍ • Reports">
-      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      <div className="flex flex-col min-h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
         {/* Clean Modern Header */}
         <div className="bg-white px-5 pt-6 pb-5 shadow-sm">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-pink-600 rounded-full flex items-center justify-center shadow-md">
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -430,7 +430,7 @@ export default function MobileReportsDashboard() {
           <button
             onClick={loadSubjectStatus}
             disabled={!selectedClass || loading}
-            className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-battambang font-bold rounded-2xl shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 transition-all"
+            className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-battambang font-bold rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
           >
             {loading ? (
               <>
@@ -448,10 +448,10 @@ export default function MobileReportsDashboard() {
 
         {/* Content */}
         {dataLoaded && subjects.length > 0 ? (
-          <div className="flex-1 overflow-y-auto pb-6">
+          <div className="w-full pb-20">
             {/* Summary Card */}
             <div className="px-5 pt-3 pb-4">
-              <div className="bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100 rounded-3xl p-5 shadow-lg border border-gray-200 relative overflow-hidden">
+              <div className="bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100 rounded-3xl p-5 shadow-md border border-gray-200 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200 to-pink-200 rounded-full opacity-20 blur-3xl"></div>
 
                 <div className="relative z-10">
@@ -623,7 +623,7 @@ export default function MobileReportsDashboard() {
               {completedSubjects === totalSubjects ? (
                 <button
                   onClick={handleViewReport}
-                  className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-battambang font-bold rounded-2xl shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 transition-all"
+                  className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-battambang font-bold rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
                 >
                   <Award className="w-5 h-5" />
                   <span>មើលរបាយការណ៍ពេញលេញ</span>
@@ -650,7 +650,7 @@ export default function MobileReportsDashboard() {
         ) : (
           <div className="flex-1 flex items-center justify-center p-8">
             <div className="text-center max-w-xs">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md">
                 <BarChart3 className="w-12 h-12 text-orange-400" />
               </div>
               <h3 className="font-koulen text-lg text-gray-900 mb-2">

@@ -422,6 +422,7 @@ export class DashboardController {
             : 0;
 
           // Pass/Fail counts (passing is >= 25)
+          // ✅ Calculate based on students who have grades (same as comprehensive stats)
           const passCount = studentSummaries.filter(s => (s.average || 0) >= 25).length;
           const failCount = studentSummaries.filter(s => (s.average || 0) < 25).length;
           const passPercentage = totalSummaries > 0 ? (passCount / totalSummaries) * 100 : 0;

@@ -146,11 +146,10 @@ export default function MobileStatisticsScreen() {
     (sum, g) => sum + g.femaleStudents,
     0
   );
-  const overallPassPercentage =
-    stats.grades.reduce((sum, g) => sum + g.passPercentage, 0) /
-    stats.grades.length;
   const totalPassed = stats.grades.reduce((sum, g) => sum + g.passedCount, 0);
   const totalFailed = stats.grades.reduce((sum, g) => sum + g.failedCount, 0);
+  const totalWithGrades = totalPassed + totalFailed;
+  const overallPassPercentage = totalWithGrades > 0 ? (totalPassed / totalWithGrades) * 100 : 0;
 
   return (
     <MobileLayout title="ស្ថិតិ • Statistics">

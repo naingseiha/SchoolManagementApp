@@ -286,7 +286,7 @@ export default function MobileMonthlyReport() {
         </div>
       </div>
 
-      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      <div className="flex flex-col min-h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
         {/* Modern Filters Section */}
         {showFilters && (
           <div className="px-4 pt-4 pb-3 space-y-3">
@@ -381,7 +381,7 @@ export default function MobileMonthlyReport() {
 
         {/* Report Content */}
         {reportData ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="w-full">
             {/* Modern Header with Class Info */}
             <div className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600"></div>
@@ -392,7 +392,7 @@ export default function MobileMonthlyReport() {
                 <div className="flex items-center justify-between mb-4">
                   <button
                     onClick={handleBackToDashboard}
-                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-lg"
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-md"
                   >
                     <ArrowLeft className="w-5 h-5 text-white" />
                   </button>
@@ -406,7 +406,7 @@ export default function MobileMonthlyReport() {
                   </div>
                   <button
                     onClick={() => setShowFilters(true)}
-                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-lg"
+                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-md"
                   >
                     <Filter className="w-5 h-5 text-white" />
                   </button>
@@ -414,7 +414,7 @@ export default function MobileMonthlyReport() {
 
                 {/* Modern Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-lg">
+                  <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-md">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                         <Users className="w-4 h-4 text-white" />
@@ -429,7 +429,7 @@ export default function MobileMonthlyReport() {
                     <div className="font-battambang text-xs text-purple-200">Students</div>
                   </div>
 
-                  <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-lg">
+                  <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-md">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                         <TrendingUp className="w-4 h-4 text-white" />
@@ -513,7 +513,7 @@ export default function MobileMonthlyReport() {
             </div>
 
             {/* Student List */}
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+            <div className="px-4 py-3 pb-20 space-y-2.5">
               {reportData.students.map((student, index) => {
                 const gradeBadge = getGradeBadge(
                   student.gradeLevel,
@@ -634,26 +634,6 @@ export default function MobileMonthlyReport() {
                   </div>
                 );
               })}
-            </div>
-
-            {/* Modern Footer Actions */}
-            <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleBackToDashboard}
-                  className="h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-battambang font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl font-battambang font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg"
-                >
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
-              </div>
             </div>
           </div>
         ) : (
