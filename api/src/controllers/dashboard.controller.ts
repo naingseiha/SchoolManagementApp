@@ -316,6 +316,98 @@ export class DashboardController {
   }
 
   /**
+   * Get lightweight mobile dashboard stats (faster loading)
+   * Returns summary without detailed subject stats
+   */
+  static async getMobileDashboardStats(req: Request, res: Response) {
+    try {
+      const { month, year } = req.query;
+
+      // Get Khmer month name
+      const monthNames = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+
+      const currentMonth = month ? String(month) : monthNames[new Date().getMonth()];
+      const currentYear = year ? parseInt(String(year)) : new Date().getFullYear();
+      const monthNumber = monthNames.indexOf(currentMonth) + 1;
+
+      // ✅ Lightweight query - only essential data
+      const grades = ["7", "8", "9", "10", "11", "12"];
+
+      const gradeStats = await Promise.all(
+        grades.map(async (grade) => {
+          // Get class count and student count
+          const classes = await prisma.class.count({
+            where: { grade }
+          });
+
+          const students = await prisma.student.count({
+            where: {
+              class: { grade }
+            }
+          });
+
+          // Get average from monthly summaries (faster than calculating from grades)
+          const summaries = await prisma.studentMonthlySummary.aggregate({
+            where: {
+              class: { grade },
+              month: currentMonth,
+              year: currentYear,
+            },
+            _avg: {
+              average: true,
+            },
+            _count: {
+              studentId: true,
+            }
+          });
+
+          // Count passed students
+          const passedCount = await prisma.studentMonthlySummary.count({
+            where: {
+              class: { grade },
+              month: currentMonth,
+              year: currentYear,
+              average: { gte: 25 }
+            }
+          });
+
+          const totalWithGrades = summaries._count.studentId || 0;
+          const passPercentage = totalWithGrades > 0 ? (passedCount / totalWithGrades) * 100 : 0;
+
+          return {
+            grade,
+            totalStudents: students,
+            totalClasses: classes,
+            averageScore: Math.round((summaries._avg.average || 0) * 10) / 10,
+            passPercentage: Math.round(passPercentage * 10) / 10,
+            passedCount,
+            failedCount: totalWithGrades - passedCount,
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        data: {
+          month: currentMonth,
+          year: currentYear,
+          grades: gradeStats.filter(g => g.totalClasses > 0),
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching mobile dashboard stats:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch mobile dashboard statistics",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
    * Get grade-level statistics (for grades 7-12) - Using real grade data
    */
   static async getGradeLevelStats(req: Request, res: Response) {
