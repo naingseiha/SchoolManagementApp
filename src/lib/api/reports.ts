@@ -1,3 +1,5 @@
+import { apiCache } from "../cache";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -196,6 +198,7 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
 export const reportsApi = {
   /**
    * Get monthly report for a specific class
+   * ✅ OPTIMIZED: Added 3-minute cache for better performance
    * @param classId - Class ID
    * @param month - Month name in Khmer (e.g., "មករា", "កុម្ភៈ")
    * @param year - Year (e.g., 2025)
@@ -206,32 +209,41 @@ export const reportsApi = {
     month: string,
     year: number
   ): Promise<MonthlyReportData> {
-    try {
-      const cleanMonth = month.trim();
-      const url = `${API_BASE_URL}/reports/monthly/${classId}?month=${encodeURIComponent(
-        cleanMonth
-      )}&year=${year}`;
+    const cleanMonth = month.trim();
+    const cacheKey = `report:monthly:${classId}:${cleanMonth}:${year}`;
 
-      console.log("📡 Fetching monthly report:", {
-        classId,
-        month: cleanMonth,
-        year,
-        url,
-      });
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        try {
+          const url = `${API_BASE_URL}/reports/monthly/${classId}?month=${encodeURIComponent(
+            cleanMonth
+          )}&year=${year}`;
 
-      const response = await fetch(url);
-      const data = await handleApiResponse<MonthlyReportData>(response);
+          console.log("📡 Fetching monthly report:", {
+            classId,
+            month: cleanMonth,
+            year,
+            url,
+          });
 
-      console.log("✅ Monthly report received:", data);
-      return data;
-    } catch (error) {
-      console.error("❌ Get monthly report error:", error);
-      throw error;
-    }
+          const response = await fetch(url);
+          const data = await handleApiResponse<MonthlyReportData>(response);
+
+          console.log("✅ Monthly report received:", data);
+          return data;
+        } catch (error) {
+          console.error("❌ Get monthly report error:", error);
+          throw error;
+        }
+      },
+      3 * 60 * 1000 // 3 minutes cache
+    );
   },
 
   /**
    * Get grade-wide report (all classes in a grade combined)
+   * ✅ OPTIMIZED: Added 3-minute cache for better performance
    * @param grade - Grade level (e.g., "7", "8", "9", "10", "11", "12")
    * @param month - Month name in Khmer
    * @param year - Year
@@ -242,28 +254,36 @@ export const reportsApi = {
     month: string,
     year: number
   ): Promise<MonthlyReportData> {
-    try {
-      const cleanMonth = month.trim();
-      const url = `${API_BASE_URL}/reports/grade-wide/${grade}?month=${encodeURIComponent(
-        cleanMonth
-      )}&year=${year}`;
+    const cleanMonth = month.trim();
+    const cacheKey = `report:grade-wide:${grade}:${cleanMonth}:${year}`;
 
-      console.log("📡 Fetching grade-wide report:", {
-        grade,
-        month: cleanMonth,
-        year,
-        url,
-      });
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        try {
+          const url = `${API_BASE_URL}/reports/grade-wide/${grade}?month=${encodeURIComponent(
+            cleanMonth
+          )}&year=${year}`;
 
-      const response = await fetch(url);
-      const data = await handleApiResponse<MonthlyReportData>(response);
+          console.log("📡 Fetching grade-wide report:", {
+            grade,
+            month: cleanMonth,
+            year,
+            url,
+          });
 
-      console.log("✅ Grade-wide report received:", data);
-      return data;
-    } catch (error) {
-      console.error("❌ Get grade-wide report error:", error);
-      throw error;
-    }
+          const response = await fetch(url);
+          const data = await handleApiResponse<MonthlyReportData>(response);
+
+          console.log("✅ Grade-wide report received:", data);
+          return data;
+        } catch (error) {
+          console.error("❌ Get grade-wide report error:", error);
+          throw error;
+        }
+      },
+      3 * 60 * 1000 // 3 minutes cache
+    );
   },
 
   /**
@@ -510,4 +530,18 @@ export function getKhmerMonthName(monthNumber: number): string {
  */
 export function isValidKhmerMonth(monthName: string): boolean {
   return KHMER_MONTHS.includes(monthName.trim());
+}
+
+/**
+ * Clear reports cache
+ * Call this after updating grades or student data
+ */
+export function clearReportsCache(): void {
+  // Clear all report-related caches
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('report:')) {
+      apiCache.delete(key);
+    }
+  });
+  console.log("🧹 Reports cache cleared");
 }
