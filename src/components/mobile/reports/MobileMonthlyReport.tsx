@@ -13,7 +13,11 @@ import {
   Filter,
   Download,
   ArrowLeft,
+  FileDown,
+  Share2,
 } from "lucide-react";
+import { generateMonthlyReportPDF } from "@/lib/mobilePdfExport";
+import type { MonthlyReportData } from "@/lib/api/reports";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -103,8 +107,10 @@ export default function MobileMonthlyReport() {
     yearParam ? parseInt(yearParam) : getCurrentAcademicYear()
   );
   const [reportData, setReportData] = useState<ClassReport | null>(null);
+  const [reportApiData, setReportApiData] = useState<MonthlyReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(!classParam);
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   const getGradeBadge = (gradeLevel: string, gradeLevelKh: string) => {
     const grades: Record<
@@ -224,6 +230,9 @@ export default function MobileMonthlyReport() {
         throw new Error(result.message || "Failed to load report");
       }
 
+      // Store the full API response for PDF export
+      setReportApiData(result.data);
+
       const students = result.data.students;
       const classAverage =
         students.reduce(
@@ -265,6 +274,32 @@ export default function MobileMonthlyReport() {
 
   const handleBackToDashboard = () => {
     router.push("/reports/mobile");
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportApiData) {
+      alert("មិនមានទិន្នន័យសម្រាប់នាំចេញ");
+      return;
+    }
+
+    setExportingPDF(true);
+    try {
+      await generateMonthlyReportPDF({
+        reportData: reportApiData,
+        schoolName: 'វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ',
+        province: 'មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប',
+        principalName: 'នាយកសាលា',
+        teacherName: reportApiData.teacherName || undefined,
+      });
+
+      // Show success message
+      alert('✅ បាននាំចេញរបាយការណ៍ជា PDF ដោយជោគជ័យ!');
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      alert(`❌ មានបញ្ហាក្នុងការនាំចេញ: ${error.message}`);
+    } finally {
+      setExportingPDF(false);
+    }
   };
 
   return (
@@ -404,12 +439,25 @@ export default function MobileMonthlyReport() {
                       {reportData.month} {reportData.year}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setShowFilters(true)}
-                    className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-md"
-                  >
-                    <Filter className="w-5 h-5 text-white" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleExportPDF}
+                      disabled={exportingPDF}
+                      className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-md disabled:opacity-50"
+                    >
+                      {exportingPDF ? (
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      ) : (
+                        <FileDown className="w-5 h-5 text-white" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowFilters(true)}
+                      className="p-2.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-xl transition-all active:scale-95 shadow-md"
+                    >
+                      <Filter className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Modern Stats Cards */}

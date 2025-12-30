@@ -205,7 +205,7 @@ export default function MobileReportsDashboard() {
 
   const handleViewReport = () => {
     router.push(
-      `/reports/monthly-class-report?classId=${selectedClass}&month=${selectedMonth}&year=${selectedYear}`
+      `/reports/mobile?class=${selectedClass}&month=${selectedMonth}&year=${selectedYear}`
     );
   };
 
