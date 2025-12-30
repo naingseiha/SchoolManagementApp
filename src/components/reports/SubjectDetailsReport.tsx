@@ -106,6 +106,88 @@ export default function SubjectDetailsReport({
         @media print {
           .report-page {
             page-break-inside: avoid;
+            page-break-after: always;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            min-height: auto !important;
+            margin: 0 !important;
+            padding: 8mm 5mm !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
+
+          .report-page:last-child {
+            page-break-after: auto !important;
+          }
+
+          table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+          }
+
+          th, td {
+            padding: 0.5mm 0.3mm !important;
+            font-size: inherit !important;
+            border: 0.5px solid black !important;
+            line-height: 1.1 !important;
+            box-shadow: none !important;
+          }
+
+          tbody tr {
+            height: 5.5mm !important;
+          }
+
+          thead tr {
+            height: auto !important;
+          }
+
+          /* Reduce column widths for print to fit all columns */
+          th:first-child, td:first-child {
+            width: 12px !important;
+            min-width: 12px !important;
+          }
+
+          th:nth-child(2), td:nth-child(2) {
+            width: 50px !important;
+            min-width: 50px !important;
+            max-width: 50px !important;
+          }
+
+          /* Subject columns - slightly wider with extra margin space */
+          th.bg-blue-50, td.px-0 {
+            width: 16px !important;
+            min-width: 16px !important;
+            padding: 0.3mm 0.2mm !important;
+            box-shadow: none !important;
+          }
+
+          /* Summary columns - slightly wider */
+          th.bg-yellow-100, th.bg-green-100, th.bg-indigo-100,
+          td.bg-yellow-50, td.bg-green-50, td.bg-indigo-50 {
+            width: 17px !important;
+            min-width: 17px !important;
+            box-shadow: none !important;
+          }
+
+          .vertical-text {
+            height: 50px !important;
+            font-size: 5.5px !important;
+          }
+
+          /* Compact footer for print - optimized for A4 */
+          .report-page > div:last-child {
+            margin-top: 2mm !important;
+          }
+
+          .grid.grid-cols-2.gap-10 {
+            gap: 5mm !important;
+            margin-top: 2mm !important;
+          }
+
+          .print\\:h-10 {
+            height: 8mm !important;
           }
         }
       `}</style>
@@ -113,13 +195,14 @@ export default function SubjectDetailsReport({
       {paginatedReports.map((pageReports, pageIndex) => (
         <div
           key={pageIndex}
-          className="report-page bg-white shadow-2xl mb-8"
+          className="report-page bg-white mb-8"
           style={{
             width: "210mm",
-            minHeight: "297mm",
+            minHeight: pageIndex === 0 ? "auto" : "auto",
             margin: "0 auto",
-            padding: "8mm",
+            padding: "8mm 5mm",
             boxSizing: "border-box",
+            maxWidth: "100%",
           }}
         >
           {/* Header - Only on first page */}
@@ -232,7 +315,7 @@ export default function SubjectDetailsReport({
                 {/* ល.រ */}
                 <th
                   className="px-0.5 py-0.5 bg-gray-100 align-middle"
-                  style={{ border: "1px solid black", width: "16px" }}
+                  style={{ border: "1px solid black", width: "18px" }}
                 >
                   <div
                     className="vertical-text"
@@ -247,9 +330,9 @@ export default function SubjectDetailsReport({
                   className="px-1 py-0.5 bg-gray-100 text-center"
                   style={{
                     border: "1px solid black",
-                    width: "60px",
-                    minWidth: "60px",
-                    maxWidth: "60px",
+                    width: "65px",
+                    minWidth: "65px",
+                    maxWidth: "65px",
                     fontSize: `${tableFontSize}px`,
                     lineHeight: "1.1",
                   }}
@@ -282,11 +365,11 @@ export default function SubjectDetailsReport({
                 )}
 
                 {/* Subject columns - Vertical */}
-                {subjects.map((subject, idx) => (
+                {subjects.map((subject) => (
                   <th
                     key={subject.id}
                     className="px-0.5 py-0.5 bg-blue-50 align-middle"
-                    style={{ border: "1px solid black", width: "18px" }}
+                    style={{ border: "1px solid black", width: "20px" }}
                   >
                     <div
                       className="vertical-text"
@@ -464,9 +547,9 @@ export default function SubjectDetailsReport({
                         border: "1px solid black",
                         fontSize: `${tableFontSize - 1}px`,
                         lineHeight: "1.2",
-                        width: "60px",
-                        minWidth: "60px",
-                        maxWidth: "60px",
+                        width: "65px",
+                        minWidth: "65px",
+                        maxWidth: "65px",
                         wordBreak: "break-word",
                         whiteSpace: "normal",
                         overflow: "hidden",

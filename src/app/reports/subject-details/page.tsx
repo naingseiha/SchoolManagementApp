@@ -107,8 +107,8 @@ export default function SubjectDetailsReportPage() {
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(20);
-  const [firstPageStudentCount, setFirstPageStudentCount] = useState(38);
+  const [studentsPerPage, setStudentsPerPage] = useState(40);
+  const [firstPageStudentCount, setFirstPageStudentCount] = useState(32);
   const [tableFontSize, setTableFontSize] = useState(8);
   const [useAutoDate, setUseAutoDate] = useState(true);
 
@@ -363,14 +363,47 @@ export default function SubjectDetailsReportPage() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 8mm;
+            margin: 8mm 5mm;
           }
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
           }
           .no-print {
             display: none !important;
+          }
+          .report-page {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+            page-break-after: always !important;
+          }
+          .report-page:last-child {
+            page-break-after: auto !important;
+          }
+          table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            font-size: ${Math.max(tableFontSize - 1, 6)}px !important;
+          }
+          th, td {
+            padding: 0.5mm 0.3mm !important;
+            overflow: hidden !important;
+            word-wrap: break-word !important;
+          }
+          .vertical-text {
+            font-size: ${Math.max(tableFontSize - 2, 5)}px !important;
+            height: 60px !important;
+          }
+          .print-wrapper {
+            background: white !important;
           }
         }
       `}</style>
@@ -591,10 +624,13 @@ export default function SubjectDetailsReportPage() {
                     }
                     firstPageStudentCount={firstPageStudentCount}
                     setFirstPageStudentCount={setFirstPageStudentCount}
+                    secondPageStudentCount={studentsPerPage}
+                    setSecondPageStudentCount={setStudentsPerPage}
                     tableFontSize={tableFontSize}
                     setTableFontSize={setTableFontSize}
                     useAutoDate={useAutoDate}
                     setUseAutoDate={setUseAutoDate}
+                    reportFormat="detailed"
                   />
 
                   {/* Action Buttons */}

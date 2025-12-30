@@ -347,8 +347,8 @@ export default function MonthlyReportSettings({
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
-                    min={reportFormat === "detailed" ? "30" : "15"}
-                    max={reportFormat === "detailed" ? "50" : "30"}
+                    min={reportFormat === "detailed" ? "25" : "15"}
+                    max={reportFormat === "detailed" ? "40" : "30"}
                     step="1"
                     value={firstPageStudentCount}
                     onChange={(e) =>
@@ -358,8 +358,8 @@ export default function MonthlyReportSettings({
                   />
                   <input
                     type="number"
-                    min={reportFormat === "detailed" ? "30" : "15"}
-                    max={reportFormat === "detailed" ? "50" : "30"}
+                    min={reportFormat === "detailed" ? "25" : "15"}
+                    max={reportFormat === "detailed" ? "40" : "30"}
                     value={firstPageStudentCount}
                     onChange={(e) =>
                       setFirstPageStudentCount(parseInt(e.target.value) || 20)
@@ -368,12 +368,12 @@ export default function MonthlyReportSettings({
                   />
                 </div>
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>តិច ({reportFormat === "detailed" ? "30" : "15"})</span>
+                  <span>តិច ({reportFormat === "detailed" ? "25" : "15"})</span>
                   <span>
-                    មធ្យម ({reportFormat === "detailed" ? "40" : "20"})
+                    មធ្យម ({reportFormat === "detailed" ? "32" : "20"})
                   </span>
                   <span>
-                    ច្រើន ({reportFormat === "detailed" ? "50" : "30"})
+                    ច្រើន ({reportFormat === "detailed" ? "40" : "30"})
                   </span>
                 </div>
               </div>
@@ -387,7 +387,7 @@ export default function MonthlyReportSettings({
                   <input
                     type="range"
                     min={reportFormat === "detailed" ? "30" : "20"}
-                    max={reportFormat === "detailed" ? "55" : "40"}
+                    max={reportFormat === "detailed" ? "50" : "40"}
                     step="1"
                     value={secondPageStudentCount}
                     onChange={(e) =>
@@ -398,10 +398,10 @@ export default function MonthlyReportSettings({
                   <input
                     type="number"
                     min={reportFormat === "detailed" ? "30" : "20"}
-                    max={reportFormat === "detailed" ? "55" : "40"}
+                    max={reportFormat === "detailed" ? "50" : "40"}
                     value={secondPageStudentCount}
                     onChange={(e) =>
-                      setSecondPageStudentCount(parseInt(e.target.value) || 20)
+                      setSecondPageStudentCount(parseInt(e.target.value) || 40)
                     }
                     className="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg text-sm"
                   />
@@ -409,9 +409,9 @@ export default function MonthlyReportSettings({
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   {reportFormat === "detailed" ? (
                     <>
-                      <span>តិច (20)</span>
-                      <span>មធ្យម (30)</span>
-                      <span>ច្រើន (40)</span>
+                      <span>តិច (30)</span>
+                      <span>មធ្យម (40)</span>
+                      <span>ច្រើន (50)</span>
                     </>
                   ) : (
                     <>
@@ -426,11 +426,16 @@ export default function MonthlyReportSettings({
 
             {/* Info Message */}
             <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800">
+              <p className="text-xs text-blue-800 mb-1">
                 💡 <strong>ជំនួយ:</strong>{" "}
                 {reportFormat === "detailed"
-                  ? "របាយការណ៍លម្អិតមុខវិជ្ជា៖ ទំព័រដំបូងមាន header ធំ ដូច្នេះត្រូវការសិស្សតិចជាង។ ទំព័របន្ទាប់ៗអាចដាក់បានច្រើនជាង។"
+                  ? "របាយការណ៍លម្អិតមុខវិជ្ជា៖ ទំព័រដំបូងមាន header និង footer ត្រូវការសិស្សសន្ធឹម ២៥-៣២ នាក់។ ទំព័រទី២បន្ទាប់ៗ (គ្មាន header) អាចដាក់បាន ៣០-៥០ នាក់។"
                   : "របាយការណ៍សង្ខេប៖ ទំព័រដំបូងមាន header ធំ។ ទំព័របន្ទាប់ៗមិនមាន header អាចដាក់សិស្សបានច្រើនជាង។"}
+              </p>
+              <p className="text-xs text-blue-700">
+                📄 <strong>A4 Printing:</strong> ទំព័រ A4 (297mm) -
+                Header(~60mm) - Footer(~40mm) - Margins(20mm) = ~177mm សម្រាប់តារាង។
+                ជួរនីមួយៗ = 5.5mm → អតិបរមា ~{reportFormat === "detailed" ? "32" : "28"} នាក់ (ទំព័រដំបូង) និង ~{reportFormat === "detailed" ? "45" : "38"} នាក់ (ទំព័របន្ទាប់)
               </p>
             </div>
           </div>
