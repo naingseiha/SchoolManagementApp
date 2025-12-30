@@ -14,7 +14,7 @@ export default function GradeStatsSection({
   comprehensiveStats,
   isLoading,
 }: GradeStatsSectionProps) {
-  const [selectedGrade, setSelectedGrade] = useState("10");
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
 
   if (isLoading || !comprehensiveStats) {
     return (
@@ -66,68 +66,118 @@ export default function GradeStatsSection({
 
   return (
     <div className="space-y-6">
-      {/* Overall Summary Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-3xl shadow-2xl p-8">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <h3 className="font-khmer-title text-2xl text-white font-bold">
+      {/* Redesigned Summary Section */}
+      <div className="bg-white rounded-3xl shadow-lg p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="font-khmer-title text-2xl text-gray-900 font-bold flex items-center gap-2">
+              <BarChart3 className="w-7 h-7 text-indigo-600" />
               ស្ថិតិតាមកម្រិតថ្នាក់
             </h3>
+            <p className="font-khmer-body text-sm text-gray-500 font-medium mt-1">
+              {comprehensiveStats.month} {comprehensiveStats.year}
+            </p>
           </div>
-          <p className="font-khmer-body text-white/90 text-sm font-medium mb-6">
-            {comprehensiveStats.month} {comprehensiveStats.year}
-          </p>
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full border-2 border-indigo-100">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="font-khmer-body text-xs font-bold text-indigo-700">
+              ទិន្នន័យផ្ទាល់
+            </span>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-5 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Users className="w-5 h-5 text-white" />
-                <span className="font-khmer-body text-white/80 text-xs font-bold">
-                  សិស្សានុសិស្ស
-                </span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Total Students Card */}
+          <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-5 border-2 border-blue-100 hover:border-blue-300 transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/30 rounded-full blur-2xl group-hover:bg-blue-300/50 transition-all"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-md">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <TrendingUp className="w-4 h-4 text-blue-500" />
               </div>
-              <p className="text-3xl font-black text-white">
+              <p className="font-khmer-body text-xs font-bold text-blue-700 mb-1">
+                សិស្សានុសិស្ស
+              </p>
+              <p className="text-3xl font-black text-blue-700 mb-1">
                 {totalStats.students}
               </p>
-            </div>
-
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-5 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-white" />
-                <span className="font-khmer-body text-white/80 text-xs font-bold">
-                  ថ្នាក់រៀន
-                </span>
-              </div>
-              <p className="text-3xl font-black text-white">
-                {totalStats.classes}
+              <p className="font-khmer-body text-[10px] text-blue-600">
+                សិស្សទាំងអស់
               </p>
             </div>
+          </div>
 
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-5 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-5 h-5 text-white" />
-                <span className="font-khmer-body text-white/80 text-xs font-bold">
-                  អត្រាជាប់
-                </span>
+          {/* Total Classes Card */}
+          <div className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border-2 border-purple-100 hover:border-purple-300 transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/30 rounded-full blur-2xl group-hover:bg-purple-300/50 transition-all"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-md">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <TrendingUp className="w-4 h-4 text-purple-500" />
               </div>
-              <p className="text-3xl font-black text-white">{overallPassRate}%</p>
+              <p className="font-khmer-body text-xs font-bold text-purple-700 mb-1">
+                ថ្នាក់រៀន
+              </p>
+              <p className="text-3xl font-black text-purple-700 mb-1">
+                {totalStats.classes}
+              </p>
+              <p className="font-khmer-body text-[10px] text-purple-600">
+                ថ្នាក់សកម្ម
+              </p>
             </div>
+          </div>
 
-            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-5 border border-white/30">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-white" />
-                <span className="font-khmer-body text-white/80 text-xs font-bold">
-                  សរុប
+          {/* Pass Rate Card - Highlighted */}
+          <div className="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border-2 border-green-200 hover:border-green-300 transition-all duration-300 hover:shadow-xl">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/40 rounded-full blur-2xl group-hover:bg-green-300/60 transition-all"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                  <Award className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <span className="font-khmer-body text-[9px] font-bold text-green-700">
+                    ជាប់
+                  </span>
+                </div>
+              </div>
+              <p className="font-khmer-body text-xs font-bold text-green-700 mb-1">
+                អត្រាជាប់
+              </p>
+              <p className="text-3xl font-black text-green-700 mb-1">
+                {overallPassRate}%
+              </p>
+              <p className="font-khmer-body text-[10px] text-green-600">
+                {totalStats.passCount}/{totalStats.passCount + totalStats.failCount} សិស្ស
+              </p>
+            </div>
+          </div>
+
+          {/* Grade Levels Card */}
+          <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-5 border-2 border-orange-100 hover:border-orange-300 transition-all duration-300 hover:shadow-lg">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/30 rounded-full blur-2xl group-hover:bg-orange-300/50 transition-all"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-md">
+                  <TrendingUp className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-khmer-body text-xs font-bold text-orange-600">
+                  7-12
                 </span>
               </div>
-              <p className="text-3xl font-black text-white">
+              <p className="font-khmer-body text-xs font-bold text-orange-700 mb-1">
+                កម្រិតថ្នាក់
+              </p>
+              <p className="text-3xl font-black text-orange-700 mb-1">
                 {comprehensiveStats.grades.length}
+              </p>
+              <p className="font-khmer-body text-[10px] text-orange-600">
+                កម្រិតសរុប
               </p>
             </div>
           </div>
@@ -151,7 +201,7 @@ export default function GradeStatsSection({
             return (
               <button
                 key={grade}
-                onClick={() => hasClasses && setSelectedGrade(grade)}
+                onClick={() => hasClasses && setSelectedGrade(isSelected ? null : grade)}
                 disabled={!hasClasses}
                 className={`flex-shrink-0 relative group transition-all duration-300 ${
                   isSelected
@@ -211,8 +261,8 @@ export default function GradeStatsSection({
         </div>
       </div>
 
-      {/* Grade Statistics */}
-      {selectedGradeData && (
+      {/* Grade Statistics - Only show when a grade is selected */}
+      {selectedGrade && selectedGradeData && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Students */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-6 border-2 border-blue-100 shadow-lg">
@@ -291,8 +341,8 @@ export default function GradeStatsSection({
         </div>
       )}
 
-      {/* Class Performance Cards */}
-      {selectedGradeData && (
+      {/* Class Performance Cards - Only show when a grade is selected */}
+      {selectedGrade && selectedGradeData && (
         <ClassPerformanceCards classes={selectedGradeData.classes} />
       )}
 

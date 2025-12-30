@@ -65,6 +65,7 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedGrade, setExpandedGrade] = useState<string | null>(null);
+  const [expandedClassSubjects, setExpandedClassSubjects] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
     try {
@@ -661,6 +662,106 @@ export default function StatisticsPage() {
                                     )}
                                   </div>
                                 </div>
+
+                                {/* Subject-level Statistics */}
+                                {cls.subjectStats && cls.subjectStats.length > 0 && (
+                                  <div className="mt-6 pt-4 border-t border-gray-100">
+                                    <button
+                                      onClick={() =>
+                                        setExpandedClassSubjects(
+                                          expandedClassSubjects === cls.id ? null : cls.id
+                                        )
+                                      }
+                                      className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl hover:from-indigo-100 hover:to-purple-100 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <BarChart3 className="w-5 h-5 text-indigo-600" />
+                                        <span className="font-khmer-body text-sm text-gray-900 font-bold">
+                                          ស្ថិតិតាមមុខវិជ្ជា ({cls.subjectStats.length} មុខវិជ្ជា)
+                                        </span>
+                                      </div>
+                                      {expandedClassSubjects === cls.id ? (
+                                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                                      ) : (
+                                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                                      )}
+                                    </button>
+
+                                    {expandedClassSubjects === cls.id && (
+                                      <div className="mt-4 space-y-4">
+                                        {cls.subjectStats.map((subject) => (
+                                          <div
+                                            key={subject.subjectId}
+                                            className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200"
+                                          >
+                                            {/* Subject Header */}
+                                            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
+                                              <div>
+                                                <h5 className="font-khmer-body text-sm font-black text-gray-900">
+                                                  {subject.subjectName}
+                                                </h5>
+                                                <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                                                  កូដ: {subject.subjectCode} • ពិន្ទុសរុប: {subject.maxScore} • មេគុណ: {subject.coefficient}
+                                                </p>
+                                              </div>
+                                              <div className="text-right">
+                                                <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                                                  សិស្សដែលមានពិន្ទុ
+                                                </p>
+                                                <p className="font-black text-lg text-indigo-600">
+                                                  {subject.totalStudentsWithGrades}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            {/* Subject Grade Distribution */}
+                                            <div className="space-y-2">
+                                              {Object.entries(subject.gradeDistribution).map(
+                                                ([letter, dist]) => (
+                                                  <div
+                                                    key={letter}
+                                                    className="flex items-center gap-3"
+                                                  >
+                                                    <div
+                                                      className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${getGradeColor(
+                                                        letter
+                                                      )} text-white font-black text-xs shadow-sm`}
+                                                    >
+                                                      {letter}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                      <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div
+                                                          className={`h-full bg-gradient-to-r ${getGradeColor(
+                                                            letter
+                                                          )} transition-all`}
+                                                          style={{
+                                                            width: `${
+                                                              subject.totalStudentsWithGrades > 0
+                                                                ? (dist.total /
+                                                                    subject.totalStudentsWithGrades) *
+                                                                  100
+                                                                : 0
+                                                            }%`,
+                                                          }}
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                    <div className="text-right min-w-[110px]">
+                                                      <p className="font-khmer-body text-xs text-gray-900 font-bold">
+                                                        {dist.total} ({dist.male}ប / {dist.female}ស)
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
 
                                 {/* Additional Stats */}
                                 <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-3">

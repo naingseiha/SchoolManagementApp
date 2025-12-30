@@ -128,6 +128,23 @@ export interface GradeLevelStats {
   }>;
 }
 
+export interface SubjectStats {
+  subjectId: string;
+  subjectCode: string;
+  subjectName: string;
+  maxScore: number;
+  coefficient: number;
+  totalStudentsWithGrades: number;
+  gradeDistribution: {
+    A: { total: number; male: number; female: number };
+    B: { total: number; male: number; female: number };
+    C: { total: number; male: number; female: number };
+    D: { total: number; male: number; female: number };
+    E: { total: number; male: number; female: number };
+    F: { total: number; male: number; female: number };
+  };
+}
+
 export interface ComprehensiveStats {
   month: string;
   year: number;
@@ -180,6 +197,7 @@ export interface ComprehensiveStats {
         E: { total: number; male: number; female: number };
         F: { total: number; male: number; female: number };
       };
+      subjectStats: SubjectStats[];
       teacherName: string;
     }>;
   }>;
@@ -206,6 +224,7 @@ export interface ComprehensiveStats {
       E: { total: number; male: number; female: number };
       F: { total: number; male: number; female: number };
     };
+    subjectStats: SubjectStats[];
     teacherName: string;
   }>;
 }

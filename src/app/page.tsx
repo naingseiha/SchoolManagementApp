@@ -9,7 +9,7 @@ import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { dashboardApi, DashboardStats, ComprehensiveStats } from "@/lib/api/dashboard";
+import { dashboardApi, DashboardStats } from "@/lib/api/dashboard";
 import { SimpleBarChart, SimplePieChart } from "@/components/ui/SimpleBarChart";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
@@ -33,7 +33,6 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
-import GradeStatsSection from "@/components/dashboard/GradeStatsSection";
 
 // Lazy load mobile dashboard for code splitting
 const MobileDashboard = dynamic(
@@ -55,10 +54,7 @@ export default function DashboardPage() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
     null
   );
-  const [comprehensiveStats, setComprehensiveStats] =
-    useState<ComprehensiveStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
-  const [isLoadingComprehensive, setIsLoadingComprehensive] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,7 +68,6 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       fetchDashboardStats();
-      fetchComprehensiveStats();
     }
   }, [isAuthenticated, currentUser]);
 
@@ -87,39 +82,6 @@ export default function DashboardPage() {
       setStatsError(error.message || "Failed to load dashboard statistics");
     } finally {
       setIsLoadingStats(false);
-    }
-  };
-
-  const fetchComprehensiveStats = async () => {
-    try {
-      setIsLoadingComprehensive(true);
-      // Get current Khmer month
-      const monthNames = [
-        "មករា",
-        "កុម្ភៈ",
-        "មីនា",
-        "មេសា",
-        "ឧសភា",
-        "មិថុនា",
-        "កក្កដា",
-        "សីហា",
-        "កញ្ញា",
-        "តុលា",
-        "វិច្ឆិកា",
-        "ធ្នូ",
-      ];
-      const currentMonth = monthNames[new Date().getMonth()];
-      const currentYear = new Date().getFullYear();
-
-      const stats = await dashboardApi.getComprehensiveStats(
-        currentMonth,
-        currentYear
-      );
-      setComprehensiveStats(stats);
-    } catch (error: any) {
-      console.error("Error fetching comprehensive stats:", error);
-    } finally {
-      setIsLoadingComprehensive(false);
     }
   };
 
@@ -450,76 +412,89 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Quick Actions - Modern Grid */}
+            {/* Quick Access Categories Section */}
             <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
-              <div className="flex items-center gap-3 mb-7">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                  <Activity className="w-5 h-5 text-white" />
-                </div>
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="font-khmer-title text-2xl text-gray-900">
-                    ចម្លើយរហ័ស
+                  <h3 className="font-khmer-title text-2xl text-gray-900 font-bold">
+                    ចូលប្រើរហ័សៗ
                   </h3>
-                  <p className="font-khmer-body text-sm text-gray-500 font-medium">
-                    រុករកទៅផ្នែកសំខាន់ៗ
+                  <p className="font-khmer-body text-xs text-gray-500 font-medium mt-1">
+                    Quick Access
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <button
                   onClick={() => router.push("/students")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/50 hover:from-blue-100 hover:to-blue-200/50 rounded-2xl p-6 text-center transition-all duration-300 hover:shadow-lg border-2 border-blue-100 hover:border-blue-200"
+                  className="group relative bg-gradient-to-br from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 rounded-3xl p-8 border-2 border-cyan-100 hover:border-cyan-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/30 rounded-full blur-2xl group-hover:bg-blue-300/50 transition-all"></div>
-                  <div className="relative">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl inline-flex mb-3 group-hover:scale-110 transition-transform shadow-lg">
-                      <Users className="w-6 h-6 text-white" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl group-hover:bg-cyan-300/30 transition-all"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                      <Users className="w-8 h-8 text-white" />
                     </div>
-                    <span className="font-khmer-body text-sm font-bold text-gray-900 block">
-                      គ្រប់គ្រងសិស្ស
-                    </span>
+                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
+                      សិស្ស
+                    </h4>
+                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                      Student Management
+                    </p>
                   </div>
                 </button>
+
                 <button
                   onClick={() => router.push("/teachers")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-100/50 hover:from-green-100 hover:to-emerald-200/50 rounded-2xl p-6 text-center transition-all duration-300 hover:shadow-lg border-2 border-green-100 hover:border-green-200"
+                  className="group relative bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-3xl p-8 border-2 border-indigo-100 hover:border-indigo-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/30 rounded-full blur-2xl group-hover:bg-green-300/50 transition-all"></div>
-                  <div className="relative">
-                    <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl inline-flex mb-3 group-hover:scale-110 transition-transform shadow-lg">
-                      <UserCheck className="w-6 h-6 text-white" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/20 rounded-full blur-2xl group-hover:bg-indigo-300/30 transition-all"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                      <GraduationCap className="w-8 h-8 text-white" />
                     </div>
-                    <span className="font-khmer-body text-sm font-bold text-gray-900 block">
-                      គ្រប់គ្រងគ្រូ
-                    </span>
+                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
+                      គ្រូ
+                    </h4>
+                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                      Teacher Management
+                    </p>
                   </div>
                 </button>
+
                 <button
-                  onClick={() => router.push("/classes")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100/50 hover:from-purple-100 hover:to-purple-200/50 rounded-2xl p-6 text-center transition-all duration-300 hover:shadow-lg border-2 border-purple-100 hover:border-purple-200"
+                  onClick={() => router.push("/results")}
+                  className="group relative bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-3xl p-8 border-2 border-purple-100 hover:border-purple-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/30 rounded-full blur-2xl group-hover:bg-purple-300/50 transition-all"></div>
-                  <div className="relative">
-                    <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl inline-flex mb-3 group-hover:scale-110 transition-transform shadow-lg">
-                      <GraduationCap className="w-6 h-6 text-white" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full blur-2xl group-hover:bg-purple-300/30 transition-all"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                      <BookOpen className="w-8 h-8 text-white" />
                     </div>
-                    <span className="font-khmer-body text-sm font-bold text-gray-900 block">
-                      គ្រប់គ្រងថ្នាក់
-                    </span>
+                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
+                      លទ្ធផល
+                    </h4>
+                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                      Student Results
+                    </p>
                   </div>
                 </button>
+
                 <button
-                  onClick={() => router.push("/subjects")}
-                  className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100/50 hover:from-orange-100 hover:to-orange-200/50 rounded-2xl p-6 text-center transition-all duration-300 hover:shadow-lg border-2 border-orange-100 hover:border-orange-200"
+                  onClick={() => router.push("/statistics")}
+                  className="group relative bg-gradient-to-br from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 rounded-3xl p-8 border-2 border-orange-100 hover:border-orange-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/30 rounded-full blur-2xl group-hover:bg-orange-300/50 transition-all"></div>
-                  <div className="relative">
-                    <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl inline-flex mb-3 group-hover:scale-110 transition-transform shadow-lg">
-                      <BookOpen className="w-6 h-6 text-white" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/20 rounded-full blur-2xl group-hover:bg-orange-300/30 transition-all"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                      <BarChart3 className="w-8 h-8 text-white" />
                     </div>
-                    <span className="font-khmer-body text-sm font-bold text-gray-900 block">
-                      គ្រប់គ្រងមុខវិជ្ជា
-                    </span>
+                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
+                      ស្ថិតិ
+                    </h4>
+                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                      Statistics
+                    </p>
                   </div>
                 </button>
               </div>
@@ -773,100 +748,6 @@ export default function DashboardPage() {
                 )}
               </>
             )}
-
-            {/* Quick Access Categories Section */}
-            <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="font-khmer-title text-2xl text-gray-900 font-bold">
-                    ចូលប្រើរហ័សៗ
-                  </h3>
-                  <p className="font-khmer-body text-xs text-gray-500 font-medium mt-1">
-                    Quick Access
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <button
-                  onClick={() => router.push("/students")}
-                  className="group relative bg-gradient-to-br from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 rounded-3xl p-8 border-2 border-cyan-100 hover:border-cyan-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-200/20 rounded-full blur-2xl group-hover:bg-cyan-300/30 transition-all"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
-                      <Users className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
-                      សិស្ស
-                    </h4>
-                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                      Student Management
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => router.push("/teachers")}
-                  className="group relative bg-gradient-to-br from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-3xl p-8 border-2 border-indigo-100 hover:border-indigo-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/20 rounded-full blur-2xl group-hover:bg-indigo-300/30 transition-all"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
-                      <GraduationCap className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
-                      គ្រូ
-                    </h4>
-                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                      Teacher Management
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => router.push("/results")}
-                  className="group relative bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-3xl p-8 border-2 border-purple-100 hover:border-purple-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-200/20 rounded-full blur-2xl group-hover:bg-purple-300/30 transition-all"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
-                      <BookOpen className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
-                      លទ្ធផល
-                    </h4>
-                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                      Student Results
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => router.push("/statistics")}
-                  className="group relative bg-gradient-to-br from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 rounded-3xl p-8 border-2 border-orange-100 hover:border-orange-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-orange-200/20 rounded-full blur-2xl group-hover:bg-orange-300/30 transition-all"></div>
-                  <div className="relative z-10">
-                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
-                      <BarChart3 className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
-                      ស្ថិតិ
-                    </h4>
-                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                      Statistics
-                    </p>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Grade-Level Statistics Section */}
-            <GradeStatsSection
-              comprehensiveStats={comprehensiveStats}
-              isLoading={isLoadingComprehensive}
-            />
 
             {/* Loading state for stats */}
             {isLoadingStats && !dashboardStats && (
