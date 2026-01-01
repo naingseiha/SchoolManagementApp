@@ -57,7 +57,13 @@ const getCurrentMonth = () => {
 };
 
 const getCurrentYear = () => {
-  return new Date().getFullYear();
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const year = now.getFullYear();
+  // Academic year starts in October (month 10)
+  // Oct-Dec of current year = current year academic year (e.g., 2025-2026)
+  // Jan-Sep of current year = previous year academic year (e.g., still 2025-2026)
+  return month >= 10 ? year : year - 1;
 };
 
 export default function AttendancePage() {
@@ -259,10 +265,10 @@ export default function AttendancePage() {
   }));
 
   const yearOptions = [
-    { value: "2023", label: "2023" },
-    { value: "2024", label: "2024" },
-    { value: "2025", label: "2025" },
-    { value: "2026", label: "2026" },
+    { value: "2023", label: "2023-2024" },
+    { value: "2024", label: "2024-2025" },
+    { value: "2025", label: "2025-2026" },
+    { value: "2026", label: "2026-2027" },
   ];
 
   return (

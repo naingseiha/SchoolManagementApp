@@ -48,14 +48,20 @@ const getAcademicYearOptions = () => {
     const year = currentYear + i;
     years.push({
       value: year.toString(),
-      label: `${year}`,
+      label: `${year}-${year + 1}`,
     });
   }
   return years;
 };
 
 const getCurrentAcademicYear = () => {
-  return new Date().getFullYear();
+  const now = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const year = now.getFullYear();
+  // Academic year starts in October (month 10)
+  // Oct-Dec of current year = current year academic year (e.g., 2025-2026)
+  // Jan-Sep of current year = previous year academic year (e.g., still 2025-2026)
+  return month >= 10 ? year : year - 1;
 };
 
 export default function StatisticsPage() {

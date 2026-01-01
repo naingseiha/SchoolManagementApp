@@ -69,7 +69,12 @@ export default function AwardReportPage() {
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("ធ្នូ");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    return month >= 10 ? year : year - 1;
+  });
   const [templateType, setTemplateType] = useState<"medals" | "trophies">(
     "medals"
   );

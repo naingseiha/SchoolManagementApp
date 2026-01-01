@@ -23,7 +23,13 @@ import { reportsApi, MonthlyReportData } from "@/lib/api/reports";
 
 const GRADES = ["7", "8", "9", "10", "11", "12"];
 const CURRENT_MONTH = "ធ្នូ"; // December
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = (() => {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  // Academic year starts in October (month 10)
+  return month >= 10 ? year : year - 1;
+})();
 
 type ViewMode = "byClass" | "byGrade";
 type SortBy = "rank" | "name" | "average" | "total";
