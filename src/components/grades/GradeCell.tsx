@@ -25,6 +25,7 @@ interface GradeCellProps {
     studentIndex: number,
     subjectIndex: number
   ) => void;
+  onBlur: (cellKey: string) => void;
   inputRef: (el: HTMLInputElement | null) => void;
 }
 
@@ -41,6 +42,7 @@ export function GradeCell({
   onCellChange,
   onKeyDown,
   onPaste,
+  onBlur,
   inputRef,
 }: GradeCellProps) {
   // Check if this is an absent score (0)
@@ -104,7 +106,8 @@ export function GradeCell({
           onChange={(e) => onCellChange(cellKey, e.target.value)}
           onKeyDown={(e) => onKeyDown(e, studentIndex, subjectIndex)}
           onPaste={(e) => onPaste(e, studentIndex, subjectIndex)}
-          disabled={isLoading || saving || !cell.isEditable}
+          onBlur={() => onBlur(cellKey)}
+          disabled={isLoading || saving || !cell.isEditable || cell.isSaving}
           className={getCellClassName()}
           placeholder="-"
           title={
@@ -112,6 +115,8 @@ export function GradeCell({
               ? "អវត្តមាន (Absent) - ពិន្ទុ 0 មិនបញ្ចូលក្នុងការគណនាមធ្យមភាគ"
               : !cell.isEditable
               ? "មើលប៉ុណ្ណោះ - អ្នកមិនអាចកែមុខវិជ្ជានេះបានទេ"
+              : cell.isSaving
+              ? "កំពុងរក្សាទុក... សូមរង់ចាំ"
               : ""
           }
         />

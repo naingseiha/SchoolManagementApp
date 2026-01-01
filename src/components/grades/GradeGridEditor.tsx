@@ -168,7 +168,7 @@ export default function GradeGridEditor({
     }
   }, [gridData.classId, gridData.month, gridData.year]);
 
-  // Auto-save effect
+  // Auto-save effect - increased to 3 seconds to prevent partial saves while typing
   useEffect(() => {
     if (pasteMode || pendingChanges.size === 0) return;
 
@@ -178,7 +178,7 @@ export default function GradeGridEditor({
 
     saveTimeoutRef.current = setTimeout(() => {
       handleAutoSave();
-    }, 1000);
+    }, 3000); // ✅ Increased from 1s to 3s
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -248,6 +248,18 @@ export default function GradeGridEditor({
     setAllPendingChanges(new Map());
     setPastePreview("🚫 បានបោះបង់ការផ្លាស់ប្តូរ");
     setTimeout(() => setPastePreview(null), 2000);
+  };
+
+  // ✅ Handle blur - trigger immediate save when user leaves cell
+  const handleBlur = (cellKey: string) => {
+    if (pasteMode) return; // Don't auto-save in paste mode
+    if (pendingChanges.has(cellKey)) {
+      // Cancel pending timeout and save immediately
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      handleAutoSave();
+    }
   };
 
   return (
@@ -417,6 +429,7 @@ export default function GradeGridEditor({
                             )
                           }
                           onPaste={handlePaste}
+                          onBlur={handleBlur}
                           inputRef={(el) => {
                             if (el) inputRefs.current[cellKey] = el;
                           }}
