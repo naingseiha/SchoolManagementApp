@@ -86,9 +86,12 @@ const getAcademicYearOptions = () => {
 
 const getCurrentAcademicYear = () => {
   const now = new Date();
-  const month = now.getMonth() + 1;
+  const month = now.getMonth() + 1; // 1-12
   const year = now.getFullYear();
-  return month >= 9 ? year : year - 1;
+  // Academic year starts in October (month 10)
+  // Oct-Dec of current year = current year academic year (e.g., 2025-2026)
+  // Jan-Sep of current year = previous year academic year (e.g., still 2025-2026)
+  return month >= 10 ? year : year - 1;
 };
 
 export default function MobileReportsDashboard() {

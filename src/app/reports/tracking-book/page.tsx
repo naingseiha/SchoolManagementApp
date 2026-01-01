@@ -43,7 +43,12 @@ export default function TrackingBookPage() {
   const router = useRouter();
 
   const [selectedClassId, setSelectedClassId] = useState("");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    return month >= 10 ? year : year - 1;
+  });
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [selectedStudentIndex, setSelectedStudentIndex] = useState(0);
@@ -142,7 +147,7 @@ export default function TrackingBookPage() {
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => {
     const year = new Date().getFullYear() - 2 + i;
-    return { value: year.toString(), label: year.toString() };
+    return { value: year.toString(), label: `${year}-${year + 1}` };
   });
 
   // ✅ Get subjects for selected class

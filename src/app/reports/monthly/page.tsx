@@ -93,7 +93,12 @@ export default function ReportsPage() {
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    return month >= 10 ? year : year - 1;
+  });
   const [reportData, setReportData] = useState<MonthlyReportData | null>(null);
   const [statisticsData, setStatisticsData] =
     useState<MonthlyStatisticsData | null>(null);
@@ -262,7 +267,7 @@ export default function ReportsPage() {
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => {
     const year = new Date().getFullYear() - 2 + i;
-    return { value: year.toString(), label: year.toString() };
+    return { value: year.toString(), label: `${year}-${year + 1}` };
   });
 
   const selectedClass =
