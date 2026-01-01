@@ -87,11 +87,7 @@ export default function SimpleMobileDashboard({
         "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
       ];
       const currentMonth = monthNames[new Date().getMonth()];
-      const now = new Date();
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
-      // Academic year starts in October (month 10)
-      const currentYear = month >= 10 ? year : year - 1;
+      const currentYear = getCurrentAcademicYear();
 
       const data = await dashboardApi.getComprehensiveStats(currentMonth, currentYear);
 

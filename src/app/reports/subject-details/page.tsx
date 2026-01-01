@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { reportsApi, type MonthlyReportData } from "@/lib/api/reports";
 import { formatReportDate } from "@/lib/khmerDateUtils";
+import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 
 // Import components
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
@@ -209,10 +210,7 @@ export default function SubjectDetailsReportPage() {
     ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
   ];
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const year = new Date().getFullYear() - 2 + i;
-    return { value: year.toString(), label: `${year}-${year + 1}` };
-  });
+  const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
   const selectedClass =
     reportData && reportType === "single"
