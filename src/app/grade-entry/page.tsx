@@ -24,6 +24,7 @@ import {
   type GradeGridData,
   type BulkSaveGradeItem,
 } from "@/lib/api/grades";
+import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
 
 // Dynamic import for mobile component (code splitting)
 const MobileGradeEntry = dynamic(
@@ -58,16 +59,6 @@ const getCurrentMonth = () => {
   return MONTHS[monthIndex]?.value || "ធ្នូ";
 };
 
-const getCurrentYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1; // 1-12
-  const year = now.getFullYear();
-  // Academic year starts in October (month 10)
-  // Oct-Dec of current year = current year academic year (e.g., 2025-2026)
-  // Jan-Sep of current year = previous year academic year (e.g., still 2025-2026)
-  return month >= 10 ? year : year - 1;
-};
-
 export default function GradeEntryPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
@@ -77,7 +68,7 @@ export default function GradeEntryPage() {
 
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
-  const [selectedYear, setSelectedYear] = useState(getCurrentYear());
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [gridData, setGridData] = useState<GradeGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -532,12 +523,7 @@ export default function GradeEntryPage() {
     label: m.label,
   }));
 
-  const yearOptions = [
-    { value: "2023", label: "2023-2024" },
-    { value: "2024", label: "2024-2025" },
-    { value: "2025", label: "2025-2026" },
-    { value: "2026", label: "2026-2027" },
-  ];
+  const yearOptions = getAcademicYearOptions();
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">

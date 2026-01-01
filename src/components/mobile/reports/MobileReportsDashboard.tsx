@@ -27,6 +27,7 @@ import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useRouter } from "next/navigation";
 import { gradeApi } from "@/lib/api/grades";
+import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
 
 interface StudentGrade {
   studentId: string;
@@ -71,28 +72,6 @@ const getCurrentKhmerMonth = () => {
   return month?.value || "មករា";
 };
 
-const getAcademicYearOptions = () => {
-  const currentYear = new Date().getFullYear();
-  const years = [];
-  for (let i = -1; i <= 2; i++) {
-    const year = currentYear + i;
-    years.push({
-      value: year.toString(),
-      label: `${year}-${year + 1}`,
-    });
-  }
-  return years;
-};
-
-const getCurrentAcademicYear = () => {
-  const now = new Date();
-  const month = now.getMonth() + 1; // 1-12
-  const year = now.getFullYear();
-  // Academic year starts in October (month 10)
-  // Oct-Dec of current year = current year academic year (e.g., 2025-2026)
-  // Jan-Sep of current year = previous year academic year (e.g., still 2025-2026)
-  return month >= 10 ? year : year - 1;
-};
 
 export default function MobileReportsDashboard() {
   const { classes, isLoadingClasses, refreshClasses } = useData();

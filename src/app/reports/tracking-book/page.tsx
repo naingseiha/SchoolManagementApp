@@ -18,6 +18,7 @@ import {
 import { reportsApi, type StudentTrackingBookData } from "@/lib/api/reports";
 import StudentTranscript from "@/components/reports/StudentTranscript";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
+import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 
 const getCurrentKhmerMonth = (): string => {
   const monthNames = [
@@ -145,10 +146,7 @@ export default function TrackingBookPage() {
     { value: "ធ្នូ", label: "ធ្នូ" },
   ];
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const year = new Date().getFullYear() - 2 + i;
-    return { value: year.toString(), label: `${year}-${year + 1}` };
-  });
+  const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
   // ✅ Get subjects for selected class
   const classSubjects = selectedClassId

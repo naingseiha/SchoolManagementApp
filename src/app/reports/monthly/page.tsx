@@ -35,6 +35,7 @@ import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
 import MonthlyReportSettings from "@/components/reports/MonthlyReportSettings";
 import MonthlyStatisticsDashboard from "@/components/reports/MonthlyStatisticsDashboard";
+import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 
 // Helper functions
 import {
@@ -265,10 +266,7 @@ export default function ReportsPage() {
     ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
   ];
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const year = new Date().getFullYear() - 2 + i;
-    return { value: year.toString(), label: `${year}-${year + 1}` };
-  });
+  const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
   const selectedClass =
     reportData && reportType === "single"

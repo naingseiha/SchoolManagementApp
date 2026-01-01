@@ -8,6 +8,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import HonorCertificateMedals from "@/components/reports/HonorCertificateMedals";
 import HonorCertificateTrophies from "@/components/reports/HonorCertificateTrophies";
+import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 import {
   Printer,
   Loader2,
@@ -370,10 +371,7 @@ export default function AwardReportPage() {
     ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី ${g}` })),
   ];
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => {
-    const year = new Date().getFullYear() - 2 + i;
-    return { value: year.toString(), label: `${year}-${year + 1}` };
-  });
+  const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
   return (
     <div className="flex min-h-screen print-wrapper bg-gradient-to-br from-gray-50 to-gray-100">
