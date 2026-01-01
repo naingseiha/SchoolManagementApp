@@ -365,8 +365,8 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
         clearTimeout(batchSaveTimeoutRef.current);
       }
 
-      // ✅ Schedule batch save after 1 second of inactivity
-      batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 1000);
+      // ✅ Schedule batch save after 3 seconds of inactivity (increased from 1s to prevent partial saves)
+      batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 3000);
     },
     [selectedClass, selectedSubject, executeBatchSave]
   );
@@ -393,6 +393,20 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
       }
     },
     [autoSaveScore]
+  );
+
+  // ✅ Handle blur - trigger immediate save when user leaves input
+  const handleBlur = useCallback(
+    (studentId: string) => {
+      if (saveQueueRef.current.has(studentId)) {
+        // Cancel pending timeout and save immediately
+        if (batchSaveTimeoutRef.current) {
+          clearTimeout(batchSaveTimeoutRef.current);
+        }
+        executeBatchSave();
+      }
+    },
+    [executeBatchSave]
   );
 
   // ✅ FIX: Cleanup timeouts on unmount
@@ -687,7 +701,9 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                               student.maxScore
                             )
                           }
-                          className={`w-full h-12 px-2 text-center font-battambang border-2 rounded-xl text-base font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-400 focus:bg-white transition-all ${
+                          onBlur={() => handleBlur(student.studentId)}
+                          disabled={isSaving}
+                          className={`w-full h-12 px-2 text-center font-battambang border-2 rounded-xl text-base font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-400 focus:bg-white transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
                             student.score === 0
                               ? "bg-red-50 border-red-300 text-red-700"
                               : "bg-purple-50 border-purple-200"
