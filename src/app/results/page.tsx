@@ -15,21 +15,36 @@ import {
   BarChart3,
   Target,
   ChevronRight,
+  Calendar,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import { classesApi, Class } from "@/lib/api/classes";
 import { reportsApi, MonthlyReportData } from "@/lib/api/reports";
+import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
 
 const GRADES = ["7", "8", "9", "10", "11", "12"];
-const CURRENT_MONTH = "ធ្នូ"; // December
-const CURRENT_YEAR = (() => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  // Academic year starts in October (month 10)
-  return month >= 10 ? year : year - 1;
-})();
+
+const MONTHS = [
+  { value: "មករា", label: "មករា", number: 1 },
+  { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
+  { value: "មីនា", label: "មីនា", number: 3 },
+  { value: "មេសា", label: "មេសា", number: 4 },
+  { value: "ឧសភា", label: "ឧសភា", number: 5 },
+  { value: "មិថុនា", label: "មិថុនា", number: 6 },
+  { value: "កក្កដា", label: "កក្កដា", number: 7 },
+  { value: "សីហា", label: "សីហា", number: 8 },
+  { value: "កញ្ញា", label: "កញ្ញា", number: 9 },
+  { value: "តុលា", label: "តុលា", number: 10 },
+  { value: "វិច្ឆិកា", label: "វិច្ឆិកា", number: 11 },
+  { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
+];
+
+const getCurrentKhmerMonth = () => {
+  const monthNumber = new Date().getMonth() + 1;
+  const month = MONTHS.find((m) => m.number === monthNumber);
+  return month?.value || "មករា";
+};
 
 type ViewMode = "byClass" | "byGrade";
 type SortBy = "rank" | "name" | "average" | "total";
@@ -47,10 +62,24 @@ export default function ResultsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("rank");
 
+  // ✅ Month and Year Selectors
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+
   // Load all classes on mount
   useEffect(() => {
     loadClasses();
   }, []);
+
+  // ✅ Reload when month/year changes
+  useEffect(() => {
+    if (selectedGrade && selectedClass) {
+      handleClassSelect(selectedClass);
+    } else if (selectedGrade && viewMode === "byGrade") {
+      setGradeWideData(null);
+      handleViewModeChange("byGrade");
+    }
+  }, [selectedMonth, selectedYear]);
 
   const loadClasses = async () => {
     try {
@@ -98,8 +127,8 @@ export default function ResultsPage() {
       try {
         const data = await reportsApi.getGradeWideReport(
           selectedGrade,
-          CURRENT_MONTH,
-          CURRENT_YEAR
+          selectedMonth,
+          selectedYear
         );
         setGradeWideData(data);
       } catch (error) {
@@ -116,8 +145,8 @@ export default function ResultsPage() {
     try {
       const data = await reportsApi.getMonthlyReport(
         classData.id,
-        CURRENT_MONTH,
-        CURRENT_YEAR
+        selectedMonth,
+        selectedYear
       );
       setReportData(data);
     } catch (error) {
@@ -227,17 +256,57 @@ export default function ResultsPage() {
           <main className="p-8">
             {/* Header */}
             <div className="mb-8">
-              <div className="flex items-center gap-4 mb-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/30">
-                  <Trophy className="w-8 h-8 text-white" />
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                    <Trophy className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="font-khmer-title text-4xl text-gray-900">
+                      លទ្ធផលប្រលង
+                    </h1>
+                    <p className="font-khmer-body text-gray-500 mt-1 font-medium">
+                      ជ្រើសរើសកម្រិតសិក្សា
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="font-khmer-title text-4xl text-gray-900">
-                    លទ្ធផលប្រលង
-                  </h1>
-                  <p className="font-khmer-body text-gray-500 mt-1 font-medium">
-                    ជ្រើសរើសកម្រិតសិក្សា • {CURRENT_MONTH} {CURRENT_YEAR}
-                  </p>
+
+                {/* Month & Year Selector */}
+                <div className="flex gap-4">
+                  <div className="bg-white rounded-2xl p-3 border-2 border-gray-200 shadow-sm">
+                    <label className="block font-khmer-body text-xs text-gray-600 font-semibold mb-2 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      ខែ
+                    </label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-40 px-4 py-2 font-khmer-body font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 transition-all"
+                    >
+                      {MONTHS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-3 border-2 border-gray-200 shadow-sm">
+                    <label className="block font-khmer-body text-xs text-gray-600 font-semibold mb-2">
+                      ឆ្នាំសិក្សា
+                    </label>
+                    <select
+                      value={selectedYear.toString()}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="w-40 px-4 py-2 font-khmer-body font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 transition-all"
+                    >
+                      {getAcademicYearOptions().map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -653,8 +722,7 @@ export default function ResultsPage() {
                       {selectedClass.name}
                     </h1>
                     <p className="font-khmer-body text-gray-500 font-medium">
-                      {CURRENT_MONTH} {CURRENT_YEAR} • {sortedStudents.length}{" "}
-                      សិស្ស
+                      {selectedMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
                     </p>
                   </div>
                 </div>
@@ -722,8 +790,7 @@ export default function ResultsPage() {
                       ថ្នាក់ទី{selectedGrade} • ចំណាត់ថ្នាក់រួម
                     </h1>
                     <p className="font-khmer-body text-gray-500 font-medium">
-                      {CURRENT_MONTH} {CURRENT_YEAR} • {sortedStudents.length}{" "}
-                      សិស្ស
+                      {selectedMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
                     </p>
                   </div>
                 </div>

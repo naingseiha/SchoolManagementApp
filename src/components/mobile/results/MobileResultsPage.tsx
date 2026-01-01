@@ -19,20 +19,35 @@ import {
   Sparkles,
   BarChart3,
   Target,
+  Calendar,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { classesApi, Class } from "@/lib/api/classes";
 import { reportsApi, MonthlyReportData } from "@/lib/api/reports";
+import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
 
 const GRADES = ["7", "8", "9", "10", "11", "12"];
-const CURRENT_MONTH = "ធ្នូ"; // December
-const CURRENT_YEAR = (() => {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  // Academic year starts in October (month 10)
-  return month >= 10 ? year : year - 1;
-})();
+
+const MONTHS = [
+  { value: "មករា", label: "មករា", number: 1 },
+  { value: "កុម្ភៈ", label: "កុម្ភៈ", number: 2 },
+  { value: "មីនា", label: "មីនា", number: 3 },
+  { value: "មេសា", label: "មេសា", number: 4 },
+  { value: "ឧសភា", label: "ឧសភា", number: 5 },
+  { value: "មិថុនា", label: "មិថុនា", number: 6 },
+  { value: "កក្កដា", label: "កក្កដា", number: 7 },
+  { value: "សីហា", label: "សីហា", number: 8 },
+  { value: "កញ្ញា", label: "កញ្ញា", number: 9 },
+  { value: "តុលា", label: "តុលា", number: 10 },
+  { value: "វិច្ឆិកា", label: "វិច្ឆិកា", number: 11 },
+  { value: "ធ្នូ", label: "ធ្នូ", number: 12 },
+];
+
+const getCurrentKhmerMonth = () => {
+  const monthNumber = new Date().getMonth() + 1;
+  const month = MONTHS.find((m) => m.number === monthNumber);
+  return month?.value || "មករា";
+};
 
 type ViewMode = "byClass" | "byGrade";
 type SortBy = "rank" | "name" | "average" | "total";
@@ -53,10 +68,32 @@ export default function MobileResultsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("rank");
 
+  // ✅ Month and Year Selectors
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
+  const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+
+  // ✅ OPTIMIZATION: Cache loaded reports to avoid reloading
+  const [reportCache, setReportCache] = useState<Map<string, MonthlyReportData>>(new Map());
+  const [gradeCache, setGradeCache] = useState<Map<string, MonthlyReportData>>(new Map());
+
   // Load all classes on mount
   useEffect(() => {
     loadClasses();
   }, []);
+
+  // ✅ Clear cache and reload when month/year changes
+  useEffect(() => {
+    if (selectedGrade && selectedClass) {
+      // Reload current class data with new month/year
+      handleClassSelect(selectedClass);
+    } else if (selectedGrade && viewMode === "byGrade") {
+      // Reload grade-wide data with new month/year
+      handleViewModeChange("byGrade");
+    }
+    // Clear caches for old month/year
+    setReportCache(new Map());
+    setGradeCache(new Map());
+  }, [selectedMonth, selectedYear]);
 
   const loadClasses = async () => {
     try {
@@ -95,20 +132,41 @@ export default function MobileResultsPage() {
     setSelectedClass(null);
     setReportData(null);
     setGradeWideData(null);
+
+    // ✅ OPTIMIZATION: Preload grade-wide data in background
+    const cacheKey = `${grade}:${selectedMonth}:${selectedYear}`;
+    if (!gradeCache.has(cacheKey)) {
+      reportsApi.getGradeWideReport(grade, selectedMonth, selectedYear)
+        .then((data) => {
+          setGradeCache(prev => new Map(prev).set(cacheKey, data));
+        })
+        .catch((error) => console.error("Background preload error:", error));
+    }
   };
 
   const handleViewModeChange = async (mode: ViewMode) => {
     setViewMode(mode);
-    if (mode === "byGrade" && selectedGrade && !gradeWideData) {
-      // Load grade-wide data
+    if (mode === "byGrade" && selectedGrade) {
+      const cacheKey = `${selectedGrade}:${selectedMonth}:${selectedYear}`;
+
+      // ✅ OPTIMIZATION: Check cache first
+      const cachedData = gradeCache.get(cacheKey);
+      if (cachedData) {
+        setGradeWideData(cachedData);
+        setIsLoading(false);
+        return;
+      }
+
+      // Load grade-wide data if not cached
       setIsLoading(true);
       try {
         const data = await reportsApi.getGradeWideReport(
           selectedGrade,
-          CURRENT_MONTH,
-          CURRENT_YEAR
+          selectedMonth,
+          selectedYear
         );
         setGradeWideData(data);
+        setGradeCache(prev => new Map(prev).set(cacheKey, data));
       } catch (error) {
         console.error("Error loading grade-wide report:", error);
       } finally {
@@ -119,14 +177,26 @@ export default function MobileResultsPage() {
 
   const handleClassSelect = async (classData: Class) => {
     setSelectedClass(classData);
+    const cacheKey = `${classData.id}:${selectedMonth}:${selectedYear}`;
+
+    // ✅ OPTIMIZATION: Check cache first, show immediately
+    const cachedData = reportCache.get(cacheKey);
+    if (cachedData) {
+      setReportData(cachedData);
+      setIsLoading(false);
+      return;
+    }
+
+    // Load data if not cached
     setIsLoading(true);
     try {
       const data = await reportsApi.getMonthlyReport(
         classData.id,
-        CURRENT_MONTH,
-        CURRENT_YEAR
+        selectedMonth,
+        selectedYear
       );
       setReportData(data);
+      setReportCache(prev => new Map(prev).set(cacheKey, data));
     } catch (error) {
       console.error("Error loading report:", error);
     } finally {
@@ -136,11 +206,12 @@ export default function MobileResultsPage() {
 
   const handleBack = () => {
     if (selectedClass) {
+      // ✅ OPTIMIZATION: Keep data cached, just go back
       setSelectedClass(null);
-      setReportData(null);
+      // Don't clear reportData - keep it for when user comes back
     } else if (selectedGrade) {
       setSelectedGrade(null);
-      setGradeWideData(null);
+      // Don't clear gradeWideData - keep it cached
     } else {
       router.back();
     }
@@ -245,8 +316,8 @@ export default function MobileResultsPage() {
       <MobileLayout title="លទ្ធផល • Results">
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/40 pb-24">
           {/* Header */}
-          <div className="bg-white px-5 pt-6 pb-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
+          <div className="bg-white px-5 pt-6 pb-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-14 h-14 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <Trophy className="w-7 h-7 text-white" />
               </div>
@@ -255,8 +326,48 @@ export default function MobileResultsPage() {
                   លទ្ធផលប្រលង
                 </h1>
                 <p className="font-battambang text-xs text-gray-500 mt-0.5">
-                  ជ្រើសរើសកម្រិតសិក្សា • {CURRENT_MONTH} {CURRENT_YEAR}
+                  ជ្រើសរើសកម្រិតសិក្សា
                 </p>
+              </div>
+            </div>
+
+            {/* Month & Year Selector */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gray-50 rounded-2xl p-3 border border-gray-200">
+                <label className="block font-battambang text-xs text-gray-600 font-semibold mb-2 flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3" />
+                  ខែ
+                </label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full h-10 px-3 text-sm font-battambang font-semibold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                  style={{ fontSize: "16px" }}
+                >
+                  {MONTHS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="bg-gray-50 rounded-2xl p-3 border border-gray-200">
+                <label className="block font-battambang text-xs text-gray-600 font-semibold mb-2">
+                  ឆ្នាំ
+                </label>
+                <select
+                  value={selectedYear.toString()}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="w-full h-10 px-3 text-sm font-battambang font-semibold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+                  style={{ fontSize: "16px" }}
+                >
+                  {getAcademicYearOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
@@ -363,8 +474,10 @@ export default function MobileResultsPage() {
                   ថ្នាក់ទី{selectedGrade}
                 </h1>
                 <p className="font-battambang text-xs text-gray-500">
-                  {filteredClasses.length} ថ្នាក់ •{" "}
-                  {gradeStudentCounts[selectedGrade] || 0} សិស្ស
+                  {filteredClasses.length} ថ្នាក់ • {gradeStudentCounts[selectedGrade] || 0} សិស្ស
+                </p>
+                <p className="font-battambang text-[10px] text-gray-400 mt-0.5">
+                  {selectedMonth} {selectedYear}-{selectedYear + 1}
                 </p>
               </div>
             </div>
@@ -487,7 +600,7 @@ export default function MobileResultsPage() {
                     ថ្នាក់ទី{selectedGrade} • ចំណាត់ថ្នាក់រួម
                   </h1>
                   <p className="font-battambang text-xs text-gray-500">
-                    {CURRENT_MONTH} {CURRENT_YEAR}
+                    {selectedMonth} {selectedYear}-{selectedYear + 1}
                   </p>
                 </div>
               </div>
@@ -759,7 +872,7 @@ export default function MobileResultsPage() {
                     {selectedClass.name}
                   </h1>
                   <p className="font-battambang text-xs text-gray-500">
-                    {CURRENT_MONTH} {CURRENT_YEAR}
+                    {selectedMonth} {selectedYear}-{selectedYear + 1}
                   </p>
                 </div>
               </div>

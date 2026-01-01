@@ -4,24 +4,20 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search,
-  ChevronRight,
   Users,
   BookOpen,
   X,
-  TrendingUp,
   Award,
-  Target,
   BarChart3,
   GraduationCap,
-  CheckCircle,
   Mic,
   MapPin,
   Bell,
-  TrendingDown,
   Sparkles,
 } from "lucide-react";
-import { dashboardApi, GradeLevelStats, ComprehensiveStats } from "@/lib/api/dashboard";
+import { dashboardApi, ComprehensiveStats } from "@/lib/api/dashboard";
 import DashboardSkeleton from "./DashboardSkeleton";
+import { getCurrentAcademicYear } from "@/utils/academicYear";
 
 interface SimpleMobileDashboardProps {
   currentUser: any;
@@ -31,7 +27,6 @@ export default function SimpleMobileDashboard({
   currentUser,
 }: SimpleMobileDashboardProps) {
   const router = useRouter();
-  const [selectedGrade, setSelectedGrade] = useState("10");
   const [gradeStats, setGradeStats] = useState<ComprehensiveStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,13 +78,26 @@ export default function SimpleMobileDashboard({
 
       // Get current Khmer month
       const monthNames = [
-        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
-        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+        "មករា",
+        "កុម្ភៈ",
+        "មីនា",
+        "មេសា",
+        "ឧសភា",
+        "មិថុនា",
+        "កក្កដា",
+        "សីហា",
+        "កញ្ញា",
+        "តុលា",
+        "វិច្ឆិកា",
+        "ធ្នូ",
       ];
       const currentMonth = monthNames[new Date().getMonth()];
       const currentYear = getCurrentAcademicYear();
 
-      const data = await dashboardApi.getComprehensiveStats(currentMonth, currentYear);
+      const data = await dashboardApi.getComprehensiveStats(
+        currentMonth,
+        currentYear
+      );
 
       if (!data || !data.grades) {
         setError("ទិន្នន័យមិនត្រឹមត្រូវ • Invalid data structure");
@@ -99,11 +107,6 @@ export default function SimpleMobileDashboard({
       }
 
       setGradeStats(data);
-      // Select first grade with classes
-      const gradeWithClasses = data.grades.find((g) => g.totalClasses > 0);
-      if (gradeWithClasses) {
-        setSelectedGrade(gradeWithClasses.grade);
-      }
     } catch (error: any) {
       if (error.name !== "AbortError") {
         setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យ");
@@ -113,39 +116,6 @@ export default function SimpleMobileDashboard({
       setIsRefreshing(false);
     }
   }, []);
-
-  // Memoized color calculation functions
-  const getGradientClass = useCallback((avg: number) => {
-    if (avg >= 80) return "from-green-500 to-emerald-500";
-    if (avg >= 70) return "from-blue-500 to-indigo-500";
-    if (avg >= 60) return "from-yellow-500 to-orange-500";
-    if (avg >= 50) return "from-orange-500 to-red-500";
-    return "from-red-500 to-rose-500";
-  }, []);
-
-  const getBgClass = useCallback((avg: number) => {
-    if (avg >= 80)
-      return "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200";
-    if (avg >= 70)
-      return "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200";
-    if (avg >= 60)
-      return "bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200";
-    if (avg >= 50)
-      return "bg-gradient-to-br from-orange-50 to-red-50 border-orange-200";
-    return "bg-gradient-to-br from-red-50 to-rose-50 border-red-200";
-  }, []);
-
-  const getCompletionColor = useCallback((percentage: number) => {
-    if (percentage >= 80) return "from-green-500 to-emerald-500";
-    if (percentage >= 60) return "from-blue-500 to-indigo-500";
-    if (percentage >= 40) return "from-yellow-500 to-orange-500";
-    return "from-red-500 to-rose-500";
-  }, []);
-
-  const selectedGradeData = useMemo(
-    () => gradeStats?.grades.find((g) => g.grade === selectedGrade),
-    [gradeStats, selectedGrade]
-  );
 
   // Calculate overall statistics
   const totalStats = useMemo(
@@ -171,16 +141,13 @@ export default function SimpleMobileDashboard({
     [totalStats, gradeStats]
   );
 
-  const overallPassRate = useMemo(
-    () => {
-      if (!totalStats) return "0";
-      const totalWithGrades = totalStats.passCount + totalStats.failCount;
-      return totalWithGrades > 0
-        ? ((totalStats.passCount / totalWithGrades) * 100).toFixed(1)
-        : "0";
-    },
-    [totalStats]
-  );
+  const overallPassRate = useMemo(() => {
+    if (!totalStats) return "0";
+    const totalWithGrades = totalStats.passCount + totalStats.failCount;
+    return totalWithGrades > 0
+      ? ((totalStats.passCount / totalWithGrades) * 100).toFixed(1)
+      : "0";
+  }, [totalStats]);
 
   const handleSearch = useCallback(
     (e?: React.FormEvent) => {
@@ -231,7 +198,9 @@ export default function SimpleMobileDashboard({
           <h2 className="font-koulen text-2xl text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-rose-600 mb-2 font-bold">
             មានបញ្ហា
           </h2>
-          <p className="font-battambang text-gray-700 mb-6 font-medium">{error}</p>
+          <p className="font-battambang text-gray-700 mb-6 font-medium">
+            {error}
+          </p>
           <button
             onClick={() => loadGradeStats(false)}
             className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-battambang font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all active:scale-95"
@@ -368,7 +337,7 @@ export default function SimpleMobileDashboard({
                     <BookOpen className="w-5 h-5 text-white" />
                   </div>
                   <p className="font-koulen text-[10px] text-gray-600 font-bold">
-                    គ្រូបង្រៀន
+                    ថ្នាក់រៀន
                   </p>
                 </div>
                 <p className="font-koulen text-3xl text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-purple-600 font-bold">
@@ -408,219 +377,167 @@ export default function SimpleMobileDashboard({
         </div>
       </div>
 
-      {/* Categories Section */}
+      {/* Quick Actions - More Useful Features */}
       <div className="relative px-5 pt-5 pb-3">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-koulen text-lg text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
-            របាយការណ៍តាមផ្នែក
+            មុខងារសំខាន់ៗ
           </h3>
-          <button className="font-koulen text-xs text-indigo-600 font-bold flex items-center gap-1 hover:gap-2 transition-all">
-            បង្ហាញបន្ថែម
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
         </div>
 
-        <div className="grid grid-cols-4 gap-3">
-          <button
-            onClick={() => router.push("/students")}
-            className="group flex flex-col items-center gap-2.5 p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-white/40 active:scale-95 transition-all"
-          >
-            <div className="w-13 h-13 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center shadow-sm group-active:scale-90 transition-transform">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-koulen text-[10px] text-gray-700 font-bold text-center leading-tight">
-              សិស្ស
-            </span>
-          </button>
-
-          <button
-            onClick={() => router.push("/teachers/mobile")}
-            className="group flex flex-col items-center gap-2.5 p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-white/40 active:scale-95 transition-all"
-          >
-            <div className="w-13 h-13 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-2xl flex items-center justify-center shadow-sm group-active:scale-90 transition-transform">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-koulen text-[10px] text-gray-700 font-bold text-center leading-tight">
-              គ្រូ
-            </span>
-          </button>
-
+        <div className="grid grid-cols-2 gap-3">
+          {/* Results */}
           <button
             onClick={() => router.push("/results/mobile")}
-            className="group flex flex-col items-center gap-2.5 p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-white/40 active:scale-95 transition-all"
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
           >
-            <div className="w-13 h-13 bg-gradient-to-br from-purple-400 to-pink-500 rounded-2xl flex items-center justify-center shadow-sm group-active:scale-90 transition-transform">
-              <BookOpen className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-sm">
+                <Award className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-koulen text-sm text-gray-800 font-bold">
+                  លទ្ធផល
+                </h4>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  លទ្ធផលសិក្សា
+                </p>
+              </div>
             </div>
-            <span className="font-koulen text-[10px] text-gray-700 font-bold text-center leading-tight">
-              លទ្ធផល
-            </span>
           </button>
 
+          {/* Student List */}
+          <button
+            onClick={() => router.push("/students")}
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-koulen text-sm text-gray-800 font-bold">
+                  បញ្ជីសិស្ស
+                </h4>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  {totalStats?.students || 0} សិស្ស
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Statistics */}
           <button
             onClick={() => router.push("/statistics/mobile")}
-            className="group flex flex-col items-center gap-2.5 p-3.5 bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-white/40 active:scale-95 transition-all"
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
           >
-            <div className="w-13 h-13 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl flex items-center justify-center shadow-sm group-active:scale-90 transition-transform">
-              <BarChart3 className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                <BarChart3 className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-koulen text-sm text-gray-800 font-bold">
+                  ស្ថិតិ
+                </h4>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  ស្ថិតិលម្អិត
+                </p>
+              </div>
             </div>
-            <span className="font-koulen text-[10px] text-gray-700 font-bold text-center leading-tight">
-              ស្ថិតិ
-            </span>
+          </button>
+
+          {/* Teachers */}
+          <button
+            onClick={() => router.push("/teachers/mobile")}
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-xl flex items-center justify-center shadow-sm">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-koulen text-sm text-gray-800 font-bold">
+                  គ្រូបង្រៀន
+                </h4>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  បញ្ជីគ្រូ
+                </p>
+              </div>
+            </div>
           </button>
         </div>
       </div>
 
-      {/* Grade Selector */}
-      <div className="relative px-5 pt-5 pb-3">
-        <h3 className="font-koulen text-lg text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4 font-bold">
-          បច្ចុប្បន្នភាពពិន្ទុតាមថ្នាក់
-        </h3>
-        <div className="flex gap-2.5 overflow-x-auto hide-scrollbar pb-2">
-          {["7", "8", "9", "10", "11", "12"].map((grade) => {
-            const gradeData = gradeStats?.grades.find((g) => g.grade === grade);
-            const hasClasses = gradeData && gradeData.totalClasses > 0;
+      {/* Grade Overview - Simple Summary */}
+      <div className="relative px-5 pt-2 pb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-koulen text-lg text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
+            សង្ខេបតាមថ្នាក់
+          </h3>
+        </div>
 
-            return (
-              <button
-                key={grade}
-                onClick={() => setSelectedGrade(grade)}
-                disabled={!hasClasses}
-                className={`flex-shrink-0 px-6 py-3 rounded-2xl font-koulen text-sm font-bold transition-all ${
-                  selectedGrade === grade
-                    ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-md scale-105"
-                    : hasClasses
-                    ? "bg-white/80 backdrop-blur-sm text-gray-700 border border-white/40 shadow-sm active:scale-95"
-                    : "bg-gray-100/50 text-gray-400 cursor-not-allowed opacity-50"
-                }`}
-              >
-                ថ្នាក់ {grade}
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3">
+          {gradeStats?.grades.map((grade) => (
+            <button
+              key={grade.grade}
+              onClick={() => router.push(`/grade-entry?grade=${grade.grade}`)}
+              className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all text-left"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-koulen text-base text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
+                  ថ្នាក់ទី{grade.grade}
+                </span>
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    grade.averageScore >= 70
+                      ? "bg-green-500"
+                      : grade.averageScore >= 50
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
+                  }`}
+                ></div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-battambang text-[11px] text-gray-600">
+                    សិស្ស
+                  </span>
+                  <span className="font-koulen text-sm text-gray-800 font-bold">
+                    {grade.totalStudents}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="font-battambang text-[11px] text-gray-600">
+                    មធ្យមភាគ
+                  </span>
+                  <span
+                    className={`font-koulen text-sm font-bold ${
+                      grade.averageScore >= 70
+                        ? "text-green-600"
+                        : grade.averageScore >= 50
+                        ? "text-yellow-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {grade.averageScore.toFixed(1)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="font-battambang text-[11px] text-gray-600">
+                    អត្រាជាប់
+                  </span>
+                  <span className="font-koulen text-sm text-green-600 font-bold">
+                    {grade.passPercentage.toFixed(0)}%
+                  </span>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
-
-      {/* Enhanced Class Cards */}
-      {selectedGradeData && selectedGradeData.classes.length > 0 && (
-        <div className="relative px-5 pb-6">
-          <div className="space-y-4">
-            {selectedGradeData.classes.slice(0, 10).map((cls) => {
-              const passPercentage = cls.passPercentage;
-
-              return (
-                <button
-                  key={cls.id}
-                  onClick={() => router.push(`/grade-entry?classId=${cls.id}`)}
-                  className="w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-md border border-white/40 overflow-hidden transition-all active:scale-[0.98]"
-                >
-                  {/* Header with Gradient */}
-                  <div
-                    className={`bg-gradient-to-r ${getCompletionColor(
-                      passPercentage
-                    )} p-5 relative overflow-hidden`}
-                  >
-                    {/* Decorative circles */}
-                    <div className="absolute -top-8 -right-8 w-28 h-28 bg-white/20 rounded-full blur-xl"></div>
-                    <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/10 rounded-full blur-lg"></div>
-                    <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-white/5 rounded-full blur-md"></div>
-
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="bg-white/30 backdrop-blur-md rounded-2xl px-4 py-2 border border-white/40">
-                          <span className="font-koulen text-white text-base font-bold">
-                            {cls.name}
-                          </span>
-                        </div>
-                        <div className="bg-white/30 backdrop-blur-md rounded-xl p-2.5 border border-white/40">
-                          <Users className="w-5 h-5 text-white" />
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="bg-white/30 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/40">
-                          <span className="font-battambang text-white text-xs font-bold">
-                            {cls.studentCount} សិស្ស
-                          </span>
-                        </div>
-                        {cls.teacherName && (
-                          <div className="bg-white/30 backdrop-blur-md rounded-full px-4 py-1.5 border border-white/40">
-                            <span className="font-battambang text-white text-xs font-semibold">
-                              គ្រូ: {cls.teacherName}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Body */}
-                  <div className="p-5 space-y-4 bg-gradient-to-br from-white/50 to-white/30">
-                    {/* Average Score */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl">
-                          <TrendingUp className="w-5 h-5 text-indigo-600" />
-                        </div>
-                        <span className="font-battambang text-sm font-bold text-gray-800">
-                          មធ្យមភាគថ្នាក់
-                        </span>
-                      </div>
-                      <div
-                        className={`px-4 py-2 rounded-xl border-2 font-koulen text-base ${
-                          cls.averageScore >= 80
-                            ? "text-green-600 bg-gradient-to-br from-green-50 to-emerald-50 border-green-300"
-                            : cls.averageScore >= 70
-                            ? "text-blue-600 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-300"
-                            : cls.averageScore >= 60
-                            ? "text-yellow-600 bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-300"
-                            : cls.averageScore >= 50
-                            ? "text-orange-600 bg-gradient-to-br from-orange-50 to-red-50 border-orange-300"
-                            : "text-red-600 bg-gradient-to-br from-red-50 to-rose-50 border-red-300"
-                        }`}
-                      >
-                        {cls.averageScore.toFixed(1)}
-                      </div>
-                    </div>
-
-                    {/* Pass Rate */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2.5">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
-                            <Award className="w-5 h-5 text-green-600" />
-                          </div>
-                          <span className="font-battambang text-sm font-bold text-gray-800">
-                            អត្រាជាប់
-                          </span>
-                        </div>
-                        <span className="font-battambang text-sm font-bold text-green-700 bg-green-100 px-3 py-1 rounded-lg">
-                          {cls.passedCount}/{cls.studentCount}
-                        </span>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="relative h-3 bg-gray-200/60 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${getCompletionColor(
-                            passPercentage
-                          )} rounded-full transition-all duration-700`}
-                          style={{ width: `${passPercentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex items-center justify-end mt-2">
-                        <span className="font-koulen text-sm text-gray-700 font-bold">
-                          {passPercentage.toFixed(1)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         .hide-scrollbar::-webkit-scrollbar {
@@ -631,7 +548,8 @@ export default function SimpleMobileDashboard({
           scrollbar-width: none;
         }
         @keyframes pulse {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 1;
           }
           50% {
