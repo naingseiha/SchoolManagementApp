@@ -102,7 +102,8 @@
       "Bash(python3:*)",
       "Bash(timeout 10 npm run dev:*)",
       "Bash(node test-academic-year.js:*)",
-      "Bash(node test-academic-year-final.js:*)"
+      "Bash(node test-academic-year-final.js:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
