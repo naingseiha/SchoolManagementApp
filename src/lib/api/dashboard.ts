@@ -12,6 +12,11 @@ export interface DashboardStats {
     activeSubjects: number;
     studentEnrollmentRate: number;
     teacherAssignmentRate: number;
+    passPercentage: number;
+    failPercentage: number;
+    passedCount: number;
+    failedCount: number;
+    totalGradesCount: number;
   };
   recentActivity: {
     recentGradeEntries: number;

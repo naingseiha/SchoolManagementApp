@@ -133,19 +133,20 @@ export default function SimpleMobileDashboard({
     [gradeStats]
   );
 
-  const overallAvg = useMemo(
-    () =>
-      totalStats && gradeStats
-        ? (totalStats.avgScore / gradeStats.grades.length).toFixed(1)
-        : "0",
-    [totalStats, gradeStats]
-  );
-
   const overallPassRate = useMemo(() => {
     if (!totalStats) return "0";
     const totalWithGrades = totalStats.passCount + totalStats.failCount;
     return totalWithGrades > 0
       ? ((totalStats.passCount / totalWithGrades) * 100).toFixed(1)
+      : "0";
+  }, [totalStats]);
+
+  // ✅ NEW: Calculate fail percentage instead of average
+  const overallFailRate = useMemo(() => {
+    if (!totalStats) return "0";
+    const totalWithGrades = totalStats.passCount + totalStats.failCount;
+    return totalWithGrades > 0
+      ? ((totalStats.failCount / totalWithGrades) * 100).toFixed(1)
       : "0";
   }, [totalStats]);
 
@@ -347,29 +348,29 @@ export default function SimpleMobileDashboard({
 
               <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-md active:scale-95 transition-all">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-9 h-9 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center shadow-sm">
-                    <BarChart3 className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="font-koulen text-[10px] text-gray-600 font-bold">
-                    មធ្យមភាគ
-                  </p>
-                </div>
-                <p className="font-koulen text-3xl text-transparent bg-clip-text bg-gradient-to-br from-purple-600 to-pink-600 font-bold">
-                  {overallAvg}
-                </p>
-              </div>
-
-              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-md active:scale-95 transition-all">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-amber-500 rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="w-9 h-9 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
                     <Award className="w-5 h-5 text-white" />
                   </div>
                   <p className="font-koulen text-[10px] text-gray-600 font-bold">
                     ជាប់
                   </p>
                 </div>
-                <p className="font-koulen text-3xl text-transparent bg-clip-text bg-gradient-to-br from-orange-600 to-amber-600 font-bold">
+                <p className="font-koulen text-3xl text-transparent bg-clip-text bg-gradient-to-br from-green-600 to-emerald-600 font-bold">
                   {overallPassRate}%
+                </p>
+              </div>
+
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-md active:scale-95 transition-all">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-9 h-9 bg-gradient-to-br from-red-400 to-rose-500 rounded-xl flex items-center justify-center shadow-sm">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <p className="font-koulen text-[10px] text-gray-600 font-bold">
+                    ធ្លាក់
+                  </p>
+                </div>
+                <p className="font-koulen text-3xl text-transparent bg-clip-text bg-gradient-to-br from-red-600 to-rose-600 font-bold">
+                  {overallFailRate}%
                 </p>
               </div>
             </div>

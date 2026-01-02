@@ -74,50 +74,46 @@ export class DashboardController {
         }),
       ]);
 
-      // Get grade distribution
-      const allGrades = await prisma.grade.findMany({
-        where: {
-          year: currentYear,
-        },
-        select: {
-          percentage: true,
-        },
-      });
+      // ✅ OPTIMIZED: Get grade distribution using database aggregation instead of loading all records
+      const [gradeA, gradeB, gradeC, gradeD, gradeE, gradeF, totalGrades, failedGrades] = await Promise.all([
+        prisma.grade.count({ where: { year: currentYear, percentage: { gte: 80 } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { gte: 70, lt: 80 } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { gte: 60, lt: 70 } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { gte: 50, lt: 60 } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { gte: 40, lt: 50 } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { lt: 40 } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { not: null } } }),
+        prisma.grade.count({ where: { year: currentYear, percentage: { lt: 50 } } }), // Failed (< 50%)
+      ]);
 
       const gradeDistribution = {
-        A: allGrades.filter((g) => (g.percentage || 0) >= 80).length,
-        B: allGrades.filter(
-          (g) => (g.percentage || 0) >= 70 && (g.percentage || 0) < 80
-        ).length,
-        C: allGrades.filter(
-          (g) => (g.percentage || 0) >= 60 && (g.percentage || 0) < 70
-        ).length,
-        D: allGrades.filter(
-          (g) => (g.percentage || 0) >= 50 && (g.percentage || 0) < 60
-        ).length,
-        E: allGrades.filter(
-          (g) => (g.percentage || 0) >= 40 && (g.percentage || 0) < 50
-        ).length,
-        F: allGrades.filter((g) => (g.percentage || 0) < 40).length,
+        A: gradeA,
+        B: gradeB,
+        C: gradeC,
+        D: gradeD,
+        E: gradeE,
+        F: gradeF,
       };
 
-      // Get attendance statistics
-      const attendanceRecords = await prisma.attendance.findMany({
-        where: {
-          date: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-          },
-        },
-        select: {
-          status: true,
-        },
-      });
+      // ✅ NEW: Calculate pass/fail percentages
+      const passedGrades = totalGrades - failedGrades;
+      const passPercentage = totalGrades > 0 ? (passedGrades / totalGrades) * 100 : 0;
+      const failPercentage = totalGrades > 0 ? (failedGrades / totalGrades) * 100 : 0;
+
+      // ✅ OPTIMIZED: Get attendance statistics using database aggregation
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const [presentCount, absentCount, lateCount, excusedCount] = await Promise.all([
+        prisma.attendance.count({ where: { date: { gte: thirtyDaysAgo }, status: "PRESENT" } }),
+        prisma.attendance.count({ where: { date: { gte: thirtyDaysAgo }, status: "ABSENT" } }),
+        prisma.attendance.count({ where: { date: { gte: thirtyDaysAgo }, status: "LATE" } }),
+        prisma.attendance.count({ where: { date: { gte: thirtyDaysAgo }, status: "EXCUSED" } }),
+      ]);
 
       const attendanceStats = {
-        present: attendanceRecords.filter((a) => a.status === "PRESENT").length,
-        absent: attendanceRecords.filter((a) => a.status === "ABSENT").length,
-        late: attendanceRecords.filter((a) => a.status === "LATE").length,
-        excused: attendanceRecords.filter((a) => a.status === "EXCUSED").length,
+        present: presentCount,
+        absent: absentCount,
+        late: lateCount,
+        excused: excusedCount,
       };
 
       // Get class distribution by grade
@@ -131,7 +127,7 @@ export class DashboardController {
         },
       });
 
-      // Get top performing classes (by average)
+      // ✅ OPTIMIZED: Get top performing classes with a single query using include
       const classSummaries = await prisma.studentMonthlySummary.groupBy({
         by: ["classId"],
         _avg: {
@@ -148,25 +144,30 @@ export class DashboardController {
         take: 5,
       });
 
-      const topClasses = await Promise.all(
-        classSummaries.map(async (summary) => {
-          const classData = await prisma.class.findUnique({
-            where: { id: summary.classId },
-            select: {
-              id: true,
-              name: true,
-              grade: true,
-              section: true,
-            },
-          });
+      // ✅ OPTIMIZED: Batch fetch all classes in one query instead of N queries
+      const classIds = classSummaries.map((s) => s.classId);
+      const classesData = await prisma.class.findMany({
+        where: { id: { in: classIds } },
+        select: {
+          id: true,
+          name: true,
+          grade: true,
+          section: true,
+        },
+      });
 
-          return {
-            ...classData,
-            averageScore: summary._avg.average,
-            studentCount: summary._count.studentId,
-          };
-        })
-      );
+      // Create a map for quick lookup
+      const classMap = new Map(classesData.map((c) => [c.id, c]));
+
+      // Combine the data
+      const topClasses = classSummaries.map((summary) => {
+        const classData = classMap.get(summary.classId);
+        return {
+          ...classData,
+          averageScore: summary._avg.average,
+          studentCount: summary._count.studentId,
+        };
+      });
 
       // Calculate completion rates
       const studentEnrollmentRate =
@@ -189,6 +190,11 @@ export class DashboardController {
               studentEnrollmentRate.toFixed(1)
             ),
             teacherAssignmentRate: parseFloat(teacherAssignmentRate.toFixed(1)),
+            passPercentage: parseFloat(passPercentage.toFixed(1)),
+            failPercentage: parseFloat(failPercentage.toFixed(1)),
+            passedCount: passedGrades,
+            failedCount: failedGrades,
+            totalGradesCount: totalGrades,
           },
           recentActivity: {
             recentGradeEntries: recentGrades,
