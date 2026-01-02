@@ -12,6 +12,7 @@ interface AttendanceGridEditorProps {
   gridData: AttendanceGridData;
   onSave: (attendance: BulkSaveAttendanceItem[], isAutoSave?: boolean) => Promise<void>;
   isLoading?: boolean;
+  onUnsavedChanges?: (hasUnsavedChanges: boolean) => void; // ✅ NEW: Callback for unsaved changes
 }
 
 interface CellState {
@@ -29,6 +30,7 @@ export default function AttendanceGridEditor({
   gridData,
   onSave,
   isLoading = false,
+  onUnsavedChanges,
 }: AttendanceGridEditorProps) {
   const [cells, setCells] = useState<{ [key: string]: CellState }>({});
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
@@ -59,6 +61,12 @@ export default function AttendanceGridEditor({
   useEffect(() => {
     pendingChangesRef.current = pendingChanges;
   }, [pendingChanges]);
+
+  // ✅ NEW: Notify parent about unsaved changes
+  useEffect(() => {
+    const hasChanges = pendingChanges.size > 0 || allPendingChanges.size > 0;
+    onUnsavedChanges?.(hasChanges);
+  }, [pendingChanges, allPendingChanges, onUnsavedChanges]);
 
   // Calculate real-time totals for each student
   const studentTotals = useMemo(() => {
@@ -144,9 +152,10 @@ export default function AttendanceGridEditor({
       clearTimeout(saveTimeoutRef.current);
     }
 
+    // ✅ OPTIMIZATION: Faster auto-save (500ms) for better UX
     saveTimeoutRef.current = setTimeout(() => {
       handleAutoSave();
-    }, 1000);
+    }, 500);
 
     return () => {
       if (saveTimeoutRef.current) {
