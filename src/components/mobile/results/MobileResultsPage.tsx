@@ -76,6 +76,10 @@ export default function MobileResultsPage() {
   const [reportCache, setReportCache] = useState<Map<string, MonthlyReportData>>(new Map());
   const [gradeCache, setGradeCache] = useState<Map<string, MonthlyReportData>>(new Map());
 
+  // ✅ OPTIMIZATION: Progressive rendering state
+  const [visibleStudents, setVisibleStudents] = useState(15);
+  const BATCH_SIZE = 15;
+
   // Load all classes on mount
   useEffect(() => {
     loadClasses();
@@ -247,6 +251,16 @@ export default function MobileResultsPage() {
         return studentsCopy;
     }
   }, [reportData, gradeWideData, viewMode, sortBy]);
+
+  // ✅ OPTIMIZATION: Reset visible students when list changes
+  useEffect(() => {
+    setVisibleStudents(BATCH_SIZE);
+  }, [sortedStudents]);
+
+  // ✅ OPTIMIZATION: Load more students
+  const loadMoreStudents = () => {
+    setVisibleStudents(prev => Math.min(prev + BATCH_SIZE, sortedStudents.length));
+  };
 
   const getGradeColor = (gradeLevel: string) => {
     const colors: Record<string, string> = {
@@ -708,15 +722,16 @@ export default function MobileResultsPage() {
               ))}
             </div>
           ) : (
-            <div className="px-5 pt-4 space-y-3">
-              {sortedStudents.map((student, index) => {
-                const rankBadge = getRankBadge(student.rank);
-                const isTop5 = student.rank <= 5;
-                return (
-                  <div
-                    key={`${student.studentId}-${index}`}
-                    className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
-                  >
+            <>
+              <div className="px-5 pt-4 space-y-3">
+                {sortedStudents.slice(0, visibleStudents).map((student, index) => {
+                  const rankBadge = getRankBadge(student.rank);
+                  const isTop5 = student.rank <= 5;
+                  return (
+                    <div
+                      key={`${student.studentId}-${index}`}
+                      className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
+                    >
                     {/* Subtle Background Glow for Top 5 */}
                     {isTop5 && (
                       <div
@@ -830,6 +845,20 @@ export default function MobileResultsPage() {
                 );
               })}
             </div>
+
+            {/* ✅ OPTIMIZATION: Load More Button for Grade-Wide View */}
+            {visibleStudents < sortedStudents.length && (
+              <div className="px-5 pt-4 pb-6">
+                <button
+                  onClick={loadMoreStudents}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl font-battambang text-sm font-bold shadow-lg active:scale-95 transition-all duration-200"
+                >
+                  <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
+                  បង្ហាញបន្ថែម ({sortedStudents.length - visibleStudents} នាក់)
+                </button>
+              </div>
+            )}
+          </>
           )}
         </div>
 
@@ -954,15 +983,16 @@ export default function MobileResultsPage() {
               ))}
             </div>
           ) : (
-            <div className="px-5 pt-4 space-y-3">
-              {sortedStudents.map((student, index) => {
-                const rankBadge = getRankBadge(student.rank);
-                const isTop5 = student.rank <= 5;
-                return (
-                  <div
-                    key={student.studentId}
-                    className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
-                  >
+            <>
+              <div className="px-5 pt-4 space-y-3">
+                {sortedStudents.slice(0, visibleStudents).map((student, index) => {
+                  const rankBadge = getRankBadge(student.rank);
+                  const isTop5 = student.rank <= 5;
+                  return (
+                    <div
+                      key={student.studentId}
+                      className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
+                    >
                     {/* Subtle Background Glow for Top 5 */}
                     {isTop5 && (
                       <div
@@ -1069,6 +1099,20 @@ export default function MobileResultsPage() {
                 );
               })}
             </div>
+
+            {/* ✅ OPTIMIZATION: Load More Button for Class View */}
+            {visibleStudents < sortedStudents.length && (
+              <div className="px-5 pt-4 pb-6">
+                <button
+                  onClick={loadMoreStudents}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-battambang text-sm font-bold shadow-lg active:scale-95 transition-all duration-200"
+                >
+                  <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
+                  បង្ហាញបន្ថែម ({sortedStudents.length - visibleStudents} នាក់)
+                </button>
+              </div>
+            )}
+          </>
           )}
         </div>
 
