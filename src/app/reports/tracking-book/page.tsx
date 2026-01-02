@@ -390,7 +390,10 @@ export default function TrackingBookPage() {
             padding: 0 !important;
             background: white !important;
             width: 100%;
-            height: 100%;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
           }
           .no-print {
             display: none !important;
@@ -399,13 +402,47 @@ export default function TrackingBookPage() {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          .print-container {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            display: block !important;
+          }
+          .all-students-container {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            display: block !important;
+          }
+          main > div,
+          main > div > div {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          .space-y-8 {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            display: block !important;
           }
           * {
             background: transparent !important;
+            overflow: visible !important;
           }
           .student-transcript-container,
           .transcript-page-wrapper {
             background: white !important;
+            overflow: visible !important;
           }
         }
       `}</style>
@@ -666,11 +703,11 @@ export default function TrackingBookPage() {
 
           {/* Report Display */}
           {sortedTrackingData && (
-            <div ref={reportRef}>
+            <div ref={reportRef} className="print-container">
               {viewMode === "single" && currentStudent ? (
                 <StudentTranscript {...currentStudent} />
               ) : viewMode === "all" ? (
-                <div className="space-y-8">
+                <div className="space-y-8 all-students-container">
                   {transcriptData.map((student, index) => (
                     <StudentTranscript key={index} {...student} />
                   ))}

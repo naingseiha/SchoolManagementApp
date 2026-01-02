@@ -142,16 +142,18 @@ export default function StudentTranscript({
 
           .transcript-page-wrapper {
             width: 100%;
-            height: 100vh;
-            min-height: 100vh;
-            max-height: 100vh;
-            display: block;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             page-break-after: always;
             page-break-inside: avoid;
             break-after: page;
             break-inside: avoid;
             background: white !important;
-            padding: 0 !important;
+            padding: 10mm 0 !important;
             margin: 0 !important;
             position: relative;
           }
@@ -167,10 +169,9 @@ export default function StudentTranscript({
             margin: 0 auto !important;
             page-break-inside: avoid;
             break-inside: avoid;
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            position: relative;
+            left: auto;
+            transform: none;
           }
 
           .student-transcript-container * {
@@ -197,10 +198,10 @@ export default function StudentTranscript({
             margin: "0 auto",
           }}
         >
-          <div className="flex gap-1.5 flex-1">
+          <div className="flex flex-1">
             {/* Left Side - Student Info (45%) */}
             <div
-              className="border-2 border-black"
+              className="border-r-2 border-black"
               style={{
                 width: "45%",
                 display: "flex",
@@ -443,7 +444,7 @@ export default function StudentTranscript({
 
             {/* Right Side - Grade Table (55%) */}
             <div
-              className="border-2 border-black flex-1"
+              className="flex-1"
               style={{ display: "flex", flexDirection: "column" }}
             >
               <table
@@ -457,7 +458,7 @@ export default function StudentTranscript({
                   <tr style={{ backgroundColor: "#FFF9E6" }}>
                     <th
                       rowSpan={2}
-                      className="border border-black px-1.5 py-1"
+                      className="border border-black px-1.5 py-1.5"
                       style={{
                         width: "7%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -467,7 +468,7 @@ export default function StudentTranscript({
                     </th>
                     <th
                       rowSpan={2}
-                      className="border border-black px-1.5 py-1"
+                      className="border border-black px-1.5 py-1.5"
                       style={{
                         width: "25%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -477,7 +478,7 @@ export default function StudentTranscript({
                     </th>
                     <th
                       colSpan={3}
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -486,7 +487,7 @@ export default function StudentTranscript({
                     </th>
                     <th
                       rowSpan={2}
-                      className="border border-black px-1.5 py-1"
+                      className="border border-black px-1.5 py-1.5"
                       style={{
                         width: "15%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -497,7 +498,7 @@ export default function StudentTranscript({
                   </tr>
                   <tr style={{ backgroundColor: "#FFF9E6" }}>
                     <th
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         width: "12%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -506,7 +507,7 @@ export default function StudentTranscript({
                       អតិបរមា
                     </th>
                     <th
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         width: "15%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -515,7 +516,7 @@ export default function StudentTranscript({
                       ពិន្ទុបាន
                     </th>
                     <th
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         width: "12%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -549,7 +550,7 @@ export default function StudentTranscript({
                     return (
                       <tr key={subject.id}>
                         <td
-                          className="border border-black px-1.5 py-0.5 text-center"
+                          className="border border-black px-1.5 py-1 text-center"
                           style={{
                             fontFamily: "'Time New Roman'",
                             fontWeight: "bold",
@@ -557,11 +558,11 @@ export default function StudentTranscript({
                         >
                           {index + 1}
                         </td>
-                        <td className="border border-black px-1.5 py-0.5">
+                        <td className="border border-black px-1.5 py-1">
                           {subject.nameKh}
                         </td>
                         <td
-                          className="border border-black px-1.5 py-0.5 text-center font-bold"
+                          className="border border-black px-1.5 py-1 text-center font-bold"
                           style={{
                             fontFamily: "'Time New Roman'",
                             fontWeight: "bold",
@@ -570,7 +571,7 @@ export default function StudentTranscript({
                           {maxScore}
                         </td>
                         <td
-                          className="border border-black px-1.5 py-0.5 text-center font-bold"
+                          className="border border-black px-1.5 py-1 text-center font-bold"
                           style={{
                             color: "#2563EB",
                             fontSize: "11px",
@@ -582,11 +583,11 @@ export default function StudentTranscript({
                             ? Math.round(score)
                             : "N/A"}
                         </td>
-                        <td className="border border-black px-1.5 py-0.5 text-center">
+                        <td className="border border-black px-1.5 py-1 text-center">
                           {gradeLevel || "N/A"}
                         </td>
                         {/* ✅ Keep column but remove data */}
-                        <td className="border border-black px-1.5 py-0.5 text-center"></td>
+                        <td className="border border-black px-1.5 py-1 text-center"></td>
                       </tr>
                     );
                   })}
@@ -596,14 +597,14 @@ export default function StudentTranscript({
                     length: Math.max(0, 11 - subjects.length),
                   }).map((_, i) => (
                     <tr key={`empty-${i}`}>
-                      <td className="border border-black px-1.5 py-0.5 text-center">
+                      <td className="border border-black px-1.5 py-1 text-center">
                         {subjects.length + i + 1}
                       </td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
                     </tr>
                   ))}
 
@@ -611,7 +612,7 @@ export default function StudentTranscript({
                   <tr style={{ backgroundColor: "#EFF6FF" }}>
                     <td
                       colSpan={3}
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -620,7 +621,7 @@ export default function StudentTranscript({
                     </td>
 
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#2563EB",
                         fontSize: "12px",
@@ -632,7 +633,7 @@ export default function StudentTranscript({
                         : "N/A"}
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -640,7 +641,7 @@ export default function StudentTranscript({
                       ចំណាត់ថ្នាក់
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#DC2626",
                         fontSize: "12px",
@@ -655,7 +656,7 @@ export default function StudentTranscript({
                   <tr style={{ backgroundColor: "#EFF6FF" }}>
                     <td
                       colSpan={3}
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -663,7 +664,7 @@ export default function StudentTranscript({
                       មធ្យមភាគ
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#2563EB",
                         fontSize: "12px",
@@ -676,7 +677,7 @@ export default function StudentTranscript({
                         : "N/A"}
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -684,7 +685,7 @@ export default function StudentTranscript({
                       និទ្ទេស
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#2563EB",
                         fontSize: "12px",
