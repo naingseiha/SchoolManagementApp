@@ -274,14 +274,29 @@ export default function TrackingBookPage() {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 8mm;
           }
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
+            background: white !important;
           }
           .no-print {
             display: none !important;
+          }
+          main {
+            margin: 0;
+            padding: 0;
+            background: white !important;
+          }
+          * {
+            background: transparent !important;
+          }
+          .student-transcript-container,
+          .transcript-page-wrapper {
+            background: white !important;
           }
         }
       `}</style>
