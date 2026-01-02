@@ -12,6 +12,8 @@ import {
   BookOpen,
   Calendar,
   Users,
+  Shield,
+  RefreshCw,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -99,6 +101,13 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
   const saveQueueRef = useRef<Map<string, number | null>>(new Map());
   const batchSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isBatchSavingRef = useRef(false);
+
+  // ✅ NEW: Verification state
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifiedAt, setVerifiedAt] = useState<Date | null>(null);
+  const [verificationDiscrepancies, setVerificationDiscrepancies] = useState<Set<string>>(new Set());
+  const [incompleteScores, setIncompleteScores] = useState<Set<string>>(new Set());
+  const [incompleteCount, setIncompleteCount] = useState(0);
 
   // ✅ Load classes if empty
   useEffect(() => {
@@ -390,6 +399,116 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
     [executeBatchSave]
   );
 
+  // ✅ NEW: Verify scores - reload from database and compare
+  const handleVerifyScores = useCallback(async () => {
+    if (!selectedClass || !selectedSubject || !gridData) {
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationDiscrepancies(new Set());
+    setIncompleteScores(new Set());
+    setIncompleteCount(0);
+
+    try {
+      // Force save any pending changes first
+      if (saveQueueRef.current.size > 0) {
+        if (batchSaveTimeoutRef.current) {
+          clearTimeout(batchSaveTimeoutRef.current);
+        }
+        await executeBatchSave();
+        // Wait a bit for the save to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Reload fresh data from database
+      const freshData = await gradeApi.getGradesGrid(
+        selectedClass,
+        selectedMonth,
+        selectedYear
+      );
+
+      const discrepancies = new Set<string>();
+      const incomplete = new Set<string>();
+      let incompleteCounter = 0;
+
+      // Compare fresh data with current state
+      students.forEach((currentStudent) => {
+        const freshStudent = freshData.students.find(
+          (s) => s.studentId === currentStudent.studentId
+        );
+
+        if (freshStudent) {
+          const freshGrade = freshStudent.grades[selectedSubject];
+          const freshScore =
+            freshGrade?.score !== undefined && freshGrade?.score !== null
+              ? freshGrade.score
+              : null;
+
+          // Check if there's a discrepancy
+          if (freshScore !== currentStudent.score) {
+            discrepancies.add(currentStudent.studentId);
+          }
+
+          // ✅ NEW: Check for blank/incomplete scores (null, but not 0)
+          if (freshScore === null) {
+            incomplete.add(currentStudent.studentId);
+            incompleteCounter++;
+          }
+        }
+      });
+
+      // Update students with fresh database values
+      const subject = subjects.find((s) => s.id === selectedSubject);
+      if (subject) {
+        const verifiedStudents: StudentGrade[] = freshData.students.map((student) => {
+          const gradeData = student.grades[selectedSubject];
+          return {
+            studentId: student.studentId,
+            khmerName: student.studentName,
+            firstName: "",
+            lastName: "",
+            gender: student.gender,
+            rollNumber: undefined,
+            score:
+              gradeData?.score !== undefined && gradeData?.score !== null
+                ? gradeData.score
+                : null,
+            maxScore: subject.maxScore,
+          };
+        });
+
+        setStudents(verifiedStudents);
+        setVerificationDiscrepancies(discrepancies);
+        setIncompleteScores(incomplete);
+        setIncompleteCount(incompleteCounter);
+        setVerifiedAt(new Date());
+
+        // Clear indicators after 5 seconds
+        setTimeout(() => {
+          setVerificationDiscrepancies(new Set());
+          setIncompleteScores(new Set());
+        }, 5000);
+      }
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      alert(`មានបញ្ហាក្នុងការផ្ទៀងផ្ទាត់: ${error.message}`);
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [selectedClass, selectedSubject, selectedMonth, selectedYear, gridData, students, subjects, executeBatchSave]);
+
+  // ✅ Auto-hide verification banner after 5 seconds
+  useEffect(() => {
+    if (verifiedAt) {
+      const timer = setTimeout(() => {
+        setVerifiedAt(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [verifiedAt]);
+
   // ✅ FIX: Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
@@ -639,11 +758,19 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
               {students.map((student, index) => {
                 const isSaving = savingStudents.has(student.studentId);
                 const isSaved = savedStudents.has(student.studentId);
+                const hasDiscrepancy = verificationDiscrepancies.has(student.studentId);
+                const isIncomplete = incompleteScores.has(student.studentId);
 
                 return (
                   <div
                     key={student.studentId}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow"
+                    className={`bg-white rounded-2xl shadow-sm border-2 p-4 hover:shadow-md transition-all ${
+                      hasDiscrepancy
+                        ? "border-orange-300 bg-orange-50 animate-pulse"
+                        : isIncomplete
+                        ? "border-yellow-300 bg-yellow-50 animate-pulse"
+                        : "border-gray-100"
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       {/* Student Number Badge */}
@@ -758,6 +885,157 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
               <p className="font-battambang text-[10px] text-gray-400 mt-1">
                 Select class, month & year, then click "Load Data"
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Floating Verify Button */}
+        {selectedSubject && students.length > 0 && !loading && (
+          <div className="fixed right-5 bottom-24 z-40 flex flex-col items-end gap-3">
+            {/* Verification Status Tooltip */}
+            {verifiedAt && (
+              <div className="bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-battambang font-medium shadow-lg animate-in slide-in-from-right duration-300">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>
+                    ផ្ទៀងផ្ទាត់រួចរាល់ •{" "}
+                    {verifiedAt.toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Verify Button */}
+            <button
+              onClick={handleVerifyScores}
+              disabled={isVerifying}
+              className={`relative w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+                isVerifying
+                  ? "bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse"
+                  : verifiedAt
+                  ? "bg-gradient-to-r from-green-500 to-green-600"
+                  : "bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
+              }`}
+            >
+              {isVerifying ? (
+                <Loader2 className="w-7 h-7 text-white animate-spin" />
+              ) : (
+                <>
+                  <Shield className="w-7 h-7 text-white" />
+                  {!verifiedAt && (
+                    <span className="absolute inset-0 rounded-full border-4 border-purple-400 opacity-0 animate-ping"></span>
+                  )}
+                </>
+              )}
+
+              {/* Tooltip on hover */}
+              <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-battambang font-medium shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                ផ្ទៀងផ្ទាត់ពិន្ទុ • Verify
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* ✅ NEW: Verification Success Banner - All complete and correct */}
+        {verifiedAt && verificationDiscrepancies.size === 0 && incompleteCount === 0 && (
+          <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-500">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-sm font-bold mb-0.5">
+                    ពិន្ទុត្រូវបានផ្ទៀងផ្ទាត់ ✓
+                  </p>
+                  <p className="font-battambang text-xs text-green-50">
+                    គ្រប់ពិន្ទុត្រឹមត្រូវនៅក្នុងមូលដ្ឋានទិន្នន័យ • All scores verified in database
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Discrepancy Warning Banner */}
+        {verificationDiscrepancies.size > 0 && (
+          <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-500">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-2xl shadow-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-sm font-bold mb-0.5">
+                    រកឃើញភាពខុសគ្នា {verificationDiscrepancies.size} ពិន្ទុ
+                  </p>
+                  <p className="font-battambang text-xs text-orange-50">
+                    ពិន្ទុបានធ្វើបច្ចុប្បន្នភាពដោយស្វ័យប្រវត្តិ • Scores updated automatically
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Incomplete Scores Warning Banner */}
+        {incompleteCount > 0 && verificationDiscrepancies.size === 0 && (
+          <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-500">
+            <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-2xl shadow-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-sm font-bold mb-0.5">
+                    មានសិស្ស {incompleteCount} នាក់ មិនទាន់បញ្ចូលពិន្ទុ
+                  </p>
+                  <p className="font-battambang text-xs text-yellow-50">
+                    សូមបញ្ចូលពិន្ទុឱ្យគ្រប់សិស្ស • Please fill all student scores
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Combined Warning - Both incomplete and discrepancies */}
+        {incompleteCount > 0 && verificationDiscrepancies.size > 0 && (
+          <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-500 space-y-2">
+            {/* Discrepancy Warning */}
+            <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-2xl shadow-2xl p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-xs font-bold">
+                    រកឃើញភាពខុសគ្នា {verificationDiscrepancies.size} ពិន្ទុ
+                  </p>
+                  <p className="font-battambang text-[10px] text-orange-50">
+                    ពិន្ទុបានធ្វើបច្ចុប្បន្នភាព
+                  </p>
+                </div>
+              </div>
+            </div>
+            {/* Incomplete Warning */}
+            <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-2xl shadow-2xl p-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-xs font-bold">
+                    មានសិស្ស {incompleteCount} នាក់ មិនទាន់បញ្ចូលពិន្ទុ
+                  </p>
+                  <p className="font-battambang text-[10px] text-yellow-50">
+                    សូមបញ្ចូលពិន្ទុឱ្យគ្រប់សិស្ស
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}

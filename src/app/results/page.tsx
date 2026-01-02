@@ -11,7 +11,6 @@ import {
   SortAsc,
   Medal,
   Star,
-  Sparkles,
   BarChart3,
   Target,
   ChevronRight,
@@ -66,19 +65,29 @@ export default function ResultsPage() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
 
+  // ✅ OPTIMIZATION: Client-side caching to avoid refetching
+  const [reportCache, setReportCache] = useState<Map<string, MonthlyReportData>>(new Map());
+  const [gradeCache, setGradeCache] = useState<Map<string, MonthlyReportData>>(new Map());
+
+  // ✅ OPTIMIZATION: Progressive rendering state (must be before conditional returns)
+  const [visibleStudents, setVisibleStudents] = useState(20);
+  const BATCH_SIZE = 20;
+
   // Load all classes on mount
   useEffect(() => {
     loadClasses();
   }, []);
 
-  // ✅ Reload when month/year changes
+  // ✅ Reload when month/year changes and clear cache
   useEffect(() => {
     if (selectedGrade && selectedClass) {
       handleClassSelect(selectedClass);
     } else if (selectedGrade && viewMode === "byGrade") {
-      setGradeWideData(null);
       handleViewModeChange("byGrade");
     }
+    // Clear caches for old month/year
+    setReportCache(new Map());
+    setGradeCache(new Map());
   }, [selectedMonth, selectedYear]);
 
   const loadClasses = async () => {
@@ -118,11 +127,32 @@ export default function ResultsPage() {
     setSelectedClass(null);
     setReportData(null);
     setGradeWideData(null);
+
+    // ✅ OPTIMIZATION: Preload grade-wide data in background
+    const cacheKey = `${grade}:${selectedMonth}:${selectedYear}`;
+    if (!gradeCache.has(cacheKey)) {
+      reportsApi.getGradeWideReport(grade, selectedMonth, selectedYear)
+        .then((data) => {
+          setGradeCache(prev => new Map(prev).set(cacheKey, data));
+        })
+        .catch((error) => console.error("Background preload error:", error));
+    }
   };
 
   const handleViewModeChange = async (mode: ViewMode) => {
     setViewMode(mode);
-    if (mode === "byGrade" && selectedGrade && !gradeWideData) {
+    if (mode === "byGrade" && selectedGrade) {
+      const cacheKey = `${selectedGrade}:${selectedMonth}:${selectedYear}`;
+
+      // ✅ OPTIMIZATION: Check cache first
+      const cachedData = gradeCache.get(cacheKey);
+      if (cachedData) {
+        setGradeWideData(cachedData);
+        setIsLoading(false);
+        return;
+      }
+
+      // Load grade-wide data if not cached
       setIsLoading(true);
       try {
         const data = await reportsApi.getGradeWideReport(
@@ -131,6 +161,7 @@ export default function ResultsPage() {
           selectedYear
         );
         setGradeWideData(data);
+        setGradeCache(prev => new Map(prev).set(cacheKey, data));
       } catch (error) {
         console.error("Error loading grade-wide report:", error);
       } finally {
@@ -141,6 +172,17 @@ export default function ResultsPage() {
 
   const handleClassSelect = async (classData: Class) => {
     setSelectedClass(classData);
+    const cacheKey = `${classData.id}:${selectedMonth}:${selectedYear}`;
+
+    // ✅ OPTIMIZATION: Check cache first
+    const cachedData = reportCache.get(cacheKey);
+    if (cachedData) {
+      setReportData(cachedData);
+      setIsLoading(false);
+      return;
+    }
+
+    // Load data if not cached
     setIsLoading(true);
     try {
       const data = await reportsApi.getMonthlyReport(
@@ -149,6 +191,7 @@ export default function ResultsPage() {
         selectedYear
       );
       setReportData(data);
+      setReportCache(prev => new Map(prev).set(cacheKey, data));
     } catch (error) {
       console.error("Error loading report:", error);
     } finally {
@@ -196,6 +239,16 @@ export default function ResultsPage() {
         return studentsCopy;
     }
   }, [reportData, gradeWideData, viewMode, sortBy]);
+
+  // ✅ OPTIMIZATION: Reset visible students when students list changes
+  useEffect(() => {
+    setVisibleStudents(BATCH_SIZE);
+  }, [sortedStudents]);
+
+  // ✅ OPTIMIZATION: Load more students function
+  const loadMoreStudents = () => {
+    setVisibleStudents(prev => Math.min(prev + BATCH_SIZE, sortedStudents.length));
+  };
 
   const getGradeColor = (gradeLevel: string) => {
     const colors: Record<string, string> = {
@@ -518,72 +571,76 @@ export default function ResultsPage() {
     );
   }
 
-  // Common Student List Component
+  // Common Student List Component with Progressive Rendering
   const StudentList = ({
     students,
     title,
   }: {
     students: any[];
     title: string;
-  }) => (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-khmer-title text-2xl text-gray-900">{title}</h2>
-        <div className="flex items-center gap-2">
-          <span className="font-khmer-body text-sm text-gray-500 font-medium">
-            តម្រៀបតាម:
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSortBy("rank")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
-                sortBy === "rank"
-                  ? "bg-purple-100 text-purple-700 shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              ចំណាត់ថ្នាក់
-            </button>
-            <button
-              onClick={() => setSortBy("average")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
-                sortBy === "average"
-                  ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              មធ្យមភាគ
-            </button>
-            <button
-              onClick={() => setSortBy("total")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
-                sortBy === "total"
-                  ? "bg-blue-100 text-blue-700 shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <Target className="w-3.5 h-3.5" />
-              ពិន្ទុសរុប
-            </button>
-            <button
-              onClick={() => setSortBy("name")}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
-                sortBy === "name"
-                  ? "bg-green-100 text-green-700 shadow-sm"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <SortAsc className="w-3.5 h-3.5" />
-              ឈ្មោះ
-            </button>
+  }) => {
+    const displayedStudents = students.slice(0, visibleStudents);
+    const hasMore = visibleStudents < students.length;
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-khmer-title text-2xl text-gray-900">{title}</h2>
+          <div className="flex items-center gap-2">
+            <span className="font-khmer-body text-sm text-gray-500 font-medium">
+              តម្រៀបតាម:
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setSortBy("rank")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
+                  sortBy === "rank"
+                    ? "bg-purple-100 text-purple-700 shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Trophy className="w-3.5 h-3.5" />
+                ចំណាត់ថ្នាក់
+              </button>
+              <button
+                onClick={() => setSortBy("average")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
+                  sortBy === "average"
+                    ? "bg-indigo-100 text-indigo-700 shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                មធ្យមភាគ
+              </button>
+              <button
+                onClick={() => setSortBy("total")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
+                  sortBy === "total"
+                    ? "bg-blue-100 text-blue-700 shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Target className="w-3.5 h-3.5" />
+                ពិន្ទុសរុប
+              </button>
+              <button
+                onClick={() => setSortBy("name")}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-khmer-body text-xs font-bold transition-all ${
+                  sortBy === "name"
+                    ? "bg-green-100 text-green-700 shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <SortAsc className="w-3.5 h-3.5" />
+                ឈ្មោះ
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-2">
-        {students.map((student, index) => {
+        <div className="space-y-2">
+          {displayedStudents.map((student, index) => {
           const rankBadge = getRankBadge(student.rank);
           const isTop5 = student.rank <= 5;
 
@@ -690,8 +747,22 @@ export default function ResultsPage() {
           );
         })}
       </div>
+
+      {/* ✅ OPTIMIZATION: Load More Button */}
+      {hasMore && (
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={loadMoreStudents}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-khmer-body text-sm font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+          >
+            <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
+            បង្ហាញបន្ថែម ({students.length - visibleStudents} នាក់)
+          </button>
+        </div>
+      )}
     </div>
   );
+};
 
   // Render Class Results (Level 3)
   if (selectedClass) {
@@ -730,13 +801,28 @@ export default function ResultsPage() {
             </div>
 
             {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <Sparkles className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
-                  <p className="font-khmer-body text-gray-600 font-bold">
-                    កំពុងផ្ទុក...
-                  </p>
-                </div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-gray-200 animate-pulse"
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 bg-gray-200 rounded-xl" />
+                      <div className="flex-1 space-y-3">
+                        <div className="h-5 bg-gray-200 rounded w-1/3" />
+                        <div className="h-4 bg-gray-200 rounded w-1/4" />
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-[95px] h-[60px] bg-gray-200 rounded-xl" />
+                        <div className="w-[95px] h-[60px] bg-gray-200 rounded-xl" />
+                        <div className="w-[85px] h-[60px] bg-gray-200 rounded-xl" />
+                        <div className="w-[85px] h-[60px] bg-gray-200 rounded-xl" />
+                      </div>
+                      <div className="w-16 h-16 bg-gray-200 rounded-xl" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : sortedStudents.length > 0 ? (
               <StudentList students={sortedStudents} title="លទ្ធផល" />
@@ -823,13 +909,28 @@ export default function ResultsPage() {
             </div>
 
             {isLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-center">
-                  <Sparkles className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
-                  <p className="font-khmer-body text-gray-600 font-bold">
-                    កំពុងផ្ទុក...
-                  </p>
-                </div>
+              <div className="space-y-2">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-gray-200 animate-pulse"
+                  >
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 bg-gray-200 rounded-xl" />
+                      <div className="flex-1 space-y-3">
+                        <div className="h-5 bg-gray-200 rounded w-1/3" />
+                        <div className="h-4 bg-gray-200 rounded w-1/4" />
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-[95px] h-[60px] bg-gray-200 rounded-xl" />
+                        <div className="w-[95px] h-[60px] bg-gray-200 rounded-xl" />
+                        <div className="w-[85px] h-[60px] bg-gray-200 rounded-xl" />
+                        <div className="w-[85px] h-[60px] bg-gray-200 rounded-xl" />
+                      </div>
+                      <div className="w-16 h-16 bg-gray-200 rounded-xl" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <StudentList students={sortedStudents} title="លទ្ធផល" />

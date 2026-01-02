@@ -92,6 +92,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const [classesError, setClassesError] = useState<string | null>(null);
+  const [classesLastFetched, setClassesLastFetched] = useState<number>(0);
 
   // Subjects State
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -375,16 +376,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   // ==================== CLASSES ====================
 
-  const fetchClasses = async () => {
+  const fetchClasses = async (force: boolean = false) => {
     try {
+      // ✅ OPTIMIZATION: Cache for 30 seconds to prevent redundant loads
+      const now = Date.now();
+      const CACHE_DURATION = 30000; // 30 seconds
+
+      if (!force && classes.length > 0 && (now - classesLastFetched) < CACHE_DURATION) {
+        console.log(`⚡ Using cached classes (${classes.length}) - loaded ${Math.round((now - classesLastFetched) / 1000)}s ago`);
+        return;
+      }
+
+      // Prevent concurrent calls
+      if (isLoadingClasses) {
+        console.log("⏸️ Classes already loading, skipping duplicate call");
+        return;
+      }
+
       setIsLoadingClasses(true);
       setClassesError(null);
       console.log("📚 Fetching classes...");
 
+      const startTime = Date.now();
       const data = await classesApi.getAllLightweight();
+      const elapsedTime = Date.now() - startTime;
 
-      console.log(`✅ Fetched ${data.length} classes successfully`);
+      console.log(`✅ Fetched ${data.length} classes in ${elapsedTime}ms`);
       setClasses(data);
+      setClassesLastFetched(now);
       setClassesError(null);
     } catch (error: any) {
       console.error("❌ Error fetching classes:", error);

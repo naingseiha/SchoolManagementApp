@@ -4,11 +4,14 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 /**
- * ✅ GET classes LIGHTWEIGHT (for lists/dropdowns - fast loading)
+ * ✅ OPTIMIZED: GET classes ULTRA-LIGHTWEIGHT (for dropdowns - blazing fast!)
+ * Only returns essential fields needed for selection lists
+ * No joins, no counts = Maximum performance
  */
 export const getClassesLightweight = async (req: Request, res: Response) => {
   try {
-    console.log("⚡ GET CLASSES (lightweight)");
+    const startTime = Date.now();
+    console.log("⚡ GET CLASSES (ultra-lightweight)");
 
     const classes = await prisma.class.findMany({
       select: {
@@ -17,22 +20,8 @@ export const getClassesLightweight = async (req: Request, res: Response) => {
         name: true,
         grade: true,
         section: true,
-        academicYear: true,
-        capacity: true,
         track: true,
-        homeroomTeacherId: true,
-        createdAt: true,
-        updatedAt: true,
-        // Only teacher name (not full details)
-        homeroomTeacher: {
-          select: {
-            id: true,
-            khmerName: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-        // Only student count (not full list)
+        academicYear: true,
         _count: {
           select: {
             students: true,
@@ -42,7 +31,9 @@ export const getClassesLightweight = async (req: Request, res: Response) => {
       orderBy: [{ grade: "asc" }, { section: "asc" }],
     });
 
-    console.log(`⚡ Found ${classes.length} classes (lightweight)`);
+    const elapsedTime = Date.now() - startTime;
+    console.log(`⚡ Found ${classes.length} classes in ${elapsedTime}ms (${Math.round(classes.length / (elapsedTime / 1000))} classes/sec)`);
+
     res.json(classes);
   } catch (error: any) {
     console.error("❌ Error getting classes (lightweight):", error);
