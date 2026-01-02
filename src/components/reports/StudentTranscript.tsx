@@ -102,45 +102,77 @@ export default function StudentTranscript({
           align-items: center;
           justify-content: center;
           background: white !important;
-          padding: 0;
+          padding: 20mm 0;
+          page-break-after: always;
+          page-break-inside: avoid;
+        }
+
+        .transcript-page-wrapper:last-child {
+          page-break-after: auto;
+        }
+
+        @media screen {
+          .transcript-page-wrapper {
+            margin-bottom: 20px;
+          }
         }
 
         @media print {
           @page {
             size: A4 landscape;
-            margin: 8mm;
+            margin: 10mm;
           }
+
+          html {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
           }
+
           .no-print {
             display: none !important;
           }
+
           .transcript-page-wrapper {
             width: 100%;
-            height: auto;
-            min-height: auto;
+            height: 100vh;
+            min-height: 100vh;
+            max-height: 100vh;
             display: block;
             page-break-after: always;
             page-break-inside: avoid;
             break-after: page;
             break-inside: avoid;
             background: white !important;
-            padding: 0;
-            margin: 0;
+            padding: 0 !important;
+            margin: 0 !important;
+            position: relative;
           }
+
           .transcript-page-wrapper:last-child {
             page-break-after: auto;
+            break-after: auto;
           }
+
           .student-transcript-container {
             box-shadow: none !important;
             background: white !important;
             margin: 0 auto !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
           }
+
           .student-transcript-container * {
             box-shadow: none !important;
           }

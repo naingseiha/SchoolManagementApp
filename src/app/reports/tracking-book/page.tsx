@@ -14,6 +14,7 @@ import {
   BookOpen,
   Users,
   Calendar,
+  FileDown,
 } from "lucide-react";
 import { reportsApi, type StudentTrackingBookData } from "@/lib/api/reports";
 import StudentTranscript from "@/components/reports/StudentTranscript";
@@ -268,20 +269,128 @@ export default function TrackingBookPage() {
     document.body.removeChild(link);
   };
 
+  const handleExportPDF = async () => {
+    if (!reportRef.current || !sortedTrackingData) return;
+
+    try {
+      // Show loading indicator
+      setLoading(true);
+
+      // Dynamically import libraries
+      const html2canvas = (await import("html2canvas")).default;
+      const jsPDF = (await import("jspdf")).default;
+
+      // Get all student transcript containers (not wrappers)
+      const containers = reportRef.current.querySelectorAll(
+        ".student-transcript-container"
+      );
+
+      if (containers.length === 0) {
+        alert("រកមិនឃើញទំព័រដើម្បីនាំចេញ");
+        setLoading(false);
+        return;
+      }
+
+      // Create PDF in landscape A4 format
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
+
+      // A4 landscape dimensions in mm (with margins)
+      const margin = 10; // 10mm margin on all sides
+      const pdfWidth = 297;
+      const pdfHeight = 210;
+      const contentWidth = pdfWidth - 2 * margin;
+      const contentHeight = pdfHeight - 2 * margin;
+
+      // Process each page
+      for (let i = 0; i < containers.length; i++) {
+        const container = containers[i] as HTMLElement;
+
+        // Capture the container as canvas with high quality
+        const canvas = await html2canvas(container, {
+          scale: 2.5, // Good balance between quality and file size
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          allowTaint: false,
+          removeContainer: false,
+          imageTimeout: 0,
+          // These settings help with border rendering
+          onclone: (clonedDoc) => {
+            const clonedContainer = clonedDoc.querySelector(
+              ".student-transcript-container"
+            ) as HTMLElement;
+            if (clonedContainer) {
+              // Ensure borders are rendered properly
+              clonedContainer.style.boxShadow = "none";
+              clonedContainer.style.transform = "none";
+              clonedContainer.style.position = "relative";
+            }
+          },
+        });
+
+        // Convert canvas to image with maximum quality
+        const imgData = canvas.toDataURL("image/png", 1.0);
+
+        // Calculate dimensions to fit within content area while maintaining aspect ratio
+        const canvasRatio = canvas.width / canvas.height;
+        const contentRatio = contentWidth / contentHeight;
+
+        let imgWidth, imgHeight, xOffset, yOffset;
+
+        if (canvasRatio > contentRatio) {
+          // Image is wider - fit to width
+          imgWidth = contentWidth;
+          imgHeight = contentWidth / canvasRatio;
+          xOffset = margin;
+          yOffset = margin + (contentHeight - imgHeight) / 2;
+        } else {
+          // Image is taller - fit to height
+          imgHeight = contentHeight;
+          imgWidth = contentHeight * canvasRatio;
+          xOffset = margin + (contentWidth - imgWidth) / 2;
+          yOffset = margin;
+        }
+
+        // Add new page if not the first one
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        // Add image to PDF with proper margins and centering
+        pdf.addImage(imgData, "PNG", xOffset, yOffset, imgWidth, imgHeight);
+      }
+
+      // Save the PDF
+      pdf.save(
+        `សៀវភៅតាមដាន_${sortedTrackingData.className}_${selectedYear}.pdf`
+      );
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("មានបញ្ហាក្នុងការបង្កើតឯកសារ PDF");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <style jsx global>{`
         @media print {
-          @page {
-            size: A4 landscape;
-            margin: 8mm;
-          }
+          html,
           body {
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
             background: white !important;
+            width: 100%;
+            height: 100%;
           }
           .no-print {
             display: none !important;
@@ -470,6 +579,23 @@ export default function TrackingBookPage() {
                       បោះពុម្ព
                     </button>
                     <button
+                      onClick={handleExportPDF}
+                      disabled={loading}
+                      className="h-10 px-6 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg disabled:shadow-none transition-all flex items-center gap-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          កំពុងបង្កើត PDF...
+                        </>
+                      ) : (
+                        <>
+                          <FileDown className="w-4 h-4" />
+                          Export PDF
+                        </>
+                      )}
+                    </button>
+                    <button
                       onClick={handleExport}
                       className="h-10 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
                     >
@@ -498,7 +624,7 @@ export default function TrackingBookPage() {
                       សិស្ស {selectedStudentIndex + 1} / {transcriptData.length}
                       {currentStudent && (
                         <span className="ml-2 text-blue-600">
-                          ({currentStudent.studentName})
+                          ({currentStudent.studentData.studentName})
                         </span>
                       )}
                     </div>
