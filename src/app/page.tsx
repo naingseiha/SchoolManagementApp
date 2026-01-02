@@ -500,6 +500,84 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* ✅ NEW: Pass/Fail Statistics Card */}
+            {dashboardStats && (
+              <div className="bg-white rounded-3xl shadow-lg p-7 mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="font-khmer-title text-2xl text-gray-900 font-bold">
+                      ស្ថិតិជាប់/ធ្លាក់
+                    </h3>
+                    <p className="font-khmer-body text-xs text-gray-500 font-medium mt-1">
+                      Pass/Fail Statistics
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                    <BarChart3 className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Pass Percentage */}
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-100 hover:border-green-200 transition-all">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/30 rounded-full blur-2xl"></div>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <p className="font-khmer-body text-sm text-green-700 font-bold">
+                          ជាប់ឆ្នាំ
+                        </p>
+                      </div>
+                      <p className="text-4xl font-black text-green-600 mb-2">
+                        {dashboardStats.overview.passPercentage.toFixed(1)}%
+                      </p>
+                      <p className="font-khmer-body text-xs text-green-600 font-medium">
+                        {dashboardStats.overview.passedCount} / {dashboardStats.overview.totalGradesCount} ពិន្ទុ
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Fail Percentage */}
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl p-6 border-2 border-red-100 hover:border-red-200 transition-all">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-200/30 rounded-full blur-2xl"></div>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                        <p className="font-khmer-body text-sm text-red-700 font-bold">
+                          ធ្លាក់ឆ្នាំ
+                        </p>
+                      </div>
+                      <p className="text-4xl font-black text-red-600 mb-2">
+                        {dashboardStats.overview.failPercentage.toFixed(1)}%
+                      </p>
+                      <p className="font-khmer-body text-xs text-red-600 font-medium">
+                        {dashboardStats.overview.failedCount} / {dashboardStats.overview.totalGradesCount} ពិន្ទុ
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Total Grades */}
+                  <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-100 hover:border-blue-200 transition-all">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-200/30 rounded-full blur-2xl"></div>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Award className="w-5 h-5 text-blue-600" />
+                        <p className="font-khmer-body text-sm text-blue-700 font-bold">
+                          ពិន្ទុសរុប
+                        </p>
+                      </div>
+                      <p className="text-4xl font-black text-blue-600 mb-2">
+                        {dashboardStats.overview.totalGradesCount}
+                      </p>
+                      <p className="font-khmer-body text-xs text-blue-600 font-medium">
+                        ឆ្នាំសិក្សាបច្ចុប្បន្ន
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Enhanced Analytics Section */}
             {dashboardStats && (
               <>
