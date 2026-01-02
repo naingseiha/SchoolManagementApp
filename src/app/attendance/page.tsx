@@ -72,6 +72,11 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ NEW: Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   // Render mobile version for mobile devices
   if (deviceType === "mobile") {
     return (
@@ -140,6 +145,49 @@ export default function AttendancePage() {
     refreshClasses,
   ]);
 
+  // ✅ NEW: Handle selection changes with unsaved warning
+  const handleClassChange = (newClassId: string) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => setSelectedClassId(newClassId));
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedClassId(newClassId);
+    }
+  };
+
+  const handleMonthChange = (newMonth: string) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => setSelectedMonth(newMonth));
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedMonth(newMonth);
+    }
+  };
+
+  const handleYearChange = (newYear: number) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => setSelectedYear(newYear));
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedYear(newYear);
+    }
+  };
+
+  // ✅ NEW: Handle warning dialog actions
+  const handleDiscardChanges = () => {
+    setHasUnsavedChanges(false);
+    setShowUnsavedWarning(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelChange = () => {
+    setShowUnsavedWarning(false);
+    setPendingAction(null);
+  };
+
   const handleLoadData = async () => {
     if (!selectedClassId || !currentUser) {
       warning("សូមជ្រើសរើសថ្នាក់សិន");
@@ -149,6 +197,7 @@ export default function AttendancePage() {
     setLoading(true);
     setError(null);
     setGridData(null);
+    setHasUnsavedChanges(false); // ✅ Reset unsaved changes when loading new data
 
     try {
       const data = await attendanceApi.getAttendanceGrid(
@@ -322,7 +371,7 @@ export default function AttendancePage() {
                   <select
                     value={selectedClassId}
                     onChange={(e) => {
-                      setSelectedClassId(e.target.value);
+                      handleClassChange(e.target.value);
                       setGridData(null);
                       setError(null);
                     }}
@@ -351,7 +400,7 @@ export default function AttendancePage() {
                   <select
                     value={selectedMonth}
                     onChange={(e) => {
-                      setSelectedMonth(e.target.value);
+                      handleMonthChange(e.target.value);
                       setGridData(null);
                       setError(null);
                     }}
@@ -372,7 +421,7 @@ export default function AttendancePage() {
                   <select
                     value={selectedYear.toString()}
                     onChange={(e) => {
-                      setSelectedYear(parseInt(e.target.value));
+                      handleYearChange(parseInt(e.target.value));
                       setGridData(null);
                       setError(null);
                     }}
@@ -441,6 +490,7 @@ export default function AttendancePage() {
                 gridData={gridData}
                 onSave={handleSaveAttendance}
                 isLoading={loading}
+                onUnsavedChanges={setHasUnsavedChanges}
               />
             ) : selectedClassId ? (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
@@ -464,6 +514,51 @@ export default function AttendancePage() {
           </div>
         </main>
       </div>
+
+      {/* ✅ Unsaved Changes Warning Dialog */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 font-khmer-title">
+                  មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
+                </h3>
+                <p className="text-sm text-gray-600 mt-1 font-khmer-body">
+                  Unsaved Changes
+                </p>
+              </div>
+            </div>
+
+            <p className="text-gray-700 mb-6 font-khmer-body">
+              អ្នកមានការផ្លាស់ប្តូរវត្តមានដែលមិនទាន់បានរក្សាទុក។
+              តើអ្នកចង់បោះបង់ការផ្លាស់ប្តូរទាំងនេះមែនទេ?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelChange}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors font-khmer-body"
+              >
+                បោះបង់ • Cancel
+              </button>
+              <button
+                onClick={handleDiscardChanges}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/30 font-khmer-body"
+              >
+                បោះបង់ការផ្លាស់ប្តូរ • Discard
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4 text-center font-khmer-body">
+              ចំណាំ: ការផ្លាស់ប្តូរនឹងត្រូវរក្សាទុកស្វ័យប្រវត្តិក្នុងរយៈពេល 500ms
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Toast Container */}
       <ToastContainer />

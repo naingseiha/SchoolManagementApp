@@ -275,7 +275,9 @@ class GradeController {
                 let totalMaxScore = 0;
                 sortedSubjects.forEach((subject) => {
                     const grade = existingGrades.find((g) => g.studentId === student.id && g.subjectId === subject.id);
-                    const score = grade?.score || null;
+                    // Use proper null check - don't treat 0 as falsy!
+                    const score = grade?.score !== undefined ? grade.score : null;
+                    // Include ALL scores (including 0) in calculations
                     if (score !== null) {
                         totalScore += score;
                         totalMaxScore += subject.maxScore;

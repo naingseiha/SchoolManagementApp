@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -73,6 +74,7 @@ export default function MobileAttendance({
   month,
   year,
 }: MobileAttendanceProps) {
+  const router = useRouter();
   const { classes, isLoadingClasses, refreshClasses } = useData();
   const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -89,6 +91,10 @@ export default function MobileAttendance({
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false); // ✅ Track if data has been loaded
+
+  // ✅ NEW: Unsaved changes warning
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasAutoLoaded = useRef(false);
@@ -261,7 +267,7 @@ export default function MobileAttendance({
     setHasUnsavedChanges(true);
   };
 
-  // ✅ Manual Save - ONLY save when button clicked
+  // ✅ OPTIMIZED: Manual Save with performance tracking
   const handleSave = async () => {
     if (!hasUnsavedChanges) {
       // If no changes, just show success briefly
@@ -272,6 +278,8 @@ export default function MobileAttendance({
 
     setSaving(true);
     setSaveSuccess(false);
+
+    const startTime = performance.now();
 
     try {
       const attendanceRecords: any[] = [];
@@ -298,6 +306,8 @@ export default function MobileAttendance({
         });
       });
 
+      console.log(`📤 Sending ${attendanceRecords.length} attendance records...`);
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/attendance/bulk-save`,
         {
@@ -320,6 +330,9 @@ export default function MobileAttendance({
 
       const result = await response.json();
 
+      const elapsedTime = Math.round(performance.now() - startTime);
+      console.log(`✅ Save completed in ${elapsedTime}ms (${result.data?.performanceMs || '?'}ms backend)`);
+
       if (result.success) {
         setSaveSuccess(true);
         setHasUnsavedChanges(false);
@@ -330,10 +343,16 @@ export default function MobileAttendance({
         successTimeoutRef.current = setTimeout(() => {
           setSaveSuccess(false);
         }, 2000);
+
+        // ✅ Optional: Show performance info in dev mode
+        if (process.env.NODE_ENV === 'development' && elapsedTime < 500) {
+          console.log(`⚡ Fast save! Total: ${elapsedTime}ms`);
+        }
       } else {
         throw new Error(result.message || "Save failed");
       }
     } catch (error: any) {
+      console.error("❌ Save error:", error);
       alert(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
     } finally {
       setSaving(false);
@@ -366,25 +385,126 @@ export default function MobileAttendance({
     setHasUnsavedChanges(true); // Mark as unsaved only
   };
 
+  // ✅ NEW: Handle unsaved changes warning
+  const handleSaveAndContinue = async () => {
+    try {
+      setShowUnsavedWarning(false);
+      setSaving(true);
+
+      // Save first
+      await handleSave();
+
+      // Clear the unsaved flag before navigation
+      setHasUnsavedChanges(false);
+
+      // Then execute pending action (could be navigation or state change)
+      if (pendingAction) {
+        pendingAction();
+        setPendingAction(null);
+      }
+    } catch (error) {
+      console.error("Error during save and continue:", error);
+      setShowUnsavedWarning(false);
+      setSaving(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setHasUnsavedChanges(false);
+    setShowUnsavedWarning(false);
+    setSaving(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelChange = () => {
+    setShowUnsavedWarning(false);
+    setPendingAction(null);
+  };
+
   const handlePrevDay = () => {
-    if (currentDay > 1) setCurrentDay((prev) => prev - 1);
+    if (currentDay > 1) {
+      if (hasUnsavedChanges) {
+        setPendingAction(() => () => setCurrentDay((prev) => prev - 1));
+        setShowUnsavedWarning(true);
+      } else {
+        setCurrentDay((prev) => prev - 1);
+      }
+    }
   };
 
   const handleNextDay = () => {
-    if (currentDay < daysInMonth) setCurrentDay((prev) => prev + 1);
+    if (currentDay < daysInMonth) {
+      if (hasUnsavedChanges) {
+        setPendingAction(() => () => setCurrentDay((prev) => prev + 1));
+        setShowUnsavedWarning(true);
+      } else {
+        setCurrentDay((prev) => prev + 1);
+      }
+    }
+  };
+
+  const handleDayChange = (newDay: number) => {
+    // Don't do anything if clicking the same day
+    if (newDay === currentDay) return;
+
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => setCurrentDay(newDay));
+      setShowUnsavedWarning(true);
+    } else {
+      setCurrentDay(newDay);
+    }
   };
 
   const handleMonthChange = (newMonth: string) => {
-    setSelectedMonth(newMonth);
-    setCurrentDay(1);
-    setStudents([]);
-    setDataLoaded(false); // ✅ Reset data loaded state
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedMonth(newMonth);
+        setCurrentDay(1);
+        setStudents([]);
+        setDataLoaded(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedMonth(newMonth);
+      setCurrentDay(1);
+      setStudents([]);
+      setDataLoaded(false);
+    }
   };
 
   const handleYearChange = (newYear: number) => {
-    setSelectedYear(newYear);
-    setStudents([]);
-    setDataLoaded(false); // ✅ Reset data loaded state
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedYear(newYear);
+        setStudents([]);
+        setDataLoaded(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedYear(newYear);
+      setStudents([]);
+      setDataLoaded(false);
+    }
+  };
+
+  const handleClassChange = (newClassId: string) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedClass(newClassId);
+        setStudents([]);
+        setDataLoaded(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedClass(newClassId);
+      setStudents([]);
+      setDataLoaded(false);
+    }
   };
 
   // ✅ Calculate totals with real-time counts (A or P can be 0, 1, or 2 per student per day)
@@ -415,6 +535,61 @@ export default function MobileAttendance({
       permission: totalPermission,
     };
   }, [students, currentDay]);
+
+  // ✅ Protect against navigation away from page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Modern browsers require this
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  // ✅ Intercept Next.js client-side navigation (tab bar, etc.)
+  useEffect(() => {
+    const handleRouteChange = (e: MouseEvent) => {
+      if (!hasUnsavedChanges) return;
+
+      // Check if clicking on a navigation link
+      const target = e.target as HTMLElement;
+      const link = target.closest('a[href]') as HTMLAnchorElement;
+
+      if (link) {
+        const href = link.getAttribute('href');
+        // Only block if navigating away from current page
+        if (href && !href.startsWith('#') && !href.includes('/attendance')) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          console.log('🚫 Navigation blocked - unsaved changes detected');
+
+          // Store the intended navigation URL
+          setPendingAction(() => () => {
+            console.log('✅ Navigating to:', href);
+            // Clear unsaved flag before navigation
+            setHasUnsavedChanges(false);
+            // Use Next.js router for client-side navigation
+            router.push(href);
+          });
+          setShowUnsavedWarning(true);
+        }
+      }
+    };
+
+    // Capture phase to intercept before Next.js Link processes the click
+    document.addEventListener('click', handleRouteChange, true);
+
+    return () => {
+      document.removeEventListener('click', handleRouteChange, true);
+    };
+  }, [hasUnsavedChanges, router]);
 
   useEffect(() => {
     return () => {
@@ -686,7 +861,7 @@ export default function MobileAttendance({
                     {daysArray.map((day) => (
                       <button
                         key={day}
-                        onClick={() => setCurrentDay(day)}
+                        onClick={() => handleDayChange(day)}
                         className={`h-9 rounded-xl font-battambang text-sm font-semibold transition-all ${
                           day === currentDay
                             ? "bg-white text-green-700 shadow-lg scale-110"
@@ -872,6 +1047,122 @@ export default function MobileAttendance({
           </div>
         ) : null}
       </div>
+
+      {/* ✅ Floating Save Button - Shows when there are unsaved changes */}
+      {dataLoaded && hasUnsavedChanges && !showUnsavedWarning && (
+        <div className="fixed right-5 bottom-24 z-40 flex flex-col items-end gap-2 animate-in slide-in-from-right duration-300">
+          {/* Tooltip */}
+          <div className="bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-battambang font-medium shadow-lg whitespace-nowrap">
+            រក្សាទុក • Save
+          </div>
+
+          {/* FAB Button */}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className={`relative w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+              saving
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse"
+                : saveSuccess
+                ? "bg-gradient-to-r from-green-500 to-green-600 scale-110"
+                : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+            }`}
+            style={{
+              animation: hasUnsavedChanges && !saving && !saveSuccess
+                ? 'bounce 2s infinite'
+                : 'none'
+            }}
+          >
+            {saving ? (
+              <Loader2 className="w-7 h-7 text-white animate-spin" />
+            ) : saveSuccess ? (
+              <CheckCircle2 className="w-7 h-7 text-white" />
+            ) : (
+              <>
+                <Save className="w-7 h-7 text-white" />
+                {/* Pulse ring */}
+                <span className="absolute inset-0 rounded-full border-4 border-orange-400 opacity-0 animate-ping"></span>
+              </>
+            )}
+
+            {/* Unsaved indicator badge */}
+            {!saving && !saveSuccess && (
+              <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-white">
+                <span className="text-[10px] font-bold">!</span>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* ✅ Unsaved Changes Warning Dialog */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-7 h-7 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-koulen text-xl text-gray-900">
+                  មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
+                </h3>
+                <p className="font-battambang text-xs text-gray-600 mt-1">
+                  Unsaved Changes
+                </p>
+              </div>
+            </div>
+
+            <p className="font-battambang text-sm text-gray-700 mb-6 leading-relaxed">
+              អ្នកមានការផ្លាស់ប្តូរវត្តមានដែលមិនទាន់បានរក្សាទុក។
+              តើអ្នកចង់ធ្វើយ៉ាងណា?
+            </p>
+
+            <div className="space-y-3">
+              {/* Save & Continue Button */}
+              <button
+                onClick={handleSaveAndContinue}
+                disabled={saving}
+                className="w-full px-5 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-battambang font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>កំពុងរក្សាទុក...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    <span>រក្សាទុក ហើយបន្ត • Save & Continue</span>
+                  </>
+                )}
+              </button>
+
+              {/* Don't Save Button */}
+              <button
+                onClick={handleDiscardChanges}
+                disabled={saving}
+                className="w-full px-5 py-3.5 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 font-battambang font-semibold rounded-2xl transition-all active:scale-[0.98]"
+              >
+                កុំរក្សាទុក • Don't Save
+              </button>
+
+              {/* Cancel Button */}
+              <button
+                onClick={handleCancelChange}
+                disabled={saving}
+                className="w-full px-5 py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 disabled:border-gray-100 text-gray-700 font-battambang font-semibold rounded-2xl transition-all active:scale-[0.98]"
+              >
+                បោះបង់ • Cancel
+              </button>
+            </div>
+
+            <p className="font-battambang text-xs text-gray-500 mt-4 text-center">
+              💡 ចុច "រក្សាទុក ហើយបន្ត" ដើម្បីរក្សាការផ្លាស់ប្តូរមុនពេលចេញ
+            </p>
+          </div>
+        </div>
+      )}
     </MobileLayout>
   );
 }

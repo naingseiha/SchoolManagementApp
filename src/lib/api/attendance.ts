@@ -69,10 +69,17 @@ export const attendanceApi = {
     monthNumber: number,
     attendance: BulkSaveAttendanceItem[]
   ): Promise<{ savedCount: number; errorCount: number }> {
+    // ✅ OPTIMIZATION: Use keepalive for faster requests
     const response = await fetch(`${API_BASE_URL}/attendance/bulk-save`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        // Add compression hint for large payloads
+        "Accept-Encoding": "gzip, deflate"
+      },
       body: JSON.stringify({ classId, month, year, monthNumber, attendance }),
+      // ✅ Keep connection alive for faster subsequent requests
+      keepalive: true,
     });
 
     if (!response.ok) {
