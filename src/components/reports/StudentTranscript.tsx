@@ -50,6 +50,9 @@ interface StudentTranscriptProps {
   principalName: string;
   schoolName: string;
   province: string;
+  placeName: string;
+  directorDate: string;
+  teacherDate: string;
 }
 
 export default function StudentTranscript({
@@ -64,6 +67,9 @@ export default function StudentTranscript({
   principalName,
   schoolName,
   province,
+  placeName,
+  directorDate,
+  teacherDate,
 }: StudentTranscriptProps) {
   const displayValue = (
     value: string | number | null | undefined,
@@ -142,16 +148,18 @@ export default function StudentTranscript({
 
           .transcript-page-wrapper {
             width: 100%;
-            height: 100vh;
-            min-height: 100vh;
-            max-height: 100vh;
-            display: block;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             page-break-after: always;
             page-break-inside: avoid;
             break-after: page;
             break-inside: avoid;
             background: white !important;
-            padding: 0 !important;
+            padding: 10mm 0 !important;
             margin: 0 !important;
             position: relative;
           }
@@ -167,10 +175,9 @@ export default function StudentTranscript({
             margin: 0 auto !important;
             page-break-inside: avoid;
             break-inside: avoid;
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            position: relative;
+            left: auto;
+            transform: none;
           }
 
           .student-transcript-container * {
@@ -197,12 +204,11 @@ export default function StudentTranscript({
             margin: "0 auto",
           }}
         >
-          <div className="flex gap-1.5 flex-1">
-            {/* Left Side - Student Info (45%) */}
+          <div className="flex flex-1">
+            {/* Left Side - Student Info (50%) */}
             <div
-              className="border-2 border-black"
               style={{
-                width: "45%",
+                width: "50%",
                 display: "flex",
                 flexDirection: "column",
                 padding: "4mm",
@@ -252,12 +258,12 @@ export default function StudentTranscript({
                     lineHeight: "1.3",
                   }}
                 >
-                  សៀវភៅតាមដានការសិក្សា
+                  ព្រឹត្តិបត្រពិន្ទុ
                 </h1>
                 <p
-                  className="mt-0.5"
+                  className="mt-2.5"
                   style={{
-                    fontFamily: "'Khmer OS Battambang', serif",
+                    fontFamily: "'Khmer OS Muol Light', serif",
                     fontSize: "10px",
                     lineHeight: "1.3",
                   }}
@@ -276,8 +282,14 @@ export default function StudentTranscript({
                 }}
               >
                 <div className="flex items-start">
+                  <span
+                    className="text-red-600 font-bold"
+                    style={{ width: "105px" }}
+                  >
+                    សម្រាប់ខែ
+                  </span>
                   <span className="text-red-600 font-bold">
-                    សម្រាប់ខែ៖ {month || "ទាំងអស់"}
+                    ៖ {month || "ទាំងអស់"}
                   </span>
                 </div>
 
@@ -428,8 +440,9 @@ export default function StudentTranscript({
                     marginBottom: "8mm",
                   }}
                 >
-                  <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព. ស២៥៦៩</p>
-                  <p>ស្វាយធំ ថ្ងៃទី៣១ ខែឧសភា ឆ្នាំ២០២៥</p>
+                  <p>
+                    {placeName} {directorDate}
+                  </p>
                   <p className="mt-1">បានឃើញ និងឯកភាព</p>
                   <p
                     className="font-bold text-blue-700"
@@ -441,10 +454,13 @@ export default function StudentTranscript({
               </div>
             </div>
 
-            {/* Right Side - Grade Table (55%) */}
+            {/* Right Side - Grade Table (50%) */}
             <div
-              className="border-2 border-black flex-1"
-              style={{ display: "flex", flexDirection: "column" }}
+              style={{
+                width: "50%",
+                display: "flex",
+                flexDirection: "column",
+              }}
             >
               <table
                 style={{
@@ -457,7 +473,7 @@ export default function StudentTranscript({
                   <tr style={{ backgroundColor: "#FFF9E6" }}>
                     <th
                       rowSpan={2}
-                      className="border border-black px-1.5 py-1"
+                      className="border border-black px-1.5 py-1.5"
                       style={{
                         width: "7%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -467,7 +483,7 @@ export default function StudentTranscript({
                     </th>
                     <th
                       rowSpan={2}
-                      className="border border-black px-1.5 py-1"
+                      className="border border-black px-1.5 py-1.5"
                       style={{
                         width: "25%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -477,7 +493,7 @@ export default function StudentTranscript({
                     </th>
                     <th
                       colSpan={3}
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -486,7 +502,7 @@ export default function StudentTranscript({
                     </th>
                     <th
                       rowSpan={2}
-                      className="border border-black px-1.5 py-1"
+                      className="border border-black px-1.5 py-1.5"
                       style={{
                         width: "15%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -497,7 +513,7 @@ export default function StudentTranscript({
                   </tr>
                   <tr style={{ backgroundColor: "#FFF9E6" }}>
                     <th
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         width: "12%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -506,7 +522,7 @@ export default function StudentTranscript({
                       អតិបរមា
                     </th>
                     <th
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         width: "15%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -515,7 +531,7 @@ export default function StudentTranscript({
                       ពិន្ទុបាន
                     </th>
                     <th
-                      className="border border-black px-1.5 py-0.5"
+                      className="border border-black px-1.5 py-1"
                       style={{
                         width: "12%",
                         fontFamily: "'Khmer OS Muol Light', serif",
@@ -549,7 +565,7 @@ export default function StudentTranscript({
                     return (
                       <tr key={subject.id}>
                         <td
-                          className="border border-black px-1.5 py-0.5 text-center"
+                          className="border border-black px-1.5 py-1 text-center"
                           style={{
                             fontFamily: "'Time New Roman'",
                             fontWeight: "bold",
@@ -557,11 +573,11 @@ export default function StudentTranscript({
                         >
                           {index + 1}
                         </td>
-                        <td className="border border-black px-1.5 py-0.5">
+                        <td className="border border-black px-1.5 py-1">
                           {subject.nameKh}
                         </td>
                         <td
-                          className="border border-black px-1.5 py-0.5 text-center font-bold"
+                          className="border border-black px-1.5 py-1 text-center font-bold"
                           style={{
                             fontFamily: "'Time New Roman'",
                             fontWeight: "bold",
@@ -570,7 +586,7 @@ export default function StudentTranscript({
                           {maxScore}
                         </td>
                         <td
-                          className="border border-black px-1.5 py-0.5 text-center font-bold"
+                          className="border border-black px-1.5 py-1 text-center font-bold"
                           style={{
                             color: "#2563EB",
                             fontSize: "11px",
@@ -582,11 +598,11 @@ export default function StudentTranscript({
                             ? Math.round(score)
                             : "N/A"}
                         </td>
-                        <td className="border border-black px-1.5 py-0.5 text-center">
+                        <td className="border border-black px-1.5 py-1 text-center">
                           {gradeLevel || "N/A"}
                         </td>
                         {/* ✅ Keep column but remove data */}
-                        <td className="border border-black px-1.5 py-0.5 text-center"></td>
+                        <td className="border border-black px-1.5 py-1 text-center"></td>
                       </tr>
                     );
                   })}
@@ -596,14 +612,14 @@ export default function StudentTranscript({
                     length: Math.max(0, 11 - subjects.length),
                   }).map((_, i) => (
                     <tr key={`empty-${i}`}>
-                      <td className="border border-black px-1.5 py-0.5 text-center">
+                      <td className="border border-black px-1.5 py-1 text-center">
                         {subjects.length + i + 1}
                       </td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
-                      <td className="border border-black px-1.5 py-0.5"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
+                      <td className="border border-black px-1.5 py-1"></td>
                     </tr>
                   ))}
 
@@ -611,7 +627,7 @@ export default function StudentTranscript({
                   <tr style={{ backgroundColor: "#EFF6FF" }}>
                     <td
                       colSpan={3}
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -620,7 +636,7 @@ export default function StudentTranscript({
                     </td>
 
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#2563EB",
                         fontSize: "12px",
@@ -632,7 +648,7 @@ export default function StudentTranscript({
                         : "N/A"}
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -640,7 +656,7 @@ export default function StudentTranscript({
                       ចំណាត់ថ្នាក់
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#DC2626",
                         fontSize: "12px",
@@ -655,7 +671,7 @@ export default function StudentTranscript({
                   <tr style={{ backgroundColor: "#EFF6FF" }}>
                     <td
                       colSpan={3}
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -663,7 +679,7 @@ export default function StudentTranscript({
                       មធ្យមភាគ
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#2563EB",
                         fontSize: "12px",
@@ -676,7 +692,7 @@ export default function StudentTranscript({
                         : "N/A"}
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         fontFamily: "'Khmer OS Muol Light', serif",
                       }}
@@ -684,7 +700,7 @@ export default function StudentTranscript({
                       និទ្ទេស
                     </td>
                     <td
-                      className="border border-black px-1.5 py-1 text-center font-bold"
+                      className="border border-black px-1.5 py-1.5 text-center font-bold"
                       style={{
                         color: "#2563EB",
                         fontSize: "12px",
@@ -707,10 +723,18 @@ export default function StudentTranscript({
                     textAlign: "center",
                   }}
                 >
-                  <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស២៥៦៩</p>
-                  <p>ស្វាយធំ ថ្ងៃទី៣១ ខែឧសភា ឆ្នាំ២០២៥</p>
+                  <p>
+                    {placeName} {teacherDate}
+                  </p>
                   <p className="mt-0.5">បានឃើញ និងឯកភាព</p>
-                  <p className="font-bold text-blue-700">គ្រូប្រចាំថ្នាក់</p>
+                  <p
+                    className="font-bold text-blue-700"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
+                  >
+                    គ្រូប្រចាំថ្នាក់
+                  </p>
                 </div>
 
                 <div className="mt-16 text-center" style={{ fontSize: "9px" }}>
