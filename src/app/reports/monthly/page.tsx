@@ -46,7 +46,7 @@ import {
 
 export default function ReportsPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
-  const { classes } = useData();
+  const { classes, isLoadingClasses } = useData();
   const router = useRouter();
 
   // ✅ Filter classes based on role - Show both homeroom (INSTRUCTOR) and teaching classes (TEACHER)
@@ -263,10 +263,12 @@ export default function ReportsPage() {
     return null;
   }
 
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const classOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសថ្នាក់" },
+        ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
+      ];
 
   const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
@@ -578,7 +580,8 @@ export default function ReportsPage() {
                   <select
                     value={selectedClassId}
                     onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    disabled={isLoadingClasses}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>
