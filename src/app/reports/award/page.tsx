@@ -84,6 +84,8 @@ export default function AwardReportPage() {
   const [error, setError] = useState<string | null>(null);
   const [reportGenerated, setReportGenerated] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [teacherName, setTeacherName] = useState<string>("");
+  const [principalName, setPrincipalName] = useState<string>("នាយកសាលា");
 
   const academicYear = `${selectedYear}-${selectedYear + 1}`;
 
@@ -156,6 +158,11 @@ export default function AwardReportPage() {
 
       if (!data.students || !Array.isArray(data.students)) {
         throw new Error("Invalid response:  missing students array");
+      }
+
+      // Extract teacher name from API response
+      if (data.teacherName) {
+        setTeacherName(data.teacherName);
       }
 
       const transformedSummaries = data.students.map((student: any) => ({
@@ -463,8 +470,8 @@ export default function AwardReportPage() {
                 }
                 className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
               >
-                <option value="medals">🥇 ម៉ូតមេដាយ (Medals Style)</option>
                 <option value="trophies">🏆 ម៉ូតពាន (Trophies Style)</option>
+                <option value="medals">🥇 ម៉ូតមេដាយ (Medals Style)</option>
               </select>
             </div>
 
@@ -680,6 +687,8 @@ export default function AwardReportPage() {
                   grade={reportType === "grade" ? selectedGrade : undefined}
                   academicYear={academicYear}
                   month={selectedMonth}
+                  teacherName={teacherName}
+                  principalName={principalName}
                 />
               ) : (
                 <HonorCertificateTrophies
@@ -691,6 +700,8 @@ export default function AwardReportPage() {
                   grade={reportType === "grade" ? selectedGrade : undefined}
                   academicYear={academicYear}
                   month={selectedMonth}
+                  teacherName={teacherName}
+                  principalName={principalName}
                 />
               )}
             </div>
