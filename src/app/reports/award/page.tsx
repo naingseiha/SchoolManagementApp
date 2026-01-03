@@ -23,6 +23,7 @@ import {
   calculateTopStudentsByClass,
   calculateTopStudentsByGrade,
 } from "@/lib/utils/topStudentsCalculator";
+import { getCurrentKhmerMonth } from "@/lib/reportHelpers";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -69,15 +70,15 @@ export default function AwardReportPage() {
   const [reportType, setReportType] = useState<"class" | "grade">("class");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("ធ្នូ");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(() => {
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
     return month >= 10 ? year : year - 1;
   });
-  const [templateType, setTemplateType] = useState<"medals" | "trophies">(
-    "medals"
+  const [templateType, setTemplateType] = useState<"trophies" | "medals">(
+    "trophies"
   );
   const [summaries, setSummaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
