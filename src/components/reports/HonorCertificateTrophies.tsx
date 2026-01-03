@@ -21,6 +21,8 @@ interface HonorCertificateProps {
   month?: string;
   teacherName?: string;
   principalName?: string;
+  oldKhmerDate?: string;
+  newKhmerDate?: string;
 }
 
 export default function HonorCertificateTrophies({
@@ -32,6 +34,8 @@ export default function HonorCertificateTrophies({
   month,
   teacherName,
   principalName,
+  oldKhmerDate,
+  newKhmerDate,
 }: HonorCertificateProps) {
   // ✅ UPDATED: New trophy images
   const getTrophyImage = (rank: number): string => {
@@ -272,13 +276,13 @@ export default function HonorCertificateTrophies({
         {/* Main Content */}
         <div className="relative z-10 h-full flex flex-col">
           {/* Header */}
-          <div className="mb-1">
+          <div className="mb-0">
             <div className="text-center">
               <div
                 style={{
                   fontFamily: "Khmer OS Muol Light",
-                  fontSize: "11pt",
-                  lineHeight: "1.5",
+                  fontSize: "10pt",
+                  lineHeight: "1.4",
                 }}
               >
                 <div className="text-red-600">ព្រះរាជាណាចក្រកម្ពុជា</div>
@@ -287,8 +291,8 @@ export default function HonorCertificateTrophies({
                   className="text-red-600"
                   style={{
                     fontFamily: "Tacteing",
-                    fontSize: "28pt",
-                    marginTop: "-14px",
+                    fontSize: "26pt",
+                    marginTop: "-12px",
                   }}
                 >
                   3
@@ -298,10 +302,10 @@ export default function HonorCertificateTrophies({
 
             <div
               style={{
-                marginTop: "-30px",
+                marginTop: "-28px",
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "8px",
                 justifyContent: "flex-start",
               }}
             >
@@ -309,8 +313,8 @@ export default function HonorCertificateTrophies({
                 src="/logo.png"
                 alt="School Logo"
                 style={{
-                  width: "80px",
-                  height: "80px",
+                  width: "70px",
+                  height: "70px",
                   objectFit: "contain",
                   flexShrink: 0,
                 }}
@@ -318,8 +322,8 @@ export default function HonorCertificateTrophies({
               <div
                 style={{
                   fontFamily: "Khmer OS Bokor",
-                  fontSize: "0.95rem",
-                  lineHeight: "1.6",
+                  fontSize: "0.9rem",
+                  lineHeight: "1.5",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
@@ -334,11 +338,11 @@ export default function HonorCertificateTrophies({
 
             <div className="text-center">
               <h1
-                className="text-red-600 text-2xl font-black mb-2"
+                className="text-red-600 text-2xl font-black mb-1"
                 style={{
                   fontFamily: "Khmer OS Muol Light",
                   lineHeight: "1.1",
-                  marginTop: "-40px",
+                  marginTop: "-35px",
                 }}
               >
                 តារាងកិត្តិយស
@@ -346,8 +350,8 @@ export default function HonorCertificateTrophies({
             </div>
 
             <div
-              className="text-center space-y-0.5"
-              style={{ fontFamily: "Khmer OS Muol Light", fontSize: "11pt" }}
+              className="text-center space-y-0"
+              style={{ fontFamily: "Khmer OS Muol Light", fontSize: "10.5pt" }}
             >
               <div className="font-bold text-gray-800">
                 {reportType === "class" &&
@@ -364,7 +368,7 @@ export default function HonorCertificateTrophies({
           </div>
 
           {/* Top 5 Students - Trophy Layout */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col justify-center">
             {topStudents.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-6xl mb-3">🏆</div>
@@ -373,13 +377,13 @@ export default function HonorCertificateTrophies({
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {/* Rank 1 - Center, Larger */}
                 {topStudents[0] && (
                   <div className="flex flex-col items-center">
                     <div
                       className="relative flex items-center justify-center"
-                      style={{ width: "180px", height: "200px" }}
+                      style={{ width: "190px", height: "200px" }}
                     >
                       {/* Glowing Effect */}
                       <div
@@ -397,8 +401,8 @@ export default function HonorCertificateTrophies({
                         src={getTrophyImage(1)}
                         alt="Trophy 1"
                         style={{
-                          width: "180px",
-                          height: "180px",
+                          width: "190px",
+                          height: "190px",
                           objectFit: "contain",
                           filter:
                             "drop-shadow(0 20px 40px rgba(255, 215, 0, 0.4))",
@@ -409,8 +413,8 @@ export default function HonorCertificateTrophies({
                     {/* ✅ Grade Text Below Trophy (No circle) */}
                     <div
                       style={{
-                        marginTop: "2px",
-                        fontSize: "32px",
+                        marginTop: "-5px",
+                        fontSize: "30px",
                         fontWeight: 900,
                         fontFamily: "Arial, sans-serif",
                         color: getGradeColor(topStudents[0].letterGrade),
@@ -420,18 +424,18 @@ export default function HonorCertificateTrophies({
                       {displayGrade(topStudents[0].letterGrade)}
                     </div>
 
-                    <div className="mt-1 text-center">
-                      <div className="text-sm text-orange-700 font-bold mb-1">
+                    <div className="mt-0 text-center">
+                      <div className="text-xs text-orange-700 font-bold mb-0.5">
                         មធ្យមភាគ {topStudents[0].averageScore.toFixed(2)}
                       </div>
                       <div
-                        className="text-lg font-black text-gray-900"
+                        className="text-base font-black text-gray-900"
                         style={{ fontFamily: "Khmer OS Muol Light" }}
                       >
                         {topStudents[0].khmerName}
                       </div>
                       {reportType === "grade" && (
-                        <div className="text-sm text-gray-600 mt-1 font-semibold">
+                        <div className="text-xs text-gray-600 mt-0.5 font-semibold">
                           ថ្នាក់ {topStudents[0].className}
                         </div>
                       )}
@@ -441,8 +445,8 @@ export default function HonorCertificateTrophies({
 
                 {/* Ranks 2-3 - Side by Side */}
                 <div
-                  className="grid grid-cols-2 gap-12 max-w-4xl mx-auto px-4"
-                  style={{ marginTop: "-190px" }}
+                  className="grid grid-cols-2 gap-8 max-w-4xl mx-auto px-4"
+                  style={{ marginTop: "-180px" }}
                 >
                   {topStudents.slice(1, 3).map((student) => (
                     <div
@@ -451,7 +455,7 @@ export default function HonorCertificateTrophies({
                     >
                       <div
                         className="relative flex items-center justify-center"
-                        style={{ width: "160px", height: "180px" }}
+                        style={{ width: "165px", height: "180px" }}
                       >
                         <div
                           style={{
@@ -471,8 +475,8 @@ export default function HonorCertificateTrophies({
                           src={getTrophyImage(student.rank)}
                           alt={`Trophy ${student.rank}`}
                           style={{
-                            width: "160px",
-                            height: "160px",
+                            width: "165px",
+                            height: "165px",
                             objectFit: "contain",
                             filter: `drop-shadow(0 15px 30px ${
                               student.rank === 2
@@ -486,8 +490,8 @@ export default function HonorCertificateTrophies({
                       {/* ✅ Grade Text Below Trophy */}
                       <div
                         style={{
-                          marginTop: "2px",
-                          fontSize: "28px",
+                          marginTop: "-5px",
+                          fontSize: "26px",
                           fontWeight: 900,
                           fontFamily: "Arial, sans-serif",
                           color: getGradeColor(student.letterGrade),
@@ -497,18 +501,18 @@ export default function HonorCertificateTrophies({
                         {displayGrade(student.letterGrade)}
                       </div>
 
-                      <div className="mt-1 text-center">
-                        <div className="text-xs text-orange-700 font-bold mb-1">
+                      <div className="mt-0 text-center">
+                        <div className="text-xs text-orange-700 font-bold mb-0.5">
                           មធ្យមភាគ {student.averageScore.toFixed(2)}
                         </div>
                         <div
-                          className="text-base font-black text-gray-900"
+                          className="text-sm font-black text-gray-900"
                           style={{ fontFamily: "Khmer OS Muol Light" }}
                         >
                           {student.khmerName}
                         </div>
                         {reportType === "grade" && (
-                          <div className="text-sm text-gray-600 mt-1 font-semibold">
+                          <div className="text-xs text-gray-600 mt-0.5 font-semibold">
                             ថ្នាក់ {student.className}
                           </div>
                         )}
@@ -519,7 +523,7 @@ export default function HonorCertificateTrophies({
 
                 {/* Ranks 4-5 - Smaller */}
                 {topStudents.length >= 4 && (
-                  <div className="grid grid-cols-2 gap-12 max-w-3xl mx-auto px-4">
+                  <div className="grid grid-cols-2 gap-8 max-w-3xl mx-auto px-4">
                     {topStudents.slice(3, 5).map((student) => (
                       <div
                         key={student.studentId}
@@ -527,15 +531,15 @@ export default function HonorCertificateTrophies({
                       >
                         <div
                           className="relative flex items-center justify-center"
-                          style={{ width: "140px", height: "160px" }}
+                          style={{ width: "145px", height: "160px" }}
                         >
                           {/* ✅ Trophy Image Only */}
                           <img
                             src={getTrophyImage(student.rank)}
                             alt={`Trophy ${student.rank}`}
                             style={{
-                              width: "140px",
-                              height: "140px",
+                              width: "145px",
+                              height: "145px",
                               objectFit: "contain",
                               filter:
                                 "drop-shadow(0 10px 20px rgba(148, 163, 184, 0.3))",
@@ -546,8 +550,8 @@ export default function HonorCertificateTrophies({
                         {/* ✅ Grade Text Below Trophy */}
                         <div
                           style={{
-                            marginTop: "2px",
-                            fontSize: "28px",
+                            marginTop: "-5px",
+                            fontSize: "26px",
                             fontWeight: 900,
                             fontFamily: "Arial, sans-serif",
                             color: getGradeColor(student.letterGrade),
@@ -557,8 +561,8 @@ export default function HonorCertificateTrophies({
                           {displayGrade(student.letterGrade)}
                         </div>
 
-                        <div className="mt-1 text-center">
-                          <div className="text-xs text-orange-700 font-bold mb-1">
+                        <div className="mt-0 text-center">
+                          <div className="text-xs text-orange-700 font-bold mb-0.5">
                             មធ្យមភាគ {student.averageScore.toFixed(2)}
                           </div>
                           <div
@@ -568,7 +572,7 @@ export default function HonorCertificateTrophies({
                             {student.khmerName}
                           </div>
                           {reportType === "grade" && (
-                            <div className="text-xs text-gray-600 mt-1 font-semibold">
+                            <div className="text-xs text-gray-600 mt-0.5 font-semibold">
                               ថ្នាក់ {student.className}
                             </div>
                           )}
@@ -582,8 +586,8 @@ export default function HonorCertificateTrophies({
           </div>
 
           {/* Footer */}
-          <div className="mt-auto pt-6 border-t-2 border-gray-300">
-            <div className="grid grid-cols-2 gap-16 mt-6">
+          <div className="mt-auto pt-3 border-t-2 border-gray-300">
+            <div className="grid grid-cols-2 gap-12 mt-3">
               <div className="text-center">
                 <p
                   className="text-xs font-bold mb-1"
@@ -602,30 +606,52 @@ export default function HonorCertificateTrophies({
 
               <div className="text-center">
                 <p
-                  className="text-xs font-bold mb-1"
+                  className="text-xs font-bold mb-0.5"
                   style={{ fontFamily: "Khmer OS Battambang" }}
                 >
-                  ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩
+                  {oldKhmerDate ||
+                    "ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩"}
                 </p>
                 <p
-                  className="text-xs font-bold mb-1"
+                  className="text-xs font-bold mb-0.5"
                   style={{ fontFamily: "Khmer OS Battambang" }}
                 >
-                  សៀមរាប ថ្ងៃទី{getCurrentDate()}
+                  {newKhmerDate || `សៀមរាប ថ្ងៃទី${getCurrentDate()}`}
                 </p>
-                <p
-                  className="text-xs font-bold mb-1"
-                  style={{ fontFamily: "Khmer OS Muol Light" }}
-                >
-                  គ្រូទទួលបន្ទុកថ្នាក់
-                </p>
-                <div className="h-12"></div>
-                <p
-                  className="text-xs font-bold text-blue-600"
-                  style={{ fontFamily: "Khmer OS Muol Light" }}
-                >
-                  {teacherName || "គ្រូបន្ទុកថ្នាក់"}
-                </p>
+                {reportType === "class" && (
+                  <>
+                    <p
+                      className="text-xs font-bold mb-0.5"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      គ្រូទទួលបន្ទុកថ្នាក់
+                    </p>
+                    <div className="h-10"></div>
+                    <p
+                      className="text-xs font-bold text-blue-600"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      {teacherName || "គ្រូបន្ទុកថ្នាក់"}
+                    </p>
+                  </>
+                )}
+                {reportType === "grade" && (
+                  <>
+                    <p
+                      className="text-xs font-bold mb-0.5 mt-2"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      គ្រូទទួលបន្ទុក
+                    </p>
+                    <div className="h-10"></div>
+                    {/* <p
+                      className="text-xs font-bold text-blue-600"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      ក្រុមគ្រូបង្រៀនថ្នាក់ទី {grade}
+                    </p> */}
+                  </>
+                )}
               </div>
             </div>
           </div>
