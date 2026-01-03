@@ -50,6 +50,9 @@ interface StudentTranscriptProps {
   principalName: string;
   schoolName: string;
   province: string;
+  placeName: string;
+  directorDate: string;
+  teacherDate: string;
 }
 
 export default function StudentTranscript({
@@ -64,6 +67,9 @@ export default function StudentTranscript({
   principalName,
   schoolName,
   province,
+  placeName,
+  directorDate,
+  teacherDate,
 }: StudentTranscriptProps) {
   const displayValue = (
     value: string | number | null | undefined,
@@ -252,12 +258,12 @@ export default function StudentTranscript({
                     lineHeight: "1.3",
                   }}
                 >
-                  សៀវភៅតាមដានការសិក្សា
+                  ព្រឹត្តិបត្រពិន្ទុ
                 </h1>
                 <p
-                  className="mt-0.5"
+                  className="mt-2.5"
                   style={{
-                    fontFamily: "'Khmer OS Battambang', serif",
+                    fontFamily: "'Khmer OS Muol Light', serif",
                     fontSize: "10px",
                     lineHeight: "1.3",
                   }}
@@ -276,8 +282,14 @@ export default function StudentTranscript({
                 }}
               >
                 <div className="flex items-start">
+                  <span
+                    className="text-red-600 font-bold"
+                    style={{ width: "105px" }}
+                  >
+                    សម្រាប់ខែ
+                  </span>
                   <span className="text-red-600 font-bold">
-                    សម្រាប់ខែ៖ {month || "ទាំងអស់"}
+                    ៖ {month || "ទាំងអស់"}
                   </span>
                 </div>
 
@@ -428,8 +440,9 @@ export default function StudentTranscript({
                     marginBottom: "8mm",
                   }}
                 >
-                  <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព. ស២៥៦៩</p>
-                  <p>ស្វាយធំ ថ្ងៃទី៣១ ខែឧសភា ឆ្នាំ២០២៥</p>
+                  <p>
+                    {placeName} {directorDate}
+                  </p>
                   <p className="mt-1">បានឃើញ និងឯកភាព</p>
                   <p
                     className="font-bold text-blue-700"
@@ -446,7 +459,7 @@ export default function StudentTranscript({
               style={{
                 width: "50%",
                 display: "flex",
-                flexDirection: "column"
+                flexDirection: "column",
               }}
             >
               <table
@@ -710,10 +723,18 @@ export default function StudentTranscript({
                     textAlign: "center",
                   }}
                 >
-                  <p>ថ្ងៃសៅរ៍ ៥កើត ខែជេស្ឋ ឆ្នាំម្សាញ់ សប្តស័ក ព.ស២៥៦៩</p>
-                  <p>ស្វាយធំ ថ្ងៃទី៣១ ខែឧសភា ឆ្នាំ២០២៥</p>
+                  <p>
+                    {placeName} {teacherDate}
+                  </p>
                   <p className="mt-0.5">បានឃើញ និងឯកភាព</p>
-                  <p className="font-bold text-blue-700">គ្រូប្រចាំថ្នាក់</p>
+                  <p
+                    className="font-bold text-blue-700"
+                    style={{
+                      fontFamily: "'Khmer OS Muol Light', serif",
+                    }}
+                  >
+                    គ្រូប្រចាំថ្នាក់
+                  </p>
                 </div>
 
                 <div className="mt-16 text-center" style={{ fontSize: "9px" }}>

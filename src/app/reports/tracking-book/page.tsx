@@ -20,6 +20,7 @@ import { reportsApi, type StudentTrackingBookData } from "@/lib/api/reports";
 import StudentTranscript from "@/components/reports/StudentTranscript";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
+import { formatKhmerDate } from "@/lib/khmerDateUtils";
 
 const getCurrentKhmerMonth = (): string => {
   const monthNames = [
@@ -59,6 +60,13 @@ export default function TrackingBookPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"single" | "all">("single");
+  const [placeName, setPlaceName] = useState("ស្វាយធំ");
+  const [directorDate, setDirectorDate] = useState(() => {
+    return formatKhmerDate(new Date());
+  });
+  const [teacherDate, setTeacherDate] = useState(() => {
+    return formatKhmerDate(new Date());
+  });
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -205,6 +213,9 @@ export default function TrackingBookPage() {
         principalName: "នាយកសាលា",
         schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
         province: "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប", // ✅ Add province
+        placeName: placeName, // ✅ Add dynamic place name
+        directorDate: directorDate, // ✅ Add director date
+        teacherDate: teacherDate, // ✅ Add teacher date
       }))
     : [];
 
@@ -570,6 +581,48 @@ export default function TrackingBookPage() {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+
+            {/* Date Input Row */}
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ទីកន្លែង Place Name
+                  </label>
+                  <input
+                    type="text"
+                    value={placeName}
+                    onChange={(e) => setPlaceName(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="ស្វាយធំ"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    កាលបរិច្ឆេទនាយក Director Date
+                  </label>
+                  <input
+                    type="text"
+                    value={directorDate}
+                    onChange={(e) => setDirectorDate(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    កាលបរិច្ឆេទគ្រូ Teacher Date
+                  </label>
+                  <input
+                    type="text"
+                    value={teacherDate}
+                    onChange={(e) => setTeacherDate(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
+                  />
+                </div>
               </div>
             </div>
 
