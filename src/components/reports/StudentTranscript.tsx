@@ -199,11 +199,10 @@ export default function StudentTranscript({
           }}
         >
           <div className="flex flex-1">
-            {/* Left Side - Student Info (45%) */}
+            {/* Left Side - Student Info (50%) */}
             <div
-              className="border-r-2 border-black"
               style={{
-                width: "45%",
+                width: "50%",
                 display: "flex",
                 flexDirection: "column",
                 padding: "4mm",
@@ -442,10 +441,13 @@ export default function StudentTranscript({
               </div>
             </div>
 
-            {/* Right Side - Grade Table (55%) */}
+            {/* Right Side - Grade Table (50%) */}
             <div
-              className="flex-1"
-              style={{ display: "flex", flexDirection: "column" }}
+              style={{
+                width: "50%",
+                display: "flex",
+                flexDirection: "column"
+              }}
             >
               <table
                 style={{
