@@ -127,7 +127,8 @@ export default function SubjectDetailsReport({
             border-collapse: collapse !important;
           }
 
-          th, td {
+          th,
+          td {
             padding: 0.5mm 0.3mm !important;
             font-size: inherit !important;
             border: 0.5px solid black !important;
@@ -144,19 +145,22 @@ export default function SubjectDetailsReport({
           }
 
           /* Reduce column widths for print to fit all columns */
-          th:first-child, td:first-child {
+          th:first-child,
+          td:first-child {
             width: 12px !important;
             min-width: 12px !important;
           }
 
-          th:nth-child(2), td:nth-child(2) {
+          th:nth-child(2),
+          td:nth-child(2) {
             width: 50px !important;
             min-width: 50px !important;
             max-width: 50px !important;
           }
 
           /* Subject columns - slightly wider with extra margin space */
-          th.bg-blue-50, td.px-0 {
+          th.bg-blue-50,
+          td.px-0 {
             width: 16px !important;
             min-width: 16px !important;
             padding: 0.3mm 0.2mm !important;
@@ -164,8 +168,12 @@ export default function SubjectDetailsReport({
           }
 
           /* Summary columns - slightly wider */
-          th.bg-yellow-100, th.bg-green-100, th.bg-indigo-100,
-          td.bg-yellow-50, td.bg-green-50, td.bg-indigo-50 {
+          th.bg-yellow-100,
+          th.bg-green-100,
+          th.bg-indigo-100,
+          td.bg-yellow-50,
+          td.bg-green-50,
+          td.bg-indigo-50 {
             width: 17px !important;
             min-width: 17px !important;
             box-shadow: none !important;
@@ -806,15 +814,13 @@ export default function SubjectDetailsReport({
                   >
                     បានឃើញ និងឯកភាព
                   </p>
-                  <div className="h-8 print:h-10"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-0.5 px-5"
-                      style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
-                    >
-                      {principalName}
-                    </p>
-                  </div>
+
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                  >
+                    {principalName}
+                  </p>
                 </div>
 
                 {/* Teacher */}
@@ -831,15 +837,13 @@ export default function SubjectDetailsReport({
                   >
                     គ្រូទទួលបន្ទុកថ្នាក់
                   </p>
-                  <div className="h-8 print:h-10"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-0.5 px-5"
-                      style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
-                    >
-                      {teacherName || "___________________"}
-                    </p>
-                  </div>
+                  <div className="h-10 print:h-14"></div>
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                  >
+                    {teacherName}
+                  </p>
                 </div>
               </div>
             </>

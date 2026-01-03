@@ -85,7 +85,7 @@ export default function KhmerMonthlyReport({
           src: local("Tacteing"), local("TacteingA");
         }
 
-        . report-page {
+        .report-page {
           page-break-inside: avoid;
           page-break-after: always;
         }
@@ -97,6 +97,50 @@ export default function KhmerMonthlyReport({
         @media print {
           .report-page {
             page-break-inside: avoid;
+            page-break-after: always;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            min-height: auto !important;
+            margin: 0 !important;
+            padding: 8mm 5mm !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
+
+          .report-page:last-child {
+            page-break-after: auto !important;
+          }
+
+          table {
+            width: 100% !important;
+            table-layout: auto !important;
+            border-collapse: collapse !important;
+          }
+
+          th,
+          td {
+            border: 0.5px solid black !important;
+            box-shadow: none !important;
+          }
+
+          /* Compact spacing for print */
+          .report-page > div:first-child {
+            margin-bottom: 2mm !important;
+          }
+
+          /* Compact footer for print */
+          .report-page > div:last-child {
+            margin-top: 2mm !important;
+          }
+
+          .grid.grid-cols-2.gap-16 {
+            gap: 5mm !important;
+            margin-top: 2mm !important;
+          }
+
+          .print\\:h-16 {
+            height: 8mm !important;
           }
         }
       `}</style>
@@ -104,34 +148,35 @@ export default function KhmerMonthlyReport({
       {paginatedReports.map((pageReports, pageIndex) => (
         <div
           key={pageIndex}
-          className="report-page bg-white shadow-2xl mb-8"
+          className="report-page bg-white mb-8"
           style={{
             width: "210mm",
-            minHeight: "297mm",
+            minHeight: pageIndex === 0 ? "auto" : "auto",
             margin: "0 auto",
-            padding: "15mm",
+            padding: "8mm 5mm",
             boxSizing: "border-box",
+            maxWidth: "100%",
           }}
         >
           {/* Header - Only on first page */}
           {pageIndex === 0 && (
-            <div className="mb-4">
+            <div className="mb-2">
               {/* Row 1: Kingdom (right) and School info (left) on same level */}
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-1">
                 {/* Left: School info - aligned with "ជាតិ សាសនា ព្រះមហាក្សត្រ" */}
                 <div
                   className="text-left"
                   style={{
                     fontFamily: "'Khmer OS Bokor', serif",
-                    paddingTop: "20px",
+                    paddingTop: "14px",
                   }}
                 >
-                  <p className="text-sm" style={{ lineHeight: "1.8" }}>
+                  <p className="text-xs" style={{ lineHeight: "1.4" }}>
                     {province || "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"}
                   </p>
                   <p
-                    className="text-sm font-bold"
-                    style={{ lineHeight: "1.8" }}
+                    className="text-xs font-bold"
+                    style={{ lineHeight: "1.4" }}
                   >
                     {examCenter || "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ"}
                   </p>
@@ -140,31 +185,31 @@ export default function KhmerMonthlyReport({
                 {/* Right: Kingdom */}
                 <div className="text-center">
                   <p
-                    className="font-bold text-base"
+                    className="font-bold text-sm"
                     style={{
                       fontFamily:
                         "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      lineHeight: "1.6",
+                      lineHeight: "1.2",
                     }}
                   >
                     ព្រះរាជាណាចក្រកម្ពុជា
                   </p>
                   <p
-                    className="font-bold text-base"
+                    className="font-bold text-sm"
                     style={{
                       fontFamily:
                         "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      lineHeight: "1. 6",
+                      lineHeight: "1.2",
                     }}
                   >
                     ជាតិ សាសនា ព្រះមហាក្សត្រ
                   </p>
                   <p
-                    className="text-red-600 text-base mt-0.5"
+                    className="text-red-600 text-base mt-0"
                     style={{
                       fontFamily: "'Tacteing', serif",
                       letterSpacing: "0.1em",
-                      fontSize: "32px",
+                      fontSize: "24px",
                     }}
                   >
                     3
@@ -173,9 +218,9 @@ export default function KhmerMonthlyReport({
               </div>
 
               {/* Row 2: Title in center */}
-              <div className="text-center mb-3">
+              <div className="text-center mb-1.5">
                 <h1
-                  className="text-lg font-bold mb-1"
+                  className="text-base font-bold mb-0.5"
                   style={{
                     fontFamily: "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                   }}
@@ -183,7 +228,7 @@ export default function KhmerMonthlyReport({
                   {reportTitle}
                 </h1>
                 <p
-                  className="text-sm mb-0.5"
+                  className="text-xs mb-0.5"
                   style={{
                     fontFamily: "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                   }}
@@ -192,9 +237,9 @@ export default function KhmerMonthlyReport({
                 </p>
 
                 {/* Class and Room on same line */}
-                <div className="flex justify-between items-center px-4">
+                <div className="flex justify-center items-center">
                   <p
-                    className="text-sm font-bold"
+                    className="text-xs font-bold"
                     style={{
                       fontFamily:
                         "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
@@ -204,17 +249,6 @@ export default function KhmerMonthlyReport({
                       ? `កម្រិតថ្នាក់៖ ${selectedClass?.name}`
                       : `${selectedClass?.name}`}
                   </p>
-                  {!isGradeWide && showRoomNumber && roomNumber && (
-                    <p
-                      className="text-sm font-bold"
-                      style={{
-                        fontFamily:
-                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      }}
-                    >
-                      បន្ទប់ប្រឡង៖ {roomNumber}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
@@ -498,7 +532,7 @@ export default function KhmerMonthlyReport({
           {pageIndex === paginatedReports.length - 1 && (
             <>
               {/* Statistics Summary */}
-              <div className="mb-4 pb-3 mt-2">
+              <div className="mb-2 pb-1 mt-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex-1">
                     <span
@@ -610,11 +644,11 @@ export default function KhmerMonthlyReport({
               </div>
 
               {/* Signatures */}
-              <div className="grid grid-cols-2 gap-16 mt-6">
+              <div className="grid grid-cols-2 gap-10 mt-3">
                 {/* Principal */}
                 <div className="text-center">
                   <p
-                    className="text-xs mb-1"
+                    className="text-xs mb-0.5"
                     style={{
                       fontFamily:
                         "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
@@ -623,7 +657,7 @@ export default function KhmerMonthlyReport({
                     {reportDate}
                   </p>
                   <p
-                    className="text-xs font-bold mb-1"
+                    className="text-xs font-bold mb-0.5"
                     style={{
                       fontFamily:
                         "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
@@ -631,24 +665,22 @@ export default function KhmerMonthlyReport({
                   >
                     បានឃើញ និងឯកភាព
                   </p>
-                  <div className="h-12 print:h-16"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-1 px-8"
-                      style={{
-                        fontFamily:
-                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      }}
-                    >
-                      {principalName}
-                    </p>
-                  </div>
+
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                    }}
+                  >
+                    {principalName}
+                  </p>
                 </div>
 
                 {/* Teacher */}
                 <div className="text-center">
                   <p
-                    className="text-xs mb-1"
+                    className="text-xs mb-0.5"
                     style={{
                       fontFamily:
                         "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
@@ -657,7 +689,7 @@ export default function KhmerMonthlyReport({
                     {reportDate}
                   </p>
                   <p
-                    className="text-xs font-bold mb-1"
+                    className="text-xs font-bold mb-0.5"
                     style={{
                       fontFamily:
                         "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
@@ -665,18 +697,16 @@ export default function KhmerMonthlyReport({
                   >
                     គ្រូទទួលបន្ទុកថ្នាក់
                   </p>
-                  <div className="h-12 print:h-16"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-1 px-8"
-                      style={{
-                        fontFamily:
-                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      }}
-                    >
-                      {teacherName || "___________________"}
-                    </p>
-                  </div>
+                  <div className="h-10 print:h-14"></div>
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                    }}
+                  >
+                    {teacherName}
+                  </p>
                 </div>
               </div>
             </>
