@@ -807,14 +807,12 @@ export default function SubjectDetailsReport({
                     បានឃើញ និងឯកភាព
                   </p>
                   <div className="h-8 print:h-10"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-0.5 px-5"
-                      style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
-                    >
-                      {principalName}
-                    </p>
-                  </div>
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                  >
+                    {principalName}
+                  </p>
                 </div>
 
                 {/* Teacher */}
@@ -832,14 +830,12 @@ export default function SubjectDetailsReport({
                     គ្រូទទួលបន្ទុកថ្នាក់
                   </p>
                   <div className="h-8 print:h-10"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-0.5 px-5"
-                      style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
-                    >
-                      {teacherName || "___________________"}
-                    </p>
-                  </div>
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                  >
+                    {teacherName}
+                  </p>
                 </div>
               </div>
             </>

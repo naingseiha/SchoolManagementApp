@@ -133,8 +133,8 @@ export default function ReportsPage() {
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(28);
-  const [firstPageStudentCount, setFirstPageStudentCount] = useState(28);
+  const [studentsPerPage] = useState(27);
+  const [firstPageStudentCount, setFirstPageStudentCount] = useState(27);
   const [secondPageStudentCount, setSecondPageStudentCount] = useState(40);
   const [tableFontSize, setTableFontSize] = useState(10);
   const [useAutoDate, setUseAutoDate] = useState(true);
@@ -155,7 +155,9 @@ export default function ReportsPage() {
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Get unique grades from available classes
-  const grades = Array.from(new Set(availableClasses.map((c) => c.grade))).sort();
+  const grades = Array.from(
+    new Set(availableClasses.map((c) => c.grade))
+  ).sort();
   const gradeOptions = [
     { value: "", label: "ជ្រើសរើសកម្រិតថ្នាក់" },
     ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី${g} ទាំងអស់` })),
@@ -242,7 +244,7 @@ export default function ReportsPage() {
     } else {
       setShowSubjects(false);
       setTableFontSize(10);
-      setFirstPageStudentCount(28);
+      setFirstPageStudentCount(27);
       setSecondPageStudentCount(36);
       setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
     }
@@ -866,7 +868,7 @@ export default function ReportsPage() {
                       reportTitle={reportTitle}
                       examSession={examSession}
                       reportDate={reportDate}
-                      teacherName={teacherName}
+                      teacherName={reportData?.teacherName || teacherName}
                       principalName={principalName}
                       showCircles={showCircles}
                       autoCircle={autoCircle}
@@ -899,7 +901,7 @@ export default function ReportsPage() {
                       reportTitle={reportTitle}
                       examSession={examSession}
                       reportDate={reportDate}
-                      teacherName={teacherName}
+                      teacherName={reportData?.teacherName || teacherName}
                       principalName={principalName}
                       showCircles={showCircles}
                       autoCircle={autoCircle}
@@ -936,7 +938,7 @@ export default function ReportsPage() {
                   reportTitle={reportTitle}
                   examSession={examSession}
                   reportDate={reportDate}
-                  teacherName={teacherName}
+                  teacherName={reportData?.teacherName || teacherName}
                   principalName={principalName}
                   showCircles={showCircles}
                   autoCircle={autoCircle}
@@ -969,7 +971,7 @@ export default function ReportsPage() {
                   reportTitle={reportTitle}
                   examSession={examSession}
                   reportDate={reportDate}
-                  teacherName={teacherName}
+                  teacherName={reportData?.teacherName || teacherName}
                   principalName={principalName}
                   showCircles={showCircles}
                   autoCircle={autoCircle}

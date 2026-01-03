@@ -632,17 +632,15 @@ export default function KhmerMonthlyReport({
                     បានឃើញ និងឯកភាព
                   </p>
                   <div className="h-12 print:h-16"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-1 px-8"
-                      style={{
-                        fontFamily:
-                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      }}
-                    >
-                      {principalName}
-                    </p>
-                  </div>
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                    }}
+                  >
+                    {principalName}
+                  </p>
                 </div>
 
                 {/* Teacher */}
@@ -666,17 +664,15 @@ export default function KhmerMonthlyReport({
                     គ្រូទទួលបន្ទុកថ្នាក់
                   </p>
                   <div className="h-12 print:h-16"></div>
-                  <div className="inline-block">
-                    <p
-                      className="text-xs font-bold border-t-2 border-black pt-1 px-8"
-                      style={{
-                        fontFamily:
-                          "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                      }}
-                    >
-                      {teacherName || "___________________"}
-                    </p>
-                  </div>
+                  <p
+                    className="text-xs font-bold text-blue-600"
+                    style={{
+                      fontFamily:
+                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                    }}
+                  >
+                    {teacherName}
+                  </p>
                 </div>
               </div>
             </>
