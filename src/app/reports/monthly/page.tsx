@@ -133,8 +133,8 @@ export default function ReportsPage() {
   );
   const [autoCircle, setAutoCircle] = useState(true);
   const [showCircles, setShowCircles] = useState(true);
-  const [studentsPerPage] = useState(27);
-  const [firstPageStudentCount, setFirstPageStudentCount] = useState(27);
+  const [studentsPerPage] = useState(28);
+  const [firstPageStudentCount, setFirstPageStudentCount] = useState(28);
   const [secondPageStudentCount, setSecondPageStudentCount] = useState(40);
   const [tableFontSize, setTableFontSize] = useState(10);
   const [useAutoDate, setUseAutoDate] = useState(true);
@@ -239,12 +239,12 @@ export default function ReportsPage() {
     if (reportFormat === "detailed") {
       setShowSubjects(true);
       setTableFontSize(10);
-      setFirstPageStudentCount(35);
+      setFirstPageStudentCount(37);
       setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
     } else {
       setShowSubjects(false);
       setTableFontSize(10);
-      setFirstPageStudentCount(27);
+      setFirstPageStudentCount(28);
       setSecondPageStudentCount(36);
       setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
     }
@@ -450,7 +450,7 @@ export default function ReportsPage() {
         @media print {
           @page {
             size: A4;
-            margin: ${reportFormat === "detailed" ? "8mm" : "0"};
+            margin: 8mm 5mm;
           }
 
           body {
