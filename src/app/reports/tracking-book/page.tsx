@@ -42,7 +42,7 @@ const getCurrentKhmerMonth = (): string => {
 
 export default function TrackingBookPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { classes, subjects: allSubjects } = useData();
+  const { classes, subjects: allSubjects, isLoadingClasses } = useData();
   const router = useRouter();
 
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -134,10 +134,12 @@ export default function TrackingBookPage() {
     return null;
   }
 
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const classOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសថ្នាក់" },
+        ...classes.map((c) => ({ value: c.id, label: c.name })),
+      ];
 
   const monthOptions = [
     { value: "", label: "ទាំងអស់" },
@@ -499,7 +501,8 @@ export default function TrackingBookPage() {
                     setSelectedClassId(e.target.value);
                     setTrackingData(null);
                   }}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  disabled={isLoadingClasses}
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   {classOptions.map((option) => (
                     <option key={option.value} value={option.value}>

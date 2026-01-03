@@ -23,6 +23,7 @@ import {
   calculateTopStudentsByClass,
   calculateTopStudentsByGrade,
 } from "@/lib/utils/topStudentsCalculator";
+import { getCurrentKhmerMonth } from "@/lib/reportHelpers";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -43,7 +44,7 @@ const monthNames = [
 
 export default function AwardReportPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
-  const { classes } = useData();
+  const { classes, isLoadingClasses } = useData();
   const router = useRouter();
 
   // ✅ Filter classes based on role
@@ -69,15 +70,15 @@ export default function AwardReportPage() {
   const [reportType, setReportType] = useState<"class" | "grade">("class");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState("ធ្នូ");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(() => {
     const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
     return month >= 10 ? year : year - 1;
   });
-  const [templateType, setTemplateType] = useState<"medals" | "trophies">(
-    "medals"
+  const [templateType, setTemplateType] = useState<"trophies" | "medals">(
+    "trophies"
   );
   const [summaries, setSummaries] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -368,15 +369,19 @@ export default function AwardReportPage() {
   const selectedClass = classes.find((c) => c.id === selectedClassId);
   const topStudents = getTopStudents();
 
-  const classOptions = [
-    { value: "", label: "ជ្រើសរើសថ្នាក់" },
-    ...classes.map((c) => ({ value: c.id, label: c.name })),
-  ];
+  const classOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសថ្នាក់" },
+        ...classes.map((c) => ({ value: c.id, label: c.name })),
+      ];
 
-  const gradeOptions = [
-    { value: "", label: "ជ្រើសរើសកម្រិតថ្នាក់" },
-    ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី ${g}` })),
-  ];
+  const gradeOptions = isLoadingClasses
+    ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
+    : [
+        { value: "", label: "ជ្រើសរើសកម្រិតថ្នាក់" },
+        ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី ${g}` })),
+      ];
 
   const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
@@ -485,7 +490,8 @@ export default function AwardReportPage() {
                   <select
                     value={selectedClassId}
                     onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
+                    disabled={isLoadingClasses}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {classOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -502,7 +508,8 @@ export default function AwardReportPage() {
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
+                    disabled={isLoadingClasses}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     {gradeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
