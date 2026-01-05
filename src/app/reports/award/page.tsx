@@ -87,8 +87,49 @@ export default function AwardReportPage() {
   const [isExporting, setIsExporting] = useState(false);
   const [teacherName, setTeacherName] = useState<string>("");
   const [principalName, setPrincipalName] = useState<string>("នាយកសាលា");
+  const [oldKhmerDate, setOldKhmerDate] = useState<string>(
+    "ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩"
+  );
+  const [newKhmerDate, setNewKhmerDate] = useState<string>("");
 
   const academicYear = `${selectedYear}-${selectedYear + 1}`;
+
+  // Auto-generate new Khmer date on component mount
+  useEffect(() => {
+    const getCurrentKhmerDate = () => {
+      const months = [
+        "មករា",
+        "កុម្ភៈ",
+        "មីនា",
+        "មេសា",
+        "ឧសភា",
+        "មិថុនា",
+        "កក្កដា",
+        "សីហា",
+        "កញ្ញា",
+        "តុលា",
+        "វិច្ឆិកា",
+        "ធ្នូ",
+      ];
+      const now = new Date();
+      const day = now.getDate();
+      const month = months[now.getMonth()];
+      const year = now.getFullYear();
+      const khmerNumerals = ["០", "១", "២", "៣", "៤", "៥", "៦", "៧", "៨", "៩"];
+      const khmerDay = day
+        .toString()
+        .split("")
+        .map((d) => khmerNumerals[parseInt(d)])
+        .join("");
+      const khmerYear = year
+        .toString()
+        .split("")
+        .map((d) => khmerNumerals[parseInt(d)])
+        .join("");
+      return `ស្វាយធំ ថ្ងៃទី${khmerDay} ខែ${month} ឆ្នាំ${khmerYear}`;
+    };
+    setNewKhmerDate(getCurrentKhmerDate());
+  }, []);
 
   const grades = Array.from(new Set(classes.map((c) => c.grade))).sort(
     (a, b) => parseInt(a) - parseInt(b)
@@ -420,12 +461,10 @@ export default function AwardReportPage() {
                 <Trophy className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-gray-900">
+                <h1 className="text-2xl font-black text-gray-900">
                   តារាងកិត្តិយស
                 </h1>
-                <p className="text-gray-600 font-medium">
-                  Honor Roll - Top Students Award
-                </p>
+                <p className="text-gray-600 font-medium">Students Award</p>
               </div>
             </div>
           </div>
@@ -478,6 +517,39 @@ export default function AwardReportPage() {
                 <option value="trophies">🏆 ម៉ូតពាន (Trophies Style)</option>
                 <option value="medals">🥇 ម៉ូតមេដាយ (Medals Style)</option>
               </select>
+            </div>
+
+            {/* Date Settings */}
+            <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <label className="block text-sm font-bold text-gray-800 mb-3">
+                📅 កំណត់កាលបរិច្ឆេទហត្ថលេខា
+              </label>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    កាលបរិច្ឆេទខ្មែរបុរាណ (Old Khmer Standard Format)
+                  </label>
+                  <input
+                    type="text"
+                    value={oldKhmerDate}
+                    onChange={(e) => setOldKhmerDate(e.target.value)}
+                    className="w-full h-10 px-3 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    កាលបរិច្ឆេទខ្មែរទំនើប (New Khmer Standard Format)
+                  </label>
+                  <input
+                    type="text"
+                    value={newKhmerDate}
+                    onChange={(e) => setNewKhmerDate(e.target.value)}
+                    className="w-full h-10 px-3 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="ស្វាយធំ ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Selections */}
@@ -696,6 +768,8 @@ export default function AwardReportPage() {
                   month={selectedMonth}
                   teacherName={teacherName}
                   principalName={principalName}
+                  oldKhmerDate={oldKhmerDate}
+                  newKhmerDate={newKhmerDate}
                 />
               ) : (
                 <HonorCertificateTrophies
@@ -709,6 +783,8 @@ export default function AwardReportPage() {
                   month={selectedMonth}
                   teacherName={teacherName}
                   principalName={principalName}
+                  oldKhmerDate={oldKhmerDate}
+                  newKhmerDate={newKhmerDate}
                 />
               )}
             </div>

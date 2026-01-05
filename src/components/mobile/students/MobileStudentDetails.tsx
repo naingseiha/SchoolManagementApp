@@ -69,7 +69,7 @@ export default function MobileStudentDetails({
       const data = await studentsApi.getById(studentId);
       setStudent(data);
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
+      if (error.name !== "AbortError") {
         setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យសិស្ស");
       }
     } finally {
@@ -166,15 +166,13 @@ export default function MobileStudentDetails({
           <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-lg">
             <X className="w-10 h-10 text-red-600" />
           </div>
-          <h2 className="font-koulen text-2xl text-gray-900 mb-2">
-            មានបញ្ហា
-          </h2>
+          <h2 className="font-koulen text-2xl text-gray-900 mb-2">មានបញ្ហា</h2>
           <p className="font-battambang text-gray-600 mb-6 leading-relaxed">
             {error || "រកមិនឃើញសិស្ស"}
           </p>
           <button
             onClick={() => router.back()}
-            className="w-full h-12 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-battambang font-bold rounded-2xl hover:from-gray-900 hover:to-black transition-all active:scale-95 shadow-lg"
+            className="w-full h-12 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-koulen rounded-2xl hover:from-gray-900 hover:to-black transition-all active:scale-95 shadow-lg"
           >
             ត្រឡប់ក្រោយ
           </button>
@@ -220,11 +218,13 @@ export default function MobileStudentDetails({
         {/* Profile Card - Enhanced Modern Design */}
         <div className="relative overflow-hidden">
           {/* Gradient Background */}
-          <div className={`absolute inset-0 rounded-3xl ${
-            student.gender === "male"
-              ? "bg-gradient-to-br from-blue-500 via-indigo-600 to-blue-700"
-              : "bg-gradient-to-br from-pink-500 via-rose-600 to-pink-700"
-          }`}></div>
+          <div
+            className={`absolute inset-0 rounded-3xl ${
+              student.gender === "male"
+                ? "bg-gradient-to-br from-blue-500 via-indigo-600 to-blue-700"
+                : "bg-gradient-to-br from-pink-500 via-rose-600 to-pink-700"
+            }`}
+          ></div>
 
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
@@ -283,12 +283,12 @@ export default function MobileStudentDetails({
           {/* Personal Information */}
           <div className="bg-white rounded-3xl shadow-md border border-gray-100">
             <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
-              <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+              <p className="font-koulen text-base text-gray-900 flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
                   <User className="w-4 h-4 text-white" />
                 </div>
                 ព័ត៌មានផ្ទាល់ខ្លួន
-              </h3>
+              </p>
             </div>
             <div className="p-4 space-y-3">
               {student.khmerName && (
@@ -325,12 +325,12 @@ export default function MobileStudentDetails({
             student.address) && (
             <div className="bg-white rounded-3xl shadow-md border border-gray-100">
               <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
-                <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+                <p className="font-koulen text-base text-gray-900 flex items-center gap-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
                     <Phone className="w-4 h-4 text-white" />
                   </div>
                   ទំនាក់ទំនង
-                </h3>
+                </p>
               </div>
               <div className="p-4 space-y-3">
                 {student.email && (
@@ -410,12 +410,12 @@ export default function MobileStudentDetails({
           {/* Academic Information */}
           <div className="bg-white rounded-3xl shadow-md border border-gray-100">
             <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-gray-50">
-              <h3 className="font-koulen text-base text-gray-900 flex items-center gap-2">
+              <p className="font-koulen text-base text-gray-900 flex items-center gap-2">
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
                   <GraduationCap className="w-4 h-4 text-white" />
                 </div>
                 ព័ត៌មានសិក្សា
-              </h3>
+              </p>
             </div>
             <div className="p-4 space-y-3">
               {student.class ? (
@@ -496,14 +496,14 @@ export default function MobileStudentDetails({
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => router.push(`/students/edit/${student.id}`)}
-                className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-battambang font-bold rounded-2xl hover:from-gray-900 hover:to-black transition-all active:scale-95 shadow-lg"
+                className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-gray-800 to-gray-900 text-white font-koulen rounded-2xl hover:from-gray-900 hover:to-black transition-all active:scale-95 shadow-lg"
               >
                 <Edit className="w-5 h-5" />
                 កែប្រែ
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-red-600 to-rose-600 text-white font-battambang font-bold rounded-2xl hover:from-red-700 hover:to-rose-700 transition-all active:scale-95 shadow-lg"
+                className="flex items-center justify-center gap-2 h-14 bg-gradient-to-r from-red-600 to-rose-600 text-white font-koulen rounded-2xl hover:from-red-700 hover:to-rose-700 transition-all active:scale-95 shadow-lg"
               >
                 <Trash2 className="w-5 h-5" />
                 លុប
@@ -547,7 +547,9 @@ export default function MobileStudentDetails({
                 <h2 className="font-koulen text-2xl text-white leading-tight drop-shadow-lg">
                   លុបសិស្ស
                 </h2>
-                <p className="font-battambang text-white/90 text-sm mt-1">Delete Student</p>
+                <p className="font-battambang text-white/90 text-sm mt-1">
+                  Delete Student
+                </p>
               </div>
             </div>
 
@@ -573,13 +575,13 @@ export default function MobileStudentDetails({
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 font-battambang font-bold rounded-2xl transition-all active:scale-95"
+                  className="h-12 bg-gray-100 hover:bg-gray-200 text-gray-700 font-koulen rounded-2xl transition-all active:scale-95"
                 >
                   បោះបង់
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
-                  className="h-12 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-battambang font-bold rounded-2xl transition-all active:scale-95 shadow-lg"
+                  className="h-12 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-koulen rounded-2xl transition-all active:scale-95 shadow-lg"
                 >
                   លុប
                 </button>

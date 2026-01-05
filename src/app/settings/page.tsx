@@ -22,7 +22,7 @@ export default function SettingsPage() {
         <Header />
         <main className="p-6">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-moul text-gray-900 mb-2">
               ការកំណត់ Settings
             </h1>
             <p className="text-gray-600">ការកំណត់ប្រព័ន្ធ System Settings</p>
@@ -35,9 +35,9 @@ export default function SettingsPage() {
                   <User className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h1 className="text-lg font-bold text-gray-900">
                     គណនីរបស់ខ្ញុំ My Account
-                  </h2>
+                  </h1>
                   <p className="text-sm text-gray-600">ព័ត៌មានអ្នកប្រើប្រាស់</p>
                 </div>
               </div>
@@ -67,9 +67,9 @@ export default function SettingsPage() {
                   <School className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h1 className="text-lg font-bold text-gray-900">
                     ព័ត៌មានសាលា School Info
-                  </h2>
+                  </h1>
                   <p className="text-sm text-gray-600">ព័ត៌មានរបស់សាលា</p>
                 </div>
               </div>
@@ -97,9 +97,9 @@ export default function SettingsPage() {
                   <Bell className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h1 className="text-lg font-bold text-gray-900">
                     ការជូនដំណឹង Notifications
-                  </h2>
+                  </h1>
                   <p className="text-sm text-gray-600">ការកំណត់ការជូនដំណឹង</p>
                 </div>
               </div>
@@ -114,9 +114,9 @@ export default function SettingsPage() {
                   <Shield className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">
+                  <h1 className="text-lg font-bold text-gray-900">
                     សុវត្ថិភាព Security
-                  </h2>
+                  </h1>
                   <p className="text-sm text-gray-600">ការកំណត់សុវត្ថិភាព</p>
                 </div>
               </div>

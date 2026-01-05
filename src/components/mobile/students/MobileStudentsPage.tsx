@@ -65,7 +65,7 @@ export default function MobileStudentsPage() {
       const data = await studentsApi.getAllLightweight();
       setStudents(data);
     } catch (error: any) {
-      if (error.name !== 'AbortError') {
+      if (error.name !== "AbortError") {
         setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យសិស្ស");
       }
     } finally {
@@ -169,10 +169,7 @@ export default function MobileStudentsPage() {
           <div className="h-40 bg-white rounded-2xl"></div>
           {/* Student cards skeleton */}
           {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="h-20 bg-white rounded-xl"
-            ></div>
+            <div key={i} className="h-20 bg-white rounded-xl"></div>
           ))}
         </div>
       </div>
@@ -186,9 +183,7 @@ export default function MobileStudentsPage() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-10 h-10 text-red-600" />
           </div>
-          <h2 className="font-koulen text-2xl text-gray-900 mb-2">
-            មានបញ្ហា
-          </h2>
+          <h2 className="font-koulen text-2xl text-gray-900 mb-2">មានបញ្ហា</h2>
           <p className="font-battambang text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => loadStudents(false)}
@@ -212,7 +207,9 @@ export default function MobileStudentsPage() {
       {isRefreshing && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-200 flex items-center gap-2">
           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <span className="font-battambang text-sm text-gray-700 font-semibold">កំពុងបន្ទាន់សម័យ...</span>
+          <span className="font-battambang text-sm text-gray-700 font-semibold">
+            កំពុងបន្ទាន់សម័យ...
+          </span>
         </div>
       )}
 
@@ -246,7 +243,7 @@ export default function MobileStudentsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && {}}
+            onKeyDown={(e) => e.key === "Enter" && {}}
             placeholder="Search Students..."
             className="w-full pl-11 pr-11 py-3.5 rounded-xl font-battambang text-sm text-gray-900 bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all"
           />
@@ -283,7 +280,9 @@ export default function MobileStudentsPage() {
                     សរុប
                   </p>
                 </div>
-                <p className="font-koulen text-2xl text-gray-900">{stats.total}</p>
+                <p className="font-koulen text-2xl text-gray-900">
+                  {stats.total}
+                </p>
               </div>
 
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
@@ -295,7 +294,9 @@ export default function MobileStudentsPage() {
                     មានថ្នាក់
                   </p>
                 </div>
-                <p className="font-koulen text-2xl text-gray-900">{stats.withClass}</p>
+                <p className="font-koulen text-2xl text-gray-900">
+                  {stats.withClass}
+                </p>
               </div>
 
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
@@ -307,7 +308,9 @@ export default function MobileStudentsPage() {
                     ប្រុស
                   </p>
                 </div>
-                <p className="font-koulen text-2xl text-gray-900">{stats.male}</p>
+                <p className="font-koulen text-2xl text-gray-900">
+                  {stats.male}
+                </p>
               </div>
 
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
@@ -319,7 +322,9 @@ export default function MobileStudentsPage() {
                     ស្រី
                   </p>
                 </div>
-                <p className="font-koulen text-2xl text-gray-900">{stats.female}</p>
+                <p className="font-koulen text-2xl text-gray-900">
+                  {stats.female}
+                </p>
               </div>
             </div>
           </div>
@@ -329,7 +334,9 @@ export default function MobileStudentsPage() {
       {/* Grade Filters */}
       <div className="px-5 pt-4 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-koulen text-lg text-gray-900">Filter by Grade</h3>
+          <h1 className="font-koulen text-lg text-gray-900">
+            ជ្រើសរើសតាមថ្នាក់
+          </h1>
           <span className="font-battambang text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
             {filteredStudents.length} សិស្ស
           </span>
@@ -368,9 +375,9 @@ export default function MobileStudentsPage() {
             <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
               <User className="w-12 h-12 text-gray-400" />
             </div>
-            <h3 className="font-koulen text-lg text-gray-900 mb-2">
+            <h1 className="font-koulen text-lg text-gray-900 mb-2">
               មិនមានសិស្ស
-            </h3>
+            </h1>
             <p className="font-battambang text-sm text-gray-600 mb-4">
               {searchQuery || selectedGrade !== "all"
                 ? "សូមសាកល្បងផ្លាស់ប្តូរការស្វែងរក"
@@ -406,10 +413,10 @@ export default function MobileStudentsPage() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0 text-left">
-                  <h3 className="font-battambang font-bold text-sm text-gray-900 truncate mb-1">
+                  <p className="font-koulen text-sm text-gray-900 truncate mb-1">
                     {student.khmerName ||
                       `${student.firstName} ${student.lastName}`}
-                  </h3>
+                  </p>
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-lg">
                       <span className="font-battambang text-xs text-blue-700 font-semibold">

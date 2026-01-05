@@ -21,6 +21,8 @@ interface HonorCertificateProps {
   month?: string;
   teacherName?: string;
   principalName?: string;
+  oldKhmerDate?: string;
+  newKhmerDate?: string;
 }
 
 export default function HonorCertificate({
@@ -32,6 +34,8 @@ export default function HonorCertificate({
   month,
   teacherName,
   principalName,
+  oldKhmerDate,
+  newKhmerDate,
 }: HonorCertificateProps) {
   const getRankImage = (rank: number): string => {
     const images = [
@@ -277,8 +281,8 @@ export default function HonorCertificate({
               <div
                 style={{
                   fontFamily: "Khmer OS Muol Light",
-                  fontSize: "11pt",
-                  lineHeight: "1.5",
+                  fontSize: "10pt",
+                  lineHeight: "1.4",
                 }}
               >
                 <div className="text-red-600">ព្រះរាជាណាចក្រកម្ពុជា</div>
@@ -287,8 +291,8 @@ export default function HonorCertificate({
                   className="text-red-600"
                   style={{
                     fontFamily: "Tacteing",
-                    fontSize: "28pt",
-                    marginTop: "-14px",
+                    fontSize: "26pt",
+                    marginTop: "-12px",
                   }}
                 >
                   3
@@ -298,10 +302,10 @@ export default function HonorCertificate({
 
             <div
               style={{
-                marginTop: "-30px",
+                marginTop: "-28px",
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "8px",
                 justifyContent: "flex-start",
               }}
             >
@@ -309,8 +313,8 @@ export default function HonorCertificate({
                 src="/logo.png"
                 alt="School Logo"
                 style={{
-                  width: "80px",
-                  height: "80px",
+                  width: "70px",
+                  height: "70px",
                   objectFit: "contain",
                   flexShrink: 0,
                 }}
@@ -318,8 +322,8 @@ export default function HonorCertificate({
               <div
                 style={{
                   fontFamily: "Khmer OS Bokor",
-                  fontSize: "0.95rem",
-                  lineHeight: "1.6",
+                  fontSize: "0.9rem",
+                  lineHeight: "1.5",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
@@ -332,13 +336,13 @@ export default function HonorCertificate({
               </div>
             </div>
 
-            <div className="text-center mb-3">
+            <div className="text-center mb-2">
               <h1
                 className="text-red-600 text-2xl font-black mb-1"
                 style={{
                   fontFamily: "Khmer OS Muol Light",
                   lineHeight: "1.1",
-                  marginTop: "-30px",
+                  marginTop: "-35px",
                 }}
               >
                 តារាងកិត្តិយស
@@ -346,8 +350,8 @@ export default function HonorCertificate({
             </div>
 
             <div
-              className="text-center space-y-0. 5"
-              style={{ fontFamily: "Khmer OS Muol Light", fontSize: "11pt" }}
+              className="text-center space-y-0"
+              style={{ fontFamily: "Khmer OS Muol Light", fontSize: "10.5pt" }}
             >
               <div className="font-bold text-gray-800">
                 {reportType === "class" &&
@@ -373,7 +377,7 @@ export default function HonorCertificate({
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className="space-y-3">
                 {/* Rank 1 */}
                 {topStudents[0] && (
                   <div className="flex flex-col items-center">
@@ -408,8 +412,8 @@ export default function HonorCertificate({
                       <div
                         style={{
                           position: "relative",
-                          width: "144px",
-                          height: "144px",
+                          width: "155px",
+                          height: "155px",
                           borderRadius: "50%",
                           border: "4px solid #EF4444",
                           overflow: "hidden",
@@ -430,16 +434,16 @@ export default function HonorCertificate({
                       </div>
                     </div>
 
-                    <div className="mt-2 text-center">
+                    <div className="mt-0.5 text-center">
                       {/* ✅ Grade Letter as Text */}
                       <div
                         style={{
-                          fontSize: "36px",
+                          fontSize: "32px",
                           fontWeight: 900,
                           fontFamily: "Arial, sans-serif",
                           color: getGradeColor(topStudents[0].letterGrade),
                           lineHeight: "1",
-                          marginBottom: "8px",
+                          marginBottom: "4px",
                         }}
                       >
                         {displayGrade(topStudents[0].letterGrade)}
@@ -448,11 +452,11 @@ export default function HonorCertificate({
                       {/* Average Score */}
                       <div
                         style={{
-                          fontSize: "13px",
+                          fontSize: "12px",
                           fontWeight: "bold",
                           color: "#C2410C",
                           fontFamily: "Khmer OS Battambang",
-                          marginBottom: "4px",
+                          marginBottom: "2px",
                         }}
                       >
                         មធ្យមភាគ {topStudents[0].averageScore.toFixed(2)}
@@ -461,7 +465,7 @@ export default function HonorCertificate({
                       {/* Student Name */}
                       <div
                         style={{
-                          fontSize: "16px",
+                          fontSize: "15px",
                           fontWeight: 900,
                           color: "#111827",
                           fontFamily: "Khmer OS Muol Light",
@@ -474,11 +478,11 @@ export default function HonorCertificate({
                       {reportType === "grade" && (
                         <div
                           style={{
-                            fontSize: "14px",
+                            fontSize: "13px",
                             fontWeight: 600,
                             color: "#4B5563",
                             fontFamily: "Khmer OS Battambang",
-                            marginTop: "4px",
+                            marginTop: "2px",
                           }}
                         >
                           ថ្នាក់ {topStudents[0].className}
@@ -490,8 +494,8 @@ export default function HonorCertificate({
 
                 {/* Ranks 2-3 */}
                 <div
-                  className="grid grid-cols-2 gap-16 max-w-4xl mx-auto px-4"
-                  style={{ marginTop: "-138px" }}
+                  className="grid grid-cols-2 gap-12 max-w-4xl mx-auto px-4"
+                  style={{ marginTop: "-140px" }}
                 >
                   {topStudents.slice(1, 3).map((student) => (
                     <div
@@ -529,8 +533,8 @@ export default function HonorCertificate({
                         <div
                           style={{
                             position: "relative",
-                            width: "144px",
-                            height: "144px",
+                            width: "150px",
+                            height: "150px",
                             borderRadius: "50%",
                             border: "4px solid #F87171",
                             overflow: "hidden",
@@ -552,16 +556,16 @@ export default function HonorCertificate({
                         </div>
                       </div>
 
-                      <div className="mt-2 text-center">
+                      <div className="mt-0.5 text-center">
                         {/* ✅ Grade Letter as Text */}
                         <div
                           style={{
-                            fontSize: "36px",
+                            fontSize: "32px",
                             fontWeight: 900,
                             fontFamily: "Arial, sans-serif",
                             color: getGradeColor(student.letterGrade),
                             lineHeight: "1",
-                            marginBottom: "8px",
+                            marginBottom: "4px",
                           }}
                         >
                           {displayGrade(student.letterGrade)}
@@ -570,11 +574,11 @@ export default function HonorCertificate({
                         {/* Average Score */}
                         <div
                           style={{
-                            fontSize: "13px",
+                            fontSize: "12px",
                             fontWeight: "bold",
                             color: "#C2410C",
                             fontFamily: "Khmer OS Battambang",
-                            marginBottom: "4px",
+                            marginBottom: "2px",
                           }}
                         >
                           មធ្យមភាគ {student.averageScore.toFixed(2)}
@@ -583,7 +587,7 @@ export default function HonorCertificate({
                         {/* Student Name */}
                         <div
                           style={{
-                            fontSize: "16px",
+                            fontSize: "15px",
                             fontWeight: 900,
                             color: "#111827",
                             fontFamily: "Khmer OS Muol Light",
@@ -596,11 +600,11 @@ export default function HonorCertificate({
                         {reportType === "grade" && (
                           <div
                             style={{
-                              fontSize: "14px",
+                              fontSize: "13px",
                               fontWeight: 600,
                               color: "#4B5563",
                               fontFamily: "Khmer OS Battambang",
-                              marginTop: "4px",
+                              marginTop: "2px",
                             }}
                           >
                             ថ្នាក់ {student.className}
@@ -613,7 +617,7 @@ export default function HonorCertificate({
 
                 {/* Ranks 4-5 */}
                 {topStudents.length >= 4 && (
-                  <div className="grid grid-cols-2 gap-16 max-w-4xl mx-auto px-4">
+                  <div className="grid grid-cols-2 gap-12 max-w-4xl mx-auto px-4">
                     {topStudents.slice(3, 5).map((student) => (
                       <div
                         key={student.studentId}
@@ -622,9 +626,9 @@ export default function HonorCertificate({
                         <div className="relative">
                           <div
                             className="absolute inset-0 flex items-center justify-center"
-                            style={{ transform: "scale(1.15)" }}
+                            style={{ transform: "scale(1.10)" }}
                           >
-                            <svg width="180" height="180" viewBox="0 0 180 180">
+                            <svg width="150" height="150" viewBox="0 0 180 180">
                               <circle
                                 cx="90"
                                 cy="90"
@@ -650,8 +654,8 @@ export default function HonorCertificate({
                           <div
                             style={{
                               position: "relative",
-                              width: "144px",
-                              height: "144px",
+                              width: "140px",
+                              height: "140px",
                               borderRadius: "50%",
                               border: "4px solid #F87171",
                               overflow: "hidden",
@@ -673,16 +677,16 @@ export default function HonorCertificate({
                           </div>
                         </div>
 
-                        <div className="mt-2 text-center">
+                        <div className="mt-0.5 text-center">
                           {/* ✅ Grade Letter as Text */}
                           <div
                             style={{
-                              fontSize: "36px",
+                              fontSize: "30px",
                               fontWeight: 900,
                               fontFamily: "Arial, sans-serif",
                               color: getGradeColor(student.letterGrade),
                               lineHeight: "1",
-                              marginBottom: "8px",
+                              marginBottom: "4px",
                             }}
                           >
                             {displayGrade(student.letterGrade)}
@@ -691,11 +695,11 @@ export default function HonorCertificate({
                           {/* Average Score */}
                           <div
                             style={{
-                              fontSize: "13px",
+                              fontSize: "11px",
                               fontWeight: "bold",
                               color: "#C2410C",
                               fontFamily: "Khmer OS Battambang",
-                              marginBottom: "4px",
+                              marginBottom: "2px",
                             }}
                           >
                             មធ្យមភាគ {student.averageScore.toFixed(2)}
@@ -704,7 +708,7 @@ export default function HonorCertificate({
                           {/* Student Name */}
                           <div
                             style={{
-                              fontSize: "16px",
+                              fontSize: "14px",
                               fontWeight: 900,
                               color: "#111827",
                               fontFamily: "Khmer OS Muol Light",
@@ -717,11 +721,11 @@ export default function HonorCertificate({
                           {reportType === "grade" && (
                             <div
                               style={{
-                                fontSize: "14px",
+                                fontSize: "12px",
                                 fontWeight: 600,
                                 color: "#4B5563",
                                 fontFamily: "Khmer OS Battambang",
-                                marginTop: "4px",
+                                marginTop: "2px",
                               }}
                             >
                               ថ្នាក់ {student.className}
@@ -737,8 +741,8 @@ export default function HonorCertificate({
           </div>
 
           {/* Approval Section */}
-          <div className="mt-auto pt-6 border-t-2 border-gray-300">
-            <div className="grid grid-cols-2 gap-16 mt-6">
+          <div className="mt-auto pt-3 border-t-2 border-gray-300">
+            <div className="grid grid-cols-2 gap-12 mt-3">
               <div className="text-center">
                 <p
                   className="text-xs font-bold mb-1"
@@ -757,30 +761,52 @@ export default function HonorCertificate({
 
               <div className="text-center">
                 <p
-                  className="text-xs font-bold mb-1"
+                  className="text-xs font-bold mb-0.5"
                   style={{ fontFamily: "Khmer OS Battambang" }}
                 >
-                  ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩
+                  {oldKhmerDate ||
+                    "ថ្ងៃចន្ទ ១៥រោច ខែមិគសិរ ឆ្នាំជូត សំរឹទ្ធិ ព. ស. ២៥៦៩"}
                 </p>
                 <p
-                  className="text-xs font-bold mb-1"
+                  className="text-xs font-bold mb-0.5"
                   style={{ fontFamily: "Khmer OS Battambang" }}
                 >
-                  សៀមរាប ថ្ងៃទី{getCurrentDate()}
+                  {newKhmerDate || `សៀមរាប ថ្ងៃទី${getCurrentDate()}`}
                 </p>
-                <p
-                  className="text-xs font-bold mb-1"
-                  style={{ fontFamily: "Khmer OS Muol Light" }}
-                >
-                  គ្រូទទួលបន្ទុកថ្នាក់
-                </p>
-                <div className="h-12"></div>
-                <p
-                  className="text-xs font-bold text-blue-600"
-                  style={{ fontFamily: "Khmer OS Muol Light" }}
-                >
-                  {teacherName || "គ្រូបន្ទុកថ្នាក់"}
-                </p>
+                {reportType === "class" && (
+                  <>
+                    <p
+                      className="text-xs font-bold mb-0.5"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      គ្រូទទួលបន្ទុកថ្នាក់
+                    </p>
+                    <div className="h-10"></div>
+                    <p
+                      className="text-xs font-bold text-blue-600"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      {teacherName || "គ្រូបន្ទុកថ្នាក់"}
+                    </p>
+                  </>
+                )}
+                {reportType === "grade" && (
+                  <>
+                    <p
+                      className="text-xs font-bold mb-0.5 mt-2"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      គ្រូទទួលបន្ទុក
+                    </p>
+                    <div className="h-10"></div>
+                    {/* <p
+                      className="text-xs font-bold text-blue-600"
+                      style={{ fontFamily: "Khmer OS Muol Light" }}
+                    >
+                      ក្រុមគ្រូបង្រៀនថ្នាក់ទី {grade}
+                    </p> */}
+                  </>
+                )}
               </div>
             </div>
           </div>

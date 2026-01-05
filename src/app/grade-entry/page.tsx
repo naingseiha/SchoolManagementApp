@@ -586,7 +586,7 @@ export default function GradeEntryPage() {
                   <BookOpen className="w-7 h-7 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-2xl font-koulen text-gray-900">
                     បញ្ចូលពិន្ទុប្រចាំខែ
                   </h1>
                   <p className="text-sm text-gray-500 mt-1">

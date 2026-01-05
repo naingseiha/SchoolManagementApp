@@ -182,7 +182,7 @@ export default function BulkImportPage() {
                 <Upload className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-gray-900">
+                <h1 className="text-3xl font-moul text-gray-900">
                   បញ្ចូលសិស្សជាបណ្តុំ
                 </h1>
                 <p className="text-gray-600 font-medium">
@@ -251,7 +251,7 @@ export default function BulkImportPage() {
           ) : (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
               <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-700 mb-2">
+              <h3 className="text-xl font-koulen text-gray-700 mb-2">
                 សូមជ្រើសរើសថ្នាក់
               </h3>
               <p className="text-gray-500">
@@ -269,7 +269,7 @@ export default function BulkImportPage() {
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-8 h-8" />
                     <div>
-                      <h2 className="text-2xl font-bold">Import Complete!</h2>
+                      <h2 className="text-2xl font-koulen">Import Complete!</h2>
                       <p className="text-green-100">បញ្ចូលទិន្នន័យបានជោគជ័យ</p>
                     </div>
                   </div>
@@ -280,7 +280,7 @@ export default function BulkImportPage() {
                   {/* Summary */}
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="bg-blue-50 p-4 rounded-lg text-center">
-                      <div className="text-3xl font-bold text-blue-600">
+                      <div className="text-3xl font-moul text-blue-600">
                         {importResult.total}
                       </div>
                       <div className="text-sm text-gray-600 font-medium">
@@ -288,7 +288,7 @@ export default function BulkImportPage() {
                       </div>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg text-center">
-                      <div className="text-3xl font-bold text-green-600">
+                      <div className="text-3xl font-moul text-green-600">
                         {importResult.success}
                       </div>
                       <div className="text-sm text-gray-600 font-medium">
@@ -296,7 +296,7 @@ export default function BulkImportPage() {
                       </div>
                     </div>
                     <div className="bg-red-50 p-4 rounded-lg text-center">
-                      <div className="text-3xl font-bold text-red-600">
+                      <div className="text-3xl font-moul text-red-600">
                         {importResult.failed}
                       </div>
                       <div className="text-sm text-gray-600 font-medium">

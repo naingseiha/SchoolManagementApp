@@ -21,7 +21,10 @@ import type { MonthlyReportData } from "@/lib/api/reports";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 interface StudentReport {
   studentId: string;
@@ -70,7 +73,6 @@ const getCurrentKhmerMonth = () => {
   return month?.value || "មករា";
 };
 
-
 export default function MobileMonthlyReport() {
   const { classes, isLoadingClasses, refreshClasses } = useData();
   const router = useRouter();
@@ -89,7 +91,9 @@ export default function MobileMonthlyReport() {
     yearParam ? parseInt(yearParam) : getCurrentAcademicYear()
   );
   const [reportData, setReportData] = useState<ClassReport | null>(null);
-  const [reportApiData, setReportApiData] = useState<MonthlyReportData | null>(null);
+  const [reportApiData, setReportApiData] = useState<MonthlyReportData | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(!classParam);
   const [exportingPDF, setExportingPDF] = useState(false);
@@ -268,16 +272,16 @@ export default function MobileMonthlyReport() {
     try {
       await generateMonthlyReportPDF({
         reportData: reportApiData,
-        schoolName: 'វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ',
-        province: 'មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប',
-        principalName: 'នាយកសាលា',
+        schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
+        province: "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប",
+        principalName: "នាយកសាលា",
         teacherName: reportApiData.teacherName || undefined,
       });
 
       // Show success message
-      alert('✅ បាននាំចេញរបាយការណ៍ជា PDF ដោយជោគជ័យ!');
+      alert("✅ បាននាំចេញរបាយការណ៍ជា PDF ដោយជោគជ័យ!");
     } catch (error: any) {
-      console.error('Error generating PDF:', error);
+      console.error("Error generating PDF:", error);
       alert(`❌ មានបញ្ហាក្នុងការនាំចេញ: ${error.message}`);
     } finally {
       setExportingPDF(false);
@@ -414,9 +418,9 @@ export default function MobileMonthlyReport() {
                     <ArrowLeft className="w-5 h-5 text-white" />
                   </button>
                   <div className="flex-1 text-center px-4">
-                    <h3 className="font-koulen text-xl text-white leading-tight drop-shadow-lg">
+                    <h1 className="font-koulen text-xl text-white leading-tight drop-shadow-lg">
                       {reportData.className}
-                    </h3>
+                    </h1>
                     <p className="font-battambang text-xs text-purple-100 mt-1">
                       {reportData.month} {reportData.year}
                     </p>
@@ -456,7 +460,9 @@ export default function MobileMonthlyReport() {
                     <div className="font-koulen text-3xl text-white mb-1">
                       {reportData.totalStudents}
                     </div>
-                    <div className="font-battambang text-xs text-purple-200">Students</div>
+                    <div className="font-battambang text-xs text-purple-200">
+                      Students
+                    </div>
                   </div>
 
                   <div className="bg-white/15 backdrop-blur-md rounded-2xl p-4 border border-white/30 shadow-md">
@@ -518,7 +524,9 @@ export default function MobileMonthlyReport() {
                         <span className="font-koulen text-xl text-indigo-600">
                           {student.average.toFixed(2)}
                         </span>
-                        <span className="font-battambang text-xs text-gray-500">/50</span>
+                        <span className="font-battambang text-xs text-gray-500">
+                          /50
+                        </span>
                       </div>
                       <div>
                         {(() => {
@@ -594,7 +602,9 @@ export default function MobileMonthlyReport() {
                               <span className="font-koulen text-xl text-indigo-600">
                                 {student.average.toFixed(2)}
                               </span>
-                              <span className="font-battambang text-xs text-gray-500">/50</span>
+                              <span className="font-battambang text-xs text-gray-500">
+                                /50
+                              </span>
                             </div>
 
                             <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden shadow-inner">
@@ -672,9 +682,9 @@ export default function MobileMonthlyReport() {
               <div className="w-24 h-24 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <BarChart3 className="w-12 h-12 text-indigo-600" />
               </div>
-              <h3 className="font-koulen text-lg text-gray-900 mb-2">
+              <h1 className="font-koulen text-lg text-gray-900 mb-2">
                 ជ្រើសរើសថ្នាក់
-              </h3>
+              </h1>
               <p className="font-battambang text-sm text-gray-600 leading-relaxed mb-1">
                 សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ
               </p>

@@ -88,20 +88,26 @@
     font-weight: 400;
   }
 
-  /* Heading 2 - Koulen (Subtitle) */
+  /* Heading 2 - Koulen (Subtitle) - NO BOLD to preserve Khmer rendering */
   h2,
   .heading-2 {
     @apply font-koulen;
-    font-weight: 400;
+    font-weight: 400 !important;  /* Force override browser defaults! */
     letter-spacing: 0.5px;
   }
 
-  /* Heading 3-6 - Battambang Bold */
+  /* Heading 3 - Koulen (Sub-subtitle) - NO BOLD to preserve Khmer rendering */
   h3,
+  .heading-3 {
+    @apply font-koulen;
+    font-weight: 400 !important;  /* Force override browser defaults! */
+    letter-spacing: 0.5px;
+  }
+
+  /* Heading 4-6 - Battambang Bold */
   h4,
   h5,
   h6,
-  .heading-3,
   .heading-4,
   .heading-5,
   .heading-6 {
@@ -115,11 +121,13 @@
 
   .khmer-header {
     @apply font-koulen;
+    font-weight: 400;  /* No bold - preserves Khmer rendering */
     letter-spacing: 0.5px;
   }
 
   .khmer-sidebar {
     @apply font-koulen;
+    font-weight: 400;  /* No bold - preserves Khmer rendering */
   }
 
   .khmer-text {

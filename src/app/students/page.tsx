@@ -105,7 +105,7 @@ export default function StudentsPage() {
                   <Users className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
+                  <h1 className="text-2xl font-koulen text-gray-900">
                     គ្រប់គ្រងសិស្ស
                   </h1>
                   <p className="text-sm text-gray-600 font-medium">
@@ -117,7 +117,7 @@ export default function StudentsPage() {
               {/* Stats */}
               <div className="flex items-center gap-6">
                 <div className="text-center">
-                  <div className="text-2xl font-black text-blue-600">
+                  <div className="text-2xl font-koulen text-blue-600">
                     {contextStudents.length}
                   </div>
                   <div className="text-xs text-gray-600 font-semibold">
@@ -125,7 +125,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-black text-pink-600">
+                  <div className="text-2xl font-koulen text-pink-600">
                     {
                       contextStudents.filter((s) => s.gender === "female")
                         .length
@@ -136,7 +136,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-black text-indigo-600">
+                  <div className="text-2xl font-koulen text-indigo-600">
                     {contextStudents.filter((s) => s.gender === "male").length}
                   </div>
                   <div className="text-xs text-gray-600 font-semibold">

@@ -21,7 +21,10 @@ import {
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 type AttendanceValue = "" | "A" | "P"; // Empty = Present, A = Absent, P = Permission
 
@@ -67,7 +70,6 @@ const getCurrentKhmerMonth = () => {
   const month = MONTHS.find((m) => m.number === monthNumber);
   return month?.value || "មករា";
 };
-
 
 export default function MobileAttendance({
   classId,
@@ -147,86 +149,91 @@ export default function MobileAttendance({
     };
   }, [authLoading, currentUser, teacherHomeroomClassId, selectedClass]);
 
-  const loadAttendanceData = useCallback(async (refresh = false) => {
-    if (!selectedClass) {
-      setStudents([]);
-      return;
-    }
-
-    if (refresh) {
-      setIsRefreshing(true);
-    } else {
-      setLoadingData(true);
-    }
-    setError(null);
-    setHasUnsavedChanges(false);
-
-    try {
-      // Abort previous request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      abortControllerRef.current = new AbortController();
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`,
-        { signal: abortControllerRef.current.signal }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`មានបញ្ហា:  ${errorText}`);
+  const loadAttendanceData = useCallback(
+    async (refresh = false) => {
+      if (!selectedClass) {
+        setStudents([]);
+        return;
       }
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || "Failed to load attendance");
+      if (refresh) {
+        setIsRefreshing(true);
+      } else {
+        setLoadingData(true);
       }
+      setError(null);
+      setHasUnsavedChanges(false);
 
-      const gridData = result.data;
-
-      const studentsData: StudentAttendance[] = gridData.students.map(
-        (student: any) => {
-          const morningAttendance: { [day: number]: AttendanceValue } = {};
-          const afternoonAttendance: { [day: number]: AttendanceValue } = {};
-
-          daysArray.forEach((day) => {
-            const morningKey = `${day}_M`;
-            const afternoonKey = `${day}_A`;
-
-            const morningData = student.attendance[morningKey];
-            const afternoonData = student.attendance[afternoonKey];
-
-            // Morning session
-            morningAttendance[day] = (morningData?.displayValue || "") as AttendanceValue;
-
-            // Afternoon session
-            afternoonAttendance[day] = (afternoonData?.displayValue || "") as AttendanceValue;
-          });
-
-          return {
-            studentId: student.studentId,
-            studentName: student.studentName,
-            khmerName: student.studentName,
-            gender: student.gender,
-            morningAttendance,
-            afternoonAttendance,
-          };
+      try {
+        // Abort previous request
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
         }
-      );
+        abortControllerRef.current = new AbortController();
 
-      setStudents(studentsData);
-      setDataLoaded(true); // ✅ Mark as loaded
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
-        setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ:  ${error.message}`);
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`,
+          { signal: abortControllerRef.current.signal }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`មានបញ្ហា:  ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || "Failed to load attendance");
+        }
+
+        const gridData = result.data;
+
+        const studentsData: StudentAttendance[] = gridData.students.map(
+          (student: any) => {
+            const morningAttendance: { [day: number]: AttendanceValue } = {};
+            const afternoonAttendance: { [day: number]: AttendanceValue } = {};
+
+            daysArray.forEach((day) => {
+              const morningKey = `${day}_M`;
+              const afternoonKey = `${day}_A`;
+
+              const morningData = student.attendance[morningKey];
+              const afternoonData = student.attendance[afternoonKey];
+
+              // Morning session
+              morningAttendance[day] = (morningData?.displayValue ||
+                "") as AttendanceValue;
+
+              // Afternoon session
+              afternoonAttendance[day] = (afternoonData?.displayValue ||
+                "") as AttendanceValue;
+            });
+
+            return {
+              studentId: student.studentId,
+              studentName: student.studentName,
+              khmerName: student.studentName,
+              gender: student.gender,
+              morningAttendance,
+              afternoonAttendance,
+            };
+          }
+        );
+
+        setStudents(studentsData);
+        setDataLoaded(true); // ✅ Mark as loaded
+      } catch (error: any) {
+        if (error.name !== "AbortError") {
+          setError(`មានបញ្ហាក្នុងការផ្ទុកទិន្នន័យ:  ${error.message}`);
+        }
+      } finally {
+        setLoadingData(false);
+        setIsRefreshing(false);
       }
-    } finally {
-      setLoadingData(false);
-      setIsRefreshing(false);
-    }
-  }, [selectedClass, selectedMonth, selectedYear, monthNumber, daysArray]);
+    },
+    [selectedClass, selectedMonth, selectedYear, monthNumber, daysArray]
+  );
 
   // ✅ Toggle student status for morning or afternoon - NO AUTO SAVE
   const toggleStudentStatus = (studentId: string, session: "M" | "A") => {
@@ -234,7 +241,10 @@ export default function MobileAttendance({
       prev.map((student) => {
         if (student.studentId !== studentId) return student;
 
-        const attendanceMap = session === "M" ? student.morningAttendance : student.afternoonAttendance;
+        const attendanceMap =
+          session === "M"
+            ? student.morningAttendance
+            : student.afternoonAttendance;
         const currentValue = attendanceMap[currentDay] || "";
 
         // Cycle through: "" (Present) -> "A" (Absent) -> "P" (Permission) -> "" (Present)
@@ -306,7 +316,9 @@ export default function MobileAttendance({
         });
       });
 
-      console.log(`📤 Sending ${attendanceRecords.length} attendance records...`);
+      console.log(
+        `📤 Sending ${attendanceRecords.length} attendance records...`
+      );
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/attendance/bulk-save`,
@@ -331,7 +343,11 @@ export default function MobileAttendance({
       const result = await response.json();
 
       const elapsedTime = Math.round(performance.now() - startTime);
-      console.log(`✅ Save completed in ${elapsedTime}ms (${result.data?.performanceMs || '?'}ms backend)`);
+      console.log(
+        `✅ Save completed in ${elapsedTime}ms (${
+          result.data?.performanceMs || "?"
+        }ms backend)`
+      );
 
       if (result.success) {
         setSaveSuccess(true);
@@ -345,7 +361,7 @@ export default function MobileAttendance({
         }, 2000);
 
         // ✅ Optional: Show performance info in dev mode
-        if (process.env.NODE_ENV === 'development' && elapsedTime < 500) {
+        if (process.env.NODE_ENV === "development" && elapsedTime < 500) {
           console.log(`⚡ Fast save! Total: ${elapsedTime}ms`);
         }
       } else {
@@ -541,14 +557,14 @@ export default function MobileAttendance({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault();
-        e.returnValue = ''; // Modern browsers require this
+        e.returnValue = ""; // Modern browsers require this
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
 
@@ -559,20 +575,20 @@ export default function MobileAttendance({
 
       // Check if clicking on a navigation link
       const target = e.target as HTMLElement;
-      const link = target.closest('a[href]') as HTMLAnchorElement;
+      const link = target.closest("a[href]") as HTMLAnchorElement;
 
       if (link) {
-        const href = link.getAttribute('href');
+        const href = link.getAttribute("href");
         // Only block if navigating away from current page
-        if (href && !href.startsWith('#') && !href.includes('/attendance')) {
+        if (href && !href.startsWith("#") && !href.includes("/attendance")) {
           e.preventDefault();
           e.stopPropagation();
 
-          console.log('🚫 Navigation blocked - unsaved changes detected');
+          console.log("🚫 Navigation blocked - unsaved changes detected");
 
           // Store the intended navigation URL
           setPendingAction(() => () => {
-            console.log('✅ Navigating to:', href);
+            console.log("✅ Navigating to:", href);
             // Clear unsaved flag before navigation
             setHasUnsavedChanges(false);
             // Use Next.js router for client-side navigation
@@ -584,10 +600,10 @@ export default function MobileAttendance({
     };
 
     // Capture phase to intercept before Next.js Link processes the click
-    document.addEventListener('click', handleRouteChange, true);
+    document.addEventListener("click", handleRouteChange, true);
 
     return () => {
-      document.removeEventListener('click', handleRouteChange, true);
+      document.removeEventListener("click", handleRouteChange, true);
     };
   }, [hasUnsavedChanges, router]);
 
@@ -735,7 +751,7 @@ export default function MobileAttendance({
             <button
               onClick={handleSave}
               disabled={saving || (!hasUnsavedChanges && !saveSuccess)}
-              className={`w-full h-14 rounded-2xl font-battambang font-bold flex items-center justify-center gap-2 transition-all shadow-md ${
+              className={`w-full h-14 rounded-2xl font-koulen flex items-center justify-center gap-2 transition-all shadow-md ${
                 saving
                   ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white"
                   : saveSuccess
@@ -798,7 +814,9 @@ export default function MobileAttendance({
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
-              <p className="font-battambang text-sm text-red-700 flex-1 pt-2">{error}</p>
+              <p className="font-battambang text-sm text-red-700 flex-1 pt-2">
+                {error}
+              </p>
             </div>
           </div>
         )}
@@ -882,9 +900,9 @@ export default function MobileAttendance({
             <div className="px-4 py-4 bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100 border-b border-gray-200">
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="w-4 h-4 text-gray-600" />
-                <h3 className="font-koulen text-base text-gray-900">
+                <h1 className="font-koulen text-base text-gray-900">
                   សង្ខេបសរុប
-                </h3>
+                </h1>
               </div>
               <div className="grid grid-cols-3 gap-2.5 mb-3">
                 <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
@@ -918,7 +936,9 @@ export default function MobileAttendance({
                 <div className="bg-white rounded-2xl p-3 border border-gray-100 shadow-sm">
                   <div className="flex flex-col items-center">
                     <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
-                      <span className="font-koulen text-base text-white">P</span>
+                      <span className="font-koulen text-base text-white">
+                        P
+                      </span>
                     </div>
                     <div className="font-koulen text-2xl text-orange-600">
                       {currentDaySummary.permission}
@@ -939,8 +959,10 @@ export default function MobileAttendance({
             {/* Student List - with Morning/Afternoon Sessions */}
             <div className="px-4 py-3 space-y-3">
               {students.map((student, index) => {
-                const morningValue = student.morningAttendance[currentDay] || "";
-                const afternoonValue = student.afternoonAttendance[currentDay] || "";
+                const morningValue =
+                  student.morningAttendance[currentDay] || "";
+                const afternoonValue =
+                  student.afternoonAttendance[currentDay] || "";
 
                 // Helper to get button style
                 const getButtonStyle = (value: AttendanceValue) => {
@@ -974,11 +996,13 @@ export default function MobileAttendance({
                         <div className="font-battambang text-sm font-bold text-gray-900">
                           {student.khmerName}
                         </div>
-                        <div className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium mt-1 ${
-                          student.gender === "M"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-pink-100 text-pink-700"
-                        }`}>
+                        <div
+                          className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium mt-1 ${
+                            student.gender === "M"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-pink-100 text-pink-700"
+                          }`}
+                        >
                           {student.gender === "M" ? "ប្រុស" : "ស្រី"}
                         </div>
                       </div>
@@ -992,7 +1016,9 @@ export default function MobileAttendance({
                           🌅 ព្រឹក
                         </div>
                         <button
-                          onClick={() => toggleStudentStatus(student.studentId, "M")}
+                          onClick={() =>
+                            toggleStudentStatus(student.studentId, "M")
+                          }
                           className={`w-full h-13 rounded-xl font-koulen text-xl shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
                             morningValue
                           )}`}
@@ -1007,7 +1033,9 @@ export default function MobileAttendance({
                           🌆 ល្ងាច
                         </div>
                         <button
-                          onClick={() => toggleStudentStatus(student.studentId, "A")}
+                          onClick={() =>
+                            toggleStudentStatus(student.studentId, "A")
+                          }
                           className={`w-full h-13 rounded-xl font-koulen text-xl shadow-md transition-all active:scale-95 border-2 ${getButtonStyle(
                             afternoonValue
                           )}`}
@@ -1034,9 +1062,9 @@ export default function MobileAttendance({
               <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md">
                 <ClipboardCheck className="w-12 h-12 text-green-600" />
               </div>
-              <h3 className="font-koulen text-lg text-gray-900 mb-2">
+              <h1 className="font-koulen text-lg text-gray-900 mb-2">
                 ជ្រើសរើសថ្នាក់រៀន
-              </h3>
+              </h1>
               <p className="font-battambang text-sm text-gray-600 leading-relaxed mb-1">
                 សូមជ្រើសរើសខែ និងឆ្នាំ
               </p>
@@ -1068,9 +1096,10 @@ export default function MobileAttendance({
                 : "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
             }`}
             style={{
-              animation: hasUnsavedChanges && !saving && !saveSuccess
-                ? 'bounce 2s infinite'
-                : 'none'
+              animation:
+                hasUnsavedChanges && !saving && !saveSuccess
+                  ? "bounce 2s infinite"
+                  : "none",
             }}
           >
             {saving ? (
@@ -1104,9 +1133,9 @@ export default function MobileAttendance({
                 <AlertCircle className="w-7 h-7 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-koulen text-xl text-gray-900">
+                <h1 className="font-koulen text-xl text-gray-900">
                   មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
-                </h3>
+                </h1>
                 <p className="font-battambang text-xs text-gray-600 mt-1">
                   Unsaved Changes
                 </p>
@@ -1123,7 +1152,7 @@ export default function MobileAttendance({
               <button
                 onClick={handleSaveAndContinue}
                 disabled={saving}
-                className="w-full px-5 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-battambang font-bold rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full px-5 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-koulen rounded-2xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <>

@@ -218,7 +218,7 @@ export default function StudentModal({
                 )}
               </div>
               <div className="text-white">
-                <h2 className="text-2xl font-black tracking-tight">
+                <h2 className="text-2xl font-koulen tracking-tight">
                   {mode === "view" ? "ព័ត៌មានសិស្ស" : "កែសម្រួលសិស្ស"}
                 </h2>
                 <p className="text-blue-100 text-sm font-medium mt-0.5">
@@ -329,7 +329,7 @@ export default function StudentModal({
                   <ArrowLeftRight className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black">ផ្លាស់ប្តូរថ្នាក់</h3>
+                  <h3 className="text-xl font-koulen">ផ្លាស់ប្តូរថ្នាក់</h3>
                   <p className="text-purple-100 text-sm">
                     Transfer to New Class
                   </p>
@@ -342,7 +342,7 @@ export default function StudentModal({
               {/* Student Info Card */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xl font-koulen shadow-lg">
                     {student.gender === "male" ? "👨‍🎓" : "👩‍🎓"}
                   </div>
                   <div>
@@ -480,7 +480,7 @@ export default function StudentModal({
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black">លុបសិស្ស</h3>
+                  <h3 className="text-xl font-koulen">លុបសិស្ស</h3>
                   <p className="text-red-100 text-sm">
                     Permanent Deletion Warning
                   </p>
@@ -523,7 +523,7 @@ export default function StudentModal({
               {/* Student Info */}
               <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4 shadow-inner">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-full flex items-center justify-center text-white text-xl font-koulen shadow-lg">
                     {student.gender === "male" ? "👨‍🎓" : "👩‍🎓"}
                   </div>
                   <div>

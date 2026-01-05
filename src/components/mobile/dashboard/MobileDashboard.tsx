@@ -79,7 +79,7 @@ export default function MobileDashboard({
                 <p className="font-khmer-body text-xs text-gray-500 font-bold">
                   សិស្ស
                 </p>
-                <p className="text-2xl font-black text-gray-900">
+                <p className="text-2xl font-koulen text-gray-900">
                   {stats.totalStudents}
                 </p>
               </div>
@@ -106,7 +106,7 @@ export default function MobileDashboard({
                 <p className="font-khmer-body text-xs text-gray-500 font-bold">
                   គ្រូបង្រៀន
                 </p>
-                <p className="text-2xl font-black text-gray-900">
+                <p className="text-2xl font-koulen text-gray-900">
                   {stats.totalTeachers}
                 </p>
               </div>
@@ -133,7 +133,7 @@ export default function MobileDashboard({
                 <p className="font-khmer-body text-xs text-gray-500 font-bold">
                   ថ្នាក់រៀន
                 </p>
-                <p className="text-2xl font-black text-gray-900">
+                <p className="text-2xl font-koulen text-gray-900">
                   {stats.totalClasses}
                 </p>
               </div>
@@ -160,7 +160,7 @@ export default function MobileDashboard({
                 <p className="font-khmer-body text-xs text-gray-500 font-bold">
                   មុខវិជ្ជា
                 </p>
-                <p className="text-2xl font-black text-gray-900">
+                <p className="text-2xl font-koulen text-gray-900">
                   {stats.totalSubjects}
                 </p>
               </div>
@@ -251,7 +251,7 @@ export default function MobileDashboard({
                         </p>
                       </div>
                     </div>
-                    <span className="text-xl font-black text-blue-600">
+                    <span className="text-xl font-koulen text-blue-600">
                       {dashboardStats.recentActivity.recentGradeEntries}
                     </span>
                   </div>
@@ -269,7 +269,7 @@ export default function MobileDashboard({
                         </p>
                       </div>
                     </div>
-                    <span className="text-xl font-black text-green-600">
+                    <span className="text-xl font-koulen text-green-600">
                       {dashboardStats.recentActivity.recentAttendanceRecords}
                     </span>
                   </div>

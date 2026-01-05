@@ -23,7 +23,7 @@ export default function OfflinePage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+        <h1 className="text-3xl font-moul text-gray-900 mb-3">
           You&apos;re Offline
         </h1>
         <p className="text-lg text-gray-600 mb-2">

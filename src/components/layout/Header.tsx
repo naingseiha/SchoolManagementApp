@@ -109,7 +109,7 @@ export default function Header() {
                       className="p-4 border-b border-gray-100 hover:bg-indigo-50 transition-colors duration-200 cursor-pointer group"
                     >
                       <div className="flex items-start space-x-3">
-                        <span className="text-2xl">{notif.icon}</span>
+                        <span className="text-2xl font-koulen">{notif.icon}</span>
                         <div className="flex-1">
                           <p className="font-khmer-body text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
                             {notif.title}

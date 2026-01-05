@@ -94,7 +94,9 @@ export default function ClassCard({
         </div>
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-1">
-            <h3 className="text-2xl font-black text-white">{classData.name}</h3>
+            <h1 className="text-2xl font-koulen text-white">
+              {classData.name}
+            </h1>
             {/* ✅ Track Badge */}
             {getTrackBadge()}
           </div>

@@ -57,11 +57,11 @@ export default function SubjectCard({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xl font-bold backdrop-blur-sm">
+            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-xl font-koulen backdrop-blur-sm">
               {subject.code.substring(0, 2).toUpperCase()}
             </div>
             <div>
-              <h3 className="font-bold text-lg">{subject.nameKh}</h3>
+              <h1 className="font-bold text-lg">{subject.nameKh}</h1>
               <p className="text-sm text-white text-opacity-90">
                 {subject.nameEn || subject.name}
               </p>

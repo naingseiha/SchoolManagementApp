@@ -27,7 +27,10 @@ import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useRouter } from "next/navigation";
 import { gradeApi } from "@/lib/api/grades";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 interface StudentGrade {
   studentId: string;
@@ -71,7 +74,6 @@ const getCurrentKhmerMonth = () => {
   const month = MONTHS.find((m) => m.number === monthNumber);
   return month?.value || "មករា";
 };
-
 
 export default function MobileReportsDashboard() {
   const { classes, isLoadingClasses, refreshClasses } = useData();
@@ -205,9 +207,9 @@ export default function MobileReportsDashboard() {
               <ArrowLeft className="w-5 h-5" />
               <span>ត្រឡប់ក្រោយ</span>
             </button>
-            <h3 className="font-koulen text-xl text-gray-900 mb-1">
+            <h1 className="font-koulen text-xl text-gray-900 mb-1">
               {selectedSubject.subjectNameKh}
-            </h3>
+            </h1>
             <p className="font-battambang text-sm text-gray-600">
               Max: {selectedSubject.maxScore}
             </p>
@@ -247,9 +249,9 @@ export default function MobileReportsDashboard() {
 
           {/* Student List */}
           <div className="px-4 pb-20">
-            <h3 className="font-koulen text-lg text-gray-900 mb-3 mt-2">
+            <h1 className="font-koulen text-lg text-gray-900 mb-3 mt-2">
               បញ្ជីសិស្ស
-            </h3>
+            </h1>
             <div className="space-y-2">
               {selectedSubject.studentGrades.map((student, index) => (
                 <div
@@ -329,9 +331,9 @@ export default function MobileReportsDashboard() {
         <div className="px-5 pt-4 pb-3">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-5 h-5 text-gray-600" />
-            <h3 className="font-koulen text-lg text-gray-900">
+            <h1 className="font-koulen text-lg text-gray-900">
               ជ្រើសរើសថ្នាក់
-            </h3>
+            </h1>
           </div>
 
           {/* Class Selector */}
@@ -412,7 +414,7 @@ export default function MobileReportsDashboard() {
           <button
             onClick={loadSubjectStatus}
             disabled={!selectedClass || loading}
-            className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-battambang font-bold rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
+            className="w-full h-12 bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-koulen rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
           >
             {loading ? (
               <>
@@ -519,9 +521,9 @@ export default function MobileReportsDashboard() {
 
             {/* Subject List */}
             <div className="px-5">
-              <h3 className="font-koulen text-lg text-gray-900 mb-3">
+              <h1 className="font-koulen text-lg text-gray-900 mb-3">
                 មុខវិជ្ជាទាំងអស់
-              </h3>
+              </h1>
               <div className="space-y-3">
                 {subjects.map((subject, index) => {
                   const isComplete = subject.isComplete;
@@ -605,7 +607,7 @@ export default function MobileReportsDashboard() {
               {completedSubjects === totalSubjects ? (
                 <button
                   onClick={handleViewReport}
-                  className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-battambang font-bold rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
+                  className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-koulen rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
                 >
                   <Award className="w-5 h-5" />
                   <span>មើលរបាយការណ៍ពេញលេញ</span>
@@ -635,9 +637,9 @@ export default function MobileReportsDashboard() {
               <div className="w-24 h-24 bg-gradient-to-br from-orange-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md">
                 <BarChart3 className="w-12 h-12 text-orange-400" />
               </div>
-              <h3 className="font-koulen text-lg text-gray-900 mb-2">
+              <h1 className="font-koulen text-lg text-gray-900 mb-2">
                 ជ្រើសរើសថ្នាក់រៀន
-              </h3>
+              </h1>
               <p className="font-battambang text-sm text-gray-600 leading-relaxed">
                 សូមជ្រើសរើសថ្នាក់ ខែ និងឆ្នាំ ដើម្បីពិនិត្យស្ថានភាព
               </p>

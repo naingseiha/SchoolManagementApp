@@ -33,7 +33,7 @@ export function GridHeader({
             <TrendingUp className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h3 className="text-2xl font-black text-white tracking-wide">
+            <h3 className="text-2xl font-koulen text-white tracking-wide">
               {className}
             </h3>
             <div className="flex items-center gap-4 mt-2">

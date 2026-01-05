@@ -156,7 +156,7 @@ export default function TeacherDetailsModal({
               {/* Avatar */}
               <div className="relative flex-shrink-0">
                 <div className="w-28 h-28 bg-white/25 backdrop-blur-xl rounded-3xl flex items-center justify-center border-4 border-white/40 shadow-2xl transform hover:scale-105 transition-transform">
-                  <span className="text-5xl font-black text-white drop-shadow-lg">
+                  <span className="text-5xl font-moul text-white drop-shadow-lg">
                     {initials}
                   </span>
                 </div>
@@ -172,7 +172,7 @@ export default function TeacherDetailsModal({
 
               {/* Teacher Info */}
               <div className="flex-1 pt-2">
-                <h2 className="text-4xl font-black text-white mb-2 drop-shadow-lg">
+                <h2 className="text-4xl font-moul text-white mb-2 drop-shadow-lg">
                   {fullName}
                 </h2>
                 {teacher.khmerName && (
@@ -216,7 +216,7 @@ export default function TeacherDetailsModal({
                   <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
                     <Home className="w-8 h-8 text-white" />
                   </div>
-                  <p className="text-5xl font-black text-amber-900 mb-2">
+                  <p className="text-5xl font-moul text-amber-900 mb-2">
                     {homeroomClass ? "1" : "0"}
                   </p>
                   <p className="text-xs font-bold text-amber-700 khmer-text">
@@ -231,7 +231,7 @@ export default function TeacherDetailsModal({
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
                     <GraduationCap className="w-8 h-8 text-white" />
                   </div>
-                  <p className="text-5xl font-black text-blue-900 mb-2">
+                  <p className="text-5xl font-moul text-blue-900 mb-2">
                     {teachingClasses.length}
                   </p>
                   <p className="text-xs font-bold text-blue-700 khmer-text">
@@ -246,7 +246,7 @@ export default function TeacherDetailsModal({
                   <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
                     <BookOpen className="w-8 h-8 text-white" />
                   </div>
-                  <p className="text-5xl font-black text-green-900 mb-2">
+                  <p className="text-5xl font-moul text-green-900 mb-2">
                     {teacherSubjects.length}
                   </p>
                   <p className="text-xs font-bold text-green-700 khmer-text">
@@ -261,7 +261,7 @@ export default function TeacherDetailsModal({
                   <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
                     <Users className="w-8 h-8 text-white" />
                   </div>
-                  <p className="text-5xl font-black text-purple-900 mb-2">
+                  <p className="text-5xl font-moul text-purple-900 mb-2">
                     {totalStudents}
                   </p>
                   <p className="text-xs font-bold text-purple-700 khmer-text">
@@ -498,7 +498,7 @@ export default function TeacherDetailsModal({
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border-2 border-amber-200 hover:shadow-lg transition-all">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex-1">
-                          <h4 className="text-2xl font-black text-gray-900 mb-1 khmer-text">
+                          <h4 className="text-2xl font-koulen text-gray-900 mb-1 khmer-text">
                             {homeroomClass.name}
                           </h4>
                           <p className="text-sm text-gray-600 font-bold">

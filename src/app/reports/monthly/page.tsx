@@ -21,11 +21,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import {
-  reportsApi,
-  type MonthlyReportData,
-  type MonthlyStatisticsData,
-} from "@/lib/api/reports";
+import { reportsApi, type MonthlyReportData } from "@/lib/api/reports";
 import { formatReportDate } from "@/lib/khmerDateUtils";
 import { paginateReports } from "@/lib/reportPagination";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
@@ -34,7 +30,6 @@ import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
 import MonthlyReportSettings from "@/components/reports/MonthlyReportSettings";
-import MonthlyStatisticsDashboard from "@/components/reports/MonthlyStatisticsDashboard";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 
 // Helper functions
@@ -101,13 +96,9 @@ export default function ReportsPage() {
     return month >= 10 ? year : year - 1;
   });
   const [reportData, setReportData] = useState<MonthlyReportData | null>(null);
-  const [statisticsData, setStatisticsData] =
-    useState<MonthlyStatisticsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ NEW: Collapsible sections
-  const [showStatistics, setShowStatistics] = useState(true);
   const [showDetailedReport, setShowDetailedReport] = useState(true);
 
   // Sort state
@@ -163,7 +154,7 @@ export default function ReportsPage() {
     ...grades.map((g) => ({ value: g, label: `ថ្នាក់ទី${g} ទាំងអស់` })),
   ];
 
-  // ✅ UPDATED:  Fetch report data AND statistics from API
+  // ✅ UPDATED:  Fetch report data from API
   const fetchReport = async () => {
     if (reportType === "single" && !selectedClassId) return;
     if (reportType === "grade-wide" && !selectedGrade) return;
@@ -171,20 +162,12 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     setReportData(null);
-    setStatisticsData(null);
 
     try {
-      console.log("📊 Fetching report and statistics...");
-
       if (reportType === "single") {
-        // ✅ Fetch both report and statistics in parallel
-        const [report, stats] = await Promise.all([
+        // ✅ Fetch report in parallel
+        const [report] = await Promise.all([
           reportsApi.getMonthlyReport(
-            selectedClassId,
-            selectedMonth,
-            selectedYear
-          ),
-          reportsApi.getMonthlyStatistics(
             selectedClassId,
             selectedMonth,
             selectedYear
@@ -192,8 +175,7 @@ export default function ReportsPage() {
         ]);
 
         setReportData(report);
-        setStatisticsData(stats);
-        console.log("✅ Report and statistics loaded");
+        console.log("✅ Report loaded");
       } else {
         // For grade-wide, only fetch report (no statistics endpoint yet)
         const data = await reportsApi.getGradeWideReport(
@@ -224,7 +206,6 @@ export default function ReportsPage() {
     setSelectedClassId("");
     setSelectedGrade("");
     setReportData(null);
-    setStatisticsData(null);
   }, [reportType]);
 
   // Auto-update date
@@ -493,12 +474,10 @@ export default function ReportsPage() {
                 <FileText className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-gray-900">
+                <h1 className="text-2xl font-black text-gray-900">
                   របាយការណ៍ប្រចាំខែ
                 </h1>
-                <p className="text-gray-600 font-medium">
-                  Monthly Report - Grade & Attendance Summary
-                </p>
+                <p className="text-gray-600 font-medium">Monthly Report</p>
               </div>
             </div>
           </div>
@@ -795,40 +774,6 @@ export default function ReportsPage() {
                   <p className="text-sm text-red-700 mt-1">{error}</p>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* ✅ Statistics Dashboard Section - HIDE ON PRINT */}
-          {statisticsData && reportType === "single" && (
-            <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden mb-6 print-hide">
-              <button
-                onClick={() => setShowStatistics(!showStatistics)}
-                className="w-full p-5 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 flex items-center justify-between transition-colors border-b-2 border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="bg-indigo-600 p-2 rounded-lg">
-                    <BarChart3 className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-xl font-black text-gray-900 block">
-                      📊 ស្ថិតិ និង វិភាគ
-                    </span>
-                    <span className="text-sm text-gray-600 font-semibold">
-                      Statistics & Analysis Dashboard
-                    </span>
-                  </div>
-                </div>
-                {showStatistics ? (
-                  <ChevronUp className="w-6 h-6 text-gray-600" />
-                ) : (
-                  <ChevronDown className="w-6 h-6 text-gray-600" />
-                )}
-              </button>
-              {showStatistics && (
-                <div className="p-6">
-                  <MonthlyStatisticsDashboard data={statisticsData} />
-                </div>
-              )}
             </div>
           )}
 

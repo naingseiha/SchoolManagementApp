@@ -110,7 +110,7 @@ export default function BulkImportView({
                     <CheckCircle className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">
+                    <h2 className="text-2xl font-koulen">
                       បញ្ចូលទិន្នន័យបានជោគជ័យ!
                     </h2>
                     <p className="text-sm text-green-100 mt-1">
@@ -132,7 +132,7 @@ export default function BulkImportView({
               {/* Summary */}
               <div className="grid grid-cols-3 gap-3 mb-6">
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-black text-blue-600 mb-1">
+                  <div className="text-3xl font-moul text-blue-600 mb-1">
                     {importResult.total || 0}
                   </div>
                   <div className="text-xs text-blue-800 font-bold uppercase">
@@ -140,7 +140,7 @@ export default function BulkImportView({
                   </div>
                 </div>
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-black text-green-600 mb-1">
+                  <div className="text-3xl font-moul text-green-600 mb-1">
                     {importResult.success || 0}
                   </div>
                   <div className="text-xs text-green-800 font-bold uppercase">
@@ -148,7 +148,7 @@ export default function BulkImportView({
                   </div>
                 </div>
                 <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-black text-red-600 mb-1">
+                  <div className="text-3xl font-moul text-red-600 mb-1">
                     {importResult.failed || 0}
                   </div>
                   <div className="text-xs text-red-800 font-bold uppercase">

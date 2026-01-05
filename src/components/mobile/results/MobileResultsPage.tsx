@@ -24,7 +24,10 @@ import {
 import MobileLayout from "@/components/layout/MobileLayout";
 import { classesApi, Class } from "@/lib/api/classes";
 import { reportsApi, MonthlyReportData } from "@/lib/api/reports";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 const GRADES = ["7", "8", "9", "10", "11", "12"];
 
@@ -73,8 +76,12 @@ export default function MobileResultsPage() {
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
 
   // ✅ OPTIMIZATION: Cache loaded reports to avoid reloading
-  const [reportCache, setReportCache] = useState<Map<string, MonthlyReportData>>(new Map());
-  const [gradeCache, setGradeCache] = useState<Map<string, MonthlyReportData>>(new Map());
+  const [reportCache, setReportCache] = useState<
+    Map<string, MonthlyReportData>
+  >(new Map());
+  const [gradeCache, setGradeCache] = useState<Map<string, MonthlyReportData>>(
+    new Map()
+  );
 
   // ✅ OPTIMIZATION: Progressive rendering state
   const [visibleStudents, setVisibleStudents] = useState(15);
@@ -140,9 +147,10 @@ export default function MobileResultsPage() {
     // ✅ OPTIMIZATION: Preload grade-wide data in background
     const cacheKey = `${grade}:${selectedMonth}:${selectedYear}`;
     if (!gradeCache.has(cacheKey)) {
-      reportsApi.getGradeWideReport(grade, selectedMonth, selectedYear)
+      reportsApi
+        .getGradeWideReport(grade, selectedMonth, selectedYear)
         .then((data) => {
-          setGradeCache(prev => new Map(prev).set(cacheKey, data));
+          setGradeCache((prev) => new Map(prev).set(cacheKey, data));
         })
         .catch((error) => console.error("Background preload error:", error));
     }
@@ -170,7 +178,7 @@ export default function MobileResultsPage() {
           selectedYear
         );
         setGradeWideData(data);
-        setGradeCache(prev => new Map(prev).set(cacheKey, data));
+        setGradeCache((prev) => new Map(prev).set(cacheKey, data));
       } catch (error) {
         console.error("Error loading grade-wide report:", error);
       } finally {
@@ -200,7 +208,7 @@ export default function MobileResultsPage() {
         selectedYear
       );
       setReportData(data);
-      setReportCache(prev => new Map(prev).set(cacheKey, data));
+      setReportCache((prev) => new Map(prev).set(cacheKey, data));
     } catch (error) {
       console.error("Error loading report:", error);
     } finally {
@@ -259,7 +267,9 @@ export default function MobileResultsPage() {
 
   // ✅ OPTIMIZATION: Load more students
   const loadMoreStudents = () => {
-    setVisibleStudents(prev => Math.min(prev + BATCH_SIZE, sortedStudents.length));
+    setVisibleStudents((prev) =>
+      Math.min(prev + BATCH_SIZE, sortedStudents.length)
+    );
   };
 
   const getGradeColor = (gradeLevel: string) => {
@@ -424,9 +434,9 @@ export default function MobileResultsPage() {
                             {grade}
                           </span>
                         </div>
-                        <h3 className="font-koulen text-white text-lg">
+                        <h1 className="font-koulen text-white text-lg">
                           ថ្នាក់ទី{grade}
-                        </h3>
+                        </h1>
                       </div>
                     </div>
 
@@ -488,7 +498,8 @@ export default function MobileResultsPage() {
                   ថ្នាក់ទី{selectedGrade}
                 </h1>
                 <p className="font-battambang text-xs text-gray-500">
-                  {filteredClasses.length} ថ្នាក់ • {gradeStudentCounts[selectedGrade] || 0} សិស្ស
+                  {filteredClasses.length} ថ្នាក់ •{" "}
+                  {gradeStudentCounts[selectedGrade] || 0} សិស្ស
                 </p>
                 <p className="font-battambang text-[10px] text-gray-400 mt-0.5">
                   {selectedMonth} {selectedYear}-{selectedYear + 1}
@@ -567,7 +578,7 @@ export default function MobileResultsPage() {
                           </span>
                         </div>
                         {classData.track && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-battambang font-bold">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-koulen">
                             {classData.track === "science"
                               ? "វិទ្យាសាស្ត្រ"
                               : "សង្គម"}
@@ -724,141 +735,144 @@ export default function MobileResultsPage() {
           ) : (
             <>
               <div className="px-5 pt-4 space-y-3">
-                {sortedStudents.slice(0, visibleStudents).map((student, index) => {
-                  const rankBadge = getRankBadge(student.rank);
-                  const isTop5 = student.rank <= 5;
-                  return (
-                    <div
-                      key={`${student.studentId}-${index}`}
-                      className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
-                    >
-                    {/* Subtle Background Glow for Top 5 */}
-                    {isTop5 && (
+                {sortedStudents
+                  .slice(0, visibleStudents)
+                  .map((student, index) => {
+                    const rankBadge = getRankBadge(student.rank);
+                    const isTop5 = student.rank <= 5;
+                    return (
                       <div
-                        className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${rankBadge.color} opacity-[0.06] rounded-full blur-2xl`}
-                      ></div>
-                    )}
+                        key={`${student.studentId}-${index}`}
+                        className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
+                      >
+                        {/* Subtle Background Glow for Top 5 */}
+                        {isTop5 && (
+                          <div
+                            className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${rankBadge.color} opacity-[0.06] rounded-full blur-2xl`}
+                          ></div>
+                        )}
 
-                    <div className="relative z-10">
-                      {/* Top Row: Rank Badge + Name + Grade Badge */}
-                      <div className="flex items-center gap-3 mb-3">
-                        {/* Rank Badge - Left Side, Larger & More Prominent */}
-                        <div
-                          className={`relative w-[60px] h-12 bg-gradient-to-br ${rankBadge.color} rounded-[14px] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.2)] ${rankBadge.glow} flex-shrink-0 transform transition-transform group-hover:scale-105`}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
-                          {isTop5 ? (
-                            <div className="flex items-center gap-1.5 relative z-10 px-1">
-                              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                                {rankBadge.icon}
-                              </div>
-                              <p
-                                className={`font-koulen text-xl ${rankBadge.text} leading-none font-bold`}
-                              >
-                                {student.rank}
+                        <div className="relative z-10">
+                          {/* Top Row: Rank Badge + Name + Grade Badge */}
+                          <div className="flex items-center gap-3 mb-3">
+                            {/* Rank Badge - Left Side, Larger & More Prominent */}
+                            <div
+                              className={`relative w-[60px] h-12 bg-gradient-to-br ${rankBadge.color} rounded-[14px] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.2)] ${rankBadge.glow} flex-shrink-0 transform transition-transform group-hover:scale-105`}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
+                              {isTop5 ? (
+                                <div className="flex items-center gap-1.5 relative z-10 px-1">
+                                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                                    {rankBadge.icon}
+                                  </div>
+                                  <p
+                                    className={`font-koulen text-xl ${rankBadge.text} leading-none font-bold`}
+                                  >
+                                    {student.rank}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p
+                                  className={`font-koulen text-2xl ${rankBadge.text} font-bold relative z-10`}
+                                >
+                                  {student.rank}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Name Section - Center, Larger Text */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-koulen text-md font-bold text-gray-900 truncate leading-tight mb-0.5">
+                                {student.studentName}
+                              </h3>
+                              {/* Class Badge Under Name */}
+                              {student.className && (
+                                <div className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/50 text-indigo-700 text-[10px] font-koulen shadow-sm">
+                                  <Users className="w-2.5 h-2.5 mr-1" />
+                                  {student.className}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Grade Badge - Right Side, Larger */}
+                            <div
+                              className={`relative w-12 h-12 rounded-[14px] bg-gradient-to-br ${getGradeColor(
+                                student.gradeLevel
+                              )} flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.2)] flex-shrink-0 transform transition-transform group-hover:scale-105`}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
+                              <span className="text-white font-koulen text-2xl font-bold relative z-10">
+                                {student.gradeLevel}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Stats Grid: 4 Columns - More Spacious */}
+                          <div className="grid grid-cols-4 gap-2">
+                            {/* Average Box - Most Important */}
+                            <div className="relative bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 border-2 border-indigo-200/70 rounded-[12px] p-2 shadow-md overflow-hidden">
+                              <div className="absolute top-0 right-0 w-10 h-10 bg-indigo-300/30 rounded-full blur-xl"></div>
+                              <p className="font-battambang text-[9px] text-indigo-600 font-bold mb-1 relative z-10">
+                                មធ្យម
+                              </p>
+                              <p className="font-koulen text-xl text-indigo-700 leading-none relative z-10 font-bold">
+                                {student.average}
                               </p>
                             </div>
-                          ) : (
-                            <p
-                              className={`font-koulen text-2xl ${rankBadge.text} font-bold relative z-10`}
-                            >
-                              {student.rank}
-                            </p>
-                          )}
-                        </div>
 
-                        {/* Name Section - Center, Larger Text */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-koulen text-md font-bold text-gray-900 truncate leading-tight mb-0.5">
-                            {student.studentName}
-                          </h3>
-                          {/* Class Badge Under Name */}
-                          {student.className && (
-                            <div className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/50 text-indigo-700 text-[10px] font-battambang font-bold shadow-sm">
-                              <Users className="w-2.5 h-2.5 mr-1" />
-                              {student.className}
+                            {/* Total Score Box */}
+                            <div className="relative bg-gradient-to-br from-orange-50 via-orange-50/80 to-amber-50 border-2 border-orange-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-orange-200/30 rounded-full blur-lg"></div>
+                              <p className="font-battambang text-[9px] text-orange-600 font-bold mb-1 relative z-10">
+                                សរុប
+                              </p>
+                              <p className="font-battambang text-[16px] font-extrabold text-orange-700 leading-none relative z-10">
+                                {student.totalScore}
+                              </p>
                             </div>
-                          )}
-                        </div>
 
-                        {/* Grade Badge - Right Side, Larger */}
-                        <div
-                          className={`relative w-12 h-12 rounded-[14px] bg-gradient-to-br ${getGradeColor(
-                            student.gradeLevel
-                          )} flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.2)] flex-shrink-0 transform transition-transform group-hover:scale-105`}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
-                          <span className="text-white font-koulen text-2xl font-bold relative z-10">
-                            {student.gradeLevel}
-                          </span>
-                        </div>
-                      </div>
+                            {/* Absent Box */}
+                            <div className="relative bg-gradient-to-br from-red-50 via-red-50/80 to-rose-50 border-2 border-red-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-red-200/30 rounded-full blur-lg"></div>
+                              <p className="font-battambang text-[9px] text-red-600 font-bold mb-1 relative z-10">
+                                អត់ច្បាប់
+                              </p>
+                              <p className="font-koulen text-lg text-red-700 leading-none relative z-10 font-bold">
+                                {student.absent}
+                              </p>
+                            </div>
 
-                      {/* Stats Grid: 4 Columns - More Spacious */}
-                      <div className="grid grid-cols-4 gap-2">
-                        {/* Average Box - Most Important */}
-                        <div className="relative bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 border-2 border-indigo-200/70 rounded-[12px] p-2 shadow-md overflow-hidden">
-                          <div className="absolute top-0 right-0 w-10 h-10 bg-indigo-300/30 rounded-full blur-xl"></div>
-                          <p className="font-battambang text-[9px] text-indigo-600 font-bold mb-1 relative z-10">
-                            មធ្យម
-                          </p>
-                          <p className="font-koulen text-xl text-indigo-700 leading-none relative z-10 font-bold">
-                            {student.average}
-                          </p>
-                        </div>
-
-                        {/* Total Score Box */}
-                        <div className="relative bg-gradient-to-br from-orange-50 via-orange-50/80 to-amber-50 border-2 border-orange-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-orange-200/30 rounded-full blur-lg"></div>
-                          <p className="font-battambang text-[9px] text-orange-600 font-bold mb-1 relative z-10">
-                            សរុប
-                          </p>
-                          <p className="font-battambang text-[16px] font-extrabold text-orange-700 leading-none relative z-10">
-                            {student.totalScore}
-                          </p>
-                        </div>
-
-                        {/* Absent Box */}
-                        <div className="relative bg-gradient-to-br from-red-50 via-red-50/80 to-rose-50 border-2 border-red-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-red-200/30 rounded-full blur-lg"></div>
-                          <p className="font-battambang text-[9px] text-red-600 font-bold mb-1 relative z-10">
-                            អត់ច្បាប់
-                          </p>
-                          <p className="font-koulen text-lg text-red-700 leading-none relative z-10 font-bold">
-                            {student.absent}
-                          </p>
-                        </div>
-
-                        {/* Permission Box */}
-                        <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50/80 to-orange-50 border-2 border-amber-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-amber-200/30 rounded-full blur-lg"></div>
-                          <p className="font-battambang text-[9px] text-amber-600 font-bold mb-1 relative z-10">
-                            មានច្បាប់
-                          </p>
-                          <p className="font-koulen text-lg text-amber-700 leading-none relative z-10 font-bold">
-                            {student.permission}
-                          </p>
+                            {/* Permission Box */}
+                            <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50/80 to-orange-50 border-2 border-amber-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-amber-200/30 rounded-full blur-lg"></div>
+                              <p className="font-battambang text-[9px] text-amber-600 font-bold mb-1 relative z-10">
+                                មានច្បាប់
+                              </p>
+                              <p className="font-koulen text-lg text-amber-700 leading-none relative z-10 font-bold">
+                                {student.permission}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ✅ OPTIMIZATION: Load More Button for Grade-Wide View */}
-            {visibleStudents < sortedStudents.length && (
-              <div className="px-5 pt-4 pb-6">
-                <button
-                  onClick={loadMoreStudents}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl font-battambang text-sm font-bold shadow-lg active:scale-95 transition-all duration-200"
-                >
-                  <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
-                  បង្ហាញបន្ថែម ({sortedStudents.length - visibleStudents} នាក់)
-                </button>
+                    );
+                  })}
               </div>
-            )}
-          </>
+
+              {/* ✅ OPTIMIZATION: Load More Button for Grade-Wide View */}
+              {visibleStudents < sortedStudents.length && (
+                <div className="px-5 pt-4 pb-6">
+                  <button
+                    onClick={loadMoreStudents}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-2xl font-battambang text-sm font-bold shadow-lg active:scale-95 transition-all duration-200"
+                  >
+                    <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
+                    បង្ហាញបន្ថែម ({sortedStudents.length - visibleStudents}{" "}
+                    នាក់)
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -985,134 +999,137 @@ export default function MobileResultsPage() {
           ) : (
             <>
               <div className="px-5 pt-4 space-y-3">
-                {sortedStudents.slice(0, visibleStudents).map((student, index) => {
-                  const rankBadge = getRankBadge(student.rank);
-                  const isTop5 = student.rank <= 5;
-                  return (
-                    <div
-                      key={student.studentId}
-                      className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
-                    >
-                    {/* Subtle Background Glow for Top 5 */}
-                    {isTop5 && (
+                {sortedStudents
+                  .slice(0, visibleStudents)
+                  .map((student, index) => {
+                    const rankBadge = getRankBadge(student.rank);
+                    const isTop5 = student.rank <= 5;
+                    return (
                       <div
-                        className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${rankBadge.color} opacity-[0.06] rounded-full blur-2xl`}
-                      ></div>
-                    )}
+                        key={student.studentId}
+                        className={`group relative bg-white rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.1),0_12px_32px_rgba(0,0,0,0.12)] border-l-4 ${rankBadge.borderColor} border-y border-r border-gray-100/80 p-4 overflow-hidden transition-all duration-300 active:scale-[0.99]`}
+                      >
+                        {/* Subtle Background Glow for Top 5 */}
+                        {isTop5 && (
+                          <div
+                            className={`absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br ${rankBadge.color} opacity-[0.06] rounded-full blur-2xl`}
+                          ></div>
+                        )}
 
-                    <div className="relative z-10">
-                      {/* Top Row: Rank Badge + Name + Grade Badge */}
-                      <div className="flex items-center gap-3 mb-3">
-                        {/* Rank Badge - Left Side, Larger & More Prominent */}
-                        <div
-                          className={`relative w-[60px] h-12 bg-gradient-to-br ${rankBadge.color} rounded-[14px] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.2)] ${rankBadge.glow} flex-shrink-0 transform transition-transform group-hover:scale-105`}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
-                          {isTop5 ? (
-                            <div className="flex items-center gap-1.5 relative z-10 px-1">
-                              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                                {rankBadge.icon}
-                              </div>
-                              <p
-                                className={`font-koulen text-xl ${rankBadge.text} leading-none font-bold`}
-                              >
-                                {student.rank}
+                        <div className="relative z-10">
+                          {/* Top Row: Rank Badge + Name + Grade Badge */}
+                          <div className="flex items-center gap-3 mb-3">
+                            {/* Rank Badge - Left Side, Larger & More Prominent */}
+                            <div
+                              className={`relative w-[60px] h-12 bg-gradient-to-br ${rankBadge.color} rounded-[14px] flex items-center justify-center shadow-[0_4px_16px_rgba(0,0,0,0.2)] ${rankBadge.glow} flex-shrink-0 transform transition-transform group-hover:scale-105`}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
+                              {isTop5 ? (
+                                <div className="flex items-center gap-1.5 relative z-10 px-1">
+                                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                                    {rankBadge.icon}
+                                  </div>
+                                  <p
+                                    className={`font-koulen text-xl ${rankBadge.text} leading-none font-bold`}
+                                  >
+                                    {student.rank}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p
+                                  className={`font-koulen text-2xl ${rankBadge.text} font-bold relative z-10`}
+                                >
+                                  {student.rank}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Name Section - Center, Larger Text */}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-koulen text-md font-bold text-gray-900 truncate leading-tight">
+                                {student.studentName}
+                              </h3>
+                            </div>
+
+                            {/* Grade Badge - Right Side, Larger */}
+                            <div
+                              className={`relative w-12 h-12 rounded-[14px] bg-gradient-to-br ${getGradeColor(
+                                student.gradeLevel
+                              )} flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.2)] flex-shrink-0 transform transition-transform group-hover:scale-105`}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
+                              <span className="text-white font-koulen text-2xl font-bold relative z-10">
+                                {student.gradeLevel}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Stats Grid: 4 Columns - More Spacious */}
+                          <div className="grid grid-cols-4 gap-2">
+                            {/* Average Box - Most Important */}
+                            <div className="relative bg-gradient-to-br from-blue-50 via-blue-50/90 to-cyan-50 border-2 border-blue-200/70 rounded-[12px] p-2 shadow-md overflow-hidden">
+                              <div className="absolute top-0 right-0 w-10 h-10 bg-blue-300/30 rounded-full blur-xl"></div>
+                              <p className="font-battambang text-[9px] text-blue-600 font-bold mb-1 relative z-10">
+                                មធ្យម
+                              </p>
+                              <p className="font-koulen text-xl text-blue-700 leading-none relative z-10 font-bold">
+                                {student.average}
                               </p>
                             </div>
-                          ) : (
-                            <p
-                              className={`font-koulen text-2xl ${rankBadge.text} font-bold relative z-10`}
-                            >
-                              {student.rank}
-                            </p>
-                          )}
-                        </div>
 
-                        {/* Name Section - Center, Larger Text */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-koulen text-md font-bold text-gray-900 truncate leading-tight">
-                            {student.studentName}
-                          </h3>
-                        </div>
+                            {/* Total Score Box */}
+                            <div className="relative bg-gradient-to-br from-orange-50 via-orange-50/80 to-amber-50 border-2 border-orange-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-orange-200/30 rounded-full blur-lg"></div>
+                              <p className="font-battambang text-[9px] text-orange-600 font-bold mb-1 relative z-10">
+                                សរុប
+                              </p>
+                              <p className="font-battambang text-[16px] font-extrabold text-orange-700 leading-none relative z-10">
+                                {student.totalScore}
+                              </p>
+                            </div>
 
-                        {/* Grade Badge - Right Side, Larger */}
-                        <div
-                          className={`relative w-12 h-12 rounded-[14px] bg-gradient-to-br ${getGradeColor(
-                            student.gradeLevel
-                          )} flex items-center justify-center shadow-[0_4px_14px_rgba(0,0,0,0.2)] flex-shrink-0 transform transition-transform group-hover:scale-105`}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-[14px]"></div>
-                          <span className="text-white font-koulen text-2xl font-bold relative z-10">
-                            {student.gradeLevel}
-                          </span>
-                        </div>
-                      </div>
+                            {/* Absent Box */}
+                            <div className="relative bg-gradient-to-br from-red-50 via-red-50/80 to-rose-50 border-2 border-red-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-red-200/30 rounded-full blur-lg"></div>
+                              <p className="font-battambang text-[9px] text-red-600 font-bold mb-1 relative z-10">
+                                អត់ច្បាប់
+                              </p>
+                              <p className="font-koulen text-lg text-red-700 leading-none relative z-10 font-bold">
+                                {student.absent}
+                              </p>
+                            </div>
 
-                      {/* Stats Grid: 4 Columns - More Spacious */}
-                      <div className="grid grid-cols-4 gap-2">
-                        {/* Average Box - Most Important */}
-                        <div className="relative bg-gradient-to-br from-blue-50 via-blue-50/90 to-cyan-50 border-2 border-blue-200/70 rounded-[12px] p-2 shadow-md overflow-hidden">
-                          <div className="absolute top-0 right-0 w-10 h-10 bg-blue-300/30 rounded-full blur-xl"></div>
-                          <p className="font-battambang text-[9px] text-blue-600 font-bold mb-1 relative z-10">
-                            មធ្យម
-                          </p>
-                          <p className="font-koulen text-xl text-blue-700 leading-none relative z-10 font-bold">
-                            {student.average}
-                          </p>
-                        </div>
-
-                        {/* Total Score Box */}
-                        <div className="relative bg-gradient-to-br from-orange-50 via-orange-50/80 to-amber-50 border-2 border-orange-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-orange-200/30 rounded-full blur-lg"></div>
-                          <p className="font-battambang text-[9px] text-orange-600 font-bold mb-1 relative z-10">
-                            សរុប
-                          </p>
-                          <p className="font-battambang text-[16px] font-extrabold text-orange-700 leading-none relative z-10">
-                            {student.totalScore}
-                          </p>
-                        </div>
-
-                        {/* Absent Box */}
-                        <div className="relative bg-gradient-to-br from-red-50 via-red-50/80 to-rose-50 border-2 border-red-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-red-200/30 rounded-full blur-lg"></div>
-                          <p className="font-battambang text-[9px] text-red-600 font-bold mb-1 relative z-10">
-                            អត់ច្បាប់
-                          </p>
-                          <p className="font-koulen text-lg text-red-700 leading-none relative z-10 font-bold">
-                            {student.absent}
-                          </p>
-                        </div>
-
-                        {/* Permission Box */}
-                        <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50/80 to-orange-50 border-2 border-amber-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
-                          <div className="absolute top-0 right-0 w-8 h-8 bg-amber-200/30 rounded-full blur-lg"></div>
-                          <p className="font-battambang text-[9px] text-amber-600 font-bold mb-1 relative z-10">
-                            មានច្បាប់
-                          </p>
-                          <p className="font-koulen text-lg text-amber-700 leading-none relative z-10 font-bold">
-                            {student.permission}
-                          </p>
+                            {/* Permission Box */}
+                            <div className="relative bg-gradient-to-br from-amber-50 via-yellow-50/80 to-orange-50 border-2 border-amber-100/60 rounded-[12px] p-2 shadow-sm overflow-hidden">
+                              <div className="absolute top-0 right-0 w-8 h-8 bg-amber-200/30 rounded-full blur-lg"></div>
+                              <p className="font-battambang text-[9px] text-amber-600 font-bold mb-1 relative z-10">
+                                មានច្បាប់
+                              </p>
+                              <p className="font-koulen text-lg text-amber-700 leading-none relative z-10 font-bold">
+                                {student.permission}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* ✅ OPTIMIZATION: Load More Button for Class View */}
-            {visibleStudents < sortedStudents.length && (
-              <div className="px-5 pt-4 pb-6">
-                <button
-                  onClick={loadMoreStudents}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-battambang text-sm font-bold shadow-lg active:scale-95 transition-all duration-200"
-                >
-                  <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
-                  បង្ហាញបន្ថែម ({sortedStudents.length - visibleStudents} នាក់)
-                </button>
+                    );
+                  })}
               </div>
-            )}
-          </>
+
+              {/* ✅ OPTIMIZATION: Load More Button for Class View */}
+              {visibleStudents < sortedStudents.length && (
+                <div className="px-5 pt-4 pb-6">
+                  <button
+                    onClick={loadMoreStudents}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-battambang text-sm font-bold shadow-lg active:scale-95 transition-all duration-200"
+                  >
+                    <ArrowLeft className="w-4 h-4 rotate-[-90deg]" />
+                    បង្ហាញបន្ថែម ({sortedStudents.length - visibleStudents}{" "}
+                    នាក់)
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

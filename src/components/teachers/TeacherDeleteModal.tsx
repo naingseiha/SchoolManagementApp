@@ -53,7 +53,7 @@ export default function TeacherDeleteModal({
               <Trash2 className="w-7 h-7 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-black text-white">លុបគ្រូបង្រៀន</h3>
+              <h3 className="text-xl font-koulen text-white">លុបគ្រូបង្រៀន</h3>
               <p className="text-sm text-white/90 font-semibold">
                 Delete Teacher
               </p>

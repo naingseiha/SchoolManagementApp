@@ -18,7 +18,7 @@ export default function SubjectStatistics({ stats }: SubjectStatisticsProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 mb-1">មុខវិជ្ជាសរុប • Total</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.totalSubjects}
             </p>
           </div>
@@ -33,7 +33,7 @@ export default function SubjectStatistics({ stats }: SubjectStatisticsProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 mb-1">សកម្ម • Active</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.activeSubjects}
             </p>
           </div>
@@ -48,7 +48,7 @@ export default function SubjectStatistics({ stats }: SubjectStatisticsProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 mb-1">អសកម្ម • Inactive</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.inactiveSubjects}
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function SubjectStatistics({ stats }: SubjectStatisticsProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 mb-1">ម៉ោង/សប្តាហ៍ • Hours</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.totalHours}
             </p>
           </div>

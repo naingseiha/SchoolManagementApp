@@ -15,9 +15,9 @@ export default function EmptyState({ onShowSubjects }: EmptyStateProps) {
       </div>
 
       {/* Title */}
-      <h3 className="text-2xl font-black text-gray-900 mb-3">
+      <h1 className="text-2xl font-koulen text-gray-900 mb-3">
         គ្រប់គ្រងមុខវិជ្ជា
-      </h3>
+      </h1>
 
       {/* Description */}
       <p className="text-gray-600 text-base mb-8 max-w-md mx-auto leading-relaxed">

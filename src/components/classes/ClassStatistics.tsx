@@ -20,7 +20,7 @@ export default function ClassStatistics({ stats }: ClassStatisticsProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 mb-1">គ្រប់គ្រងសរុប • Total</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.totalClasses}
             </p>
           </div>
@@ -37,7 +37,7 @@ export default function ClassStatistics({ stats }: ClassStatisticsProps) {
             <p className="text-sm text-gray-600 mb-1">
               មានថ្នាក់ • With Classes
             </p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.activeClasses}
             </p>
           </div>
@@ -66,7 +66,7 @@ export default function ClassStatistics({ stats }: ClassStatisticsProps) {
             <p className="text-sm text-gray-600 mb-1">
               គ្មានថ្នាក់ • No Classes
             </p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.totalClasses - stats.activeClasses}
             </p>
           </div>
@@ -81,7 +81,7 @@ export default function ClassStatistics({ stats }: ClassStatisticsProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-600 mb-1">មុខវិជ្ជា • Subjects</p>
-            <p className="text-3xl font-bold text-gray-900">
+            <p className="text-3xl font-moul text-gray-900">
               {stats.totalStudents}
             </p>
           </div>

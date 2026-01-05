@@ -158,7 +158,7 @@ export default function AssignStudentsModal({
               <UserPlus className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-koulen text-gray-900">
                 បន្ថែមសិស្សចូលថ្នាក់
               </h2>
               <p className="text-sm text-gray-600">

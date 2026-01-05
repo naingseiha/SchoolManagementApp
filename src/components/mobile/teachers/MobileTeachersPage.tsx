@@ -84,7 +84,9 @@ export default function MobileTeachersPage() {
         const firstNameMatch = teacher.firstName?.toLowerCase().includes(query);
         const lastNameMatch = teacher.lastName?.toLowerCase().includes(query);
         const emailMatch = teacher.email?.toLowerCase().includes(query);
-        const phoneMatch = teacher.phone?.includes(query) || teacher.phoneNumber?.includes(query);
+        const phoneMatch =
+          teacher.phone?.includes(query) ||
+          teacher.phoneNumber?.includes(query);
         const fullNameMatch = `${teacher.firstName} ${teacher.lastName}`
           .toLowerCase()
           .includes(query);
@@ -163,7 +165,9 @@ export default function MobileTeachersPage() {
                 គ្រូបង្រៀន
               </h1>
               <p className="font-battambang text-[10px] text-gray-500">
-                {isLoading ? "កំពុងផ្ទុក..." : `${filteredTeachers.length} នាក់`}
+                {isLoading
+                  ? "កំពុងផ្ទុក..."
+                  : `${filteredTeachers.length} នាក់`}
               </p>
             </div>
           </div>
@@ -251,9 +255,7 @@ export default function MobileTeachersPage() {
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <Users className="w-12 h-12 text-gray-400" />
             </div>
-            <h3 className="font-koulen text-xl text-gray-900 mb-2">
-              រកមិនឃើញ
-            </h3>
+            <h3 className="font-koulen text-xl text-gray-900 mb-2">រកមិនឃើញ</h3>
             <p className="font-battambang text-sm text-gray-500 text-center">
               {searchQuery
                 ? "មិនមានគ្រូដែលត្រូវនឹងការស្វែងរករបស់អ្នក"
@@ -284,7 +286,8 @@ export default function MobileTeachersPage() {
                   {/* Teacher Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-battambang text-sm font-bold text-gray-900 truncate mb-0.5">
-                      {teacher.khmerName || `${teacher.firstName} ${teacher.lastName}`}
+                      {teacher.khmerName ||
+                        `${teacher.firstName} ${teacher.lastName}`}
                     </h3>
 
                     {/* Role Badge */}
@@ -359,9 +362,9 @@ export default function MobileTeachersPage() {
           >
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
-              <h2 className="font-koulen text-lg text-gray-900">
+              <h1 className="font-koulen text-lg text-gray-900">
                 ព័ត៌មានលម្អិត
-              </h2>
+              </h1>
               <button
                 onClick={closeTeacherDetails}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -456,7 +459,9 @@ export default function MobileTeachersPage() {
                       លេខទូរស័ព្ទ
                     </p>
                     <a
-                      href={`tel:${selectedTeacher.phone || selectedTeacher.phoneNumber}`}
+                      href={`tel:${
+                        selectedTeacher.phone || selectedTeacher.phoneNumber
+                      }`}
                       className="font-battambang text-sm text-indigo-600 font-semibold"
                     >
                       {selectedTeacher.phone || selectedTeacher.phoneNumber}
@@ -476,7 +481,8 @@ export default function MobileTeachersPage() {
                       </span>
                       {selectedTeacher.homeroomClass._count && (
                         <span className="font-battambang text-xs text-gray-500">
-                          ({selectedTeacher.homeroomClass._count.students} សិស្ស)
+                          ({selectedTeacher.homeroomClass._count.students}{" "}
+                          សិស្ស)
                         </span>
                       )}
                     </div>
@@ -484,23 +490,24 @@ export default function MobileTeachersPage() {
                 )}
 
                 {/* Subjects */}
-                {selectedTeacher.subjects && selectedTeacher.subjects.length > 0 && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-2">
-                      មុខវិជ្ជាបង្រៀន
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTeacher.subjects.map((subject) => (
-                        <span
-                          key={subject.id}
-                          className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-battambang text-xs text-gray-700"
-                        >
-                          {subject.nameKh || subject.name}
-                        </span>
-                      ))}
+                {selectedTeacher.subjects &&
+                  selectedTeacher.subjects.length > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <p className="font-battambang text-xs text-gray-500 mb-2">
+                        មុខវិជ្ជាបង្រៀន
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTeacher.subjects.map((subject) => (
+                          <span
+                            key={subject.id}
+                            className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-battambang text-xs text-gray-700"
+                          >
+                            {subject.nameKh || subject.name}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Teaching Classes */}
                 {selectedTeacher.teachingClasses &&

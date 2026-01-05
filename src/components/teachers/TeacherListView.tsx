@@ -143,16 +143,18 @@ export default function TeacherListView({
           </div>
 
           {/* Title */}
-          <h3 className="text-xl font-black text-gray-900 mb-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent khmer-title">
+          <h1 className="text-xl font-koulen text-gray-900 mb-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent khmer-title">
             រៀបចំជាស្រេច!
-          </h3>
+          </h1>
           <p className="text-sm font-semibold text-gray-700 mb-3">
             Ready to Load Teacher Data
           </p>
 
           {/* Description */}
           <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto khmer-text">
-            ចុចប៊ូតុង <span className="font-bold text-blue-600">"ផ្ទុកទិន្នន័យ"</span> ដើម្បីទាញយកបញ្ជីគ្រូបង្រៀនទាំងអស់
+            ចុចប៊ូតុង{" "}
+            <span className="font-bold text-blue-600">"ផ្ទុកទិន្នន័យ"</span>{" "}
+            ដើម្បីទាញយកបញ្ជីគ្រូបង្រៀនទាំងអស់
           </p>
 
           {/* Load Button */}
@@ -177,18 +179,22 @@ export default function TeacherListView({
           {/* Info cards */}
           <div className="mt-6 grid grid-cols-3 gap-3 max-w-2xl mx-auto">
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="text-blue-600 text-xl mb-1">⚡</div>
-              <p className="text-xs font-bold text-gray-900 khmer-text">ផ្ទុកលឿន</p>
+              <div className="text-blue-600 text-xl font-koulen mb-1">⚡</div>
+              <p className="text-xs font-bold text-gray-900 khmer-text">
+                ផ្ទុកលឿន
+              </p>
               <p className="text-xs text-gray-500">Optimized</p>
             </div>
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="text-indigo-600 text-xl mb-1">🔄</div>
+              <div className="text-indigo-600 text-xl font-koulen mb-1">🔄</div>
               <p className="text-xs font-bold text-gray-900">Real-time</p>
               <p className="text-xs text-gray-500 khmer-text">ទិន្នន័យថ្មី</p>
             </div>
             <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="text-purple-600 text-xl mb-1">✅</div>
-              <p className="text-xs font-bold text-gray-900 khmer-text">សុវត្ថិភាព</p>
+              <div className="text-purple-600 text-xl font-koulen mb-1">✅</div>
+              <p className="text-xs font-bold text-gray-900 khmer-text">
+                សុវត្ថិភាព
+              </p>
               <p className="text-xs text-gray-500">Secure</p>
             </div>
           </div>
@@ -379,16 +385,25 @@ export default function TeacherListView({
                   <span className="text-lg">✨</span>
                 </div>
               </div>
-              <h3 className="text-xl font-black text-gray-900 mb-2 khmer-title">
+              <h3 className="text-xl font-koulen text-gray-900 mb-2 khmer-title">
                 កំពុងទាញយកទិន្នន័យ...
               </h3>
               <p className="text-sm text-gray-600 font-semibold">
                 Loading teacher details
               </p>
               <div className="mt-4 flex justify-center gap-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                <div
+                  className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></div>
+                <div
+                  className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></div>
               </div>
             </div>
           </div>

@@ -156,7 +156,7 @@ export default function DualSessionTimetableGrid({
         ) : (
           <div className="flex items-center justify-center min-h-[70px] text-gray-400">
             <div className="text-center">
-              <div className="text-xl mb-0.5">+</div>
+              <div className="text-xl font-koulen mb-0.5">+</div>
               <div className="text-[10px]">Add</div>
             </div>
           </div>
@@ -182,7 +182,7 @@ export default function DualSessionTimetableGrid({
               <Moon className="w-6 h-6" />
             )}
             <div>
-              <h3 className="text-xl font-bold">
+              <h3 className="text-xl font-koulen">
                 {sessionInfo.icon} {sessionInfo.kh}
               </h3>
               <p className="text-sm text-white/90">
