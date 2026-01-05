@@ -3,6 +3,15 @@
 @tailwind utilities;
 
 /* ============================================
+   IMPORTANT: Font Loading Strategy for PWA
+   ============================================
+   Local fonts MUST load FIRST for mobile/PWA.
+   Google Fonts should only be a fallback.
+   Using font-display: block ensures text waits
+   for fonts to load (prevents flash of wrong font).
+   ============================================ */
+
+/* ============================================
    LOCAL KHMER FONTS (Primary - for PWA/Mobile)
    ============================================ */
 
@@ -11,8 +20,10 @@
   font-family: 'Battambang';
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/khmer/Battambang-Regular.woff2') format('woff2');
+  font-display: block;  /* Changed from swap to block - critical for PWA */
+  src: local('Battambang Regular'),
+       local('Battambang-Regular'),
+       url('/fonts/khmer/Battambang-Regular.ttf') format('truetype');
   unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
 }
 
@@ -21,8 +32,10 @@
   font-family: 'Battambang';
   font-style: normal;
   font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/khmer/Battambang-Bold.woff2') format('woff2');
+  font-display: block;  /* Changed from swap to block - critical for PWA */
+  src: local('Battambang Bold'),
+       local('Battambang-Bold'),
+       url('/fonts/khmer/Battambang-Bold.ttf') format('truetype');
   unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
 }
 
@@ -31,8 +44,10 @@
   font-family: 'Moul';
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/khmer/Moul-Regular.woff2') format('woff2');
+  font-display: block;  /* Changed from swap to block - critical for PWA */
+  src: local('Moul Regular'),
+       local('Moul-Regular'),
+       url('/fonts/khmer/Moul-Regular.ttf') format('truetype');
   unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
 }
 
@@ -41,8 +56,9 @@
   font-family: 'Koulen';
   font-style: normal;
   font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/khmer/Koulen-Regular.woff2') format('woff2');
+  font-display: block;  /* Changed from swap to block - critical for PWA */
+  src: local('Koulen'),
+       url('/fonts/khmer/Koulen-Regular.ttf') format('truetype');
   unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
 }
 
@@ -51,13 +67,20 @@
   font-family: 'Koulen';
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/khmer/Koulen-Regular.woff2') format('woff2');
+  font-display: block;  /* Changed from swap to block - critical for PWA */
+  src: local('Koulen'),
+       url('/fonts/khmer/Koulen-Regular.ttf') format('truetype');
   unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
 }
 
-/* Import Google Fonts as FALLBACK (for web browsers) */
-@import url("https://fonts.googleapis.com/css2?family=Moul&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+/* ============================================
+   GOOGLE FONTS FALLBACK (Desktop/Web Only)
+   ============================================
+   Commented out to prioritize local fonts for PWA.
+   Uncomment ONLY if you need Google Fonts fallback
+   for desktop browsers without local fonts.
+   ============================================ */
+/* @import url("https://fonts.googleapis.com/css2?family=Moul&family=Koulen&family=Battambang:wght@100;300;400;700;900&family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"); */
 
 /* ============================================
    MODERN DESIGN SYSTEM
