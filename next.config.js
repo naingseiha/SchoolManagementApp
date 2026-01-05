@@ -45,12 +45,12 @@ const withPWA = require('@ducanh2912/next-pwa').default({
       },
       {
         urlPattern: /\.(?:woff|woff2|eot|ttf|otf)$/i,
-        handler: 'StaleWhileRevalidate',
+        handler: 'CacheFirst',  // Changed to CacheFirst for better offline support
         options: {
           cacheName: 'static-font-assets',
           expiration: {
-            maxEntries: 4,
-            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
+            maxEntries: 10,  // Increased for TTF fonts
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days - fonts rarely change
           },
         },
       },

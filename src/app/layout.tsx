@@ -95,6 +95,36 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* CRITICAL: Preload Khmer fonts for PWA/Mobile */}
+        <link
+          rel="preload"
+          href="/fonts/khmer/Battambang-Regular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/khmer/Battambang-Bold.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/khmer/Moul-Regular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/khmer/Koulen-Regular.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+
         {/* iOS specific meta tags */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
