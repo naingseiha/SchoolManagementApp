@@ -67,7 +67,7 @@ export default function ViewSubjectModal({
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-100">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-koulen text-gray-900">
                 {subject.nameKh}
               </h2>
               {subject.nameEn && (
@@ -186,7 +186,7 @@ export default function ViewSubjectModal({
                   subject.coefficient
                 )}`}
               >
-                <span className="text-2xl font-bold">
+                <span className="text-2xl font-koulen">
                   {subject.coefficient.toFixed(1)}
                 </span>
               </div>

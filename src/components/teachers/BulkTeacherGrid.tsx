@@ -1128,7 +1128,7 @@ export default function BulkTeacherGrid({
         <div className="bg-gradient-to-r from-gray-50 to-blue-50 border-2 border-gray-200 rounded-lg p-4">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div className="text-center">
-              <div className="text-2xl font-black text-blue-600">
+              <div className="text-2xl font-koulen text-blue-600">
                 {existingRowCount}
               </div>
               <div className="text-xs text-gray-600 font-semibold">
@@ -1136,19 +1136,19 @@ export default function BulkTeacherGrid({
               </div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black text-orange-600">
+              <div className="text-2xl font-koulen text-orange-600">
                 {modifiedExistingCount}
               </div>
               <div className="text-xs text-gray-600 font-semibold">កែប្រែ</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black text-green-600">
+              <div className="text-2xl font-koulen text-green-600">
                 {newFilledRowCount}
               </div>
               <div className="text-xs text-gray-600 font-semibold">ថ្មី</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black text-emerald-600">
+              <div className="text-2xl font-koulen text-emerald-600">
                 {newValidRowCount}
               </div>
               <div className="text-xs text-gray-600 font-semibold">
@@ -1156,7 +1156,7 @@ export default function BulkTeacherGrid({
               </div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black text-red-600">
+              <div className="text-2xl font-koulen text-red-600">
                 {newFilledRowCount - newValidRowCount}
               </div>
               <div className="text-xs text-gray-600 font-semibold">

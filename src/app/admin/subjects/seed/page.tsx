@@ -68,7 +68,7 @@ export default function SeedSubjectsPage() {
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-moul text-gray-900 mb-2">
           បង្កើតមុខវិជ្ជាស្តង់ដារ
         </h1>
         <p className="text-gray-600">
@@ -78,7 +78,7 @@ export default function SeedSubjectsPage() {
 
       {/* Subject Preview */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-koulen mb-4 flex items-center gap-2">
           <Database className="w-6 h-6 text-blue-600" />
           ព័ត៌មានមុខវិជ្ជា • Subjects Overview
         </h2>
@@ -87,7 +87,7 @@ export default function SeedSubjectsPage() {
           {grades.map((grade) => (
             <div key={grade} className="bg-gray-50 rounded-lg p-4">
               <div className="text-sm text-gray-600 mb-1">ថ្នាក់ទី {grade}</div>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-koulen text-blue-600">
                 {getSubjectsCountByGrade(grade)}
               </div>
               <div className="text-xs text-gray-500">មុខវិជ្ជា</div>
@@ -105,7 +105,7 @@ export default function SeedSubjectsPage() {
 
       {/* Actions */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">សកម្មភាព • Actions</h2>
+        <h2 className="text-xl font-koulen mb-4">សកម្មភាព • Actions</h2>
 
         <div className="space-y-4">
           <Button
@@ -137,7 +137,7 @@ export default function SeedSubjectsPage() {
       {/* Results */}
       {result && (
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">លទ្ធផល • Results</h2>
+          <h2 className="text-xl font-koulen mb-4">លទ្ធផល • Results</h2>
 
           <div className="space-y-3">
             {/* Success/Failure Status */}

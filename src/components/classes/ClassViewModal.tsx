@@ -156,7 +156,7 @@ export default function ClassViewModal({
           <div
             className={`bg-gradient-to-br ${config.gradient} p-3 rounded-xl shadow-md`}
           >
-            <span className="text-2xl">{config.icon}</span>
+            <span className="text-2xl font-koulen">{config.icon}</span>
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 mb-1">
@@ -193,13 +193,10 @@ export default function ClassViewModal({
               <GraduationCap className="w-8 h-8 text-white" />
             </div>
             <div className="flex-1">
-              <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+              <h1 className="text-2xl font-koulen text-gray-900 flex items-center gap-2">
                 {localClassData.name}
                 <Sparkles className="w-5 h-5 text-yellow-500" />
-              </h2>
-              <p className="text-sm text-gray-600 font-medium">
-                ព័ត៌មានលម្អិតអំពីថ្នាក់រៀន • Class Details
-              </p>
+              </h1>
             </div>
           </div>
         }
@@ -259,7 +256,7 @@ export default function ClassViewModal({
                       ថ្នាក់ • Grade
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-blue-900">
+                  <p className="text-2xl font-koulen text-blue-900">
                     ថ្នាក់ទី {localClassData.grade}
                   </p>
                 </div>
@@ -274,7 +271,7 @@ export default function ClassViewModal({
                       ផ្នែក • Section
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-purple-900">
+                  <p className="text-2xl font-koulen text-purple-900">
                     {localClassData.section || "គ្មាន"}
                   </p>
                 </div>
@@ -289,7 +286,7 @@ export default function ClassViewModal({
                       ឆ្នាំសិក្សា • Year
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-green-900">
+                  <p className="text-2xl font-koulen text-green-900">
                     {localClassData.academicYear}
                   </p>
                 </div>
@@ -304,7 +301,7 @@ export default function ClassViewModal({
                       សមត្ថភាព • Capacity
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-orange-900">
+                  <p className="text-2xl font-koulen text-orange-900">
                     {studentCount}
                     {localClassData.capacity && (
                       <span className="text-lg text-orange-600">
@@ -350,7 +347,7 @@ export default function ClassViewModal({
                     </p>
                     {localClassData.teacher ? (
                       <>
-                        <p className="text-xl font-black text-indigo-900 mb-1">
+                        <p className="text-xl font-koulen text-indigo-900 mb-1">
                           {localClassData.teacher.khmerName ||
                             `${localClassData.teacher.firstName} ${localClassData.teacher.lastName}`}
                         </p>

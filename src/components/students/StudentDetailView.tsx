@@ -68,7 +68,7 @@ export default function StudentDetailView({ student }: StudentDetailViewProps) {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-2.5 rounded-lg shadow-md">
           <Icon className="w-5 h-5 text-white" />
         </div>
-        <h3 className="text-xl font-black text-gray-900">{title}</h3>
+        <h3 className="text-xl font-koulen text-gray-900">{title}</h3>
       </div>
       {badge && (
         <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-bold rounded-full">
@@ -118,10 +118,10 @@ export default function StudentDetailView({ student }: StudentDetailViewProps) {
             <div className="text-sm font-medium text-blue-100 mb-1">
               អត្តលេខសិស្ស • Student ID
             </div>
-            <div className="text-3xl font-black mb-3 tracking-wide">
+            <div className="text-3xl font-moul mb-3 tracking-wide">
               {student.studentId || "N/A"}
             </div>
-            <div className="text-2xl font-bold mb-2">
+            <div className="text-2xl font-koulen mb-2">
               {student.khmerName || `${student.firstName} ${student.lastName}`}
             </div>
             {student.englishName && (
@@ -132,7 +132,7 @@ export default function StudentDetailView({ student }: StudentDetailViewProps) {
           </div>
           <div className="text-right bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <div className="text-sm text-blue-100 mb-1">ថ្នាក់ • Class</div>
-            <div className="text-2xl font-black">
+            <div className="text-2xl font-koulen">
               {student.class?.name || (
                 <span className="text-lg text-blue-200">មិនមានថ្នាក់</span>
               )}

@@ -322,7 +322,7 @@ export default function SchedulePage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-moul bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 តារាងកាលវិភាគ
               </h1>
               <p className="text-gray-600 mt-1">
@@ -406,7 +406,7 @@ export default function SchedulePage() {
                       <div className="flex items-center gap-3">
                         <Sun className="w-7 h-7 text-yellow-600" />
                         <div>
-                          <div className="text-2xl font-bold text-yellow-900">
+                          <div className="text-2xl font-koulen text-yellow-900">
                             {stats.morningHours}
                           </div>
                           <div className="text-xs text-yellow-600">
@@ -420,7 +420,7 @@ export default function SchedulePage() {
                       <div className="flex items-center gap-3">
                         <Moon className="w-7 h-7 text-blue-600" />
                         <div>
-                          <div className="text-2xl font-bold text-blue-900">
+                          <div className="text-2xl font-koulen text-blue-900">
                             {stats.afternoonHours}
                           </div>
                           <div className="text-xs text-blue-600">ម៉ោងរសៀល</div>
@@ -438,7 +438,7 @@ export default function SchedulePage() {
                   <div className="flex items-center gap-3">
                     <Clock className="w-7 h-7 text-purple-600" />
                     <div>
-                      <div className="text-2xl font-bold text-purple-900">
+                      <div className="text-2xl font-koulen text-purple-900">
                         {stats.totalHours}
                       </div>
                       <div className="text-xs text-purple-600">
@@ -452,7 +452,7 @@ export default function SchedulePage() {
                   <div className="flex items-center gap-3">
                     <BookOpen className="w-7 h-7 text-green-600" />
                     <div>
-                      <div className="text-2xl font-bold text-green-900">
+                      <div className="text-2xl font-koulen text-green-900">
                         {stats.subjects}
                       </div>
                       <div className="text-xs text-green-600">
@@ -466,7 +466,7 @@ export default function SchedulePage() {
                   <div className="flex items-center gap-3">
                     <Users className="w-7 h-7 text-orange-600" />
                     <div>
-                      <div className="text-2xl font-bold text-orange-900">
+                      <div className="text-2xl font-koulen text-orange-900">
                         {stats.teachers}
                       </div>
                       <div className="text-xs text-orange-600">
@@ -525,7 +525,7 @@ export default function SchedulePage() {
                 <div className="flex items-center gap-3">
                   <Calendar className="w-8 h-8 text-indigo-600" />
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-koulen text-gray-900">
                       {currentSchedule.className}
                     </h2>
                     <p className="text-sm text-gray-600">
@@ -583,7 +583,7 @@ export default function SchedulePage() {
           ) : (
             <div className="bg-white rounded-2xl shadow-lg p-16 text-center">
               <Calendar className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-400 mb-2">
+              <h3 className="text-2xl font-koulen text-gray-400 mb-2">
                 សូមជ្រើសរើសថ្នាក់
               </h3>
               <p className="text-gray-500">

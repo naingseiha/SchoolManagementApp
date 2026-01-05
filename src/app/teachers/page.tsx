@@ -97,7 +97,7 @@ export default function TeachersPage() {
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
                   </div>
                   <div>
-                    <h1 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    <h1 className="text-2xl font-koulen bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                       គ្រប់គ្រងគ្រូបង្រៀន
                     </h1>
                     <p className="text-sm text-gray-600 font-semibold">
@@ -109,13 +109,13 @@ export default function TeachersPage() {
                 {/* Enhanced Stats */}
                 <div className="flex items-center gap-4">
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="text-2xl font-black bg-gradient-to-br from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                    <div className="text-2xl font-koulen bg-gradient-to-br from-blue-600 to-blue-700 bg-clip-text text-transparent">
                       {isDataLoaded ? teachers.length : contextTeachers.length}
                     </div>
                     <div className="text-xs text-gray-600 font-bold">សរុប</div>
                   </div>
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 border border-pink-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="text-2xl font-black bg-gradient-to-br from-pink-600 to-pink-700 bg-clip-text text-transparent">
+                    <div className="text-2xl font-koulen bg-gradient-to-br from-pink-600 to-pink-700 bg-clip-text text-transparent">
                       {isDataLoaded
                         ? teachers.filter(
                             (t: any) =>
@@ -129,7 +129,7 @@ export default function TeachersPage() {
                     <div className="text-xs text-gray-600 font-bold">ស្រី</div>
                   </div>
                   <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 border border-indigo-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="text-2xl font-black bg-gradient-to-br from-indigo-600 to-indigo-700 bg-clip-text text-transparent">
+                    <div className="text-2xl font-koulen bg-gradient-to-br from-indigo-600 to-indigo-700 bg-clip-text text-transparent">
                       {isDataLoaded
                         ? teachers.filter(
                             (t: any) => t.gender === "MALE" || t.gender === "male"

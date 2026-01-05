@@ -126,9 +126,9 @@ export default function StudentListTab({
               <Users className="w-7 h-7 text-purple-600" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-gray-900">
+              <h1 className="text-2xl font-koulen text-gray-900">
                 បញ្ជីសិស្សសរុប
-              </h3>
+              </h1>
               <p className="text-sm text-gray-600 font-medium">
                 Student List • Total Students
               </p>
@@ -170,7 +170,7 @@ export default function StudentListTab({
               <Award className="w-5 h-5 text-purple-600" />
               <span className="text-sm font-bold text-gray-600">សរុប</span>
             </div>
-            <p className="text-3xl font-black text-purple-600">
+            <p className="text-3xl font-moul text-purple-600">
               {students.length}
             </p>
             <p className="text-xs text-gray-500 mt-1">នាក់ • Students</p>
@@ -181,7 +181,7 @@ export default function StudentListTab({
               <span className="text-lg">👨‍🎓</span>
               <span className="text-sm font-bold text-gray-600">ប្រុស</span>
             </div>
-            <p className="text-3xl font-black text-blue-600">{maleCount}</p>
+            <p className="text-3xl font-moul text-blue-600">{maleCount}</p>
             <p className="text-xs text-gray-500 mt-1">
               {students.length > 0
                 ? Math.round((maleCount / students.length) * 100)
@@ -195,7 +195,7 @@ export default function StudentListTab({
               <span className="text-lg">👩‍🎓</span>
               <span className="text-sm font-bold text-gray-600">ស្រី</span>
             </div>
-            <p className="text-3xl font-black text-pink-600">{femaleCount}</p>
+            <p className="text-3xl font-moul text-pink-600">{femaleCount}</p>
             <p className="text-xs text-gray-500 mt-1">
               {students.length > 0
                 ? Math.round((femaleCount / students.length) * 100)
@@ -436,9 +436,9 @@ export default function StudentListTab({
           <div className="bg-white w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
             <Users className="w-12 h-12 text-gray-400" />
           </div>
-          <h3 className="text-xl font-black text-gray-900 mb-2">
+          <h1 className="text-xl font-koulen text-gray-900 mb-2">
             មិនទាន់មានសិស្សក្នុងថ្នាក់នេះ
-          </h3>
+          </h1>
           <p className="text-gray-600 mb-6">
             ចុចប៊ូតុង "បន្ថែមសិស្ស" ឬ "នាំចូលសិស្ស" ដើម្បីបន្ថែមសិស្ស
           </p>

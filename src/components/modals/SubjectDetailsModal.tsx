@@ -89,9 +89,9 @@ export default function SubjectDetailsModal({
                 {subject.nameKh?.charAt(0) || subject.name?.charAt(0)}
               </div>
               <div className="flex-1">
-                <h2 className="text-2xl font-bold mb-1">
+                <h1 className="text-2xl font-koulen mb-1">
                   {subject.nameKh || subject.name}
-                </h2>
+                </h1>
                 <p className="text-white/90 text-lg english-modern">
                   {subject.nameEn || subject.name}
                 </p>
@@ -124,12 +124,12 @@ export default function SubjectDetailsModal({
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
             <UserCheck className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{teacherCount}</p>
+            <p className="text-2xl font-koulen text-gray-900">{teacherCount}</p>
             <p className="text-sm text-gray-600">គ្រូបង្រៀន • Teachers</p>
           </div>
           <div className="bg-purple-50 rounded-lg p-4 text-center border border-purple-200">
             <Clock className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-koulen text-gray-900">
               {subject.weeklyHours}h
             </p>
             <p className="text-sm text-gray-600">ម៉ោង/សប្តាហ៍ • Weekly Hours</p>

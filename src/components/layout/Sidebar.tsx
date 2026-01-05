@@ -222,7 +222,7 @@ function Sidebar() {
           <div className="p-6 text-center">
             <div className="mb-4 animate-bounce">
               <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-                <span className="text-4xl">⚠️</span>
+                <span className="text-4xl font-moul">⚠️</span>
               </div>
             </div>
             <p className="font-battambang font-semibold text-white mb-2">

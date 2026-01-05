@@ -177,7 +177,7 @@ export default function TimetableGrid({
                     ) : (
                       <div className="flex items-center justify-center min-h-[80px] text-gray-400">
                         <div className="text-center">
-                          <div className="text-2xl mb-1">+</div>
+                          <div className="text-2xl font-koulen mb-1">+</div>
                           <div className="text-xs">Add Subject</div>
                         </div>
                       </div>

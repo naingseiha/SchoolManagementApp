@@ -185,11 +185,11 @@ export default function StudentListView({
                 <Database className="w-12 h-12 text-blue-600" />
               )}
             </div>
-            <h3 className="text-2xl font-black text-gray-900 mb-3">
+            <h1 className="text-2xl font-koulen text-gray-900 mb-3">
               {isLoading
                 ? "កំពុងផ្ទុកទិន្នន័យ..."
                 : "ទិន្នន័យសិស្សមិនទាន់ផ្ទុក"}
-            </h3>
+            </h1>
             <p className="text-sm text-gray-600 mb-8 leading-relaxed">
               {isLoading
                 ? "សូមរង់ចាំបន្តិច យើងកំពុងទាញយកទិន្នន័យពីប្រព័ន្ធ"
@@ -219,7 +219,7 @@ export default function StudentListView({
                   <div className="text-xs text-blue-600 font-bold uppercase">
                     សរុប
                   </div>
-                  <div className="text-2xl font-black text-blue-900">
+                  <div className="text-2xl font-koulen text-blue-900">
                     {stats.total}
                   </div>
                 </div>
@@ -235,7 +235,7 @@ export default function StudentListView({
                   <div className="text-xs text-emerald-600 font-bold uppercase">
                     បង្ហាញ
                   </div>
-                  <div className="text-2xl font-black text-emerald-900">
+                  <div className="text-2xl font-koulen text-emerald-900">
                     {stats.filtered}
                   </div>
                 </div>
@@ -245,13 +245,13 @@ export default function StudentListView({
             <div className="bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl p-4 border-2 border-blue-100">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-sky-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">👨‍🎓</span>
+                  <span className="text-2xl font-koulen">👨‍🎓</span>
                 </div>
                 <div>
                   <div className="text-xs text-sky-600 font-bold uppercase">
                     ប្រុស
                   </div>
-                  <div className="text-2xl font-black text-sky-900">
+                  <div className="text-2xl font-koulen text-sky-900">
                     {stats.male}
                   </div>
                 </div>
@@ -261,13 +261,13 @@ export default function StudentListView({
             <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-4 border-2 border-pink-100">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-pink-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <span className="text-2xl">👩‍🎓</span>
+                  <span className="text-2xl font-koulen">👩‍🎓</span>
                 </div>
                 <div>
                   <div className="text-xs text-pink-600 font-bold uppercase">
                     ស្រី
                   </div>
-                  <div className="text-2xl font-black text-pink-900">
+                  <div className="text-2xl font-koulen text-pink-900">
                     {stats.female}
                   </div>
                 </div>
@@ -391,7 +391,7 @@ export default function StudentListView({
           {filteredStudents.length === 0 ? (
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-16 text-center">
               <div className="text-gray-400 text-7xl mb-4">🔍</div>
-              <h3 className="text-2xl font-black text-gray-900 mb-2">
+              <h3 className="text-2xl font-koulen text-gray-900 mb-2">
                 រកមិនឃើញទិន្នន័យ
               </h3>
               <p className="text-sm text-gray-600 mb-4">

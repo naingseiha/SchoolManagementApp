@@ -246,7 +246,7 @@ export default function ClassesPage() {
                   <GraduationCap className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-black text-gray-900">
+                  <h1 className="text-2xl font-koulen text-gray-900">
                     ថ្នាក់រៀន
                   </h1>
                   <p className="text-gray-600 font-medium">

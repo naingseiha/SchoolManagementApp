@@ -19,7 +19,10 @@ import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
 import { gradeApi, type GradeGridData } from "@/lib/api/grades";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 interface Subject {
   id: string;
@@ -64,14 +67,17 @@ const getCurrentKhmerMonth = () => {
   return month?.value || "មករា";
 };
 
-
 interface MobileGradeEntryProps {
   classId?: string;
   month?: string;
   year?: number;
 }
 
-export default function MobileGradeEntry({ classId: propClassId, month: propMonth, year: propYear }: MobileGradeEntryProps = {}) {
+export default function MobileGradeEntry({
+  classId: propClassId,
+  month: propMonth,
+  year: propYear,
+}: MobileGradeEntryProps = {}) {
   const { classes, isLoadingClasses, refreshClasses } = useData();
   const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
@@ -81,8 +87,12 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
   const initialClassId = urlClassId || propClassId || "";
 
   const [selectedClass, setSelectedClass] = useState(initialClassId);
-  const [selectedMonth, setSelectedMonth] = useState(propMonth || getCurrentKhmerMonth()); // ✅ Auto-select current month
-  const [selectedYear, setSelectedYear] = useState(propYear || getCurrentAcademicYear());
+  const [selectedMonth, setSelectedMonth] = useState(
+    propMonth || getCurrentKhmerMonth()
+  ); // ✅ Auto-select current month
+  const [selectedYear, setSelectedYear] = useState(
+    propYear || getCurrentAcademicYear()
+  );
   const [selectedSubject, setSelectedSubject] = useState("");
 
   const [gridData, setGridData] = useState<GradeGridData | null>(null);
@@ -105,8 +115,12 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
   // ✅ NEW: Verification state
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifiedAt, setVerifiedAt] = useState<Date | null>(null);
-  const [verificationDiscrepancies, setVerificationDiscrepancies] = useState<Set<string>>(new Set());
-  const [incompleteScores, setIncompleteScores] = useState<Set<string>>(new Set());
+  const [verificationDiscrepancies, setVerificationDiscrepancies] = useState<
+    Set<string>
+  >(new Set());
+  const [incompleteScores, setIncompleteScores] = useState<Set<string>>(
+    new Set()
+  );
   const [incompleteCount, setIncompleteCount] = useState(0);
 
   // ✅ Load classes if empty
@@ -118,7 +132,13 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
 
   // ✅ Auto-load data when class is pre-selected from URL/props
   useEffect(() => {
-    if (initialClassId && classes.length > 0 && !dataLoaded && !loading && currentUser) {
+    if (
+      initialClassId &&
+      classes.length > 0 &&
+      !dataLoaded &&
+      !loading &&
+      currentUser
+    ) {
       handleLoadData();
     }
   }, [initialClassId, classes.length, currentUser]);
@@ -266,7 +286,10 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
         lastName: "",
         gender: student.gender,
         rollNumber: undefined,
-        score: gradeData?.score !== undefined && gradeData?.score !== null ? gradeData.score : null,
+        score:
+          gradeData?.score !== undefined && gradeData?.score !== null
+            ? gradeData.score
+            : null,
         maxScore: subject.maxScore,
       };
     });
@@ -287,9 +310,7 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
     isBatchSavingRef.current = true;
 
     // Mark all as saving
-    setSavingStudents(
-      (prev) => new Set([...prev, ...studentsToSave.keys()])
-    );
+    setSavingStudents((prev) => new Set([...prev, ...studentsToSave.keys()]));
 
     try {
       const gradesToSave = Array.from(studentsToSave.entries()).map(
@@ -418,7 +439,7 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
         }
         await executeBatchSave();
         // Wait a bit for the save to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Reload fresh data from database
@@ -461,22 +482,24 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
       // Update students with fresh database values
       const subject = subjects.find((s) => s.id === selectedSubject);
       if (subject) {
-        const verifiedStudents: StudentGrade[] = freshData.students.map((student) => {
-          const gradeData = student.grades[selectedSubject];
-          return {
-            studentId: student.studentId,
-            khmerName: student.studentName,
-            firstName: "",
-            lastName: "",
-            gender: student.gender,
-            rollNumber: undefined,
-            score:
-              gradeData?.score !== undefined && gradeData?.score !== null
-                ? gradeData.score
-                : null,
-            maxScore: subject.maxScore,
-          };
-        });
+        const verifiedStudents: StudentGrade[] = freshData.students.map(
+          (student) => {
+            const gradeData = student.grades[selectedSubject];
+            return {
+              studentId: student.studentId,
+              khmerName: student.studentName,
+              firstName: "",
+              lastName: "",
+              gender: student.gender,
+              rollNumber: undefined,
+              score:
+                gradeData?.score !== undefined && gradeData?.score !== null
+                  ? gradeData.score
+                  : null,
+              maxScore: subject.maxScore,
+            };
+          }
+        );
 
         setStudents(verifiedStudents);
         setVerificationDiscrepancies(discrepancies);
@@ -496,7 +519,16 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
     } finally {
       setIsVerifying(false);
     }
-  }, [selectedClass, selectedSubject, selectedMonth, selectedYear, gridData, students, subjects, executeBatchSave]);
+  }, [
+    selectedClass,
+    selectedSubject,
+    selectedMonth,
+    selectedYear,
+    gridData,
+    students,
+    subjects,
+    executeBatchSave,
+  ]);
 
   // ✅ Auto-hide verification banner after 5 seconds
   useEffect(() => {
@@ -656,7 +688,9 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="w-5 h-5 text-red-600" />
               </div>
-              <p className="font-battambang text-sm text-red-700 flex-1 pt-2">{error}</p>
+              <p className="font-battambang text-sm text-red-700 flex-1 pt-2">
+                {error}
+              </p>
             </div>
           </div>
         )}
@@ -723,9 +757,9 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                         <BookOpen className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-koulen text-lg text-white leading-tight">
+                        <h1 className="font-koulen text-lg text-white leading-tight">
                           {currentSubject.nameKh}
-                        </h3>
+                        </h1>
                         <p className="font-battambang text-xs text-purple-100">
                           {currentSubject.nameEn}
                         </p>
@@ -733,20 +767,32 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                     </div>
                     <div className="flex items-center gap-4 mt-3">
                       <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1.5">
-                        <p className="font-battambang text-xs text-purple-100">សិស្សសរុប</p>
-                        <p className="font-koulen text-lg text-white">{students.length}</p>
+                        <p className="font-battambang text-xs text-purple-100">
+                          សិស្សសរុប
+                        </p>
+                        <p className="font-koulen text-lg text-white">
+                          {students.length}
+                        </p>
                       </div>
                       <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1.5">
-                        <p className="font-battambang text-xs text-purple-100">ពិន្ទុអតិបរមា</p>
-                        <p className="font-koulen text-lg text-white">{currentSubject.maxScore}</p>
+                        <p className="font-battambang text-xs text-purple-100">
+                          ពិន្ទុអតិបរមា
+                        </p>
+                        <p className="font-koulen text-lg text-white">
+                          {currentSubject.maxScore}
+                        </p>
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl px-4 py-3">
                       <CheckCircle className="w-6 h-6 text-white mx-auto mb-1" />
-                      <p className="font-battambang text-xs text-purple-100 whitespace-nowrap">Auto-Save</p>
-                      <p className="font-battambang text-[10px] text-white/90">ស្វ័យប្រវត្តិ</p>
+                      <p className="font-battambang text-xs text-purple-100 whitespace-nowrap">
+                        Auto-Save
+                      </p>
+                      <p className="font-battambang text-[10px] text-white/90">
+                        ស្វ័យប្រវត្តិ
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -758,7 +804,9 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
               {students.map((student, index) => {
                 const isSaving = savingStudents.has(student.studentId);
                 const isSaved = savedStudents.has(student.studentId);
-                const hasDiscrepancy = verificationDiscrepancies.has(student.studentId);
+                const hasDiscrepancy = verificationDiscrepancies.has(
+                  student.studentId
+                );
                 const isIncomplete = incompleteScores.has(student.studentId);
 
                 return (
@@ -786,11 +834,13 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                           {student.khmerName}
                         </p>
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium ${
-                            student.gender === "MALE"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-pink-100 text-pink-700"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium ${
+                              student.gender === "MALE"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-pink-100 text-pink-700"
+                            }`}
+                          >
                             {student.gender === "MALE" ? "ប្រុស" : "ស្រី"}
                           </span>
                         </div>
@@ -801,7 +851,11 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                         <input
                           type="text"
                           inputMode="decimal"
-                          value={student.score !== null ? student.score.toString() : ""}
+                          value={
+                            student.score !== null
+                              ? student.score.toString()
+                              : ""
+                          }
                           onChange={(e) =>
                             handleScoreChange(
                               student.studentId,
@@ -940,25 +994,28 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
         )}
 
         {/* ✅ NEW: Verification Success Banner - All complete and correct */}
-        {verifiedAt && verificationDiscrepancies.size === 0 && incompleteCount === 0 && (
-          <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-500">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-2xl p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
-                  <CheckCircle className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-battambang text-sm font-bold mb-0.5">
-                    ពិន្ទុត្រូវបានផ្ទៀងផ្ទាត់ ✓
-                  </p>
-                  <p className="font-battambang text-xs text-green-50">
-                    គ្រប់ពិន្ទុត្រឹមត្រូវនៅក្នុងមូលដ្ឋានទិន្នន័យ • All scores verified in database
-                  </p>
+        {verifiedAt &&
+          verificationDiscrepancies.size === 0 &&
+          incompleteCount === 0 && (
+            <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-500">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-2xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-battambang text-sm font-bold mb-0.5">
+                      ពិន្ទុត្រូវបានផ្ទៀងផ្ទាត់ ✓
+                    </p>
+                    <p className="font-battambang text-xs text-green-50">
+                      គ្រប់ពិន្ទុត្រឹមត្រូវនៅក្នុងមូលដ្ឋានទិន្នន័យ • All scores
+                      verified in database
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* ✅ NEW: Discrepancy Warning Banner */}
         {verificationDiscrepancies.size > 0 && (
@@ -973,7 +1030,8 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                     រកឃើញភាពខុសគ្នា {verificationDiscrepancies.size} ពិន្ទុ
                   </p>
                   <p className="font-battambang text-xs text-orange-50">
-                    ពិន្ទុបានធ្វើបច្ចុប្បន្នភាពដោយស្វ័យប្រវត្តិ • Scores updated automatically
+                    ពិន្ទុបានធ្វើបច្ចុប្បន្នភាពដោយស្វ័យប្រវត្តិ • Scores updated
+                    automatically
                   </p>
                 </div>
               </div>
@@ -994,7 +1052,8 @@ export default function MobileGradeEntry({ classId: propClassId, month: propMont
                     មានសិស្ស {incompleteCount} នាក់ មិនទាន់បញ្ចូលពិន្ទុ
                   </p>
                   <p className="font-battambang text-xs text-yellow-50">
-                    សូមបញ្ចូលពិន្ទុឱ្យគ្រប់សិស្ស • Please fill all student scores
+                    សូមបញ្ចូលពិន្ទុឱ្យគ្រប់សិស្ស • Please fill all student
+                    scores
                   </p>
                 </div>
               </div>

@@ -19,7 +19,10 @@ import {
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { dashboardApi, ComprehensiveStats } from "@/lib/api/dashboard";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 const MONTHS = [
   { value: "មករា", label: "មករា", number: 1 },
@@ -50,7 +53,9 @@ export default function MobileStatisticsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [expandedGrade, setExpandedGrade] = useState<string | null>(null);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
-  const [showAllClasses, setShowAllClasses] = useState<Record<string, boolean>>({});
+  const [showAllClasses, setShowAllClasses] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const loadStats = useCallback(async () => {
     try {
@@ -135,7 +140,8 @@ export default function MobileStatisticsScreen() {
   const totalPassed = stats.grades.reduce((sum, g) => sum + g.passedCount, 0);
   const totalFailed = stats.grades.reduce((sum, g) => sum + g.failedCount, 0);
   const totalWithGrades = totalPassed + totalFailed;
-  const overallPassPercentage = totalWithGrades > 0 ? (totalPassed / totalWithGrades) * 100 : 0;
+  const overallPassPercentage =
+    totalWithGrades > 0 ? (totalPassed / totalWithGrades) * 100 : 0;
 
   return (
     <MobileLayout title="ស្ថិតិ • Statistics">
@@ -343,9 +349,9 @@ export default function MobileStatisticsScreen() {
         <div className="px-5 pb-6">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-5 h-5 text-gray-600" />
-            <h3 className="font-koulen text-lg text-gray-900">
+            <h1 className="font-koulen text-lg text-gray-900">
               ស្ថិតិតាមថ្នាក់
-            </h3>
+            </h1>
           </div>
 
           <div className="space-y-3">
@@ -374,7 +380,8 @@ export default function MobileStatisticsScreen() {
                         ថ្នាក់ទី{grade.grade}
                       </p>
                       <p className="font-battambang text-xs text-gray-500">
-                        {grade.totalStudents} សិស្ស • {grade.totalClasses} ថ្នាក់
+                        {grade.totalStudents} សិស្ស • {grade.totalClasses}{" "}
+                        ថ្នាក់
                       </p>
                     </div>
                   </div>
@@ -404,12 +411,14 @@ export default function MobileStatisticsScreen() {
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="font-battambang text-xs text-green-600">
-                            ប: {grade.passedMale} ({grade.malePassPercentage.toFixed(1)}%)
+                            ប: {grade.passedMale} (
+                            {grade.malePassPercentage.toFixed(1)}%)
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-battambang text-xs text-green-600">
-                            ស: {grade.passedFemale} ({grade.femalePassPercentage.toFixed(1)}%)
+                            ស: {grade.passedFemale} (
+                            {grade.femalePassPercentage.toFixed(1)}%)
                           </span>
                         </div>
                       </div>
@@ -488,206 +497,237 @@ export default function MobileStatisticsScreen() {
                           ថ្នាក់រៀនទាំងអស់ ({grade.classes.length})
                         </p>
                         <div className="space-y-2">
-                          {grade.classes.slice(0, showAllClasses[grade.grade] ? undefined : 3).map((cls) => (
-                            <div
-                              key={cls.id}
-                              className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden"
-                            >
-                              {/* Class Header - Clickable */}
-                              <button
-                                onClick={() =>
-                                  setExpandedClass(
-                                    expandedClass === cls.id ? null : cls.id
-                                  )
-                                }
-                                className="w-full p-3 text-left active:bg-gray-100 transition-colors"
+                          {grade.classes
+                            .slice(
+                              0,
+                              showAllClasses[grade.grade] ? undefined : 3
+                            )
+                            .map((cls) => (
+                              <div
+                                key={cls.id}
+                                className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden"
                               >
-                                <div className="flex items-center justify-between mb-2">
-                                  <p className="font-battambang text-sm font-bold text-gray-900">
-                                    {cls.name}
-                                  </p>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-koulen text-lg text-green-600">
-                                      {cls.passPercentage.toFixed(1)}%
+                                {/* Class Header - Clickable */}
+                                <button
+                                  onClick={() =>
+                                    setExpandedClass(
+                                      expandedClass === cls.id ? null : cls.id
+                                    )
+                                  }
+                                  className="w-full p-3 text-left active:bg-gray-100 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="font-battambang text-sm font-bold text-gray-900">
+                                      {cls.name}
                                     </p>
-                                    <ChevronRight
-                                      className={`w-4 h-4 text-gray-400 transition-transform ${
-                                        expandedClass === cls.id ? "rotate-90" : ""
-                                      }`}
-                                    />
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 text-xs">
-                                  <div>
-                                    <p className="font-battambang text-gray-500">
-                                      សិស្ស
-                                    </p>
-                                    <p className="font-battambang text-gray-900 font-semibold">
-                                      {cls.studentCount}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="font-battambang text-gray-500">
-                                      ប្រុស
-                                    </p>
-                                    <p className="font-battambang text-blue-600 font-semibold">
-                                      {cls.malePassPercentage.toFixed(1)}%
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="font-battambang text-gray-500">
-                                      ស្រី
-                                    </p>
-                                    <p className="font-battambang text-pink-600 font-semibold">
-                                      {cls.femalePassPercentage.toFixed(1)}%
-                                    </p>
-                                  </div>
-                                </div>
-                              </button>
-
-                              {/* Expanded Class Details */}
-                              {expandedClass === cls.id && (
-                                <div className="px-3 pb-3 bg-white">
-                                  {/* Class-level Grade Distribution */}
-                                  <div className="mb-3 pt-3 border-t border-gray-200">
-                                    <p className="font-battambang text-xs text-gray-600 font-semibold mb-2">
-                                      ការចែកចាយពិន្ទុថ្នាក់
-                                    </p>
-                                    <div className="space-y-2">
-                                      {Object.entries(cls.gradeDistribution).map(
-                                        ([letter, dist]) =>
-                                          dist.total > 0 && (
-                                            <div
-                                              key={letter}
-                                              className="flex items-center gap-2"
-                                            >
-                                              <div
-                                                className={`w-6 h-6 rounded-lg flex items-center justify-center bg-gradient-to-br ${getGradeColor(
-                                                  letter
-                                                )} text-white font-bold text-xs shadow-sm`}
-                                              >
-                                                {letter}
-                                              </div>
-                                              <div className="flex-1">
-                                                <p className="font-battambang text-xs text-gray-900">
-                                                  {dist.total} សិស្ស
-                                                </p>
-                                              </div>
-                                              <div className="text-right">
-                                                <p className="font-battambang text-xs text-gray-600">
-                                                  <span className="text-blue-600">
-                                                    ប: {dist.male}
-                                                  </span>
-                                                  {" / "}
-                                                  <span className="text-pink-600">
-                                                    ស: {dist.female}
-                                                  </span>
-                                                </p>
-                                              </div>
-                                            </div>
-                                          )
-                                      )}
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-koulen text-lg text-green-600">
+                                        {cls.passPercentage.toFixed(1)}%
+                                      </p>
+                                      <ChevronRight
+                                        className={`w-4 h-4 text-gray-400 transition-transform ${
+                                          expandedClass === cls.id
+                                            ? "rotate-90"
+                                            : ""
+                                        }`}
+                                      />
                                     </div>
                                   </div>
-
-                                  {/* ✅ NEW: Subject-level Grade Distribution */}
-                                  {cls.subjectStats && cls.subjectStats.length > 0 && (
-                                    <div className="pt-3 border-t border-gray-200">
-                                      <p className="font-battambang text-xs text-gray-600 font-semibold mb-2 flex items-center gap-1">
-                                        <BarChart3 className="w-3 h-3" />
-                                        ការចែកចាយពិន្ទុតាមមុខវិជ្ជា
+                                  <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div>
+                                      <p className="font-battambang text-gray-500">
+                                        សិស្ស
                                       </p>
-                                      <div className="space-y-3">
-                                        {cls.subjectStats.map((subject) => (
-                                          <div
-                                            key={subject.subjectId}
-                                            className="bg-gray-50 rounded-lg p-2.5 border border-gray-200"
-                                          >
-                                            {/* Subject Header */}
-                                            <div className="flex items-center justify-between mb-2">
-                                              <div className="flex-1">
-                                                <p className="font-battambang text-xs font-bold text-gray-900">
-                                                  {subject.subjectName}
-                                                </p>
-                                                <p className="font-battambang text-[10px] text-gray-500">
-                                                  {subject.subjectCode} • ពិន្ទុ:{" "}
-                                                  {subject.maxScore} • ក្រេដីត:{" "}
-                                                  {subject.coefficient}
-                                                </p>
-                                              </div>
-                                              <div className="bg-indigo-100 rounded-lg px-2 py-1">
-                                                <p className="font-battambang text-[10px] text-indigo-700 font-semibold">
-                                                  {subject.totalStudentsWithGrades} សិស្ស
-                                                </p>
-                                              </div>
-                                            </div>
+                                      <p className="font-battambang text-gray-900 font-semibold">
+                                        {cls.studentCount}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="font-battambang text-gray-500">
+                                        ប្រុស
+                                      </p>
+                                      <p className="font-battambang text-blue-600 font-semibold">
+                                        {cls.malePassPercentage.toFixed(1)}%
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="font-battambang text-gray-500">
+                                        ស្រី
+                                      </p>
+                                      <p className="font-battambang text-pink-600 font-semibold">
+                                        {cls.femalePassPercentage.toFixed(1)}%
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
 
-                                            {/* Subject Grade Distribution */}
-                                            <div className="space-y-1.5">
-                                              {Object.entries(subject.gradeDistribution).map(
-                                                ([letter, dist]) =>
-                                                  dist.total > 0 && (
-                                                    <div
-                                                      key={letter}
-                                                      className="flex items-center gap-2"
-                                                    >
-                                                      <div
-                                                        className={`w-5 h-5 rounded flex items-center justify-center bg-gradient-to-br ${getGradeColor(
-                                                          letter
-                                                        )} text-white font-bold text-[10px] shadow-sm`}
-                                                      >
-                                                        {letter}
-                                                      </div>
-                                                      <div className="flex-1">
-                                                        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                                          <div
-                                                            className={`h-full bg-gradient-to-r ${getGradeColor(
-                                                              letter
-                                                            )} transition-all`}
-                                                            style={{
-                                                              width: `${
-                                                                subject.totalStudentsWithGrades > 0
-                                                                  ? (dist.total /
-                                                                      subject.totalStudentsWithGrades) *
-                                                                    100
-                                                                  : 0
-                                                              }%`,
-                                                            }}
-                                                          />
-                                                        </div>
-                                                      </div>
-                                                      <div className="text-right min-w-[65px]">
-                                                        <p className="font-battambang text-[10px] text-gray-700 font-semibold">
-                                                          {dist.total} ({dist.male}ប/{dist.female}ស)
-                                                        </p>
-                                                      </div>
-                                                    </div>
-                                                  )
-                                              )}
-                                            </div>
-                                          </div>
-                                        ))}
+                                {/* Expanded Class Details */}
+                                {expandedClass === cls.id && (
+                                  <div className="px-3 pb-3 bg-white">
+                                    {/* Class-level Grade Distribution */}
+                                    <div className="mb-3 pt-3 border-t border-gray-200">
+                                      <p className="font-battambang text-xs text-gray-600 font-semibold mb-2">
+                                        ការចែកចាយពិន្ទុថ្នាក់
+                                      </p>
+                                      <div className="space-y-2">
+                                        {Object.entries(
+                                          cls.gradeDistribution
+                                        ).map(
+                                          ([letter, dist]) =>
+                                            dist.total > 0 && (
+                                              <div
+                                                key={letter}
+                                                className="flex items-center gap-2"
+                                              >
+                                                <div
+                                                  className={`w-6 h-6 rounded-lg flex items-center justify-center bg-gradient-to-br ${getGradeColor(
+                                                    letter
+                                                  )} text-white font-bold text-xs shadow-sm`}
+                                                >
+                                                  {letter}
+                                                </div>
+                                                <div className="flex-1">
+                                                  <p className="font-battambang text-xs text-gray-900">
+                                                    {dist.total} សិស្ស
+                                                  </p>
+                                                </div>
+                                                <div className="text-right">
+                                                  <p className="font-battambang text-xs text-gray-600">
+                                                    <span className="text-blue-600">
+                                                      ប: {dist.male}
+                                                    </span>
+                                                    {" / "}
+                                                    <span className="text-pink-600">
+                                                      ស: {dist.female}
+                                                    </span>
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            )
+                                        )}
                                       </div>
                                     </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+
+                                    {/* ✅ NEW: Subject-level Grade Distribution */}
+                                    {cls.subjectStats &&
+                                      cls.subjectStats.length > 0 && (
+                                        <div className="pt-3 border-t border-gray-200">
+                                          <p className="font-battambang text-xs text-gray-600 font-semibold mb-2 flex items-center gap-1">
+                                            <BarChart3 className="w-3 h-3" />
+                                            ការចែកចាយពិន្ទុតាមមុខវិជ្ជា
+                                          </p>
+                                          <div className="space-y-3">
+                                            {cls.subjectStats.map((subject) => (
+                                              <div
+                                                key={subject.subjectId}
+                                                className="bg-gray-50 rounded-lg p-2.5 border border-gray-200"
+                                              >
+                                                {/* Subject Header */}
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <div className="flex-1">
+                                                    <p className="font-battambang text-xs font-bold text-gray-900">
+                                                      {subject.subjectName}
+                                                    </p>
+                                                    <p className="font-battambang text-[10px] text-gray-500">
+                                                      {subject.subjectCode} •
+                                                      ពិន្ទុ: {subject.maxScore}{" "}
+                                                      • ក្រេដីត:{" "}
+                                                      {subject.coefficient}
+                                                    </p>
+                                                  </div>
+                                                  <div className="bg-indigo-100 rounded-lg px-2 py-1">
+                                                    <p className="font-battambang text-[10px] text-indigo-700 font-semibold">
+                                                      {
+                                                        subject.totalStudentsWithGrades
+                                                      }{" "}
+                                                      សិស្ស
+                                                    </p>
+                                                  </div>
+                                                </div>
+
+                                                {/* Subject Grade Distribution */}
+                                                <div className="space-y-1.5">
+                                                  {Object.entries(
+                                                    subject.gradeDistribution
+                                                  ).map(
+                                                    ([letter, dist]) =>
+                                                      dist.total > 0 && (
+                                                        <div
+                                                          key={letter}
+                                                          className="flex items-center gap-2"
+                                                        >
+                                                          <div
+                                                            className={`w-5 h-5 rounded flex items-center justify-center bg-gradient-to-br ${getGradeColor(
+                                                              letter
+                                                            )} text-white font-bold text-[10px] shadow-sm`}
+                                                          >
+                                                            {letter}
+                                                          </div>
+                                                          <div className="flex-1">
+                                                            <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                                              <div
+                                                                className={`h-full bg-gradient-to-r ${getGradeColor(
+                                                                  letter
+                                                                )} transition-all`}
+                                                                style={{
+                                                                  width: `${
+                                                                    subject.totalStudentsWithGrades >
+                                                                    0
+                                                                      ? (dist.total /
+                                                                          subject.totalStudentsWithGrades) *
+                                                                        100
+                                                                      : 0
+                                                                  }%`,
+                                                                }}
+                                                              />
+                                                            </div>
+                                                          </div>
+                                                          <div className="text-right min-w-[65px]">
+                                                            <p className="font-battambang text-[10px] text-gray-700 font-semibold">
+                                                              {dist.total} (
+                                                              {dist.male}ប/
+                                                              {dist.female}ស)
+                                                            </p>
+                                                          </div>
+                                                        </div>
+                                                      )
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
                         </div>
 
                         {/* Show More Button */}
-                        {grade.classes.length > 3 && !showAllClasses[grade.grade] && (
-                          <button
-                            onClick={() => setShowAllClasses(prev => ({ ...prev, [grade.grade]: true }))}
-                            className="w-full mt-2 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-battambang text-xs font-semibold active:bg-indigo-100 transition-colors"
-                          >
-                            បង្ហាញបន្ថែម ({grade.classes.length - 3} ថ្នាក់ទៀត)
-                          </button>
-                        )}
+                        {grade.classes.length > 3 &&
+                          !showAllClasses[grade.grade] && (
+                            <button
+                              onClick={() =>
+                                setShowAllClasses((prev) => ({
+                                  ...prev,
+                                  [grade.grade]: true,
+                                }))
+                              }
+                              className="w-full mt-2 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-battambang text-xs font-semibold active:bg-indigo-100 transition-colors"
+                            >
+                              បង្ហាញបន្ថែម ({grade.classes.length - 3}{" "}
+                              ថ្នាក់ទៀត)
+                            </button>
+                          )}
                         {showAllClasses[grade.grade] && (
                           <button
-                            onClick={() => setShowAllClasses(prev => ({ ...prev, [grade.grade]: false }))}
+                            onClick={() =>
+                              setShowAllClasses((prev) => ({
+                                ...prev,
+                                [grade.grade]: false,
+                              }))
+                            }
                             className="w-full mt-2 py-2 bg-gray-50 text-gray-600 rounded-xl font-battambang text-xs font-semibold active:bg-gray-100 transition-colors"
                           >
                             បង្ហាញតិច

@@ -100,7 +100,7 @@ export default function GradeStatsSection({
               <p className="font-khmer-body text-xs font-bold text-blue-700 mb-1">
                 សិស្សានុសិស្ស
               </p>
-              <p className="text-3xl font-black text-blue-700 mb-1">
+              <p className="text-3xl font-moul text-blue-700 mb-1">
                 {totalStats.students}
               </p>
               <p className="font-khmer-body text-[10px] text-blue-600">
@@ -122,7 +122,7 @@ export default function GradeStatsSection({
               <p className="font-khmer-body text-xs font-bold text-purple-700 mb-1">
                 ថ្នាក់រៀន
               </p>
-              <p className="text-3xl font-black text-purple-700 mb-1">
+              <p className="text-3xl font-moul text-purple-700 mb-1">
                 {totalStats.classes}
               </p>
               <p className="font-khmer-body text-[10px] text-purple-600">
@@ -149,7 +149,7 @@ export default function GradeStatsSection({
               <p className="font-khmer-body text-xs font-bold text-green-700 mb-1">
                 អត្រាជាប់
               </p>
-              <p className="text-3xl font-black text-green-700 mb-1">
+              <p className="text-3xl font-moul text-green-700 mb-1">
                 {overallPassRate}%
               </p>
               <p className="font-khmer-body text-[10px] text-green-600">
@@ -173,7 +173,7 @@ export default function GradeStatsSection({
               <p className="font-khmer-body text-xs font-bold text-orange-700 mb-1">
                 កម្រិតថ្នាក់
               </p>
-              <p className="text-3xl font-black text-orange-700 mb-1">
+              <p className="text-3xl font-moul text-orange-700 mb-1">
                 {comprehensiveStats.grades.length}
               </p>
               <p className="font-khmer-body text-[10px] text-orange-600">
@@ -225,7 +225,7 @@ export default function GradeStatsSection({
                       <span className="font-khmer-body text-white/90 text-xs font-bold block mb-1">
                         ថ្នាក់ទី
                       </span>
-                      <span className="font-black text-white text-4xl mb-2 block">
+                      <span className="font-moul text-white text-4xl mb-2 block">
                         {grade}
                       </span>
                       {gradeData && (
@@ -274,7 +274,7 @@ export default function GradeStatsSection({
                 សិស្ស
               </span>
             </div>
-            <p className="text-4xl font-black text-blue-700 mb-1">
+            <p className="text-4xl font-moul text-blue-700 mb-1">
               {selectedGradeData.totalStudents}
             </p>
             <p className="font-khmer-body text-xs text-blue-600">
@@ -293,7 +293,7 @@ export default function GradeStatsSection({
                 មធ្យមភាគ
               </span>
             </div>
-            <p className="text-4xl font-black text-purple-700 mb-1">
+            <p className="text-4xl font-moul text-purple-700 mb-1">
               {selectedGradeData.averageScore.toFixed(1)}
             </p>
             <p className="font-khmer-body text-xs text-purple-600">
@@ -312,7 +312,7 @@ export default function GradeStatsSection({
                 អត្រាជាប់
               </span>
             </div>
-            <p className="text-4xl font-black text-green-700 mb-1">
+            <p className="text-4xl font-moul text-green-700 mb-1">
               {selectedGradeData.passPercentage.toFixed(1)}%
             </p>
             <p className="font-khmer-body text-xs text-green-600">
@@ -331,7 +331,7 @@ export default function GradeStatsSection({
                 ថ្នាក់រៀន
               </span>
             </div>
-            <p className="text-4xl font-black text-orange-700 mb-1">
+            <p className="text-4xl font-moul text-orange-700 mb-1">
               {selectedGradeData.totalClasses}
             </p>
             <p className="font-khmer-body text-xs text-orange-600">

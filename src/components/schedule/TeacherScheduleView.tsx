@@ -144,7 +144,7 @@ export default function TeacherScheduleView({
     <div className="space-y-6">
       {/* Teacher Selection */}
       <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-koulen text-gray-900 mb-4">
           កាលវិភាគគ្រូបង្រៀន Teacher Schedule
         </h2>
 
@@ -189,11 +189,11 @@ export default function TeacherScheduleView({
           {/* Teacher Info */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-koulen">
                 {selectedTeacher.name.charAt(0)}
               </div>
               <div>
-                <h3 className="text-2xl font-bold">{selectedTeacher.name}</h3>
+                <h3 className="text-2xl font-koulen">{selectedTeacher.name}</h3>
                 <p className="text-white/90">
                   {selectedTeacher.email || "No email"}
                 </p>
@@ -204,7 +204,7 @@ export default function TeacherScheduleView({
           {/* Morning Schedule */}
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-4">
-              <h3 className="text-xl font-bold">
+              <h3 className="text-xl font-koulen">
                 🌅 ពេលព្រឹក Morning (7:00-12:00)
               </h3>
             </div>
@@ -216,7 +216,7 @@ export default function TeacherScheduleView({
           {/* Afternoon Schedule */}
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-6 py-4">
-              <h3 className="text-xl font-bold">
+              <h3 className="text-xl font-koulen">
                 🌇 ពេលរសៀល Afternoon (12:00-17:00)
               </h3>
             </div>
@@ -233,7 +233,7 @@ export default function TeacherScheduleView({
       {!selectedTeacherId && (
         <div className="bg-white rounded-2xl shadow-lg p-16 text-center">
           <User className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-400 mb-2">
+          <h3 className="text-2xl font-koulen text-gray-400 mb-2">
             សូមជ្រើសរើសគ្រូបង្រៀន
           </h3>
           <p className="text-gray-500">

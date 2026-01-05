@@ -178,7 +178,7 @@ export default function DashboardPage() {
                     <span className="font-khmer-body text-white/80 text-xs font-bold block mb-2">
                       សិស្សសរុប
                     </span>
-                    <div className="text-3xl font-black text-white group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-moul text-white group-hover:scale-110 transition-transform">
                       {stats.totalStudents}
                     </div>
                   </div>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                     <span className="font-khmer-body text-white/80 text-xs font-bold block mb-2">
                       គ្រូបង្រៀនសរុប
                     </span>
-                    <div className="text-3xl font-black text-white group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-moul text-white group-hover:scale-110 transition-transform">
                       {stats.totalTeachers}
                     </div>
                   </div>
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                     <span className="font-khmer-body text-white/80 text-xs font-bold block mb-2">
                       ថ្នាក់សកម្ម
                     </span>
-                    <div className="text-3xl font-black text-white group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-moul text-white group-hover:scale-110 transition-transform">
                       {stats.totalClasses}
                     </div>
                   </div>
@@ -222,7 +222,7 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     សិស្ស
                   </p>
-                  <p className="text-4xl font-black text-gray-900 mb-4">
+                  <p className="text-4xl font-moul text-gray-900 mb-4">
                     {stats.totalStudents}
                   </p>
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     គ្រូបង្រៀន
                   </p>
-                  <p className="text-4xl font-black text-gray-900 mb-4">
+                  <p className="text-4xl font-moul text-gray-900 mb-4">
                     {stats.totalTeachers}
                   </p>
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
@@ -282,7 +282,7 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     ថ្នាក់រៀន
                   </p>
-                  <p className="text-4xl font-black text-gray-900 mb-4">
+                  <p className="text-4xl font-moul text-gray-900 mb-4">
                     {stats.totalClasses}
                   </p>
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
@@ -312,7 +312,7 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     មុខវិជ្ជា
                   </p>
-                  <p className="text-4xl font-black text-gray-900 mb-4">
+                  <p className="text-4xl font-moul text-gray-900 mb-4">
                     {stats.totalSubjects}
                   </p>
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
@@ -528,7 +528,7 @@ export default function DashboardPage() {
                           ជាប់ឆ្នាំ
                         </p>
                       </div>
-                      <p className="text-4xl font-black text-green-600 mb-2">
+                      <p className="text-4xl font-moul text-green-600 mb-2">
                         {dashboardStats.overview.passPercentage.toFixed(1)}%
                       </p>
                       <p className="font-khmer-body text-xs text-green-600 font-medium">
@@ -547,7 +547,7 @@ export default function DashboardPage() {
                           ធ្លាក់ឆ្នាំ
                         </p>
                       </div>
-                      <p className="text-4xl font-black text-red-600 mb-2">
+                      <p className="text-4xl font-moul text-red-600 mb-2">
                         {dashboardStats.overview.failPercentage.toFixed(1)}%
                       </p>
                       <p className="font-khmer-body text-xs text-red-600 font-medium">
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                           ពិន្ទុសរុប
                         </p>
                       </div>
-                      <p className="text-4xl font-black text-blue-600 mb-2">
+                      <p className="text-4xl font-moul text-blue-600 mb-2">
                         {dashboardStats.overview.totalGradesCount}
                       </p>
                       <p className="font-khmer-body text-xs text-blue-600 font-medium">
@@ -613,7 +613,7 @@ export default function DashboardPage() {
                             </p>
                           </div>
                         </div>
-                        <span className="text-3xl font-black text-blue-600">
+                        <span className="text-3xl font-moul text-blue-600">
                           {dashboardStats.recentActivity.recentGradeEntries}
                         </span>
                       </div>
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                             </p>
                           </div>
                         </div>
-                        <span className="text-3xl font-black text-green-600">
+                        <span className="text-3xl font-moul text-green-600">
                           {
                             dashboardStats.recentActivity
                               .recentAttendanceRecords
@@ -795,7 +795,7 @@ export default function DashboardPage() {
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center gap-3">
                                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
-                                  <span className="text-xl font-black text-white">
+                                  <span className="text-xl font-koulen text-white">
                                     #{index + 1}
                                   </span>
                                 </div>
@@ -814,7 +814,7 @@ export default function DashboardPage() {
                               <p className="font-khmer-body text-xs text-gray-600 font-bold mb-2">
                                 ពិន្ទុមធ្យម
                               </p>
-                              <p className="text-3xl font-black text-amber-600">
+                              <p className="text-3xl font-moul text-amber-600">
                                 {cls.averageScore?.toFixed(1) || "N/A"}
                               </p>
                             </div>

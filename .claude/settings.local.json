@@ -103,7 +103,10 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(node test-academic-year.js:*)",
       "Bash(node test-academic-year-final.js:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(node fix-ui-fonts.js:*)",
+      "Bash(node fix-koulen-to-battambang.js:*)",
+      "Bash(node fix-koulen-correct.js:*)"
     ]
   }
 }

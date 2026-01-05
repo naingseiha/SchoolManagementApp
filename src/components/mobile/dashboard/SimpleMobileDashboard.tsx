@@ -204,7 +204,7 @@ export default function SimpleMobileDashboard({
           </p>
           <button
             onClick={() => loadGradeStats(false)}
-            className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-battambang font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all active:scale-95"
+            className="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-koulen py-3.5 px-6 rounded-2xl shadow-md transition-all active:scale-95"
           >
             ព្យាយាមម្តងទៀត
           </button>
@@ -309,9 +309,9 @@ export default function SimpleMobileDashboard({
               </p>
             </div>
 
-            <h3 className="font-koulen text-2xl text-white mb-1 leading-tight font-bold">
+            <h1 className="font-koulen text-2xl text-white mb-1 leading-tight font-bold">
               សូមស្វាគមន៍
-            </h3>
+            </h1>
             <p className="font-battambang text-xs text-white/80 mb-5 font-medium">
               {gradeStats?.month} {gradeStats?.year}
             </p>
@@ -472,9 +472,9 @@ export default function SimpleMobileDashboard({
       {/* Grade Overview - Simple Summary */}
       <div className="relative px-5 pt-2 pb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-koulen text-lg text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
+          <h1 className="font-koulen text-lg text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
             សង្ខេបតាមថ្នាក់
-          </h3>
+          </h1>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

@@ -531,7 +531,7 @@ export default function ResultsPage() {
                           <div className="w-16 h-16 bg-white/25 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-3 border border-white/30">
                             <Users className="w-8 h-8 text-white" />
                           </div>
-                          <h3 className="font-khmer-body text-xl font-bold text-white mb-1">
+                          <h3 className="font-khmer-body text-xl font-koulen text-white mb-1">
                             {classData.name}
                           </h3>
                           {classData.track && (

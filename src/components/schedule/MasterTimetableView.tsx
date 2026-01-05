@@ -415,7 +415,7 @@ export default function MasterTimetableView({
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-koulen text-gray-900">
               តារាងកាលវិភាគរួម Master Timetable
             </h2>
             <p className="text-sm text-gray-600 mt-1">
@@ -504,13 +504,13 @@ export default function MasterTimetableView({
         <div className="mt-4 grid grid-cols-4 gap-3">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border-2 border-blue-200">
             <div className="text-xs text-blue-600 mb-1">ចំនួនថ្នាក់</div>
-            <div className="text-2xl font-bold text-blue-900">
+            <div className="text-2xl font-koulen text-blue-900">
               {filteredSchedules.length}
             </div>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-3 border-2 border-green-200">
             <div className="text-xs text-green-600 mb-1">មុខវិជ្ជា</div>
-            <div className="text-2xl font-bold text-green-900">
+            <div className="text-2xl font-koulen text-green-900">
               {
                 new Set(
                   schedules.flatMap((s) => s.entries.map((e) => e.subjectId))
@@ -520,7 +520,7 @@ export default function MasterTimetableView({
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-3 border-2 border-purple-200">
             <div className="text-xs text-purple-600 mb-1">គ្រូបង្រៀន</div>
-            <div className="text-2xl font-bold text-purple-900">
+            <div className="text-2xl font-koulen text-purple-900">
               {
                 new Set(
                   schedules.flatMap((s) => s.entries.map((e) => e.teacherId))
@@ -530,7 +530,7 @@ export default function MasterTimetableView({
           </div>
           <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-3 border-2 border-orange-200">
             <div className="text-xs text-orange-600 mb-1">ម៉ោងសរុប</div>
-            <div className="text-2xl font-bold text-orange-900">
+            <div className="text-2xl font-koulen text-orange-900">
               {schedules.reduce((sum, s) => sum + s.entries.length, 0)}
             </div>
           </div>
@@ -546,7 +546,7 @@ export default function MasterTimetableView({
                 <div className="flex items-center gap-3">
                   <Sun className="w-6 h-6" />
                   <div>
-                    <h3 className="text-xl font-bold">
+                    <h3 className="text-xl font-koulen">
                       🌅 ពេលព្រឹក Morning Session
                     </h3>
                     <p className="text-sm text-white/90">
@@ -565,7 +565,7 @@ export default function MasterTimetableView({
                 <div className="flex items-center gap-3">
                   <Moon className="w-6 h-6" />
                   <div>
-                    <h3 className="text-xl font-bold">
+                    <h3 className="text-xl font-koulen">
                       🌇 ពេលរសៀល Afternoon Session
                     </h3>
                     <p className="text-sm text-white/90">
@@ -587,7 +587,7 @@ export default function MasterTimetableView({
       {filteredSchedules.length === 0 && (
         <div className="bg-white rounded-2xl shadow-lg p-16 text-center">
           <Eye className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-2xl font-bold text-gray-400 mb-2">
+          <h3 className="text-2xl font-koulen text-gray-400 mb-2">
             មិនមានកាលវិភាគ
           </h3>
           <p className="text-gray-500">

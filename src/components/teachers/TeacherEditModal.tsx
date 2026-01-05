@@ -352,7 +352,7 @@ export default function TeacherEditModal({
       <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10 shadow-lg">
-          <h2 className="text-xl font-black text-white flex items-center gap-3">
+          <h2 className="text-xl font-koulen text-white flex items-center gap-3">
             <UserCheck className="w-6 h-6" />
             កែប្រែគ្រូបង្រៀន • Edit Teacher
           </h2>

@@ -461,12 +461,10 @@ export default function AwardReportPage() {
                 <Trophy className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-gray-900">
+                <h1 className="text-2xl font-black text-gray-900">
                   តារាងកិត្តិយស
                 </h1>
-                <p className="text-gray-600 font-medium">
-                  Honor Roll - Top Students Award
-                </p>
+                <p className="text-gray-600 font-medium">Students Award</p>
               </div>
             </div>
           </div>

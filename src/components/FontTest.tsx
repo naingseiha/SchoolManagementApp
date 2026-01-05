@@ -106,7 +106,7 @@ export default function FontTest() {
 
         {/* Font Weight Variations */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-battambang font-bold text-gray-900 mb-6">
+          <h3 className="text-xl font-koulen text-gray-900 mb-6">
             ទម្ងន់ពុម្ពអក្សរ Battambang
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -121,7 +121,7 @@ export default function FontTest() {
               </p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="font-battambang font-bold text-gray-900">
+              <p className="font-koulen text-gray-900">
                 Bold (700) - ពុម្ពដិត
               </p>
             </div>
@@ -135,7 +135,7 @@ export default function FontTest() {
 
         {/* Real-world Examples */}
         <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-battambang font-bold text-gray-900 mb-6">
+          <h3 className="text-xl font-koulen text-gray-900 mb-6">
             ឧទាហរណ៍ការប្រើប្រាស់
           </h3>
 
@@ -163,7 +163,7 @@ export default function FontTest() {
 
         {/* Footer Note */}
         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-          <h3 className="font-battambang font-bold text-blue-900 mb-3">
+          <h3 className="font-koulen text-blue-900 mb-3">
             ℹ️ សម្គាល់សំខាន់
           </h3>
           <ul className="space-y-2 font-battambang text-sm text-blue-800">

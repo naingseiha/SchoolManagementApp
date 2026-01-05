@@ -22,7 +22,10 @@ import {
   type AttendanceGridData,
   type BulkSaveAttendanceItem,
 } from "@/lib/api/attendance";
-import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
+import {
+  getCurrentAcademicYear,
+  getAcademicYearOptions,
+} from "@/utils/academicYear";
 
 // Dynamic import for mobile component
 const MobileAttendance = dynamic(
@@ -56,7 +59,6 @@ const getCurrentMonth = () => {
   const monthIndex = new Date().getMonth();
   return MONTHS[monthIndex]?.value || "ធ្នូ";
 };
-
 
 export default function AttendancePage() {
   const router = useRouter();
@@ -355,7 +357,9 @@ export default function AttendancePage() {
                   <CalendarCheck className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">វត្តមាន</h1>
+                  <h1 className="text-2xl font-koulen text-gray-900">
+                    គ្រប់គ្រងអវត្តមាន
+                  </h1>
                   <p className="text-sm text-gray-500 mt-1">
                     រក្សាទុកស្វ័យប្រវត្តិ • គណនាចំនួនភ្លាមៗ
                   </p>
@@ -524,7 +528,7 @@ export default function AttendancePage() {
                 <AlertCircle className="w-6 h-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-900 font-khmer-title">
+                <h3 className="text-xl font-koulen text-gray-900 font-khmer-title">
                   មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
                 </h3>
                 <p className="text-sm text-gray-600 mt-1 font-khmer-body">
@@ -554,7 +558,8 @@ export default function AttendancePage() {
             </div>
 
             <p className="text-xs text-gray-500 mt-4 text-center font-khmer-body">
-              ចំណាំ: ការផ្លាស់ប្តូរនឹងត្រូវរក្សាទុកស្វ័យប្រវត្តិក្នុងរយៈពេល 500ms
+              ចំណាំ: ការផ្លាស់ប្តូរនឹងត្រូវរក្សាទុកស្វ័យប្រវត្តិក្នុងរយៈពេល
+              500ms
             </p>
           </div>
         </div>

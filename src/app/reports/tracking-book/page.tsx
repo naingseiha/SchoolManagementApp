@@ -477,11 +477,11 @@ export default function TrackingBookPage() {
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-gray-900">
+                <h1 className="text-2xl font-black text-gray-900">
                   សៀវភៅតាមដានការសិក្សា
                 </h1>
                 <p className="text-gray-600 font-medium">
-                  Student Tracking Book - Individual Progress Report
+                  Student Tracking Book
                 </p>
               </div>
             </div>
