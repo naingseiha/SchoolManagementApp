@@ -193,6 +193,13 @@ export default function MobileReportsDashboard() {
     );
   };
 
+  const handleViewSubjectDetails = () => {
+    const selectedClassName = classes.find((c) => c.id === selectedClass)?.name || "Class";
+    router.push(
+      `/reports/mobile?view=subject-details&class=${selectedClass}&month=${selectedMonth}&year=${selectedYear}&className=${encodeURIComponent(selectedClassName)}`
+    );
+  };
+
   // ✅ Subject Detail Modal
   if (selectedSubject) {
     return (
@@ -602,15 +609,25 @@ export default function MobileReportsDashboard() {
               </div>
             </div>
 
-            {/* View Report Button */}
-            <div className="px-5 pt-4 pb-2">
+            {/* Action Buttons */}
+            <div className="px-5 pt-4 pb-2 space-y-3">
+              {/* View Subject Details Button - Always Available */}
+              <button
+                onClick={handleViewSubjectDetails}
+                className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-koulen rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
+              >
+                <BookOpen className="w-5 h-5" />
+                <span>មើលលម្អិតមុខវិជ្ជាទាំងអស់</span>
+              </button>
+
+              {/* View Monthly Report Button - Only if complete */}
               {completedSubjects === totalSubjects ? (
                 <button
                   onClick={handleViewReport}
                   className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-koulen rounded-2xl shadow-md active:scale-95 flex items-center justify-center gap-2 transition-all"
                 >
                   <Award className="w-5 h-5" />
-                  <span>មើលរបាយការណ៍ពេញលេញ</span>
+                  <span>មើលរបាយការណ៍ប្រចាំខែ</span>
                 </button>
               ) : (
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-4">
@@ -620,7 +637,7 @@ export default function MobileReportsDashboard() {
                     </div>
                     <div className="flex-1">
                       <p className="font-battambang text-sm font-bold text-amber-900 mb-1">
-                        មិនទាន់ពេញលេញ
+                        របាយការណ៍ប្រចាំខែមិនទាន់ពេញលេញ
                       </p>
                       <p className="font-battambang text-xs text-amber-700">
                         សូមបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជាជាមុនសិន
