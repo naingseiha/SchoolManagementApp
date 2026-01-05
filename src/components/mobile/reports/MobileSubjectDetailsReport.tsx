@@ -147,8 +147,9 @@ export default function MobileSubjectDetailsReport() {
     return "bg-gray-100 text-gray-500 border-gray-300";
   };
 
-  const completedSubjects = subjects.filter((s) => s.completionRate === 100)
-    .length;
+  const completedSubjects = subjects.filter(
+    (s) => s.completionRate === 100
+  ).length;
   const overallCompletion =
     subjects.length > 0
       ? Math.round(
@@ -163,7 +164,9 @@ export default function MobileSubjectDetailsReport() {
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
-            <p className="font-battambang text-gray-600">កំពុងផ្ទុកទិន្នន័យ...</p>
+            <p className="font-battambang text-gray-600">
+              កំពុងផ្ទុកទិន្នន័យ...
+            </p>
           </div>
         </div>
       </MobileLayout>
@@ -210,9 +213,9 @@ export default function MobileSubjectDetailsReport() {
                   <Users className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-koulen text-base text-gray-900">
+                  <h1 className="font-koulen text-base text-gray-900">
                     សង្ខេប
-                  </h3>
+                  </h1>
                   <p className="font-battambang text-xs text-gray-600">
                     Summary
                   </p>
@@ -271,9 +274,9 @@ export default function MobileSubjectDetailsReport() {
 
         {/* Subject Status Cards */}
         <div className="px-4 pt-2 pb-3">
-          <h2 className="font-koulen text-base text-gray-900 mb-3">
+          <h1 className="font-koulen text-base text-gray-900 mb-3">
             ស្ថានភាពមុខវិជ្ជា
-          </h2>
+          </h1>
           <div className="grid grid-cols-2 gap-2">
             {subjects.map((subject) => (
               <div
@@ -309,20 +312,51 @@ export default function MobileSubjectDetailsReport() {
         {/* Scrollable Table */}
         <div className="px-4 pb-20">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-koulen text-base text-gray-900">
+            <h1 className="font-koulen text-base text-gray-900">
               តារាងពិន្ទុលម្អិត
-            </h2>
-            <p className="font-battambang text-xs text-gray-500">
-              ជញ្រ្កាញចំហៀង →
-            </p>
+            </h1>
+            <div className="text-right">
+              <p className="font-battambang text-xs text-gray-500">
+                ទិសដៅបង្ហាញ → ↑ ↓
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            <style jsx>{`
+              .vertical-header {
+                writing-mode: vertical-rl;
+                transform: rotate(180deg);
+                white-space: nowrap;
+                height: 120px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              }
+              .table-container {
+                max-height: 600px;
+                overflow-y: auto;
+                overflow-x: auto;
+              }
+              thead {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+              }
+              .sticky-col {
+                position: sticky;
+                left: 0;
+                z-index: 15;
+              }
+              thead .sticky-col {
+                z-index: 25;
+              }
+            `}</style>
+            <div className="table-container">
               <table className="w-full" style={{ minWidth: "800px" }}>
                 <thead>
                   <tr className="bg-gradient-to-r from-indigo-500 to-purple-600">
-                    <th className="sticky left-0 z-10 bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-3 text-left">
+                    <th className="sticky-col bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-3 text-left">
                       <div className="font-battambang text-xs text-white font-bold">
                         ឈ្មោះសិស្ស
                       </div>
@@ -330,13 +364,16 @@ export default function MobileSubjectDetailsReport() {
                     {subjects.map((subject) => (
                       <th
                         key={subject.id}
-                        className="px-2 py-3 text-center border-l border-indigo-400"
+                        className="px-2 py-0 text-center border-l border-indigo-400 bg-gradient-to-r from-indigo-500 to-purple-600"
+                        style={{ minWidth: "45px", width: "45px" }}
                       >
-                        <div className="font-battambang text-[10px] text-white font-bold mb-1">
-                          {subject.nameKh}
-                        </div>
-                        <div className="font-battambang text-[9px] text-indigo-100">
-                          {subject.maxScore}
+                        <div className="vertical-header">
+                          <div className="font-battambang text-xs text-white font-bold">
+                            {subject.nameKh}
+                          </div>
+                          <div className="font-battambang text-[10px] text-indigo-100 ml-1">
+                            ({subject.maxScore})
+                          </div>
                         </div>
                       </th>
                     ))}
@@ -348,7 +385,7 @@ export default function MobileSubjectDetailsReport() {
                       key={student.studentId}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
-                      <td className="sticky left-0 z-10 px-3 py-3 border-b border-gray-200 bg-inherit">
+                      <td className="sticky-col px-3 py-3 border-b border-gray-200 bg-inherit">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                             {index + 1}
@@ -376,9 +413,7 @@ export default function MobileSubjectDetailsReport() {
                                 <span className="font-koulen text-sm text-gray-900">
                                   {score.toFixed(1)}
                                 </span>
-                                <div
-                                  className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden mt-1"
-                                >
+                                <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden mt-1">
                                   <div
                                     className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full"
                                     style={{
@@ -417,7 +452,8 @@ export default function MobileSubjectDetailsReport() {
                 </p>
                 <p className="font-battambang text-xs text-blue-700 leading-relaxed">
                   តារាងនេះបង្ហាញពិន្ទុលម្អិតនៃមុខវិជ្ជាទាំងអស់សម្រាប់សិស្សនីមួយៗ។
-                  អ្នកអាចជញ្រ្កាញចំហៀងដើម្បីមើលមុខវិជ្ជាទាំងអស់។
+                  អ្នកអាចជញ្រ្កាញចំហៀង និងឡើងចុះដើម្បីមើលទិន្នន័យទាំងអស់។
+                  ឈ្មោះសិស្ស និងបឋមកថានឹងនៅស្ថានី។
                 </p>
               </div>
             </div>
