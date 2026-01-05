@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useDeviceType } from "@/lib/utils/deviceDetection";
 import MobileReportsDashboard from "@/components/mobile/reports/MobileReportsDashboard";
 import MobileMonthlyReport from "@/components/mobile/reports/MobileMonthlyReport";
+import MobileSubjectDetailsReport from "@/components/mobile/reports/MobileSubjectDetailsReport";
 import { Loader2 } from "lucide-react";
 
 export default function MobileReportsContent() {
@@ -16,8 +17,9 @@ export default function MobileReportsContent() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const deviceType = useDeviceType();
 
-  // Check if we should show report or dashboard
-  const showReport = searchParams.has("class");
+  // Check what view to show based on URL params
+  const viewType = searchParams.get("view");
+  const hasClass = searchParams.has("class");
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -45,6 +47,12 @@ export default function MobileReportsContent() {
 
   if (!isAuthenticated) return null;
 
-  // Show report if URL params exist, otherwise show dashboard
-  return showReport ? <MobileMonthlyReport /> : <MobileReportsDashboard />;
+  // Route to appropriate view
+  if (viewType === "subject-details" && hasClass) {
+    return <MobileSubjectDetailsReport />;
+  } else if (hasClass && !viewType) {
+    return <MobileMonthlyReport />;
+  } else {
+    return <MobileReportsDashboard />;
+  }
 }
