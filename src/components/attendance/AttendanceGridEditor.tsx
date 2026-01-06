@@ -684,14 +684,14 @@ export default function AttendanceGridEditor({
       </div>
 
       {/* Grid Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-250px)] relative">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-30">
             {/* Day numbers row */}
-            <tr className="bg-gradient-to-b from-gray-50 to-gray-100">
+            <tr className="bg-gray-100">
               <th
                 rowSpan={2}
-                className="sticky left-0 z-20 bg-gradient-to-b from-gray-50 to-gray-100 px-6 py-3 text-left font-bold text-gray-700 border-r border-gray-300 min-w-[280px]"
+                className="sticky left-0 z-40 bg-gray-100 px-6 py-3 text-left font-bold text-gray-700 border-r border-gray-300 min-w-[280px]"
               >
                 <div className="text-sm">សិស្ស</div>
                 <div className="text-xs font-normal text-gray-500 mt-0.5">
@@ -702,14 +702,14 @@ export default function AttendanceGridEditor({
                 <th
                   key={day}
                   colSpan={2}
-                  className="px-2 py-2 text-center font-bold text-gray-700 border-l border-gray-200"
+                  className="px-2 py-2 text-center font-bold text-gray-700 border-l border-gray-200 bg-gray-100"
                 >
                   <div className="text-base">{day}</div>
                 </th>
               ))}
               <th
                 rowSpan={2}
-                className="sticky right-0 z-20 bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-3 font-bold text-gray-700 border-l-2 border-gray-300 min-w-[180px]"
+                className="sticky right-0 z-40 bg-gray-100 px-4 py-3 font-bold text-gray-700 border-l-2 border-gray-300 min-w-[180px]"
               >
                 <div className="text-sm">សរុប</div>
                 <div className="text-xs font-normal text-gray-500 mt-0.5">
@@ -719,12 +719,12 @@ export default function AttendanceGridEditor({
             </tr>
 
             {/* Session labels row */}
-            <tr className="bg-gradient-to-b from-gray-100 to-gray-50 border-b-2 border-gray-300">
+            <tr className="bg-gray-100 border-b-2 border-gray-300">
               {gridData.days.map((day) => (
                 <>
                   <th
                     key={`${day}_M`}
-                    className="px-1 py-1. 5 text-xs font-semibold text-indigo-700 bg-indigo-50/50 border-l border-gray-200"
+                    className="px-1 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50/50 border-l border-gray-200"
                   >
                     <div>ព្រឹក</div>
                     <div className="text-[10px] text-indigo-500">M</div>
