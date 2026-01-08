@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -16,7 +16,11 @@ import {
   AlertCircle,
   CalendarCheck,
   Info,
+  FileText,
+  Printer,
 } from "lucide-react";
+import { jsPDF } from "jspdf";
+import html2canvas from 'html2canvas';
 import {
   attendanceApi,
   type AttendanceGridData,
@@ -38,6 +42,12 @@ const MobileAttendance = dynamic(
       </div>
     ),
   }
+);
+
+// Dynamic import for PDF report
+const AttendanceReportPDF = dynamic(
+  () => import("@/components/attendance/AttendanceReportPDF"),
+  { ssr: false }
 );
 
 const MONTHS = [
@@ -73,6 +83,10 @@ export default function AttendancePage() {
   const [gridData, setGridData] = useState<AttendanceGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const attendanceGridRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const pdfReportRef = useRef(null);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   // ✅ NEW: Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -282,6 +296,30 @@ export default function AttendancePage() {
     }
   };
 
+  // Handle print/export PDF
+  const handleExportPDF = () => {
+    if (!gridData) {
+      warning("សូមផ្ទុកទិន្នន័យមុនពេលនាំចេញ PDF");
+      return;
+    }
+
+    console.log("🖨️ Opening print preview...");
+    setShowPrintPreview(true);
+  };
+
+  const handlePrintNow = () => {
+    console.log("🖨️ Starting print...");
+    // Use window.print() for printing
+    window.print();
+    setTimeout(() => {
+      success("បានបោះពុម្ពបានជោគជ័យ");
+    }, 100);
+  };
+
+  const handleClosePrintPreview = () => {
+    setShowPrintPreview(false);
+  };
+
   if (authLoading || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -366,8 +404,8 @@ export default function AttendancePage() {
                 </div>
               </div>
 
-              {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Filters and Actions */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ថ្នាក់
@@ -459,6 +497,20 @@ export default function AttendancePage() {
                         <span>ផ្ទុកទិន្នន័យ</span>
                       </>
                     )}
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    នាំចេញ PDF
+                  </label>
+                  <button
+                    onClick={handleExportPDF}
+                    disabled={!gridData || loading}
+                    className="w-full h-11 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>បោះពុម្ព</span>
                   </button>
                 </div>
               </div>
@@ -567,6 +619,70 @@ export default function AttendancePage() {
 
       {/* Toast Container */}
       <ToastContainer />
+
+      {/* Print Preview Modal */}
+      {showPrintPreview && gridData && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[95vw] max-h-[95vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">
+                មើលមុនពេលបោះពុម្ព • Print Preview
+              </h3>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePrintNow}
+                  className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
+                >
+                  <Printer className="w-5 h-5" />
+                  <span>បោះពុម្ព</span>
+                </button>
+                <button
+                  onClick={handleClosePrintPreview}
+                  className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all"
+                >
+                  បិទ
+                </button>
+              </div>
+            </div>
+
+            {/* Print Content */}
+            <div className="flex-1 overflow-auto p-6 bg-gray-100">
+              <div className="mx-auto bg-white shadow-lg" style={{ width: "297mm", minHeight: "210mm" }}>
+                <div ref={pdfReportRef} className="print-content">
+                  <AttendanceReportPDF
+                    gridData={gridData}
+                    schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
+                    province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
+                    reportDate={new Date().getDate().toString().padStart(2, "0")}
+                    principalName=""
+                    teacherName={currentUser?.name || ""}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Print-only styles */}
+          <style jsx global>{`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              .print-content,
+              .print-content * {
+                visibility: visible;
+              }
+              .print-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+              }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
