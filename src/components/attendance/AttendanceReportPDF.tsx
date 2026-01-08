@@ -90,7 +90,6 @@ export default function AttendanceReportPDF({
 
         .attendance-report {
           width: 100%;
-          height: 100%;
           background: white;
           font-family: "Khmer OS Battambang", Arial, sans-serif;
           color: #000;
@@ -108,7 +107,26 @@ export default function AttendanceReportPDF({
           }
 
           .attendance-report {
+            width: 100%;
+            display: block;
+            position: relative;
+          }
+
+          thead {
+            display: table-header-group;
+          }
+
+          tbody {
+            display: table-row-group;
+          }
+
+          tr {
             page-break-inside: avoid;
+          }
+
+          table {
+            page-break-inside: auto;
+            width: 100%;
           }
 
           .no-print {
@@ -126,13 +144,22 @@ export default function AttendanceReportPDF({
         }
 
         .attendance-cell {
-          min-width: 12px;
-          max-width: 12px;
-          width: 12px;
+          min-width: 15px;
+          max-width: 15px;
+          width: 15px;
           padding: 0.5px;
           text-align: center;
           font-size: 7px;
           font-weight: bold;
+        }
+
+        .total-cell {
+          min-width: 14px;
+          max-width: 14px;
+          width: 14px;
+          padding: 1px;
+          text-align: center;
+          font-size: 7px;
         }
 
         .student-name {
@@ -159,94 +186,100 @@ export default function AttendanceReportPDF({
           padding: 0.5px;
           font-weight: 600;
         }
-
-        .page-break {
-          page-break-after: always;
-        }
-
-        .page-break:last-child {
-          page-break-after: auto;
-        }
       `}</style>
 
       {paginatedStudents.map((studentsOnPage, pageIndex) => (
-        <div key={pageIndex} className={`attendance-report p-4 ${pageIndex < totalPages - 1 ? 'page-break' : ''}`}>
-        {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          {/* Left side */}
-          <div className="text-left" style={{ fontSize: "9px" }}>
-            <div className="font-semibold">{province}</div>
-            <div className="font-bold header-title" style={{ fontSize: "11px" }}>
-              {schoolName}
+        <div
+          key={pageIndex}
+          className="attendance-report p-4"
+          style={{
+            pageBreakAfter: pageIndex < totalPages - 1 ? 'always' : 'auto',
+            pageBreakInside: 'avoid',
+            breakAfter: pageIndex < totalPages - 1 ? 'page' : 'auto',
+            breakInside: 'avoid'
+          }}
+        >
+        {/* Header - Only on first page */}
+        {pageIndex === 0 && (
+        <>
+          <div className="flex items-start justify-between mb-2">
+            {/* Left side */}
+            <div className="text-left" style={{ fontSize: "9px" }}>
+              <div className="font-semibold">{province}</div>
+              <div className="font-bold header-title" style={{ fontSize: "11px" }}>
+                {schoolName}
+              </div>
             </div>
+
+            {/* Center */}
+            <div className="text-center">
+              <div
+                className="header-title font-bold"
+                style={{ fontSize: "12px", marginBottom: "1px" }}
+              >
+                ព្រះរាជាណាចក្រកម្ពុជា
+              </div>
+              <div style={{ fontSize: "9px", marginBottom: "1px" }}>
+                ជាតិ សាសនា ព្រះមហាក្សត្រ
+              </div>
+              <div className="flex justify-center items-center gap-1">
+                <div
+                  style={{
+                    width: "25px",
+                    height: "1px",
+                    background: "#000",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    width: "4px",
+                    height: "4px",
+                    borderRadius: "50%",
+                    background: "#000",
+                  }}
+                ></div>
+                <div
+                  style={{
+                    width: "25px",
+                    height: "1px",
+                    background: "#000",
+                  }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Right side - Empty for balance */}
+            <div style={{ width: "180px" }}></div>
           </div>
 
-          {/* Center */}
-          <div className="text-center">
-            <div
+          {/* Title */}
+          <div className="text-center mb-2">
+            <h2
               className="header-title font-bold"
-              style={{ fontSize: "12px", marginBottom: "1px" }}
+              style={{ fontSize: "13px", marginBottom: "2px" }}
             >
-              ព្រះរាជាណាចក្រកម្ពុជា
+              តារាងវត្តមាន
+            </h2>
+            <div style={{ fontSize: "9px" }}>
+              <span>ខែ: {gridData.month} </span>
+              <span className="mx-1">•</span>
+              <span>ឆ្នាំសិក្សា: {gridData.year}-{gridData.year + 1}</span>
             </div>
-            <div style={{ fontSize: "9px", marginBottom: "1px" }}>
-              ជាតិ សាសនា ព្រះមហាក្សត្រ
-            </div>
-            <div className="flex justify-center items-center gap-1">
-              <div
-                style={{
-                  width: "25px",
-                  height: "1px",
-                  background: "#000",
-                }}
-              ></div>
-              <div
-                style={{
-                  width: "4px",
-                  height: "4px",
-                  borderRadius: "50%",
-                  background: "#000",
-                }}
-              ></div>
-              <div
-                style={{
-                  width: "25px",
-                  height: "1px",
-                  background: "#000",
-                }}
-              ></div>
+            <div
+              className="font-bold header-title"
+              style={{ fontSize: "11px", marginTop: "2px" }}
+            >
+              {gridData.className}
+              {totalPages > 1 && (
+                <span style={{ fontSize: "8px", marginLeft: "8px" }}>
+                  (ទំព័រ {pageIndex + 1}/{totalPages})
+                </span>
+              )}
             </div>
           </div>
+        </>
+        )}
 
-          {/* Right side - Empty for balance */}
-          <div style={{ width: "180px" }}></div>
-        </div>
-
-        {/* Title */}
-        <div className="text-center mb-2">
-          <h2
-            className="header-title font-bold"
-            style={{ fontSize: "13px", marginBottom: "2px" }}
-          >
-            តារាងវត្តមាន
-          </h2>
-          <div style={{ fontSize: "9px" }}>
-            <span>ខែ: {gridData.month} </span>
-            <span className="mx-1">•</span>
-            <span>ឆ្នាំសិក្សា: {gridData.year}-{gridData.year + 1}</span>
-          </div>
-          <div
-            className="font-bold header-title"
-            style={{ fontSize: "11px", marginTop: "2px" }}
-          >
-            {gridData.className}
-            {totalPages > 1 && (
-              <span style={{ fontSize: "8px", marginLeft: "8px" }}>
-                (ទំព័រ {pageIndex + 1}/{totalPages})
-              </span>
-            )}
-          </div>
-        </div>
 
         {/* Attendance Table */}
         <table
@@ -260,7 +293,9 @@ export default function AttendanceReportPDF({
                 rowSpan={2}
                 className="cell-border bg-gray-100"
                 style={{
-                  minWidth: "20px",
+                  minWidth: "15px",
+                  maxWidth: "15px",
+                  width: "15px",
                   padding: "2px 1px",
                   fontSize: "7px",
                   fontWeight: "bold",
@@ -292,6 +327,9 @@ export default function AttendanceReportPDF({
                 colSpan={2}
                 className="cell-border bg-gray-100"
                 style={{
+                  minWidth: "28px",
+                  maxWidth: "28px",
+                  width: "28px",
                   padding: "2px 1px",
                   fontSize: "7px",
                   fontWeight: "bold",
@@ -327,20 +365,12 @@ export default function AttendanceReportPDF({
                 </>
               ))}
               <th
-                className="cell-border session-header bg-gray-100"
-                style={{
-                  padding: "1px",
-                  fontSize: "6px",
-                }}
+                className="cell-border session-header bg-gray-100 total-cell"
               >
                 A
               </th>
               <th
-                className="cell-border session-header bg-gray-100"
-                style={{
-                  padding: "1px",
-                  fontSize: "6px",
-                }}
+                className="cell-border session-header bg-gray-100 total-cell"
               >
                 P
               </th>
@@ -433,10 +463,8 @@ export default function AttendanceReportPDF({
 
                   {/* Total absent */}
                   <td
-                    className="cell-border text-center"
+                    className="cell-border total-cell"
                     style={{
-                      padding: "1px",
-                      fontSize: "7px",
                       fontWeight: "bold",
                       backgroundColor: totals.absent > 0 ? "#fee2e2" : "#f9fafb",
                       color: totals.absent > 0 ? "#dc2626" : "#000",
@@ -447,10 +475,8 @@ export default function AttendanceReportPDF({
 
                   {/* Total permission */}
                   <td
-                    className="cell-border text-center"
+                    className="cell-border total-cell"
                     style={{
-                      padding: "1px",
-                      fontSize: "7px",
                       fontWeight: "bold",
                       backgroundColor:
                         totals.permission > 0 ? "#ffedd5" : "#f9fafb",

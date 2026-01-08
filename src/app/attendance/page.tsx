@@ -648,7 +648,7 @@ export default function AttendancePage() {
 
             {/* Print Content */}
             <div className="flex-1 overflow-auto p-6 bg-gray-100">
-              <div className="mx-auto bg-white shadow-lg" style={{ width: "297mm", minHeight: "210mm" }}>
+              <div className="mx-auto bg-white shadow-lg" style={{ width: "297mm" }}>
                 <div ref={pdfReportRef} className="print-content">
                   <AttendanceReportPDF
                     gridData={gridData}
@@ -666,13 +666,20 @@ export default function AttendancePage() {
           {/* Print-only styles */}
           <style jsx global>{`
             @media print {
+              @page {
+                size: A4 landscape;
+                margin: 0.5cm;
+              }
+
               body * {
                 visibility: hidden;
               }
+
               .print-content,
               .print-content * {
                 visibility: visible;
               }
+
               .print-content {
                 position: absolute;
                 left: 0;
