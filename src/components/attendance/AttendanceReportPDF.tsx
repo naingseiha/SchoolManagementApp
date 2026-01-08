@@ -95,6 +95,15 @@ export default function AttendanceReportPDF({
           color: #000;
         }
 
+        .attendance-page {
+          page-break-inside: avoid;
+          page-break-after: always;
+        }
+
+        .attendance-page:last-child {
+          page-break-after: auto;
+        }
+
         @media print {
           @page {
             size: A4 landscape;
@@ -104,6 +113,23 @@ export default function AttendanceReportPDF({
           body {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+
+          .attendance-page {
+            page-break-inside: avoid !important;
+            page-break-after: always !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+            min-height: auto !important;
+            margin: 0 !important;
+            padding: 0.5cm !important;
+            box-shadow: none !important;
+            background: white !important;
+          }
+
+          .attendance-page:last-child {
+            page-break-after: auto !important;
           }
 
           .attendance-report {
@@ -127,6 +153,7 @@ export default function AttendanceReportPDF({
           table {
             page-break-inside: auto;
             width: 100%;
+            border-collapse: collapse !important;
           }
 
           .no-print {
@@ -191,15 +218,17 @@ export default function AttendanceReportPDF({
       {paginatedStudents.map((studentsOnPage, pageIndex) => (
         <div
           key={pageIndex}
-          className="attendance-report p-4"
+          className="attendance-page attendance-report"
           style={{
-            pageBreakAfter: pageIndex < totalPages - 1 ? 'always' : 'auto',
-            pageBreakInside: 'avoid',
-            breakAfter: pageIndex < totalPages - 1 ? 'page' : 'auto',
-            breakInside: 'avoid'
+            width: "297mm", // A4 landscape width
+            minHeight: "auto",
+            margin: "0 auto",
+            padding: "0.5cm",
+            boxSizing: "border-box",
+            maxWidth: "100%",
           }}
         >
-        {/* Header - Only on first page */}
+        {/* Header - Full header on first page */}
         {pageIndex === 0 && (
         <>
           <div className="flex items-start justify-between mb-2">
@@ -278,6 +307,21 @@ export default function AttendanceReportPDF({
             </div>
           </div>
         </>
+        )}
+
+        {/* Simplified header for continuation pages */}
+        {pageIndex > 0 && (
+          <div className="text-center mb-2">
+            <div
+              className="font-bold header-title"
+              style={{ fontSize: "11px" }}
+            >
+              {gridData.className} - តារាងវត្តមាន {gridData.month} {gridData.year}
+              <span style={{ fontSize: "8px", marginLeft: "8px" }}>
+                (ទំព័រ {pageIndex + 1}/{totalPages})
+              </span>
+            </div>
+          </div>
         )}
 
 
