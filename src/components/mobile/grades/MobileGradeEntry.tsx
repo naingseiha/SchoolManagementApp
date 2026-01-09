@@ -14,7 +14,12 @@ import {
   Users,
   Shield,
   RefreshCw,
+  Share2,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
@@ -23,6 +28,7 @@ import {
   getCurrentAcademicYear,
   getAcademicYearOptions,
 } from "@/utils/academicYear";
+import ScoreReportTemplate from "./ScoreReportTemplate";
 
 interface Subject {
   id: string;
@@ -123,6 +129,16 @@ export default function MobileGradeEntry({
   );
   const [incompleteCount, setIncompleteCount] = useState(0);
 
+  // ✅ NEW: Confirmation state
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [confirmedAt, setConfirmedAt] = useState<Date | null>(null);
+
+  // ✅ NEW: Export state
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportReportRef = useRef<HTMLDivElement>(null);
+
   // ✅ Load classes if empty
   useEffect(() => {
     if (classes.length === 0 && !isLoadingClasses) {
@@ -197,6 +213,11 @@ export default function MobileGradeEntry({
     return null;
   }, [currentUser]);
 
+  // ✅ Calculate current subject early for export functions
+  const currentSubject = useMemo(() => {
+    return subjects.find((s) => s.id === selectedSubject);
+  }, [subjects, selectedSubject]);
+
   const handleLoadData = async () => {
     if (!selectedClass || !currentUser) {
       alert("សូមជ្រើសរើសថ្នាក់សិន • Please select a class first");
@@ -212,6 +233,9 @@ export default function MobileGradeEntry({
     setDataLoaded(false);
     setSavedStudents(new Set());
     setSavingStudents(new Set());
+    // ✅ Reset confirmation when loading new data
+    setIsConfirmed(false);
+    setConfirmedAt(null);
 
     try {
       const data = await gradeApi.getGradesGrid(
@@ -398,6 +422,10 @@ export default function MobileGradeEntry({
         )
       );
 
+      // ✅ Reset confirmation when scores change
+      setIsConfirmed(false);
+      setConfirmedAt(null);
+
       // ✅ FIX: Remove per-student timeout, use batch queue instead
       if (score !== null) {
         autoSaveScore(studentId, score);
@@ -530,6 +558,186 @@ export default function MobileGradeEntry({
     executeBatchSave,
   ]);
 
+  // ✅ NEW: Handle confirmation
+  const handleConfirmScores = useCallback(() => {
+    // Check if there are any unsaved changes
+    if (saveQueueRef.current.size > 0 || savingStudents.size > 0) {
+      alert(
+        "សូមរង់ចាំពិន្ទុរក្សាទុករួច • Please wait for all scores to save first"
+      );
+      return;
+    }
+
+    // Check if all students have scores
+    const emptyScores = students.filter((s) => s.score === null);
+    if (emptyScores.length > 0) {
+      const proceed = confirm(
+        `មានសិស្ស ${emptyScores.length} នាក់ មិនទាន់បញ្ចូលពិន្ទុ។ តើអ្នកចង់បន្តយ៉ាងណា?\n\nThere are ${emptyScores.length} students without scores. Do you want to continue anyway?`
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+
+    // Mark as confirmed
+    setIsConfirmed(true);
+    setConfirmedAt(new Date());
+    setShowReviewModal(false);
+
+    // Show success message
+    setTimeout(() => {
+      alert("ពិន្ទុត្រូវបានបញ្ជាក់ ✓\nScores confirmed successfully!");
+    }, 300);
+  }, [students, savingStudents]);
+
+  // ✅ NEW: Export as Image (PNG)
+  const exportAsImage = useCallback(async () => {
+    if (!exportReportRef.current || !currentSubject || !gridData) return;
+
+    setIsExporting(true);
+    try {
+      // Wait for fonts and images to load
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(exportReportRef.current, {
+        scale: 2, // Higher quality
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert("មានបញ្ហាក្នុងការបង្កើតរូបភាព • Failed to create image");
+          setIsExporting(false);
+          return;
+        }
+
+        const fileName = `${gridData.className}_${currentSubject.code}_${selectedMonth}_${selectedYear}.png`;
+
+        // Try Web Share API first (best for mobile)
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([blob], fileName, { type: "image/png" });
+            const shareData = {
+              title: `${gridData.className} - ${currentSubject.nameKh}`,
+              text: `ពិន្ទុ ${currentSubject.nameKh} - ${selectedMonth} ${selectedYear}`,
+              files: [file],
+            };
+
+            if (navigator.canShare(shareData)) {
+              await navigator.share(shareData);
+              setIsExporting(false);
+              setShowExportOptions(false);
+              return;
+            }
+          } catch (error: any) {
+            // User cancelled or error - fall through to download
+            if (error.name !== "AbortError") {
+              console.log("Share failed, falling back to download");
+            }
+          }
+        }
+
+        // Fallback: Download image
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert("រូបភាពត្រូវបានរក្សាទុក ✓\nImage downloaded successfully!");
+        setIsExporting(false);
+        setShowExportOptions(false);
+      }, "image/png");
+    } catch (error: any) {
+      console.error("Export error:", error);
+      alert(`មានបញ្ហា: ${error.message}`);
+      setIsExporting(false);
+    }
+  }, [currentSubject, gridData, selectedMonth, selectedYear]);
+
+  // ✅ NEW: Export as PDF
+  const exportAsPDF = useCallback(async () => {
+    if (!exportReportRef.current || !currentSubject || !gridData) return;
+
+    setIsExporting(true);
+    try {
+      // Wait for fonts and images to load
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const canvas = await html2canvas(exportReportRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / canvasHeight;
+      const width = pdfWidth;
+      const height = width / ratio;
+
+      // Add image to PDF
+      pdf.addImage(imgData, "PNG", 0, 0, width, height);
+
+      const fileName = `${gridData.className}_${currentSubject.code}_${selectedMonth}_${selectedYear}.pdf`;
+
+      // Get PDF as blob
+      const pdfBlob = pdf.output("blob");
+
+      // Try Web Share API first
+      if (navigator.share && navigator.canShare) {
+        try {
+          const file = new File([pdfBlob], fileName, {
+            type: "application/pdf",
+          });
+          const shareData = {
+            title: `${gridData.className} - ${currentSubject.nameKh}`,
+            text: `ពិន្ទុ ${currentSubject.nameKh} - ${selectedMonth} ${selectedYear}`,
+            files: [file],
+          };
+
+          if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            setIsExporting(false);
+            setShowExportOptions(false);
+            return;
+          }
+        } catch (error: any) {
+          // User cancelled or error - fall through to download
+          if (error.name !== "AbortError") {
+            console.log("Share failed, falling back to download");
+          }
+        }
+      }
+
+      // Fallback: Download PDF
+      pdf.save(fileName);
+      alert("ឯកសារ PDF ត្រូវបានរក្សាទុក ✓\nPDF downloaded successfully!");
+      setIsExporting(false);
+      setShowExportOptions(false);
+    } catch (error: any) {
+      console.error("PDF export error:", error);
+      alert(`មានបញ្ហា: ${error.message}`);
+      setIsExporting(false);
+    }
+  }, [currentSubject, gridData, selectedMonth, selectedYear]);
+
   // ✅ Auto-hide verification banner after 5 seconds
   useEffect(() => {
     if (verifiedAt) {
@@ -540,6 +748,17 @@ export default function MobileGradeEntry({
       return () => clearTimeout(timer);
     }
   }, [verifiedAt]);
+
+  // ✅ Auto-hide confirmation success after 5 seconds
+  useEffect(() => {
+    if (confirmedAt) {
+      const timer = setTimeout(() => {
+        setConfirmedAt(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [confirmedAt]);
 
   // ✅ FIX: Cleanup timeouts on unmount
   useEffect(() => {
@@ -560,8 +779,6 @@ export default function MobileGradeEntry({
       </MobileLayout>
     );
   }
-
-  const currentSubject = subjects.find((s) => s.id === selectedSubject);
 
   return (
     <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ">
@@ -715,7 +932,11 @@ export default function MobileGradeEntry({
             </div>
             <select
               value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
+              onChange={(e) => {
+                setSelectedSubject(e.target.value);
+                setIsConfirmed(false);
+                setConfirmedAt(null);
+              }}
               className="w-full h-13 px-4 font-battambang bg-white border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm transition-all"
               style={{ fontSize: "16px" }}
             >
@@ -795,6 +1016,87 @@ export default function MobileGradeEntry({
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ✅ NEW: Warning Banner for Unconfirmed Scores */}
+            {!isConfirmed && students.some((s) => s.score !== null) && (
+              <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-2xl shadow-xl p-4 border-2 border-orange-400">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-battambang text-sm font-bold mb-1">
+                      ⚠️ ពិន្ទុមិនទាន់បានបញ្ជាក់
+                    </p>
+                    <p className="font-battambang text-xs text-orange-50 mb-3">
+                      សូមពិនិត្យពិន្ទុម្តងទៀត ហើយបញ្ជាក់ថាពិន្ទុត្រឹមត្រូវ •
+                      Please review and confirm all scores are correct
+                    </p>
+                    <button
+                      onClick={() => setShowReviewModal(true)}
+                      className="w-full bg-white text-orange-600 font-battambang font-bold text-sm py-3 px-4 rounded-xl hover:bg-orange-50 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Shield className="w-4 h-4" />
+                      ពិនិត្យ និងបញ្ជាក់ពិន្ទុ • Review & Confirm
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Confirmation Success Banner */}
+            {isConfirmed && (
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-xl p-4 border-2 border-green-400">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-battambang text-sm font-bold mb-0.5">
+                      ✓ ពិន្ទុត្រូវបានបញ្ជាក់រួចរាល់
+                    </p>
+                    <p className="font-battambang text-xs text-green-50">
+                      គ្រប់ពិន្ទុត្រឹមត្រូវ • All scores confirmed
+                      {confirmedAt && (
+                        <span className="ml-2">
+                          @{" "}
+                          {confirmedAt.toLocaleTimeString("en-US", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ✅ NEW: Export Score Report Button */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-sm border-2 border-blue-200 p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Share2 className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-sm font-bold text-gray-900 mb-1">
+                    ចែករំលែករបាយការណ៍ពិន្ទុ
+                  </p>
+                  <p className="font-battambang text-xs text-gray-600 mb-3">
+                    ផ្ញើរបាយការណ៍ពិន្ទុទៅសិស្សដើម្បីពិនិត្យ • Share score report with
+                    students to verify
+                  </p>
+                  <button
+                    onClick={() => setShowExportOptions(true)}
+                    disabled={students.filter((s) => s.score !== null).length === 0}
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-battambang font-bold text-sm py-3 px-4 rounded-xl active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    នាំចេញ និងចែករំលែក • Export & Share
+                  </button>
                 </div>
               </div>
             </div>
@@ -943,52 +1245,53 @@ export default function MobileGradeEntry({
           </div>
         )}
 
-        {/* ✅ NEW: Floating Verify Button */}
+        {/* ✅ NEW: Floating Action Buttons */}
         {selectedSubject && students.length > 0 && !loading && (
           <div className="fixed right-5 bottom-24 z-40 flex flex-col items-end gap-3">
-            {/* Verification Status Tooltip */}
-            {verifiedAt && (
+            {/* Confirmation Status Badge */}
+            {isConfirmed && (
               <div className="bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-battambang font-medium shadow-lg animate-in slide-in-from-right duration-300">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" />
-                  <span>
-                    ផ្ទៀងផ្ទាត់រួចរាល់ •{" "}
-                    {verifiedAt.toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                  <span>បានបញ្ជាក់ • Confirmed</span>
                 </div>
               </div>
             )}
 
-            {/* Verify Button */}
+            {/* Review & Confirm Button - Primary action when not confirmed */}
+            {!isConfirmed && students.some((s) => s.score !== null) && (
+              <button
+                onClick={() => setShowReviewModal(true)}
+                disabled={savingStudents.size > 0}
+                className="relative w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:from-gray-300 disabled:to-gray-400"
+              >
+                <Shield className="w-7 h-7 text-white" />
+                {savingStudents.size === 0 && (
+                  <span className="absolute inset-0 rounded-full border-4 border-orange-400 opacity-0 animate-ping"></span>
+                )}
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">!</span>
+                </div>
+              </button>
+            )}
+
+            {/* Verify Database Button - Secondary action */}
             <button
               onClick={handleVerifyScores}
               disabled={isVerifying}
-              className={`relative w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+              className={`relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 ${
                 isVerifying
                   ? "bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse"
-                  : verifiedAt
+                  : isConfirmed
                   ? "bg-gradient-to-r from-green-500 to-green-600"
                   : "bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
               }`}
             >
               {isVerifying ? (
-                <Loader2 className="w-7 h-7 text-white animate-spin" />
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
               ) : (
-                <>
-                  <Shield className="w-7 h-7 text-white" />
-                  {!verifiedAt && (
-                    <span className="absolute inset-0 rounded-full border-4 border-purple-400 opacity-0 animate-ping"></span>
-                  )}
-                </>
+                <RefreshCw className="w-6 h-6 text-white" />
               )}
-
-              {/* Tooltip on hover */}
-              <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1.5 rounded-lg text-xs font-battambang font-medium shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                ផ្ទៀងផ្ទាត់ពិន្ទុ • Verify
-              </div>
             </button>
           </div>
         )}
@@ -1096,6 +1399,342 @@ export default function MobileGradeEntry({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Export Options Modal */}
+        {showExportOptions && currentSubject && gridData && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 sm:rounded-t-3xl rounded-t-3xl">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <Share2 className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-koulen text-xl text-white">
+                        នាំចេញរបាយការណ៍
+                      </h2>
+                      <p className="font-battambang text-xs text-blue-100">
+                        Export Score Report
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowExportOptions(false)}
+                    className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/30 transition-all"
+                  >
+                    <span className="text-white text-2xl leading-none">×</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Export Options */}
+              <div className="p-6 space-y-3">
+                <div className="mb-4">
+                  <p className="font-battambang text-sm text-gray-700 mb-1">
+                    <strong>{gridData.className}</strong> - {currentSubject.nameKh}
+                  </p>
+                  <p className="font-battambang text-xs text-gray-500">
+                    {selectedMonth} {selectedYear} • {students.length} សិស្ស
+                  </p>
+                </div>
+
+                {/* Image Export Button */}
+                <button
+                  onClick={exportAsImage}
+                  disabled={isExporting}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl p-4 shadow-lg active:scale-[0.98] transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                      {isExporting ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-6 h-6" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-battambang font-bold text-base mb-0.5">
+                        នាំចេញជារូបភាព (PNG)
+                      </p>
+                      <p className="font-battambang text-xs text-purple-100">
+                        ល្អសម្រាប់ WhatsApp, Telegram • Best for messaging apps
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* PDF Export Button */}
+                <button
+                  onClick={exportAsPDF}
+                  disabled={isExporting}
+                  className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl p-4 shadow-lg active:scale-[0.98] transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                      {isExporting ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : (
+                        <FileText className="w-6 h-6" />
+                      )}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-battambang font-bold text-base mb-0.5">
+                        នាំចេញជា PDF
+                      </p>
+                      <p className="font-battambang text-xs text-orange-100">
+                        ល្អសម្រាប់បោះពុម្ព • Best for printing & archiving
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Info */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-4">
+                  <p className="font-battambang text-xs text-blue-800">
+                    💡 ជម្រើសសម្រាប់ចែករំលែក៖ ប្រើរូបភាព (PNG) សម្រាប់ផ្ញើតាម
+                    messaging apps ឬ PDF សម្រាប់រក្សាទុក
+                  </p>
+                  <p className="font-battambang text-[10px] text-blue-600 mt-1">
+                    Tip: Use PNG for quick sharing, PDF for formal records
+                  </p>
+                </div>
+
+                {/* Cancel Button */}
+                <button
+                  onClick={() => setShowExportOptions(false)}
+                  disabled={isExporting}
+                  className="w-full bg-gray-100 hover:bg-gray-200 disabled:bg-gray-100 text-gray-700 font-battambang font-semibold text-sm py-3 px-6 rounded-xl active:scale-[0.98] transition-all"
+                >
+                  បោះបង់ • Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Review & Confirm Modal */}
+        {showReviewModal && currentSubject && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="bg-white w-full h-[90vh] sm:h-auto sm:max-h-[80vh] sm:max-w-2xl sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 sm:rounded-t-3xl rounded-t-3xl flex-shrink-0">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <Shield className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-koulen text-xl text-white">
+                        ពិនិត្យពិន្ទុ
+                      </h2>
+                      <p className="font-battambang text-xs text-purple-100">
+                        Review & Confirm Scores
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowReviewModal(false)}
+                    className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/30 transition-all"
+                  >
+                    <span className="text-white text-2xl leading-none">×</span>
+                  </button>
+                </div>
+
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
+                    <p className="font-koulen text-2xl text-white">
+                      {students.length}
+                    </p>
+                    <p className="font-battambang text-xs text-purple-100">
+                      សិស្សសរុប
+                    </p>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
+                    <p className="font-koulen text-2xl text-white">
+                      {students.filter((s) => s.score !== null).length}
+                    </p>
+                    <p className="font-battambang text-xs text-purple-100">
+                      បានបញ្ចូល
+                    </p>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
+                    <p className="font-koulen text-2xl text-white">
+                      {students.filter((s) => s.score === null).length}
+                    </p>
+                    <p className="font-battambang text-xs text-purple-100">
+                      មិនទាន់
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scrollable Student List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <div className="mb-2">
+                  <p className="font-battambang text-sm font-bold text-gray-700 mb-1">
+                    {currentSubject.nameKh} • Max: {currentSubject.maxScore}{" "}
+                    ពិន្ទុ
+                  </p>
+                  <p className="font-battambang text-xs text-gray-500">
+                    សូមពិនិត្យពិន្ទុនីមួយៗឱ្យបានត្រឹមត្រូវ
+                  </p>
+                </div>
+
+                {students.map((student, index) => {
+                  const isEmpty = student.score === null;
+                  const isZero = student.score === 0;
+                  const isLow =
+                    student.score !== null &&
+                    student.score > 0 &&
+                    student.score < currentSubject.maxScore * 0.3;
+                  const isPerfect = student.score === currentSubject.maxScore;
+
+                  return (
+                    <div
+                      key={student.studentId}
+                      className={`rounded-xl p-3 border-2 ${
+                        isEmpty
+                          ? "bg-yellow-50 border-yellow-300"
+                          : isZero
+                          ? "bg-red-50 border-red-300"
+                          : isLow
+                          ? "bg-orange-50 border-orange-200"
+                          : isPerfect
+                          ? "bg-green-50 border-green-300"
+                          : "bg-gray-50 border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="font-koulen text-sm text-purple-700">
+                            {index + 1}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-battambang text-sm font-semibold text-gray-900 truncate">
+                            {student.khmerName}
+                          </p>
+                          <p className="font-battambang text-xs text-gray-500">
+                            {student.gender === "MALE" ? "ប្រុស" : "ស្រី"}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {isEmpty ? (
+                            <div className="bg-yellow-200 text-yellow-800 px-3 py-1 rounded-lg">
+                              <p className="font-battambang text-xs font-bold">
+                                ទទេ
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <p
+                                className={`font-koulen text-2xl ${
+                                  isZero
+                                    ? "text-red-600"
+                                    : isLow
+                                    ? "text-orange-600"
+                                    : isPerfect
+                                    ? "text-green-600"
+                                    : "text-gray-900"
+                                }`}
+                              >
+                                {student.score}
+                              </p>
+                              <p className="font-battambang text-[10px] text-gray-500">
+                                /{currentSubject.maxScore}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        {isZero && (
+                          <div className="bg-red-500 text-white px-2 py-1 rounded-full text-[10px] font-bold">
+                            A
+                          </div>
+                        )}
+                        {isPerfect && (
+                          <div className="text-green-500 text-xl">🌟</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Warning if incomplete */}
+              {students.filter((s) => s.score === null).length > 0 && (
+                <div className="px-4 pb-2">
+                  <div className="bg-yellow-100 border-2 border-yellow-300 rounded-xl p-3">
+                    <p className="font-battambang text-xs text-yellow-800">
+                      ⚠️ មានសិស្ស{" "}
+                      {students.filter((s) => s.score === null).length}{" "}
+                      នាក់មិនទាន់បញ្ចូលពិន្ទុ
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
+                <button
+                  onClick={handleConfirmScores}
+                  disabled={savingStudents.size > 0}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-battambang font-bold text-base py-4 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  {savingStudents.size > 0 ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      រង់ចាំ...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      បញ្ជាក់ថាពិន្ទុត្រឹមត្រូវ • Confirm All Scores
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-battambang font-semibold text-sm py-3 px-6 rounded-xl active:scale-[0.98] transition-all"
+                >
+                  ត្រឡប់ទៅកែសម្រួល • Back to Edit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ✅ NEW: Hidden Score Report Template for Export */}
+        {currentSubject && gridData && (
+          <div className="fixed -left-[9999px] -top-[9999px] pointer-events-none">
+            <ScoreReportTemplate
+              exportRef={exportReportRef}
+              className={gridData.className}
+              subjectName={currentSubject.nameKh}
+              subjectCode={currentSubject.code}
+              maxScore={currentSubject.maxScore}
+              month={selectedMonth}
+              year={selectedYear}
+              students={students.map((s) => ({
+                studentId: s.studentId,
+                khmerName: s.khmerName,
+                gender: s.gender,
+                score: s.score,
+              }))}
+              teacherName={
+                currentUser?.role === "TEACHER"
+                  ? `${currentUser?.teacher?.firstName || ""} ${
+                      currentUser?.teacher?.lastName || ""
+                    }`.trim() || "N/A"
+                  : currentUser?.role === "ADMIN"
+                  ? "Administrator"
+                  : "N/A"
+              }
+            />
           </div>
         )}
       </div>
