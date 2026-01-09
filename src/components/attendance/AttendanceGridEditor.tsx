@@ -53,6 +53,93 @@ export default function AttendanceGridEditor({
   >(new Map());
   const [saving, setSaving] = useState(false);
 
+  // Helper function to get day of week color scheme
+  const getDayOfWeek = (day: number): number => {
+    const year = gridData.year;
+    const monthNumber = gridData.monthNumber;
+    const date = new Date(year, monthNumber - 1, day);
+    return date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  };
+
+  // Helper function to get day label
+  const getDayLabel = (day: number): string => {
+    const dayOfWeek = getDayOfWeek(day);
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return dayLabels[dayOfWeek];
+  };
+
+  const getDayColorScheme = (day: number, session: "M" | "A", monthNumber: number, year: number) => {
+    const dayOfWeek = getDayOfWeek(day);
+
+    // Modern, harmonious color schemes for each day of the week
+    // Using the same base color for morning and afternoon with subtle differentiation
+    const colorSchemes = {
+      0: { // Sunday - Soft Rose
+        morning: "bg-rose-50/80 border-rose-200/60",
+        afternoon: "bg-rose-100/70 border-rose-200/60",
+        header: "bg-gradient-to-b from-rose-100 to-rose-50 text-rose-800",
+        morningHeader: "bg-rose-50/90 text-rose-800 border-b border-rose-200/50",
+        afternoonHeader: "bg-rose-100/80 text-rose-900 border-b border-rose-200/50",
+      },
+      1: { // Monday - Sky Blue
+        morning: "bg-sky-50/80 border-sky-200/60",
+        afternoon: "bg-sky-100/70 border-sky-200/60",
+        header: "bg-gradient-to-b from-sky-100 to-sky-50 text-sky-800",
+        morningHeader: "bg-sky-50/90 text-sky-800 border-b border-sky-200/50",
+        afternoonHeader: "bg-sky-100/80 text-sky-900 border-b border-sky-200/50",
+      },
+      2: { // Tuesday - Emerald Green
+        morning: "bg-emerald-50/80 border-emerald-200/60",
+        afternoon: "bg-emerald-100/70 border-emerald-200/60",
+        header: "bg-gradient-to-b from-emerald-100 to-emerald-50 text-emerald-800",
+        morningHeader: "bg-emerald-50/90 text-emerald-800 border-b border-emerald-200/50",
+        afternoonHeader: "bg-emerald-100/80 text-emerald-900 border-b border-emerald-200/50",
+      },
+      3: { // Wednesday - Amber Gold
+        morning: "bg-amber-50/80 border-amber-200/60",
+        afternoon: "bg-amber-100/70 border-amber-200/60",
+        header: "bg-gradient-to-b from-amber-100 to-amber-50 text-amber-800",
+        morningHeader: "bg-amber-50/90 text-amber-800 border-b border-amber-200/50",
+        afternoonHeader: "bg-amber-100/80 text-amber-900 border-b border-amber-200/50",
+      },
+      4: { // Thursday - Violet Purple
+        morning: "bg-violet-50/80 border-violet-200/60",
+        afternoon: "bg-violet-100/70 border-violet-200/60",
+        header: "bg-gradient-to-b from-violet-100 to-violet-50 text-violet-800",
+        morningHeader: "bg-violet-50/90 text-violet-800 border-b border-violet-200/50",
+        afternoonHeader: "bg-violet-100/80 text-violet-900 border-b border-violet-200/50",
+      },
+      5: { // Friday - Soft Fuchsia
+        morning: "bg-fuchsia-50/80 border-fuchsia-200/60",
+        afternoon: "bg-fuchsia-100/70 border-fuchsia-200/60",
+        header: "bg-gradient-to-b from-fuchsia-100 to-fuchsia-50 text-fuchsia-800",
+        morningHeader: "bg-fuchsia-50/90 text-fuchsia-800 border-b border-fuchsia-200/50",
+        afternoonHeader: "bg-fuchsia-100/80 text-fuchsia-900 border-b border-fuchsia-200/50",
+      },
+      6: { // Saturday - Warm Orange
+        morning: "bg-orange-50/80 border-orange-200/60",
+        afternoon: "bg-orange-100/70 border-orange-200/60",
+        header: "bg-gradient-to-b from-orange-100 to-orange-50 text-orange-800",
+        morningHeader: "bg-orange-50/90 text-orange-800 border-b border-orange-200/50",
+        afternoonHeader: "bg-orange-100/80 text-orange-900 border-b border-orange-200/50",
+      },
+    };
+
+    if (dayOfWeek in colorSchemes) {
+      return colorSchemes[dayOfWeek as keyof typeof colorSchemes];
+    } else {
+      console.error(`Invalid dayOfWeek: ${dayOfWeek} for day: ${day}, month: ${monthNumber}, year: ${year}. Falling back to a default color scheme.`);
+      // Return a default color scheme to prevent crash
+      return {
+        morning: "bg-gray-50/70 border-gray-200",
+        afternoon: "bg-gray-100/70 border-gray-300",
+        header: "bg-gray-50 text-gray-700",
+        morningHeader: "bg-gray-100/60 text-gray-700",
+        afternoonHeader: "bg-gray-200/60 text-gray-800",
+      };
+    }
+  };
+
   // Update refs whenever state changes
   useEffect(() => {
     cellsRef.current = cells;
@@ -532,16 +619,19 @@ export default function AttendanceGridEditor({
     console.log("🚫 Cancelled paste - reverted changes");
   };
 
-  const getCellClassName = (cell: CellState, cellKey: string) => {
+  const getCellClassName = (cell: CellState, cellKey: string, day: number) => {
+    const colorScheme = getDayColorScheme(day, cell.session, gridData.monthNumber, gridData.year);
+    const dayColors = cell.session === "M" ? colorScheme.morning : colorScheme.afternoon;
+
     let base =
       "w-12 h-9 text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:z-10 font-semibold text-sm transition-colors ";
 
     if (cell.isSaving) {
-      return base + "bg-blue-50 text-blue-600 animate-pulse";
+      return base + "bg-blue-50 text-blue-600 animate-pulse border";
     }
 
     if (cell.error) {
-      return base + "bg-red-50 text-red-700";
+      return base + "bg-red-50 text-red-700 border";
     }
 
     // Pasted cells (in paste mode)
@@ -555,18 +645,18 @@ export default function AttendanceGridEditor({
     }
 
     if (cell.isModified) {
-      return base + "bg-yellow-50 text-yellow-800";
+      return base + `bg-yellow-100/80 text-yellow-900 border ${dayColors.split(' ')[1]}`;
     }
 
     if (cell.value === "A") {
-      return base + "bg-red-50 text-red-700";
+      return base + `bg-red-200/60 text-red-900 font-bold border ${dayColors.split(' ')[1]}`;
     }
 
     if (cell.value === "P") {
-      return base + "bg-orange-50 text-orange-700";
+      return base + `bg-orange-200/60 text-orange-900 font-bold border ${dayColors.split(' ')[1]}`;
     }
 
-    return base + "bg-white text-gray-700 hover:bg-gray-50";
+    return base + `${dayColors} text-gray-700 hover:brightness-95`;
   };
 
   // Cleanup timeouts on unmount
@@ -684,32 +774,37 @@ export default function AttendanceGridEditor({
       </div>
 
       {/* Grid Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto overflow-clip max-h-[calc(100vh-250px)] relative">
         <table className="w-full text-sm">
-          <thead>
+          <thead className="sticky top-0 z-50">
             {/* Day numbers row */}
-            <tr className="bg-gradient-to-b from-gray-50 to-gray-100">
+            <tr className="bg-gray-100">
               <th
                 rowSpan={2}
-                className="sticky left-0 z-20 bg-gradient-to-b from-gray-50 to-gray-100 px-6 py-3 text-left font-bold text-gray-700 border-r border-gray-300 min-w-[280px]"
+                className="sticky left-0 z-40 bg-gray-100 px-6 py-3 text-left font-bold text-gray-700 border-r-2 border-gray-300 min-w-[280px] shadow-[2px_0_4px_rgba(0,0,0,0.05)]"
               >
                 <div className="text-sm">សិស្ស</div>
                 <div className="text-xs font-normal text-gray-500 mt-0.5">
                   Students
                 </div>
               </th>
-              {gridData.days.map((day) => (
-                <th
-                  key={day}
-                  colSpan={2}
-                  className="px-2 py-2 text-center font-bold text-gray-700 border-l border-gray-200"
-                >
-                  <div className="text-base">{day}</div>
-                </th>
-              ))}
+              {gridData.days.map((day) => {
+                const colorScheme = getDayColorScheme(day, "M", gridData.monthNumber, gridData.year);
+                const dayLabel = getDayLabel(day);
+                return (
+                  <th
+                    key={day}
+                    colSpan={2}
+                    className={`px-2 py-2 text-center font-bold border-l border-gray-300 ${colorScheme.header}`}
+                  >
+                    <div className="text-base font-bold">{day}</div>
+                    <div className="text-[10px] font-normal mt-0.5">{dayLabel}</div>
+                  </th>
+                );
+              })}
               <th
                 rowSpan={2}
-                className="sticky right-0 z-20 bg-gradient-to-b from-gray-50 to-gray-100 px-4 py-3 font-bold text-gray-700 border-l-2 border-gray-300 min-w-[180px]"
+                className="sticky right-0 z-40 bg-gray-100 px-4 py-3 font-bold text-gray-700 border-l-2 border-gray-300 min-w-[180px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)]"
               >
                 <div className="text-sm">សរុប</div>
                 <div className="text-xs font-normal text-gray-500 mt-0.5">
@@ -719,25 +814,28 @@ export default function AttendanceGridEditor({
             </tr>
 
             {/* Session labels row */}
-            <tr className="bg-gradient-to-b from-gray-100 to-gray-50 border-b-2 border-gray-300">
-              {gridData.days.map((day) => (
-                <>
-                  <th
-                    key={`${day}_M`}
-                    className="px-1 py-1. 5 text-xs font-semibold text-indigo-700 bg-indigo-50/50 border-l border-gray-200"
-                  >
-                    <div>ព្រឹក</div>
-                    <div className="text-[10px] text-indigo-500">M</div>
-                  </th>
-                  <th
-                    key={`${day}_A`}
-                    className="px-1 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50/50 border-l border-gray-200"
-                  >
-                    <div>ល្ងាច</div>
-                    <div className="text-[10px] text-purple-500">A</div>
-                  </th>
-                </>
-              ))}
+            <tr className="bg-gray-100 border-b-2 border-gray-300">
+              {gridData.days.map((day) => {
+                const colorScheme = getDayColorScheme(day, "M", gridData.monthNumber, gridData.year);
+                return (
+                  <>
+                    <th
+                      key={`${day}_M`}
+                      className={`px-1 py-1.5 text-xs font-semibold border-l border-gray-300 ${colorScheme.morningHeader}`}
+                    >
+                      <div>ព្រឹក</div>
+                      <div className="text-[10px]">M</div>
+                    </th>
+                    <th
+                      key={`${day}_A`}
+                      className={`px-1 py-1.5 text-xs font-semibold border-l border-gray-300 ${colorScheme.afternoonHeader}`}
+                    >
+                      <div>ល្ងាច</div>
+                      <div className="text-[10px]">A</div>
+                    </th>
+                  </>
+                );
+              })}
             </tr>
           </thead>
 
@@ -747,12 +845,14 @@ export default function AttendanceGridEditor({
                 key={student.studentId}
                 className={`
                   group hover:bg-indigo-50/30 transition-colors
-                  ${studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
+                  ${studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   border-b border-gray-100
                 `}
               >
                 {/* Student name */}
-                <td className="sticky left-0 z-10 bg-inherit px-6 py-2 border-r border-gray-200 font-medium min-w-[280px]">
+                <td className={`sticky left-0 z-30 px-6 py-2 border-r-2 border-gray-300 font-medium min-w-[280px] shadow-[2px_0_4px_rgba(0,0,0,0.05)] ${
+                  studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                }`}>
                   <div className="flex items-center gap-3">
                     <span className="text-gray-400 text-xs font-normal min-w-[24px] text-right">
                       {studentIndex + 1}.
@@ -775,7 +875,11 @@ export default function AttendanceGridEditor({
                       {/* Morning */}
                       <td
                         key={morningKey}
-                        className="p-0 border-l border-gray-200"
+                        className={`p-0 border-l border-gray-200 ${
+                          morningCell
+                            ? (getDayColorScheme(day, "M", gridData.monthNumber, gridData.year)).morning
+                            : ""
+                        }`}
                       >
                         {morningCell && (
                           <input
@@ -798,7 +902,7 @@ export default function AttendanceGridEditor({
                             onPaste={(e) =>
                               handlePaste(e, student.studentId, day, "M")
                             }
-                            className={getCellClassName(morningCell, morningKey)}
+                            className={getCellClassName(morningCell, morningKey, day)}
                             maxLength={1}
                             disabled={isLoading}
                           />
@@ -808,7 +912,11 @@ export default function AttendanceGridEditor({
                       {/* Afternoon */}
                       <td
                         key={afternoonKey}
-                        className="p-0 border-l border-gray-200"
+                        className={`p-0 border-l border-gray-200 ${
+                          afternoonCell
+                            ? (getDayColorScheme(day, "A", gridData.monthNumber, gridData.year)).afternoon
+                            : ""
+                        }`}
                       >
                         {afternoonCell && (
                           <input
@@ -831,7 +939,7 @@ export default function AttendanceGridEditor({
                             onPaste={(e) =>
                               handlePaste(e, student.studentId, day, "A")
                             }
-                            className={getCellClassName(afternoonCell, afternoonKey)}
+                            className={getCellClassName(afternoonCell, afternoonKey, day)}
                             maxLength={1}
                             disabled={isLoading}
                           />
@@ -842,7 +950,9 @@ export default function AttendanceGridEditor({
                 })}
 
                 {/* Total */}
-                <td className="sticky right-0 z-10 bg-inherit border-l-2 border-gray-300 px-4 py-2 min-w-[180px]">
+                <td className={`sticky right-0 z-30 border-l-2 border-gray-300 px-4 py-2 min-w-[180px] shadow-[-2px_0_4px_rgba(0,0,0,0.05)] ${
+                  studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
+                }`}>
                   <div className="flex items-center justify-center gap-4">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-600 font-medium whitespace-nowrap">
