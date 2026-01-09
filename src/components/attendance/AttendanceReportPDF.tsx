@@ -88,7 +88,7 @@ export default function AttendanceReportPDF({
           src: local("Khmer OS Battambang"), local("KhmerOSBattambang");
         }
 
-        .attendance-report {
+        . attendance-report {
           width: 100%;
           background: white;
           font-family: "Khmer OS Battambang", Arial, sans-serif;
@@ -96,11 +96,11 @@ export default function AttendanceReportPDF({
         }
 
         .attendance-page {
-          page-break-inside: avoid;
           page-break-after: always;
+          page-break-inside: avoid;
         }
 
-        .attendance-page:last-child {
+        .attendance-page: last-child {
           page-break-after: auto;
         }
 
@@ -116,12 +116,11 @@ export default function AttendanceReportPDF({
           }
 
           .attendance-page {
-            page-break-inside: avoid !important;
             page-break-after: always !important;
+            page-break-inside: avoid !important;
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
-            min-height: auto !important;
             margin: 0 !important;
             padding: 0.5cm !important;
             box-shadow: none !important;
@@ -156,7 +155,7 @@ export default function AttendanceReportPDF({
             border-collapse: collapse !important;
           }
 
-          .no-print {
+          . no-print {
             display: none;
           }
         }
@@ -215,405 +214,421 @@ export default function AttendanceReportPDF({
         }
       `}</style>
 
-      {paginatedStudents.map((studentsOnPage, pageIndex) => (
-        <div
-          key={pageIndex}
-          className="attendance-page attendance-report"
-          style={{
-            width: "297mm", // A4 landscape width
-            minHeight: "auto",
-            margin: "0 auto",
-            padding: "0.5cm",
-            boxSizing: "border-box",
-            maxWidth: "100%",
-          }}
-        >
-        {/* Header - Full header on first page */}
-        {pageIndex === 0 && (
-        <>
-          <div className="flex items-start justify-between mb-2">
-            {/* Left side */}
-            <div className="text-left" style={{ fontSize: "9px" }}>
-              <div className="font-semibold">{province}</div>
-              <div className="font-bold header-title" style={{ fontSize: "11px" }}>
-                {schoolName}
-              </div>
-            </div>
+      <div id="attendance-report-content">
+        {paginatedStudents.map((studentsOnPage, pageIndex) => (
+          <div
+            key={pageIndex}
+            className="attendance-page attendance-report"
+            style={{
+              width: "297mm",
+              minHeight: "auto",
+              margin: "0 auto",
+              padding: "0. 5cm",
+              boxSizing: "border-box",
+              maxWidth: "100%",
+              marginBottom: "20px",
+            }}
+          >
+            {/* Header - Full header on first page */}
+            {pageIndex === 0 && (
+              <>
+                <div className="flex items-start justify-between mb-2">
+                  {/* Left side */}
+                  <div className="text-left" style={{ fontSize: "9px" }}>
+                    <div className="font-semibold">{province}</div>
+                    <div
+                      className="font-bold header-title"
+                      style={{ fontSize: "11px" }}
+                    >
+                      {schoolName}
+                    </div>
+                  </div>
 
-            {/* Center */}
-            <div className="text-center">
-              <div
-                className="header-title font-bold"
-                style={{ fontSize: "12px", marginBottom: "1px" }}
-              >
-                ព្រះរាជាណាចក្រកម្ពុជា
-              </div>
-              <div style={{ fontSize: "9px", marginBottom: "1px" }}>
-                ជាតិ សាសនា ព្រះមហាក្សត្រ
-              </div>
-              <div className="flex justify-center items-center gap-1">
-                <div
-                  style={{
-                    width: "25px",
-                    height: "1px",
-                    background: "#000",
-                  }}
-                ></div>
-                <div
-                  style={{
-                    width: "4px",
-                    height: "4px",
-                    borderRadius: "50%",
-                    background: "#000",
-                  }}
-                ></div>
-                <div
-                  style={{
-                    width: "25px",
-                    height: "1px",
-                    background: "#000",
-                  }}
-                ></div>
-              </div>
-            </div>
+                  {/* Center */}
+                  <div className="text-center">
+                    <div
+                      className="header-title font-bold"
+                      style={{ fontSize: "12px", marginBottom: "1px" }}
+                    >
+                      ព្រះរាជាណាចក្រកម្ពុជា
+                    </div>
+                    <div style={{ fontSize: "9px", marginBottom: "1px" }}>
+                      ជាតិ សាសនា ព្រះមហាក្សត្រ
+                    </div>
+                    <div className="flex justify-center items-center gap-1">
+                      <div
+                        style={{
+                          width: "25px",
+                          height: "1px",
+                          background: "#000",
+                        }}
+                      ></div>
+                      <div
+                        style={{
+                          width: "4px",
+                          height: "4px",
+                          borderRadius: "50%",
+                          background: "#000",
+                        }}
+                      ></div>
+                      <div
+                        style={{
+                          width: "25px",
+                          height: "1px",
+                          background: "#000",
+                        }}
+                      ></div>
+                    </div>
+                  </div>
 
-            {/* Right side - Empty for balance */}
-            <div style={{ width: "180px" }}></div>
-          </div>
+                  {/* Right side - Empty for balance */}
+                  <div style={{ width: "180px" }}></div>
+                </div>
 
-          {/* Title */}
-          <div className="text-center mb-2">
-            <h2
-              className="header-title font-bold"
-              style={{ fontSize: "13px", marginBottom: "2px" }}
-            >
-              តារាងវត្តមាន
-            </h2>
-            <div style={{ fontSize: "9px" }}>
-              <span>ខែ: {gridData.month} </span>
-              <span className="mx-1">•</span>
-              <span>ឆ្នាំសិក្សា: {gridData.year}-{gridData.year + 1}</span>
-            </div>
-            <div
-              className="font-bold header-title"
-              style={{ fontSize: "11px", marginTop: "2px" }}
-            >
-              {gridData.className}
-              {totalPages > 1 && (
-                <span style={{ fontSize: "8px", marginLeft: "8px" }}>
-                  (ទំព័រ {pageIndex + 1}/{totalPages})
-                </span>
-              )}
-            </div>
-          </div>
-        </>
-        )}
-
-        {/* Simplified header for continuation pages */}
-        {pageIndex > 0 && (
-          <div className="text-center mb-2">
-            <div
-              className="font-bold header-title"
-              style={{ fontSize: "11px" }}
-            >
-              {gridData.className} - តារាងវត្តមាន {gridData.month} {gridData.year}
-              <span style={{ fontSize: "8px", marginLeft: "8px" }}>
-                (ទំព័រ {pageIndex + 1}/{totalPages})
-              </span>
-            </div>
-          </div>
-        )}
-
-
-        {/* Attendance Table */}
-        <table
-          className="w-full border-collapse"
-          style={{ fontSize: "7px" }}
-        >
-          <thead>
-            {/* Day numbers row */}
-            <tr>
-              <th
-                rowSpan={2}
-                className="cell-border bg-gray-100"
-                style={{
-                  minWidth: "15px",
-                  maxWidth: "15px",
-                  width: "15px",
-                  padding: "2px 1px",
-                  fontSize: "7px",
-                  fontWeight: "bold",
-                }}
-              >
-                ល.រ
-              </th>
-              <th
-                rowSpan={2}
-                className="cell-border bg-gray-100 student-name"
-                style={{
-                  fontSize: "7px",
-                  fontWeight: "bold",
-                  textAlign: "left",
-                }}
-              >
-                គោត្តនាម និងនាម
-              </th>
-              {gridData.days.map((day) => (
-                <th
-                  key={day}
-                  colSpan={2}
-                  className={`cell-border day-header ${getDayColorClass(day)}`}
-                >
-                  <div>{day}</div>
-                </th>
-              ))}
-              <th
-                colSpan={2}
-                className="cell-border bg-gray-100"
-                style={{
-                  minWidth: "28px",
-                  maxWidth: "28px",
-                  width: "28px",
-                  padding: "2px 1px",
-                  fontSize: "7px",
-                  fontWeight: "bold",
-                }}
-              >
-                សរុប
-                <br />
-                <span style={{ fontSize: "6px" }}>Total</span>
-              </th>
-            </tr>
-
-            {/* Session labels row (M/A) */}
-            <tr>
-              {gridData.days.map((day) => (
-                <>
-                  <th
-                    key={`${day}_M`}
-                    className={`cell-border session-header ${getDayColorClass(
-                      day
-                    )}`}
+                {/* Title */}
+                <div className="text-center mb-2">
+                  <h2
+                    className="header-title font-bold"
+                    style={{ fontSize: "13px", marginBottom: "2px" }}
                   >
-                    M
+                    តារាងវត្តមាន
+                  </h2>
+                  <div style={{ fontSize: "9px" }}>
+                    <span>ខែ: {gridData.month} </span>
+                    <span className="mx-1">•</span>
+                    <span>
+                      ឆ្នាំសិក្សា: {gridData.year}-{gridData.year + 1}
+                    </span>
+                  </div>
+                  <div
+                    className="font-bold header-title"
+                    style={{ fontSize: "11px", marginTop: "2px" }}
+                  >
+                    {gridData.className}
+                    {totalPages > 1 && (
+                      <span style={{ fontSize: "8px", marginLeft: "8px" }}>
+                        (ទំព័រ {pageIndex + 1}/{totalPages})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Simplified header for continuation pages */}
+            {pageIndex > 0 && (
+              <div className="text-center mb-2">
+                <div
+                  className="font-bold header-title"
+                  style={{ fontSize: "11px" }}
+                >
+                  {gridData.className} - តារាងវត្តមាន {gridData.month}{" "}
+                  {gridData.year}
+                  <span style={{ fontSize: "8px", marginLeft: "8px" }}>
+                    (ទំព័រ {pageIndex + 1}/{totalPages})
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Attendance Table */}
+            <table
+              className="w-full border-collapse"
+              style={{ fontSize: "7px" }}
+            >
+              <thead>
+                {/* Day numbers row */}
+                <tr>
+                  <th
+                    rowSpan={2}
+                    className="cell-border bg-gray-100"
+                    style={{
+                      minWidth: "15px",
+                      maxWidth: "15px",
+                      width: "15px",
+                      padding: "2px 1px",
+                      fontSize: "7px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ល. រ
                   </th>
                   <th
-                    key={`${day}_A`}
-                    className={`cell-border session-header ${getDayColorClass(
-                      day
-                    )}`}
-                    style={{ backgroundColor: "rgba(0,0,0,0.03)" }}
+                    rowSpan={2}
+                    className="cell-border bg-gray-100 student-name"
+                    style={{
+                      fontSize: "7px",
+                      fontWeight: "bold",
+                      textAlign: "left",
+                    }}
                   >
+                    គោត្តនាម និងនាម
+                  </th>
+                  {gridData.days.map((day) => (
+                    <th
+                      key={day}
+                      colSpan={2}
+                      className={`cell-border day-header ${getDayColorClass(
+                        day
+                      )}`}
+                    >
+                      <div>{day}</div>
+                    </th>
+                  ))}
+                  <th
+                    colSpan={2}
+                    className="cell-border bg-gray-100"
+                    style={{
+                      minWidth: "28px",
+                      maxWidth: "28px",
+                      width: "28px",
+                      padding: "2px 1px",
+                      fontSize: "7px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    សរុប
+                    <br />
+                    <span style={{ fontSize: "6px" }}>Total</span>
+                  </th>
+                </tr>
+
+                {/* Session labels row (M/A) */}
+                <tr>
+                  {gridData.days.map((day) => (
+                    <>
+                      <th
+                        key={`${day}_M`}
+                        className={`cell-border session-header ${getDayColorClass(
+                          day
+                        )}`}
+                      >
+                        M
+                      </th>
+                      <th
+                        key={`${day}_A`}
+                        className={`cell-border session-header ${getDayColorClass(
+                          day
+                        )}`}
+                        style={{ backgroundColor: "rgba(0,0,0,0.03)" }}
+                      >
+                        A
+                      </th>
+                    </>
+                  ))}
+                  <th className="cell-border session-header bg-gray-100 total-cell">
                     A
                   </th>
-                </>
-              ))}
-              <th
-                className="cell-border session-header bg-gray-100 total-cell"
-              >
-                A
-              </th>
-              <th
-                className="cell-border session-header bg-gray-100 total-cell"
-              >
-                P
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {studentsOnPage.map((student, relativeIndex) => {
-              const index = pageIndex * studentsPerPage + relativeIndex;
-              const totals = getStudentTotals(student);
-              return (
-                <tr key={student.studentId}>
-                  {/* Row number */}
-                  <td
-                    className="cell-border text-center"
-                    style={{
-                      padding: "1px",
-                      fontSize: "7px",
-                      backgroundColor: index % 2 === 0 ? "#fff" : "#f9fafb",
-                    }}
-                  >
-                    {index + 1}
-                  </td>
-
-                  {/* Student name */}
-                  <td
-                    className="cell-border student-name"
-                    style={{
-                      backgroundColor: index % 2 === 0 ? "#fff" : "#f9fafb",
-                    }}
-                  >
-                    {student.studentName}
-                  </td>
-
-                  {/* Attendance cells */}
-                  {gridData.days.map((day) => {
-                    const morningData = student.attendance[`${day}_M`];
-                    const afternoonData = student.attendance[`${day}_A`];
-                    const morningValue = morningData?.displayValue || "";
-                    const afternoonValue = afternoonData?.displayValue || "";
-
-                    return (
-                      <>
-                        {/* Morning */}
-                        <td
-                          key={`${day}_M`}
-                          className={`cell-border attendance-cell ${getDayColorClass(
-                            day
-                          )}`}
-                          style={{
-                            backgroundColor:
-                              morningValue === "A"
-                                ? "#fecaca"
-                                : morningValue === "P"
-                                ? "#fed7aa"
-                                : undefined,
-                            color:
-                              morningValue === "A" || morningValue === "P"
-                                ? "#000"
-                                : "#666",
-                          }}
-                        >
-                          {morningValue}
-                        </td>
-
-                        {/* Afternoon */}
-                        <td
-                          key={`${day}_A`}
-                          className={`cell-border attendance-cell ${getDayColorClass(
-                            day
-                          )}`}
-                          style={{
-                            backgroundColor:
-                              afternoonValue === "A"
-                                ? "#fecaca"
-                                : afternoonValue === "P"
-                                ? "#fed7aa"
-                                : "rgba(0,0,0,0.03)",
-                            color:
-                              afternoonValue === "A" || afternoonValue === "P"
-                                ? "#000"
-                                : "#666",
-                          }}
-                        >
-                          {afternoonValue}
-                        </td>
-                      </>
-                    );
-                  })}
-
-                  {/* Total absent */}
-                  <td
-                    className="cell-border total-cell"
-                    style={{
-                      fontWeight: "bold",
-                      backgroundColor: totals.absent > 0 ? "#fee2e2" : "#f9fafb",
-                      color: totals.absent > 0 ? "#dc2626" : "#000",
-                    }}
-                  >
-                    {totals.absent || ""}
-                  </td>
-
-                  {/* Total permission */}
-                  <td
-                    className="cell-border total-cell"
-                    style={{
-                      fontWeight: "bold",
-                      backgroundColor:
-                        totals.permission > 0 ? "#ffedd5" : "#f9fafb",
-                      color: totals.permission > 0 ? "#ea580c" : "#000",
-                    }}
-                  >
-                    {totals.permission || ""}
-                  </td>
+                  <th className="cell-border session-header bg-gray-100 total-cell">
+                    P
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
 
-        {/* Summary */}
-        <div className="mt-2 flex items-center gap-4" style={{ fontSize: "7px" }}>
-          <div>
-            <strong>សិស្សសរុប:</strong> {gridData.students.length} នាក់
-            {totalPages > 1 && (
-              <span style={{ marginLeft: "8px" }}>
-                (ទំព័រនេះ: {studentsOnPage.length} នាក់)
-              </span>
+              <tbody>
+                {studentsOnPage.map((student, relativeIndex) => {
+                  const index = pageIndex * studentsPerPage + relativeIndex;
+                  const totals = getStudentTotals(student);
+                  return (
+                    <tr key={student.studentId}>
+                      {/* Row number */}
+                      <td
+                        className="cell-border text-center"
+                        style={{
+                          padding: "1px",
+                          fontSize: "7px",
+                          backgroundColor: index % 2 === 0 ? "#fff" : "#f9fafb",
+                        }}
+                      >
+                        {index + 1}
+                      </td>
+
+                      {/* Student name */}
+                      <td
+                        className="cell-border student-name"
+                        style={{
+                          backgroundColor: index % 2 === 0 ? "#fff" : "#f9fafb",
+                        }}
+                      >
+                        {student.studentName}
+                      </td>
+
+                      {/* Attendance cells */}
+                      {gridData.days.map((day) => {
+                        const morningData = student.attendance[`${day}_M`];
+                        const afternoonData = student.attendance[`${day}_A`];
+                        const morningValue = morningData?.displayValue || "";
+                        const afternoonValue =
+                          afternoonData?.displayValue || "";
+
+                        return (
+                          <>
+                            {/* Morning */}
+                            <td
+                              key={`${day}_M`}
+                              className={`cell-border attendance-cell ${getDayColorClass(
+                                day
+                              )}`}
+                              style={{
+                                backgroundColor:
+                                  morningValue === "A"
+                                    ? "#fecaca"
+                                    : morningValue === "P"
+                                    ? "#fed7aa"
+                                    : undefined,
+                                color:
+                                  morningValue === "A" || morningValue === "P"
+                                    ? "#000"
+                                    : "#666",
+                              }}
+                            >
+                              {morningValue}
+                            </td>
+
+                            {/* Afternoon */}
+                            <td
+                              key={`${day}_A`}
+                              className={`cell-border attendance-cell ${getDayColorClass(
+                                day
+                              )}`}
+                              style={{
+                                backgroundColor:
+                                  afternoonValue === "A"
+                                    ? "#fecaca"
+                                    : afternoonValue === "P"
+                                    ? "#fed7aa"
+                                    : "rgba(0,0,0,0.03)",
+                                color:
+                                  afternoonValue === "A" ||
+                                  afternoonValue === "P"
+                                    ? "#000"
+                                    : "#666",
+                              }}
+                            >
+                              {afternoonValue}
+                            </td>
+                          </>
+                        );
+                      })}
+
+                      {/* Total absent */}
+                      <td
+                        className="cell-border total-cell"
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor:
+                            totals.absent > 0 ? "#fee2e2" : "#f9fafb",
+                          color: totals.absent > 0 ? "#dc2626" : "#000",
+                        }}
+                      >
+                        {totals.absent || ""}
+                      </td>
+
+                      {/* Total permission */}
+                      <td
+                        className="cell-border total-cell"
+                        style={{
+                          fontWeight: "bold",
+                          backgroundColor:
+                            totals.permission > 0 ? "#ffedd5" : "#f9fafb",
+                          color: totals.permission > 0 ? "#ea580c" : "#000",
+                        }}
+                      >
+                        {totals.permission || ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Summary */}
+            <div
+              className="mt-2 flex items-center gap-4"
+              style={{ fontSize: "7px" }}
+            >
+              <div>
+                <strong>សិស្សសរុប:</strong> {gridData.students.length} នាក់
+                {totalPages > 1 && (
+                  <span style={{ marginLeft: "8px" }}>
+                    (ទំព័រនេះ: {studentsOnPage.length} នាក់)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <span style={{ fontWeight: "bold" }}>M=ព្រឹក</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span style={{ fontWeight: "bold" }}>A=ល្ងាច</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "#fecaca",
+                      border: "0.5px solid #000",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "6px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    A
+                  </div>
+                  <span>អត់ច្បាប់</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div
+                    style={{
+                      width: "10px",
+                      height: "10px",
+                      backgroundColor: "#fed7aa",
+                      border: "0.5px solid #000",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "6px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    P
+                  </div>
+                  <span>មានច្បាប់</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer - Only on last page */}
+            {pageIndex === totalPages - 1 && (
+              <div className="mt-4 flex justify-between items-end">
+                <div className="text-left" style={{ fontSize: "8px" }}>
+                  <div>
+                    {province.split(" ").slice(0, 2).join(" ")}, ថ្ងៃទី
+                    {reportDate || "___"}
+                  </div>
+                  <div className="mt-1 font-semibold">បានឃើញ និងឯកភាព</div>
+                  <div className="mt-1 font-bold">នាយកសាលា</div>
+                  <div className="mt-6 font-semibold">
+                    {principalName || ""}
+                  </div>
+                </div>
+
+                <div className="text-right" style={{ fontSize: "8px" }}>
+                  <div>
+                    {province.split(" ").slice(0, 2).join(" ")}, ថ្ងៃទី
+                    {reportDate || "___"}
+                  </div>
+                  <div className="mt-1 font-semibold">គ្រូទទួលបន្ទុកថ្នាក់</div>
+                  <div className="mt-8 font-semibold">{teacherName || ""}</div>
+                </div>
+              </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <span style={{ fontWeight: "bold" }}>M=ព្រឹក</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span style={{ fontWeight: "bold" }}>A=ល្ងាច</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#fecaca",
-                  border: "0.5px solid #000",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "6px",
-                  fontWeight: "bold",
-                }}
-              >
-                A
-              </div>
-              <span>អត់ច្បាប់</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  backgroundColor: "#fed7aa",
-                  border: "0.5px solid #000",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "6px",
-                  fontWeight: "bold",
-                }}
-              >
-                P
-              </div>
-              <span>មានច្បាប់</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer - Only on last page */}
-        {pageIndex === totalPages - 1 && (
-          <div className="mt-4 flex justify-between items-end">
-            <div className="text-left" style={{ fontSize: "8px" }}>
-              <div>
-                {province.split(" ").slice(0, 2).join(" ")}, ថ្ងៃទី{reportDate || "___"}
-              </div>
-              <div className="mt-1 font-semibold">បានឃើញ និងឯកភាព</div>
-              <div className="mt-1 font-bold">នាយកសាលា</div>
-              <div className="mt-6 font-semibold">{principalName || ""}</div>
-            </div>
-
-            <div className="text-right" style={{ fontSize: "8px" }}>
-              <div>
-                {province.split(" ").slice(0, 2).join(" ")}, ថ្ងៃទី{reportDate || "___"}
-              </div>
-              <div className="mt-1 font-semibold">គ្រូទទួលបន្ទុកថ្នាក់</div>
-              <div className="mt-8 font-semibold">{teacherName || ""}</div>
-            </div>
-          </div>
-        )}
+        ))}
       </div>
-      ))}
     </>
   );
 }

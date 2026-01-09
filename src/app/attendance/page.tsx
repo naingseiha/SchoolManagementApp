@@ -19,8 +19,6 @@ import {
   FileText,
   Printer,
 } from "lucide-react";
-import { jsPDF } from "jspdf";
-import html2canvas from 'html2canvas';
 import {
   attendanceApi,
   type AttendanceGridData,
@@ -83,12 +81,9 @@ export default function AttendancePage() {
   const [gridData, setGridData] = useState<AttendanceGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const attendanceGridRef = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const pdfReportRef = useRef(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
-  // ✅ NEW: Track unsaved changes
+  // ✅ Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -161,7 +156,7 @@ export default function AttendancePage() {
     refreshClasses,
   ]);
 
-  // ✅ NEW: Handle selection changes with unsaved warning
+  // ✅ Handle selection changes with unsaved warning
   const handleClassChange = (newClassId: string) => {
     if (hasUnsavedChanges) {
       setPendingAction(() => () => setSelectedClassId(newClassId));
@@ -189,7 +184,7 @@ export default function AttendancePage() {
     }
   };
 
-  // ✅ NEW: Handle warning dialog actions
+  // ✅ Handle warning dialog actions
   const handleDiscardChanges = () => {
     setHasUnsavedChanges(false);
     setShowUnsavedWarning(false);
@@ -213,7 +208,7 @@ export default function AttendancePage() {
     setLoading(true);
     setError(null);
     setGridData(null);
-    setHasUnsavedChanges(false); // ✅ Reset unsaved changes when loading new data
+    setHasUnsavedChanges(false);
 
     try {
       const data = await attendanceApi.getAttendanceGrid(
@@ -237,7 +232,7 @@ export default function AttendancePage() {
     }
   };
 
-  // ✅ UPDATED: Silent auto-save, only toast on manual save
+  // ✅ Silent auto-save
   const handleSaveAttendance = async (
     attendance: BulkSaveAttendanceItem[],
     isAutoSave: boolean = false
@@ -246,7 +241,6 @@ export default function AttendancePage() {
 
     try {
       if (attendance.length === 0) {
-        // ❌ NO toast for auto-save
         if (!isAutoSave) {
           warning("សូមបញ្ចូលវត្តមានយ៉ាងហោចណាស់មួយ");
         }
@@ -270,7 +264,6 @@ export default function AttendancePage() {
       const savedCount = result?.savedCount ?? attendance.length;
       const errorCount = result?.errorCount ?? 0;
 
-      // ✅ ONLY show toast for MANUAL saves
       if (!isAutoSave) {
         if (errorCount > 0) {
           warning(`រក្សាទុក ${savedCount} ជោគជ័យ, ${errorCount} មានកំហុស`);
@@ -278,16 +271,14 @@ export default function AttendancePage() {
           success(`រក្សាទុកបានជោគជ័យ ${savedCount} វត្តមាន`);
         }
       } else {
-        // ❌ NO toast for auto-save - completely silent
         console.log(`🔇 Auto-saved ${savedCount} silently`);
       }
     } catch (err: any) {
-      console.error(`❌ Save failed:`, err);
+      console.error(`❌ Save failed: `, err);
 
-      // ✅ ONLY show error for manual saves
       if (!isAutoSave) {
         showError(
-          `មានបញ្ហាក្នុងការរក្សាទុក: ${err.message || "Unknown error"}`
+          `មានបញ្ហាក្នុងការរក្សាទុក:  ${err.message || "Unknown error"}`
         );
         throw err;
       } else {
@@ -309,7 +300,6 @@ export default function AttendancePage() {
 
   const handlePrintNow = () => {
     console.log("🖨️ Starting print...");
-    // Use window.print() for printing
     window.print();
     setTimeout(() => {
       success("បានបោះពុម្ពបានជោគជ័យ");
@@ -405,7 +395,7 @@ export default function AttendancePage() {
               </div>
 
               {/* Filters and Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md: grid-cols-5 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ថ្នាក់
@@ -467,7 +457,7 @@ export default function AttendancePage() {
                       setGridData(null);
                       setError(null);
                     }}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   >
                     {yearOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -507,7 +497,7 @@ export default function AttendancePage() {
                   <button
                     onClick={handleExportPDF}
                     disabled={!gridData || loading}
-                    className="w-full h-11 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+                    className="w-full h-11 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white text-sm font-semibold rounded-lg shadow-md hover: shadow-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
                   >
                     <Printer className="w-4 h-4" />
                     <span>បោះពុម្ព</span>
@@ -573,23 +563,21 @@ export default function AttendancePage() {
 
       {/* ✅ Unsaved Changes Warning Dialog */}
       {showUnsavedWarning && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 no-print">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <AlertCircle className="w-6 h-6 text-orange-600" />
               </div>
               <div>
-                <h3 className="text-xl font-koulen text-gray-900 font-khmer-title">
+                <h3 className="text-xl font-koulen text-gray-900">
                   មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
                 </h3>
-                <p className="text-sm text-gray-600 mt-1 font-khmer-body">
-                  Unsaved Changes
-                </p>
+                <p className="text-sm text-gray-600 mt-1">Unsaved Changes</p>
               </div>
             </div>
 
-            <p className="text-gray-700 mb-6 font-khmer-body">
+            <p className="text-gray-700 mb-6">
               អ្នកមានការផ្លាស់ប្តូរវត្តមានដែលមិនទាន់បានរក្សាទុក។
               តើអ្នកចង់បោះបង់ការផ្លាស់ប្តូរទាំងនេះមែនទេ?
             </p>
@@ -597,19 +585,19 @@ export default function AttendancePage() {
             <div className="flex gap-3">
               <button
                 onClick={handleCancelChange}
-                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors font-khmer-body"
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
               >
                 បោះបង់ • Cancel
               </button>
               <button
                 onClick={handleDiscardChanges}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/30 font-khmer-body"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-red-700 transition-all shadow-lg shadow-orange-500/30"
               >
                 បោះបង់ការផ្លាស់ប្តូរ • Discard
               </button>
             </div>
 
-            <p className="text-xs text-gray-500 mt-4 text-center font-khmer-body">
+            <p className="text-xs text-gray-500 mt-4 text-center">
               ចំណាំ: ការផ្លាស់ប្តូរនឹងត្រូវរក្សាទុកស្វ័យប្រវត្តិក្នុងរយៈពេល
               500ms
             </p>
@@ -622,39 +610,45 @@ export default function AttendancePage() {
 
       {/* Print Preview Modal */}
       {showPrintPreview && gridData && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-[95vw] max-h-[95vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-xl font-bold text-gray-900">
-                មើលមុនពេលបោះពុម្ព • Print Preview
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handlePrintNow}
-                  className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
-                >
-                  <Printer className="w-5 h-5" />
-                  <span>បោះពុម្ព</span>
-                </button>
-                <button
-                  onClick={handleClosePrintPreview}
-                  className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all"
-                >
-                  បិទ
-                </button>
+        <>
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-[95vw] max-h-[95vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 className="text-xl font-bold text-gray-900">
+                  មើលមុនពេលបោះពុម្ព • Print Preview
+                </h3>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handlePrintNow}
+                    className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
+                  >
+                    <Printer className="w-5 h-5" />
+                    <span>បោះពុម្ព</span>
+                  </button>
+                  <button
+                    onClick={handleClosePrintPreview}
+                    className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all"
+                  >
+                    បិទ
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Print Content */}
-            <div className="flex-1 overflow-auto p-6 bg-gray-100">
-              <div className="mx-auto bg-white shadow-lg" style={{ width: "297mm" }}>
-                <div ref={pdfReportRef} className="print-content">
+              {/* Print Content Preview */}
+              <div className="flex-1 overflow-auto p-6 bg-gray-100">
+                <div
+                  className="mx-auto bg-white shadow-lg"
+                  style={{ width: "297mm" }}
+                >
                   <AttendanceReportPDF
                     gridData={gridData}
                     schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
                     province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
-                    reportDate={new Date().getDate().toString().padStart(2, "0")}
+                    reportDate={new Date()
+                      .getDate()
+                      .toString()
+                      .padStart(2, "0")}
                     principalName=""
                     teacherName={currentUser?.name || ""}
                   />
@@ -663,32 +657,57 @@ export default function AttendancePage() {
             </div>
           </div>
 
-          {/* Print-only styles */}
+          {/* Hidden print content */}
+          <div className="print-only">
+            <AttendanceReportPDF
+              gridData={gridData}
+              schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
+              province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
+              reportDate={new Date().getDate().toString().padStart(2, "0")}
+              principalName=""
+              teacherName={currentUser?.name || ""}
+            />
+          </div>
+
+          {/* Print styles */}
           <style jsx global>{`
+            .no-print {
+              display: block;
+            }
+
+            .print-only {
+              display: none;
+            }
+
             @media print {
               @page {
                 size: A4 landscape;
-                margin: 0.5cm;
+                margin: 0 5cm;
               }
 
               body * {
                 visibility: hidden;
               }
 
-              .print-content,
-              .print-content * {
-                visibility: visible;
+              .no-print {
+                display: none !important;
               }
 
-              .print-content {
+              .print-only {
+                display: block !important;
+                visibility: visible !important;
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
               }
+
+              .print-only * {
+                visibility: visible !important;
+              }
             }
           `}</style>
-        </div>
+        </>
       )}
     </div>
   );
