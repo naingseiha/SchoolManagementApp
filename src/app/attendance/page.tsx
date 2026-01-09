@@ -83,6 +83,14 @@ export default function AttendancePage() {
   const [error, setError] = useState<string | null>(null);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
 
+  // ✅ Signature section fields
+  const [signatureLocation, setSignatureLocation] = useState("សៀមរាប");
+  const [signatureDay, setSignatureDay] = useState(new Date().getDate().toString());
+  const [signatureMonth, setSignatureMonth] = useState(MONTHS[new Date().getMonth()]?.label || "មករា");
+  const [signatureYear, setSignatureYear] = useState(new Date().getFullYear().toString());
+  const [principalName, setPrincipalName] = useState("");
+  const [teacherName, setTeacherName] = useState("");
+
   // ✅ Track unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
@@ -614,24 +622,89 @@ export default function AttendancePage() {
           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 no-print">
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-[95vw] max-h-[95vh] flex flex-col">
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900">
-                  មើលមុនពេលបោះពុម្ព • Print Preview
-                </h3>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handlePrintNow}
-                    className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
-                  >
-                    <Printer className="w-5 h-5" />
-                    <span>បោះពុម្ព</span>
-                  </button>
-                  <button
-                    onClick={handleClosePrintPreview}
-                    className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all"
-                  >
-                    បិទ
-                  </button>
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    មើលមុនពេលបោះពុម្ព • Print Preview
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handlePrintNow}
+                      className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                      <Printer className="w-5 h-5" />
+                      <span>បោះពុម្ព</span>
+                    </button>
+                    <button
+                      onClick={handleClosePrintPreview}
+                      className="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all"
+                    >
+                      បិទ
+                    </button>
+                  </div>
+                </div>
+
+                {/* Signature Fields */}
+                <div className="grid grid-cols-6 gap-3 text-sm">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">ទីកន្លែង</label>
+                    <input
+                      type="text"
+                      value={signatureLocation}
+                      onChange={(e) => setSignatureLocation(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">ថ្ងៃទី</label>
+                    <input
+                      type="text"
+                      value={signatureDay}
+                      onChange={(e) => setSignatureDay(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">ខែ</label>
+                    <select
+                      value={signatureMonth}
+                      onChange={(e) => setSignatureMonth(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {MONTHS.map((m) => (
+                        <option key={m.value} value={m.label}>{m.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">ឆ្នាំ</label>
+                    <input
+                      type="text"
+                      value={signatureYear}
+                      onChange={(e) => setSignatureYear(e.target.value)}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">នាយកសាលា</label>
+                    <input
+                      type="text"
+                      value={principalName}
+                      onChange={(e) => setPrincipalName(e.target.value)}
+                      placeholder="ឈ្មោះ"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">គ្រូទទួលបន្ទុក</label>
+                    <input
+                      type="text"
+                      value={teacherName}
+                      onChange={(e) => setTeacherName(e.target.value)}
+                      placeholder="ឈ្មោះ"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -639,18 +712,22 @@ export default function AttendancePage() {
               <div className="flex-1 overflow-auto p-6 bg-gray-100">
                 <div
                   className="mx-auto bg-white shadow-lg"
-                  style={{ width: "297mm" }}
+                  style={{
+                    width: "297mm",
+                    padding: "0.5cm",
+                    boxSizing: "border-box",
+                  }}
                 >
                   <AttendanceReportPDF
                     gridData={gridData}
                     schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
                     province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
-                    reportDate={new Date()
-                      .getDate()
-                      .toString()
-                      .padStart(2, "0")}
-                    principalName=""
-                    teacherName={currentUser?.name || ""}
+                    signatureLocation={signatureLocation}
+                    signatureDay={signatureDay}
+                    signatureMonth={signatureMonth}
+                    signatureYear={signatureYear}
+                    principalName={principalName}
+                    teacherName={teacherName}
                   />
                 </div>
               </div>
@@ -663,9 +740,12 @@ export default function AttendancePage() {
               gridData={gridData}
               schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
               province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
-              reportDate={new Date().getDate().toString().padStart(2, "0")}
-              principalName=""
-              teacherName={currentUser?.name || ""}
+              signatureLocation={signatureLocation}
+              signatureDay={signatureDay}
+              signatureMonth={signatureMonth}
+              signatureYear={signatureYear}
+              principalName={principalName}
+              teacherName={teacherName}
             />
           </div>
 

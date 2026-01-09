@@ -6,7 +6,10 @@ interface AttendanceReportPDFProps {
   gridData: AttendanceGridData;
   schoolName?: string;
   province?: string;
-  reportDate?: string;
+  signatureLocation?: string;
+  signatureDay?: string;
+  signatureMonth?: string;
+  signatureYear?: string;
   principalName?: string;
   teacherName?: string;
 }
@@ -15,7 +18,10 @@ export default function AttendanceReportPDF({
   gridData,
   schoolName = "វិទ្យាល័យ ហ៊ុន សែន យធំ",
   province = "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប",
-  reportDate = "",
+  signatureLocation = "សៀមរាប",
+  signatureDay = "",
+  signatureMonth = "",
+  signatureYear = "",
   principalName = "",
   teacherName = "",
 }: AttendanceReportPDFProps) {
@@ -86,6 +92,10 @@ export default function AttendanceReportPDF({
         @font-face {
           font-family: "Khmer OS Battambang";
           src: local("Khmer OS Battambang"), local("KhmerOSBattambang");
+        }
+        @font-face {
+          font-family: "Tacteing";
+          src: local("Tacteing");
         }
 
         . attendance-report {
@@ -177,6 +187,7 @@ export default function AttendanceReportPDF({
           text-align: center;
           font-size: 7px;
           font-weight: bold;
+          font-family: "Khmer OS Battambang", Arial, sans-serif;
         }
 
         .total-cell {
@@ -186,6 +197,7 @@ export default function AttendanceReportPDF({
           padding: 1px;
           text-align: center;
           font-size: 7px;
+          font-family: "Khmer OS Battambang", Arial, sans-serif;
         }
 
         .student-name {
@@ -197,6 +209,7 @@ export default function AttendanceReportPDF({
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          font-family: "Khmer OS Battambang", Arial, sans-serif;
         }
 
         .day-header {
@@ -204,6 +217,7 @@ export default function AttendanceReportPDF({
           font-weight: bold;
           text-align: center;
           padding: 1px 0.5px;
+          font-family: "Khmer OS Battambang", Arial, sans-serif;
         }
 
         .session-header {
@@ -211,6 +225,7 @@ export default function AttendanceReportPDF({
           text-align: center;
           padding: 0.5px;
           font-weight: 600;
+          font-family: "Khmer OS Battambang", Arial, sans-serif;
         }
       `}</style>
 
@@ -220,10 +235,9 @@ export default function AttendanceReportPDF({
             key={pageIndex}
             className="attendance-page attendance-report"
             style={{
-              width: "297mm",
+              width: "100%",
               minHeight: "auto",
               margin: "0 auto",
-              padding: "0. 5cm",
               boxSizing: "border-box",
               maxWidth: "100%",
               marginBottom: "20px",
@@ -234,8 +248,14 @@ export default function AttendanceReportPDF({
               <>
                 <div className="flex items-start justify-between mb-2">
                   {/* Left side */}
-                  <div className="text-left" style={{ fontSize: "9px" }}>
-                    <div className="font-semibold">{province}</div>
+                  <div
+                    className="text-left"
+                    style={{
+                      fontSize: "9px",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
+                    }}
+                  >
+                    <div className="font-semibold font-koulen">{province}</div>
                     <div
                       className="font-bold header-title"
                       style={{ fontSize: "11px" }}
@@ -244,7 +264,7 @@ export default function AttendanceReportPDF({
                     </div>
                   </div>
 
-                  {/* Center */}
+                  {/* Right side */}
                   <div className="text-center">
                     <div
                       className="header-title font-bold"
@@ -252,48 +272,40 @@ export default function AttendanceReportPDF({
                     >
                       ព្រះរាជាណាចក្រកម្ពុជា
                     </div>
-                    <div style={{ fontSize: "9px", marginBottom: "1px" }}>
+                    <div
+                      style={{ fontSize: "12px", marginBottom: "1px" }}
+                      className="header-title"
+                    >
                       ជាតិ សាសនា ព្រះមហាក្សត្រ
                     </div>
-                    <div className="flex justify-center items-center gap-1">
-                      <div
-                        style={{
-                          width: "25px",
-                          height: "1px",
-                          background: "#000",
-                        }}
-                      ></div>
-                      <div
-                        style={{
-                          width: "4px",
-                          height: "4px",
-                          borderRadius: "50%",
-                          background: "#000",
-                        }}
-                      ></div>
-                      <div
-                        style={{
-                          width: "25px",
-                          height: "1px",
-                          background: "#000",
-                        }}
-                      ></div>
+                    <div
+                      className="text-red-600"
+                      style={{
+                        fontFamily: "'Tacteing', serif",
+                        letterSpacing: "0.1em",
+                        fontSize: "22px",
+                        marginTop: "0px",
+                      }}
+                    >
+                      3
                     </div>
                   </div>
-
-                  {/* Right side - Empty for balance */}
-                  <div style={{ width: "180px" }}></div>
                 </div>
 
                 {/* Title */}
                 <div className="text-center mb-2">
-                  <h2
+                  <h1
                     className="header-title font-bold"
                     style={{ fontSize: "13px", marginBottom: "2px" }}
                   >
-                    តារាងវត្តមាន
-                  </h2>
-                  <div style={{ fontSize: "9px" }}>
+                    សម្រង់អវត្តមានសិស្ស
+                  </h1>
+                  <div
+                    style={{
+                      fontSize: "9px",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
+                    }}
+                  >
                     <span>ខែ: {gridData.month} </span>
                     <span className="mx-1">•</span>
                     <span>
@@ -306,7 +318,14 @@ export default function AttendanceReportPDF({
                   >
                     {gridData.className}
                     {totalPages > 1 && (
-                      <span style={{ fontSize: "8px", marginLeft: "8px" }}>
+                      <span
+                        style={{
+                          fontSize: "8px",
+                          marginLeft: "8px",
+                          fontFamily:
+                            "'Khmer OS Battambang', Arial, sans-serif",
+                        }}
+                      >
                         (ទំព័រ {pageIndex + 1}/{totalPages})
                       </span>
                     )}
@@ -324,7 +343,13 @@ export default function AttendanceReportPDF({
                 >
                   {gridData.className} - តារាងវត្តមាន {gridData.month}{" "}
                   {gridData.year}
-                  <span style={{ fontSize: "8px", marginLeft: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "8px",
+                      marginLeft: "8px",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
+                    }}
+                  >
                     (ទំព័រ {pageIndex + 1}/{totalPages})
                   </span>
                 </div>
@@ -349,6 +374,7 @@ export default function AttendanceReportPDF({
                       padding: "2px 1px",
                       fontSize: "7px",
                       fontWeight: "bold",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
                     }}
                   >
                     ល. រ
@@ -360,6 +386,7 @@ export default function AttendanceReportPDF({
                       fontSize: "7px",
                       fontWeight: "bold",
                       textAlign: "left",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
                     }}
                   >
                     គោត្តនាម និងនាម
@@ -385,6 +412,7 @@ export default function AttendanceReportPDF({
                       padding: "2px 1px",
                       fontSize: "7px",
                       fontWeight: "bold",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
                     }}
                   >
                     សរុប
@@ -545,7 +573,10 @@ export default function AttendanceReportPDF({
             {/* Summary */}
             <div
               className="mt-2 flex items-center gap-4"
-              style={{ fontSize: "7px" }}
+              style={{
+                fontSize: "7px",
+                fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
+              }}
             >
               <div>
                 <strong>សិស្សសរុប:</strong> {gridData.students.length} នាក់
@@ -574,6 +605,7 @@ export default function AttendanceReportPDF({
                       justifyContent: "center",
                       fontSize: "6px",
                       fontWeight: "bold",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
                     }}
                   >
                     A
@@ -592,6 +624,7 @@ export default function AttendanceReportPDF({
                       justifyContent: "center",
                       fontSize: "6px",
                       fontWeight: "bold",
+                      fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
                     }}
                   >
                     P
@@ -603,26 +636,43 @@ export default function AttendanceReportPDF({
 
             {/* Footer - Only on last page */}
             {pageIndex === totalPages - 1 && (
-              <div className="mt-4 flex justify-between items-end">
-                <div className="text-left" style={{ fontSize: "8px" }}>
+              <div className="mt-4 flex justify-between items-start">
+                <div
+                  className="text-center"
+                  style={{
+                    fontSize: "8px",
+                    fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
+                  }}
+                >
                   <div>
-                    {province.split(" ").slice(0, 2).join(" ")}, ថ្ងៃទី
-                    {reportDate || "___"}
+                    {signatureLocation} ថ្ងៃទី{signatureDay} ខែ{signatureMonth}{" "}
+                    ឆ្នាំ{signatureYear}
                   </div>
-                  <div className="mt-1 font-semibold">បានឃើញ និងឯកភាព</div>
-                  <div className="mt-1 font-bold">នាយកសាលា</div>
-                  <div className="mt-6 font-semibold">
+                  <div className="mt-1 font-semibold header-title">
+                    បានឃើញ និងឯកភាព
+                  </div>
+                  <div className="mt-6 font-semibold text-blue-600">
                     {principalName || ""}
                   </div>
                 </div>
 
-                <div className="text-right" style={{ fontSize: "8px" }}>
+                <div
+                  className="text-center"
+                  style={{
+                    fontSize: "8px",
+                    fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
+                  }}
+                >
                   <div>
-                    {province.split(" ").slice(0, 2).join(" ")}, ថ្ងៃទី
-                    {reportDate || "___"}
+                    {signatureLocation} ថ្ងៃទី{signatureDay} ខែ{signatureMonth}{" "}
+                    ឆ្នាំ{signatureYear}
                   </div>
-                  <div className="mt-1 font-semibold">គ្រូទទួលបន្ទុកថ្នាក់</div>
-                  <div className="mt-8 font-semibold">{teacherName || ""}</div>
+                  <div className="mt-1 font-semibold header-title">
+                    គ្រូទទួលបន្ទុកថ្នាក់
+                  </div>
+                  <div className="mt-8 font-semibold text-blue-600">
+                    {teacherName || ""}
+                  </div>
                 </div>
               </div>
             )}
