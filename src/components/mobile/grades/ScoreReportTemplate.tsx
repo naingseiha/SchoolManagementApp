@@ -40,14 +40,10 @@ export default function ScoreReportTemplate({
     (s) => s.score !== null && s.score >= maxScore * 0.5
   ).length;
 
-  const averageScore =
-    studentsWithScores > 0
-      ? (
-          students
-            .filter((s) => s.score !== null)
-            .reduce((sum, s) => sum + (s.score || 0), 0) / studentsWithScores
-        ).toFixed(2)
-      : "0.00";
+  // ✅ NEW: Count students without scores (blank or zero)
+  const studentsWithoutScore = students.filter(
+    (s) => s.score === null || s.score === 0
+  ).length;
 
   const passRate =
     totalStudents > 0
@@ -116,10 +112,12 @@ export default function ScoreReportTemplate({
           <p className="text-xs text-green-600">ជាប់</p>
           <p className="text-[10px] text-gray-500">Pass</p>
         </div>
-        <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-purple-700">{averageScore}</p>
-          <p className="text-xs text-purple-600">មធ្យម</p>
-          <p className="text-[10px] text-gray-500">Average</p>
+        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-red-700">
+            {studentsWithoutScore}
+          </p>
+          <p className="text-xs text-red-600">គ្មានពិន្ទុ</p>
+          <p className="text-[10px] text-gray-500">No Score</p>
         </div>
         <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 text-center">
           <p className="text-2xl font-bold text-orange-700">{passRate}%</p>

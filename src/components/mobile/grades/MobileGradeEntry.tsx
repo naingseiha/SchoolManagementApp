@@ -14,8 +14,6 @@ import {
   Users,
   Shield,
   RefreshCw,
-  Share2,
-  Image as ImageIcon,
   FileText,
 } from "lucide-react";
 import html2canvas from "html2canvas";
@@ -135,7 +133,6 @@ export default function MobileGradeEntry({
   const [confirmedAt, setConfirmedAt] = useState<Date | null>(null);
 
   // ✅ NEW: Export state
-  const [showExportOptions, setShowExportOptions] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportReportRef = useRef<HTMLDivElement>(null);
 
@@ -590,78 +587,7 @@ export default function MobileGradeEntry({
     }, 300);
   }, [students, savingStudents]);
 
-  // ✅ NEW: Export as Image (PNG)
-  const exportAsImage = useCallback(async () => {
-    if (!exportReportRef.current || !currentSubject || !gridData) return;
-
-    setIsExporting(true);
-    try {
-      // Wait for fonts and images to load
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const canvas = await html2canvas(exportReportRef.current, {
-        scale: 2, // Higher quality
-        backgroundColor: "#ffffff",
-        logging: false,
-        useCORS: true,
-      });
-
-      // Convert to blob
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          alert("មានបញ្ហាក្នុងការបង្កើតរូបភាព • Failed to create image");
-          setIsExporting(false);
-          return;
-        }
-
-        const fileName = `${gridData.className}_${currentSubject.code}_${selectedMonth}_${selectedYear}.png`;
-
-        // Try Web Share API first (best for mobile)
-        if (navigator.share && navigator.canShare) {
-          try {
-            const file = new File([blob], fileName, { type: "image/png" });
-            const shareData = {
-              title: `${gridData.className} - ${currentSubject.nameKh}`,
-              text: `ពិន្ទុ ${currentSubject.nameKh} - ${selectedMonth} ${selectedYear}`,
-              files: [file],
-            };
-
-            if (navigator.canShare(shareData)) {
-              await navigator.share(shareData);
-              setIsExporting(false);
-              setShowExportOptions(false);
-              return;
-            }
-          } catch (error: any) {
-            // User cancelled or error - fall through to download
-            if (error.name !== "AbortError") {
-              console.log("Share failed, falling back to download");
-            }
-          }
-        }
-
-        // Fallback: Download image
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        alert("រូបភាពត្រូវបានរក្សាទុក ✓\nImage downloaded successfully!");
-        setIsExporting(false);
-        setShowExportOptions(false);
-      }, "image/png");
-    } catch (error: any) {
-      console.error("Export error:", error);
-      alert(`មានបញ្ហា: ${error.message}`);
-      setIsExporting(false);
-    }
-  }, [currentSubject, gridData, selectedMonth, selectedYear]);
-
-  // ✅ NEW: Export as PDF
+  // ✅ NEW: Export as PDF (Optimized with multi-page support)
   const exportAsPDF = useCallback(async () => {
     if (!exportReportRef.current || !currentSubject || !gridData) return;
 
@@ -670,14 +596,17 @@ export default function MobileGradeEntry({
       // Wait for fonts and images to load
       await new Promise((resolve) => setTimeout(resolve, 500));
 
+      // Use lower scale and JPEG for smaller file size
       const canvas = await html2canvas(exportReportRef.current, {
-        scale: 2,
+        scale: 1.2, // Reduced from 2 to 1.2 for smaller file size
         backgroundColor: "#ffffff",
         logging: false,
         useCORS: true,
       });
 
-      const imgData = canvas.toDataURL("image/png");
+      // Use JPEG with quality setting for much smaller file size
+      const imgData = canvas.toDataURL("image/jpeg", 0.85); // JPEG at 85% quality
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
@@ -688,17 +617,33 @@ export default function MobileGradeEntry({
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
-      const ratio = canvasWidth / canvasHeight;
-      const width = pdfWidth;
-      const height = width / ratio;
 
-      // Add image to PDF
-      pdf.addImage(imgData, "PNG", 0, 0, width, height);
+      // Calculate how many pages we need
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvasHeight * pdfWidth) / canvasWidth;
+      let heightLeft = imgHeight;
+      let position = 0;
+      let page = 1;
+
+      // Add first page
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Add additional pages if content is too long
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+        page++;
+      }
 
       const fileName = `${gridData.className}_${currentSubject.code}_${selectedMonth}_${selectedYear}.pdf`;
 
       // Get PDF as blob
       const pdfBlob = pdf.output("blob");
+      const fileSizeKB = (pdfBlob.size / 1024).toFixed(0);
+      console.log(`PDF generated: ${fileSizeKB}KB, ${page} page(s)`);
 
       // Try Web Share API first
       if (navigator.share && navigator.canShare) {
@@ -715,7 +660,6 @@ export default function MobileGradeEntry({
           if (navigator.canShare(shareData)) {
             await navigator.share(shareData);
             setIsExporting(false);
-            setShowExportOptions(false);
             return;
           }
         } catch (error: any) {
@@ -728,9 +672,10 @@ export default function MobileGradeEntry({
 
       // Fallback: Download PDF
       pdf.save(fileName);
-      alert("ឯកសារ PDF ត្រូវបានរក្សាទុក ✓\nPDF downloaded successfully!");
+      alert(
+        `✓ PDF រក្សាទុករួច (${fileSizeKB}KB, ${page} ទំព័រ)\nPDF saved successfully (${fileSizeKB}KB, ${page} page(s))!`
+      );
       setIsExporting(false);
-      setShowExportOptions(false);
     } catch (error: any) {
       console.error("PDF export error:", error);
       alert(`មានបញ្ហា: ${error.message}`);
@@ -1076,26 +1021,38 @@ export default function MobileGradeEntry({
             )}
 
             {/* ✅ NEW: Export Score Report Button */}
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl shadow-sm border-2 border-blue-200 p-4">
+            <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl shadow-sm border-2 border-red-200 p-4">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Share2 className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <FileText className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
                   <p className="font-battambang text-sm font-bold text-gray-900 mb-1">
-                    ចែករំលែករបាយការណ៍ពិន្ទុ
+                    នាំចេញរបាយការណ៍ជា PDF
                   </p>
                   <p className="font-battambang text-xs text-gray-600 mb-3">
-                    ផ្ញើរបាយការណ៍ពិន្ទុទៅសិស្សដើម្បីពិនិត្យ • Share score report with
-                    students to verify
+                    ផ្ញើ PDF ទៅសិស្សដើម្បីពិនិត្យពិន្ទុមុនពេលបញ្ជាក់ • Share PDF with
+                    students to verify before confirming
                   </p>
                   <button
-                    onClick={() => setShowExportOptions(true)}
-                    disabled={students.filter((s) => s.score !== null).length === 0}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-battambang font-bold text-sm py-3 px-4 rounded-xl active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2"
+                    onClick={exportAsPDF}
+                    disabled={
+                      students.filter((s) => s.score !== null).length === 0 ||
+                      isExporting
+                    }
+                    className="w-full bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-battambang font-bold text-sm py-3 px-4 rounded-xl active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2"
                   >
-                    <Download className="w-4 h-4" />
-                    នាំចេញ និងចែករំលែក • Export & Share
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        កំពុងនាំចេញ...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        នាំចេញជា PDF • Export as PDF
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1397,120 +1354,6 @@ export default function MobileGradeEntry({
                     សូមបញ្ចូលពិន្ទុឱ្យគ្រប់សិស្ស
                   </p>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ✅ NEW: Export Options Modal */}
-        {showExportOptions && currentSubject && gridData && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <div className="bg-white w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 sm:rounded-t-3xl rounded-t-3xl">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                      <Share2 className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="font-koulen text-xl text-white">
-                        នាំចេញរបាយការណ៍
-                      </h2>
-                      <p className="font-battambang text-xs text-blue-100">
-                        Export Score Report
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowExportOptions(false)}
-                    className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center hover:bg-white/30 transition-all"
-                  >
-                    <span className="text-white text-2xl leading-none">×</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Export Options */}
-              <div className="p-6 space-y-3">
-                <div className="mb-4">
-                  <p className="font-battambang text-sm text-gray-700 mb-1">
-                    <strong>{gridData.className}</strong> - {currentSubject.nameKh}
-                  </p>
-                  <p className="font-battambang text-xs text-gray-500">
-                    {selectedMonth} {selectedYear} • {students.length} សិស្ស
-                  </p>
-                </div>
-
-                {/* Image Export Button */}
-                <button
-                  onClick={exportAsImage}
-                  disabled={isExporting}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl p-4 shadow-lg active:scale-[0.98] transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
-                      {isExporting ? (
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      ) : (
-                        <ImageIcon className="w-6 h-6" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-battambang font-bold text-base mb-0.5">
-                        នាំចេញជារូបភាព (PNG)
-                      </p>
-                      <p className="font-battambang text-xs text-purple-100">
-                        ល្អសម្រាប់ WhatsApp, Telegram • Best for messaging apps
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* PDF Export Button */}
-                <button
-                  onClick={exportAsPDF}
-                  disabled={isExporting}
-                  className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl p-4 shadow-lg active:scale-[0.98] transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
-                      {isExporting ? (
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      ) : (
-                        <FileText className="w-6 h-6" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-battambang font-bold text-base mb-0.5">
-                        នាំចេញជា PDF
-                      </p>
-                      <p className="font-battambang text-xs text-orange-100">
-                        ល្អសម្រាប់បោះពុម្ព • Best for printing & archiving
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Info */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mt-4">
-                  <p className="font-battambang text-xs text-blue-800">
-                    💡 ជម្រើសសម្រាប់ចែករំលែក៖ ប្រើរូបភាព (PNG) សម្រាប់ផ្ញើតាម
-                    messaging apps ឬ PDF សម្រាប់រក្សាទុក
-                  </p>
-                  <p className="font-battambang text-[10px] text-blue-600 mt-1">
-                    Tip: Use PNG for quick sharing, PDF for formal records
-                  </p>
-                </div>
-
-                {/* Cancel Button */}
-                <button
-                  onClick={() => setShowExportOptions(false)}
-                  disabled={isExporting}
-                  className="w-full bg-gray-100 hover:bg-gray-200 disabled:bg-gray-100 text-gray-700 font-battambang font-semibold text-sm py-3 px-6 rounded-xl active:scale-[0.98] transition-all"
-                >
-                  បោះបង់ • Cancel
-                </button>
               </div>
             </div>
           </div>
