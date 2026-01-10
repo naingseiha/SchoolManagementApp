@@ -11,6 +11,8 @@ interface ApiResponse<T = any> {
 
 class ApiClient {
   private baseURL: string;
+  private requestCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cacheDuration: number = 5000; // 5 seconds cache for repeated requests
 
   /*************  ✨ Windsurf Command ⭐  *************/
   /**
@@ -41,8 +43,18 @@ class ApiClient {
     return headers;
   }
 
-  async get<T = any>(endpoint: string): Promise<T> {
+  async get<T = any>(endpoint: string, useCache: boolean = false): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+
+    // Check cache for auth endpoints to reduce duplicate requests
+    if (useCache && endpoint === "/auth/me") {
+      const cached = this.requestCache.get(endpoint);
+      if (cached && Date.now() - cached.timestamp < this.cacheDuration) {
+        console.log("✅ Using cached response for:", endpoint);
+        return cached.data;
+      }
+    }
+
     console.log("📤 GET:", url);
 
     const headers = this.getHeaders();
@@ -68,16 +80,29 @@ class ApiClient {
       console.log("✅ GET Success");
 
       // ✅ Check if response has .data property
+      let result: T;
       if (data && typeof data === "object" && "data" in data) {
-        return data.data;
+        result = data.data;
+      } else {
+        // ✅ Otherwise return as is (direct array/object)
+        result = data;
       }
 
-      // ✅ Otherwise return as is (direct array/object)
-      return data;
+      // Cache the result for auth endpoints
+      if (useCache && endpoint === "/auth/me") {
+        this.requestCache.set(endpoint, { data: result, timestamp: Date.now() });
+      }
+
+      return result;
     } catch (error: any) {
       console.error("❌ GET Failed:", error);
       throw error;
     }
+  }
+
+  // Clear cache when needed (e.g., on logout)
+  clearCache() {
+    this.requestCache.clear();
   }
 
   async post<T = any>(endpoint: string, body?: any): Promise<T> {
