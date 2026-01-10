@@ -14,14 +14,10 @@ import {
   Users,
   BookOpen,
   Calendar,
-  Filter,
   Search,
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  ChevronRight,
-  ArrowLeft,
-  X,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { dashboardApi, ScoreProgressData, ClassProgress, SubjectProgress, ScoreStatus } from "@/lib/api/dashboard";
@@ -75,8 +71,11 @@ export default function MobileScoreProgressPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false); // New: For filter-based loading
+  const [showBlur, setShowBlur] = useState(false); // Delayed blur for smooth UX
 
   // Filters
+  const [filterMode, setFilterMode] = useState<"month" | "year">("month"); // New: Toggle between month and academic year view
   const [selectedMonth, setSelectedMonth] = useState(KHMER_MONTHS[new Date().getMonth()]);
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
@@ -85,8 +84,6 @@ export default function MobileScoreProgressPage() {
 
   // UI State
   const [expandedClasses, setExpandedClasses] = useState<Set<string>>(new Set());
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -94,11 +91,29 @@ export default function MobileScoreProgressPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Delayed blur effect to prevent flickering on fast loads
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (filterLoading) {
+      // Only show blur if loading takes more than 150ms
+      timer = setTimeout(() => setShowBlur(true), 150);
+    } else {
+      setShowBlur(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [filterLoading]);
+
   // Fetch data
-  const fetchData = useCallback(async (isRefresh = false) => {
+  const fetchData = useCallback(async (isRefresh = false, isFilterChange = false) => {
     if (isRefresh) {
       setRefreshing(true);
+    } else if (isFilterChange && data) {
+      // If we already have data and this is a filter change, use blur loading
+      setFilterLoading(true);
     } else {
+      // Initial load
       setLoading(true);
     }
     setError(null);
@@ -115,12 +130,25 @@ export default function MobileScoreProgressPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setFilterLoading(false);
     }
-  }, [selectedMonth, selectedYear, selectedGrade]);
+  }, [selectedMonth, selectedYear, selectedGrade, data]);
 
+  // Initial load
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!data) {
+      fetchData(false, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Filter changes
+  useEffect(() => {
+    if (data) {
+      fetchData(false, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, selectedYear, selectedGrade]);
 
   // Pull to refresh
   const handleRefresh = useCallback(() => {
@@ -224,6 +252,16 @@ export default function MobileScoreProgressPage() {
         </div>
       )}
 
+      {/* Filter Loading Blur Overlay */}
+      {showBlur && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-white/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-3 border-2 border-teal-100 animate-in zoom-in-95 duration-200">
+            <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
+            <span className="text-base font-battambang font-bold text-gray-800">កំពុងផ្ទុកទិន្នន័យ...</span>
+          </div>
+        </div>
+      )}
+
       <div className="p-4 space-y-4">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-3">
@@ -249,31 +287,100 @@ export default function MobileScoreProgressPage() {
           </div>
         </div>
 
-        {/* Search and Filter Bar */}
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="ស្វែងរកថ្នាក់រៀន..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang"
-            />
+        {/* Modern Filter Section */}
+        <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-100 p-4 space-y-4">
+          {/* Filter Mode Toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFilterMode("month")}
+              className={`flex-1 py-2.5 px-4 rounded-xl font-battambang font-bold text-sm transition-all ${
+                filterMode === "month"
+                  ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <Calendar className="w-4 h-4 inline mr-1.5" />
+              តាមខែ
+            </button>
+            <button
+              onClick={() => setFilterMode("year")}
+              className={`flex-1 py-2.5 px-4 rounded-xl font-battambang font-bold text-sm transition-all ${
+                filterMode === "year"
+                  ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <BookOpen className="w-4 h-4 inline mr-1.5" />
+              ឆ្នាំសិក្សា
+            </button>
           </div>
-          <button
-            onClick={() => setShowFilters(true)}
-            className="bg-white border-2 border-gray-200 rounded-xl px-4 py-3 active:scale-95 transition-transform"
-          >
-            <Filter className="w-5 h-5 text-gray-600" />
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="bg-white border-2 border-gray-200 rounded-xl px-4 py-3 active:scale-95 transition-transform disabled:opacity-50"
-          >
-            <RefreshCw className={`w-5 h-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
-          </button>
+
+          {/* Filter Selects */}
+          <div className="grid grid-cols-2 gap-2">
+            {filterMode === "month" && (
+              <div className="col-span-1">
+                <label className="block text-xs font-battambang font-bold text-gray-600 mb-1.5">ខែ</label>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold text-sm bg-white"
+                >
+                  {KHMER_MONTHS.map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="col-span-1">
+              <label className="block text-xs font-battambang font-bold text-gray-600 mb-1.5">ឆ្នាំសិក្សា</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold text-sm bg-white"
+              >
+                {getAcademicYearOptions().map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Search and Additional Filters */}
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="ស្វែងរកថ្នាក់រៀន..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang text-sm"
+              />
+            </div>
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              className="px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold text-sm bg-white"
+            >
+              <option value="all">ទាំងអស់</option>
+              {[7, 8, 9, 10, 11, 12].map((grade) => (
+                <option key={grade} value={grade.toString()}>
+                  ថ្នាក់{grade}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="bg-gray-100 border-2 border-gray-200 rounded-xl px-3 py-2.5 active:scale-95 transition-transform disabled:opacity-50"
+            >
+              <RefreshCw className={`w-5 h-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Classes List */}
@@ -301,18 +408,6 @@ export default function MobileScoreProgressPage() {
         )}
       </div>
 
-      {/* Filter Bottom Sheet */}
-      {showFilters && (
-        <FilterBottomSheet
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          selectedGrade={selectedGrade}
-          onMonthChange={setSelectedMonth}
-          onYearChange={setSelectedYear}
-          onGradeChange={setSelectedGrade}
-          onClose={() => setShowFilters(false)}
-        />
-      )}
     </MobileLayout>
   );
 }
@@ -341,24 +436,32 @@ const GradeSection = memo(({ grade, expandedClasses, onToggleClass, searchQuery 
   return (
     <div className="space-y-3">
       {/* Grade Header */}
-      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-4 shadow-md">
-        <div className="flex items-center justify-between">
+      <div className="relative bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-5 shadow-lg overflow-hidden">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-white rounded-full"></div>
+          <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-white rounded-full"></div>
+        </div>
+
+        <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/25 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <span className="text-white font-black text-xl">{grade.grade}</span>
+            <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border-2 border-white/40">
+              <span className="text-white font-black text-2xl">{grade.grade}</span>
             </div>
             <div>
-              <h3 className="text-white font-battambang font-bold text-lg">
+              <h3 className="text-white font-battambang font-black text-xl drop-shadow-md">
                 ថ្នាក់ទី{grade.grade}
               </h3>
-              <p className="text-white/90 text-xs font-battambang">
-                {filteredClasses.length} ថ្នាក់
+              <p className="text-white/95 text-sm font-battambang font-bold">
+                {filteredClasses.length} ថ្នាក់រៀន
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-white font-black text-2xl">{grade.avgCompletion.toFixed(0)}%</p>
-            <p className="text-white/90 text-xs font-battambang">ការបញ្ចូល</p>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 border-2 border-white/30">
+              <p className="text-white font-black text-3xl drop-shadow-lg">{grade.avgCompletion.toFixed(0)}%</p>
+              <p className="text-white/95 text-xs font-battambang font-bold">ការបញ្ចូល</p>
+            </div>
           </div>
         </div>
       </div>
@@ -393,30 +496,56 @@ const ClassCard = memo(({ classData, isExpanded, onToggle }: ClassCardProps) => 
     return "text-red-600";
   }, [classData.completionStats.completionPercentage]);
 
+  const unverifiedCount = useMemo(() => {
+    return classData.subjects.filter(
+      s => s.scoreStatus.status === "COMPLETE" && !s.verification.isConfirmed
+    ).length;
+  }, [classData.subjects]);
+
   return (
-    <div className="bg-white rounded-2xl shadow-md border-2 border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-md border-2 border-gray-100 overflow-hidden hover:shadow-lg transition-all">
       {/* Card Header */}
       <button
         onClick={onToggle}
         className="w-full p-4 flex items-center justify-between active:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3 flex-1 text-left">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
             <Users className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-battambang font-black text-gray-900 truncate">{classData.name}</h4>
-            <p className="text-xs text-gray-600 font-battambang truncate">
-              {classData.studentCount} សិស្ស
-              {classData.homeroomTeacher && ` • ${classData.homeroomTeacher.khmerName}`}
-            </p>
+            <h4 className="font-battambang font-black text-gray-900 truncate text-base">{classData.name}</h4>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xs text-gray-600 font-battambang truncate">
+                {classData.studentCount} សិស្ស
+                {classData.homeroomTeacher && ` • ${classData.homeroomTeacher.khmerName}`}
+              </p>
+              {unverifiedCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-battambang font-bold">
+                  <ShieldAlert className="w-3 h-3" />
+                  {unverifiedCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="text-right">
-            <p className={`font-black text-lg ${completionColor}`}>
-              {classData.completionStats.completionPercentage.toFixed(0)}%
-            </p>
+          <div className="flex items-center gap-2">
+            {/* Completion Badge */}
+            <div className="flex flex-col items-center">
+              <div className={`font-black text-xl leading-none ${completionColor}`}>
+                {classData.completionStats.completionPercentage.toFixed(0)}%
+              </div>
+              <span className="text-[9px] text-gray-500 font-battambang font-bold uppercase tracking-wide">បញ្ចូល</span>
+            </div>
+            <div className="w-px h-10 bg-gray-200"></div>
+            {/* Verification Percentage */}
+            <div className="text-right">
+              <p className="font-black text-lg text-orange-600 leading-none">
+                {classData.completionStats.verificationPercentage.toFixed(0)}%
+              </p>
+              <p className="text-[10px] text-orange-600 font-battambang font-bold mt-0.5">ផ្ទៀងផ្ទាត់</p>
+            </div>
           </div>
           {isExpanded ? (
             <ChevronUp className="w-5 h-5 text-gray-400" />
@@ -428,27 +557,73 @@ const ClassCard = memo(({ classData, isExpanded, onToggle }: ClassCardProps) => 
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="border-t-2 border-gray-100 p-4 bg-gray-50 space-y-3">
-          {/* Progress Bar */}
-          <div>
-            <div className="flex justify-between text-xs mb-2 font-battambang font-bold">
-              <span className="text-gray-600">
-                {classData.completionStats.completedSubjects}/{classData.completionStats.totalSubjects} មុខវិជ្ជា
-              </span>
-              <span className={completionColor}>
-                {classData.completionStats.completionPercentage.toFixed(1)}%
-              </span>
+        <div className="border-t-2 border-gray-100 p-4 bg-gradient-to-b from-gray-50 to-white space-y-3">
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white border-2 border-blue-100 rounded-xl p-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <BookOpen className="w-4 h-4 text-blue-600" />
+                <p className="text-xs text-gray-600 font-battambang font-bold">ការបញ្ចូល</p>
+              </div>
+              <p className="text-lg font-black text-blue-600">
+                {classData.completionStats.completedSubjects}/{classData.completionStats.totalSubjects}
+              </p>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
-                style={{ width: `${classData.completionStats.completionPercentage}%` }}
-              />
+            <div className="bg-white border-2 border-orange-100 rounded-xl p-3 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="w-4 h-4 text-orange-600" />
+                <p className="text-xs text-gray-600 font-battambang font-bold">ផ្ទៀងផ្ទាត់</p>
+              </div>
+              <p className="text-lg font-black text-orange-600">
+                {classData.completionStats.verifiedSubjects}/{classData.completionStats.totalSubjects}
+              </p>
             </div>
           </div>
 
+          {/* Progress Bars */}
+          <div className="space-y-2">
+            <div>
+              <div className="flex justify-between text-xs mb-1.5 font-battambang font-bold">
+                <span className="text-gray-600">ការបញ្ចូលពិន្ទុ</span>
+                <span className={completionColor}>
+                  {classData.completionStats.completionPercentage.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="h-2.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
+                  style={{ width: `${classData.completionStats.completionPercentage}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs mb-1.5 font-battambang font-bold">
+                <span className="text-gray-600">ការផ្ទៀងផ្ទាត់</span>
+                <span className="text-orange-600">
+                  {classData.completionStats.verificationPercentage.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="h-2.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 transition-all duration-500"
+                  style={{ width: `${classData.completionStats.verificationPercentage}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Warning for unverified subjects */}
+          {unverifiedCount > 0 && (
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-3 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+              <p className="text-xs font-battambang font-bold text-yellow-800">
+                មាន {unverifiedCount} មុខវិជ្ជាត្រូវការផ្ទៀងផ្ទាត់
+              </p>
+            </div>
+          )}
+
           {/* Subjects Grid */}
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-2.5 pt-2">
             {classData.subjects.map((subject) => (
               <SubjectItem key={subject.id} subject={subject} />
             ))}
@@ -467,12 +642,12 @@ interface SubjectItemProps {
 
 const SubjectItem = memo(({ subject }: SubjectItemProps) => {
   const config = useMemo(() => STATUS_CONFIG[subject.scoreStatus.status], [subject.scoreStatus.status]);
-  const StatusIcon = config.icon;
+  const needsVerification = subject.scoreStatus.status === "COMPLETE" && !subject.verification.isConfirmed;
 
   const { borderColor, bgColor } = useMemo(() => {
-    if (subject.scoreStatus.status === "COMPLETE" && !subject.verification.isConfirmed) {
+    if (needsVerification) {
       return {
-        borderColor: "border-yellow-200",
+        borderColor: "border-yellow-300",
         bgColor: "bg-gradient-to-br from-yellow-50 to-amber-50",
       };
     }
@@ -480,10 +655,10 @@ const SubjectItem = memo(({ subject }: SubjectItemProps) => {
       borderColor: config.borderColor,
       bgColor: config.bgColor,
     };
-  }, [subject.scoreStatus.status, subject.verification.isConfirmed, config]);
+  }, [needsVerification, config]);
 
   return (
-    <div className={`p-3 rounded-xl border-2 ${borderColor} ${bgColor}`}>
+    <div className={`p-3 rounded-xl border-2 ${borderColor} ${bgColor} transition-all`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex-1 min-w-0">
           <h5 className="font-battambang font-black text-sm text-gray-900 truncate">
@@ -493,22 +668,22 @@ const SubjectItem = memo(({ subject }: SubjectItemProps) => {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {subject.verification.isConfirmed ? (
-            <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-lg font-battambang font-bold">
+            <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded-lg font-battambang font-bold shadow-sm">
               <Shield className="w-3 h-3" />
-              <span className="hidden sm:inline">ផ្ទៀងផ្ទាត់</span>
+              <span>ផ្ទៀងផ្ទាត់</span>
             </div>
           ) : (
-            <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-battambang font-bold ${
-              subject.scoreStatus.status === "COMPLETE"
-                ? "text-yellow-700 bg-yellow-100"
+            <div className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg font-battambang font-bold shadow-sm ${
+              needsVerification
+                ? "text-yellow-700 bg-yellow-100 animate-pulse"
                 : "text-gray-600 bg-gray-100"
             }`}>
               <ShieldAlert className="w-3 h-3" />
-              <span className="hidden sm:inline">មិនទាន់</span>
+              <span>មិនទាន់</span>
             </div>
           )}
-          <span className={`text-xs font-black px-2 py-1 rounded-lg ${
-            subject.scoreStatus.status === "COMPLETE" && !subject.verification.isConfirmed
+          <span className={`text-xs font-black px-2 py-1 rounded-lg shadow-sm ${
+            needsVerification
               ? "text-yellow-700 bg-yellow-100"
               : `${config.color} ${config.bgColor}`
           }`}>
@@ -518,132 +693,40 @@ const SubjectItem = memo(({ subject }: SubjectItemProps) => {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 rounded-full h-1.5">
+      <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
         <div
           className={`h-1.5 rounded-full ${config.progressColor} transition-all`}
           style={{ width: `${subject.scoreStatus.percentage}%` }}
         />
       </div>
+
+      {/* Warning Message for Unverified Complete Subjects */}
+      {needsVerification && (
+        <div className="flex items-start gap-2 bg-yellow-100 border-l-4 border-yellow-500 p-2 rounded-r-lg">
+          <AlertCircle className="w-4 h-4 text-yellow-700 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-battambang font-bold text-yellow-800 leading-tight">
+              ពិន្ទុបានបញ្ចូលរួចរាល់ តែមិនទាន់ផ្ទៀងផ្ទាត់ទេ
+            </p>
+            <p className="text-xs font-battambang text-yellow-700 mt-0.5 leading-tight">
+              សូមទាក់ទងគ្រូបង្រៀនដើម្បីផ្ទៀងផ្ទាត់ពិន្ទុ
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Info for Partial/Started */}
+      {(subject.scoreStatus.status === "PARTIAL" || subject.scoreStatus.status === "STARTED") && (
+        <div className="flex items-center gap-2 mt-2">
+          <div className="flex-1 bg-blue-50 border-l-4 border-blue-400 p-2 rounded-r-lg">
+            <p className="text-xs font-battambang font-bold text-blue-800">
+              បានបញ្ចូល {subject.scoreStatus.studentsWithScores}/{subject.scoreStatus.totalStudents} សិស្ស
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
 
 SubjectItem.displayName = "SubjectItem";
-
-interface FilterBottomSheetProps {
-  selectedMonth: string;
-  selectedYear: number;
-  selectedGrade: string;
-  onMonthChange: (month: string) => void;
-  onYearChange: (year: number) => void;
-  onGradeChange: (grade: string) => void;
-  onClose: () => void;
-}
-
-const FilterBottomSheet = memo(({
-  selectedMonth,
-  selectedYear,
-  selectedGrade,
-  onMonthChange,
-  onYearChange,
-  onGradeChange,
-  onClose,
-}: FilterBottomSheetProps) => {
-  const academicYearOptions = useMemo(() => getAcademicYearOptions(), []);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Bottom Sheet */}
-      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg sm:mx-4 max-h-[80vh] overflow-y-auto animate-slide-up">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 rounded-t-3xl z-10">
-          <div className="flex items-center justify-between p-4">
-            <h3 className="text-lg font-battambang font-black text-gray-900">តម្រង</h3>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-4">
-          {/* Month */}
-          <div>
-            <label className="block text-sm font-battambang font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              ខែ
-            </label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => onMonthChange(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold"
-            >
-              {KHMER_MONTHS.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Year */}
-          <div>
-            <label className="block text-sm font-battambang font-bold text-gray-700 mb-2">
-              ឆ្នាំសិក្សា
-            </label>
-            <select
-              value={selectedYear}
-              onChange={(e) => onYearChange(parseInt(e.target.value))}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold"
-            >
-              {academicYearOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Grade */}
-          <div>
-            <label className="block text-sm font-battambang font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              កម្រិត
-            </label>
-            <select
-              value={selectedGrade}
-              onChange={(e) => onGradeChange(e.target.value)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold"
-            >
-              <option value="all">ទាំងអស់</option>
-              {[7, 8, 9, 10, 11, 12].map((grade) => (
-                <option key={grade} value={grade.toString()}>
-                  ថ្នាក់ទី{grade}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Apply Button */}
-          <button
-            onClick={onClose}
-            className="w-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-battambang font-bold py-3 px-6 rounded-xl active:scale-95 transition-transform shadow-lg"
-          >
-            អនុវត្ត
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-FilterBottomSheet.displayName = "FilterBottomSheet";
