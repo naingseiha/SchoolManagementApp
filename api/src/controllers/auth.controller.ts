@@ -88,6 +88,7 @@ export const register = async (req: Request, res: Response) => {
           role: user.role,
         },
         token,
+        expiresIn: process.env.JWT_EXPIRES_IN || "365d",
       },
     });
   } catch (error: any) {
@@ -244,6 +245,7 @@ export const login = async (req: Request, res: Response) => {
           teacher: user.teacher,
         },
         token,
+        expiresIn: process.env.JWT_EXPIRES_IN || "365d",
       },
     });
   } catch (error: any) {

@@ -76,10 +76,10 @@ export const authApi = {
     }
   },
 
-  async getCurrentUser(): Promise<User> {
+  async getCurrentUser(useCache: boolean = false): Promise<User> {
     try {
       console.log("📤 Getting current user...");
-      const user = await apiClient.get<User>("/auth/me");
+      const user = await apiClient.get<User>("/auth/me", useCache);
       console.log("✅ Current user:", user.email || user.phone);
       return user;
     } catch (error: any) {

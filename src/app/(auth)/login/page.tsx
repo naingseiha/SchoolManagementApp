@@ -37,6 +37,12 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting || isLoading) {
+      return;
+    }
+
     setError("");
     setIsSubmitting(true);
 
@@ -45,15 +51,16 @@ export default function LoginPage() {
 
       if (!identifier || !password) {
         setError("សូមបំពេញលេខទូរស័ព្ទ និងពាក្យសម្ងាត់");
-        setIsSubmitting(false);
         return;
       }
 
       await login({ identifier, password, rememberMe });
+      // On success, login function will redirect, so we don't need to do anything here
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "ការចូលបរាជ័យ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នក។");
     } finally {
+      // Always reset isSubmitting to ensure button doesn't get stuck
       setIsSubmitting(false);
     }
   };
@@ -209,7 +216,7 @@ export default function LoginPage() {
                   htmlFor="rememberMe"
                   className="font-khmer-body ml-3 text-sm text-gray-700 cursor-pointer select-none"
                 >
-                  ចងចាំខ្ញុំ (៧ ថ្ងៃ)
+                  ចងចាំខ្ញុំ
                 </label>
               </div>
 

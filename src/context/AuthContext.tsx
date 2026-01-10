@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authApi, type LoginCredentials, type User } from "@/lib/api/auth";
+import { apiClient } from "@/lib/api/client";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -48,13 +49,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log("🔐 Token found, verifying with server...");
 
-        // ✅ Add timeout to prevent infinite loading
+        // ✅ Add timeout to prevent infinite loading (reduced to 5s for faster response)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("AUTH_TIMEOUT")), 10000)
+          setTimeout(() => reject(new Error("AUTH_TIMEOUT")), 5000)
         );
 
+        // Use cached request to speed up repeated auth checks
+        const authCheckPromise = authApi.getCurrentUser(true); // Pass true for caching
+
         const user = await Promise.race([
-          authApi.getCurrentUser(),
+          authCheckPromise,
           timeoutPromise,
         ]) as User;
 
@@ -174,7 +178,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null); // ✅ Clear previous errors
 
     try {
-      const result = await authApi.login(credentials);
+      // Add timeout to prevent getting stuck on slow network
+      const loginPromise = authApi.login(credentials);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("LOGIN_TIMEOUT")), 15000)
+      );
+
+      const result = await Promise.race([loginPromise, timeoutPromise]) as { token: string; user: any; expiresIn: string };
 
       console.log("✅ Login successful");
       console.log("  - User:", result.user.email || result.user.phone);
@@ -193,6 +203,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       setError(null);
 
+      // Clear any cached data before redirecting
+      apiClient.clearCache();
+
       console.log("📍 Redirecting based on role:", result.user.role);
 
       // Redirect to main dashboard (root page)
@@ -203,10 +216,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error("❌ Login failed:", err);
 
-      const errorMessage =
-        err.message === "Invalid credentials"
-          ? "លេខទូរស័ព្ទ/អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ\nInvalid phone/email or password"
-          : err.message || "ការចូលប្រើប្រាស់បរាជ័យ\nLogin failed";
+      let errorMessage: string;
+      if (err.message === "LOGIN_TIMEOUT") {
+        errorMessage = "ការភ្ជាប់យឺត សូមព្យាយាមម្តងទៀត\nConnection timeout, please try again";
+      } else if (err.message === "Invalid credentials") {
+        errorMessage = "លេខទូរស័ព្ទ/អ៊ីមែល ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ\nInvalid phone/email or password";
+      } else {
+        errorMessage = err.message || "ការចូលប្រើប្រាស់បរាជ័យ\nLogin failed";
+      }
 
       setError(errorMessage);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -223,6 +240,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("token");
     localStorage.removeItem("rememberMe");
     localStorage.removeItem("user");
+
+    // Clear API cache
+    apiClient.clearCache();
 
     setCurrentUser(null);
     setIsAuthenticated(false);
