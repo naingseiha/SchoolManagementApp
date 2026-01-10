@@ -425,7 +425,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 <button
                   onClick={() => router.push("/students")}
                   className="group relative bg-gradient-to-br from-cyan-50 to-blue-50 hover:from-cyan-100 hover:to-blue-100 rounded-3xl p-8 border-2 border-cyan-100 hover:border-cyan-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
@@ -494,6 +494,24 @@ export default function DashboardPage() {
                     </h4>
                     <p className="font-khmer-body text-xs text-gray-500 font-medium">
                       Statistics
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => router.push("/dashboard/score-progress")}
+                  className="group relative bg-gradient-to-br from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 rounded-3xl p-8 border-2 border-teal-100 hover:border-teal-200 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-teal-200/20 rounded-full blur-2xl group-hover:bg-teal-300/30 transition-all"></div>
+                  <div className="relative z-10">
+                    <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 group-hover:scale-110 transition-transform">
+                      <CheckCircle2 className="w-8 h-8 text-white" />
+                    </div>
+                    <h4 className="font-khmer-title text-xl text-gray-900 font-bold mb-1">
+                      ការបញ្ចូលពិន្ទុ
+                    </h4>
+                    <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                      Score Progress
                     </p>
                   </div>
                 </button>

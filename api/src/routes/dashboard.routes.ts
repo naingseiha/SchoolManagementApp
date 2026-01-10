@@ -25,4 +25,7 @@ router.get("/mobile-stats", DashboardController.getMobileDashboardStats);
 // Get comprehensive statistics with month/year filter and gender breakdown
 router.get("/comprehensive-stats", DashboardController.getComprehensiveStats);
 
+// Get score import progress dashboard
+router.get("/score-progress", DashboardController.getScoreProgress);
+
 export default router;

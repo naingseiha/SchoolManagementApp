@@ -14,6 +14,7 @@ import {
   MapPin,
   Bell,
   Sparkles,
+  CheckCircle,
 } from "lucide-react";
 import { dashboardApi, ComprehensiveStats } from "@/lib/api/dashboard";
 import DashboardSkeleton from "./DashboardSkeleton";
@@ -407,26 +408,6 @@ export default function SimpleMobileDashboard({
             </div>
           </button>
 
-          {/* Student List */}
-          <button
-            onClick={() => router.push("/students")}
-            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-sm">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-left flex-1">
-                <h4 className="font-koulen text-sm text-gray-800 font-bold">
-                  បញ្ជីសិស្ស
-                </h4>
-                <p className="font-battambang text-[10px] text-gray-500">
-                  {totalStats?.students || 0} សិស្ស
-                </p>
-              </div>
-            </div>
-          </button>
-
           {/* Statistics */}
           <button
             onClick={() => router.push("/statistics/mobile")}
@@ -442,6 +423,46 @@ export default function SimpleMobileDashboard({
                 </h4>
                 <p className="font-battambang text-[10px] text-gray-500">
                   ស្ថិតិលម្អិត
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Score Progress - NEW */}
+          <button
+            onClick={() => router.push("/dashboard/score-progress/mobile")}
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-sm">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-koulen text-sm text-gray-800 font-bold">
+                  ការបញ្ចូលពិន្ទុ
+                </h4>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  តារាងពិនិត្យ
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Student List */}
+          <button
+            onClick={() => router.push("/students")}
+            className="group bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center shadow-sm">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h4 className="font-koulen text-sm text-gray-800 font-bold">
+                  បញ្ជីសិស្ស
+                </h4>
+                <p className="font-battambang text-[10px] text-gray-500">
+                  {totalStats?.students || 0} សិស្ស
                 </p>
               </div>
             </div>

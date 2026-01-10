@@ -107,7 +107,8 @@
       "Bash(node fix-ui-fonts.js:*)",
       "Bash(node fix-koulen-to-battambang.js:*)",
       "Bash(node fix-koulen-correct.js:*)",
-      "Bash(file:*)"
+      "Bash(file:*)",
+      "Bash(node:*)"
     ]
   }
 }
