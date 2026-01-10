@@ -61,7 +61,7 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    // ✅ FIXED: Proper JWT signing
+    // ✅ FIXED: Proper JWT signing with 365 days expiration
     const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
     const token = jwt.sign(
       {
@@ -70,7 +70,7 @@ export const register = async (req: Request, res: Response) => {
         role: user.role,
       },
       jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
     );
 
     console.log("✅ User registered successfully:", user.id);
@@ -216,7 +216,7 @@ export const login = async (req: Request, res: Response) => {
       },
     });
 
-    // ✅ FIXED:  Proper JWT signing
+    // ✅ FIXED: Proper JWT signing with 365 days expiration
     const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
     const token = jwt.sign(
       {
@@ -225,7 +225,7 @@ export const login = async (req: Request, res: Response) => {
         role: user.role,
       },
       jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+      { expiresIn: process.env.JWT_EXPIRES_IN || "365d" }
     );
 
     console.log("✅ Login successful:", user.id);
@@ -287,7 +287,7 @@ export const refreshToken = async (req: Request, res: Response) => {
         role: decoded.role,
       },
       jwtSecret as string,
-      { expiresIn: (process.env.JWT_EXPIRES_IN || "7d") as string }
+      { expiresIn: (process.env.JWT_EXPIRES_IN || "365d") as string }
     );
 
     res.json({

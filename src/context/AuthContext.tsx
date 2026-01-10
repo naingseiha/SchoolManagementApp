@@ -9,11 +9,11 @@ interface AuthContextType {
   isAuthenticated: boolean;
   currentUser: User | null;
   login: (
-    credentials: LoginCredentials & { rememberMe?: boolean }
+    credentials: LoginCredentials
   ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
-  error: string | null; // ✅ ADDED: Error state
+  error: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,12 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("🔍 Checking authentication on page load...");
 
       const token = localStorage.getItem("token");
-      const rememberMe = localStorage.getItem("rememberMe");
+      const cachedUser = localStorage.getItem("user");
 
       console.log("📦 LocalStorage status:");
       console.log("  - Token exists:", token ? "YES" : "NO");
       console.log("  - Token length:", token?.length || 0);
-      console.log("  - Remember me:", rememberMe ? "YES" : "NO");
+      console.log("  - Cached user:", cachedUser ? "YES" : "NO");
 
       if (!token) {
         console.log("⏸️ No token found - user not authenticated");
@@ -46,12 +46,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      try {
-        console.log("🔐 Token found, verifying with server...");
+      // ✅ OPTIMIZATION: Use cached user for instant UI while verifying in background
+      if (cachedUser) {
+        try {
+          const parsedUser = JSON.parse(cachedUser);
+          console.log("⚡ Using cached user for instant auth:", parsedUser.email || parsedUser.phone);
+          setCurrentUser(parsedUser);
+          setIsAuthenticated(true);
+          setIsLoading(false); // Set loading to false immediately for better UX
+        } catch (e) {
+          console.log("⚠️ Failed to parse cached user, will verify with server");
+        }
+      }
 
-        // ✅ Add timeout to prevent infinite loading (reduced to 5s for faster response)
+      try {
+        console.log("🔐 Verifying token with server...");
+
+        // ✅ Increased timeout to 15s to prevent false timeouts on slow networks
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("AUTH_TIMEOUT")), 5000)
+          setTimeout(() => reject(new Error("AUTH_TIMEOUT")), 15000)
         );
 
         // Use cached request to speed up repeated auth checks
@@ -62,11 +75,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timeoutPromise,
         ]) as User;
 
-        console.log("✅ User authenticated:", user.email || user.phone);
+        console.log("✅ Server verification complete:", user.email || user.phone);
+        // Update with fresh data from server
         setCurrentUser(user);
         setIsAuthenticated(true);
-        setError(null); // ✅ Clear any previous errors
-        console.log("✅ Auth state set successfully");
+        setError(null);
+        // Update localStorage with fresh user data
+        localStorage.setItem("user", JSON.stringify(user));
+        console.log("✅ Auth state updated with fresh data");
 
         // ✅ Dispatch auth-ready event for DataContext
         if (typeof window !== "undefined") {
@@ -75,15 +91,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error: any) {
         console.error("❌ Auth check failed:", error);
 
-        // ✅ Handle timeout
+        // ✅ Handle timeout - KEEP token for retry, don't clear it
         if (error.message === "AUTH_TIMEOUT") {
-          console.log("⏱️ Auth check timed out - clearing token");
-          localStorage.removeItem("token");
-          localStorage.removeItem("rememberMe");
-          setCurrentUser(null);
-          setIsAuthenticated(false);
-          setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Connection timeout");
-          setIsLoading(false);
+          console.log("⏱️ Auth check timed out - keeping token for retry");
+          // If we have cached user, keep them authenticated (optimistic)
+          if (!cachedUser) {
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+            setIsLoading(false);
+          }
+          setError("មានបញ្ហាក្នុងការភ្ជាប់ទៅ server • Connection timeout - will retry");
           console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
           return;
         }
@@ -96,7 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ) {
           console.log("🗑️ Invalid token - clearing storage");
           localStorage.removeItem("token");
-          localStorage.removeItem("rememberMe");
           setCurrentUser(null);
           setIsAuthenticated(false);
           setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Please login again");
@@ -135,7 +151,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else {
               console.log("❌ Refresh failed - clearing storage");
               localStorage.removeItem("token");
-              localStorage.removeItem("rememberMe");
               setCurrentUser(null);
               setIsAuthenticated(false);
               setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Session expired");
@@ -143,20 +158,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (refreshError) {
             console.error("❌ Token refresh failed:", refreshError);
             localStorage.removeItem("token");
-            localStorage.removeItem("rememberMe");
             setCurrentUser(null);
             setIsAuthenticated(false);
             setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Session expired");
           }
         } else {
-          // Network error or server down
+          // Network error or server down - keep cached user if available
           console.log("⚠️ Network error - keeping token for retry");
-          setCurrentUser(null);
-          setIsAuthenticated(false);
-          setError("មានបញ្ហាក្នុងការភ្ជាប់ទៅ server • Connection error");
+          if (!cachedUser) {
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+          }
+          setError("មានបញ្ហាក្នុងការភ្ជាប់ទៅ server • Connection error - using cached data");
         }
       } finally {
-        setIsLoading(false);
+        // Only set loading to false if we haven't already (cached user scenario)
+        if (!cachedUser) {
+          setIsLoading(false);
+        }
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       }
     };
@@ -167,12 +186,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: {
     identifier: string; // ✅ Phone or Email
     password: string;
-    rememberMe?: boolean;
   }) => {
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("🔐 Login attempt from AuthContext:");
     console.log("  - Identifier:", credentials.identifier);
-    console.log("  - Remember me:", credentials.rememberMe);
 
     setIsLoading(true);
     setError(null); // ✅ Clear previous errors
@@ -191,13 +208,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("  - Role:", result.user.role);
       console.log("  - Token received:", result.token ? "YES" : "NO");
 
-      // Save token and user
+      // ✅ Always save token and user (no need for rememberMe checkbox)
       localStorage.setItem("token", result.token);
       localStorage.setItem("user", JSON.stringify(result.user));
-
-      if (credentials.rememberMe) {
-        localStorage.setItem("rememberMe", "true");
-      }
 
       setCurrentUser(result.user);
       setIsAuthenticated(true);
@@ -208,7 +221,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("📍 Redirecting based on role:", result.user.role);
 
-      // Redirect to main dashboard (root page)
+      // ✅ Prefetch dashboard for faster navigation
+      router.prefetch("/");
+
+      // Redirect to main dashboard (root page) - prefetch makes this instant
       console.log("→ Redirecting to dashboard");
       router.push("/");
 
@@ -238,7 +254,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("👋 Logging out...");
 
     localStorage.removeItem("token");
-    localStorage.removeItem("rememberMe");
     localStorage.removeItem("user");
 
     // Clear API cache
