@@ -1,4 +1,5 @@
 import type { Grade, GradeImportResult } from "@/types";
+import { apiClient } from "./client";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -233,5 +234,70 @@ export const gradeApi = {
     }
 
     return response.blob();
+  },
+
+  /**
+   * Confirm grades for a subject
+   */
+  async confirmGrades(
+    classId: string,
+    subjectId: string,
+    month: string,
+    year: number,
+    userId: string
+  ): Promise<{
+    id: string;
+    classId: string;
+    subjectId: string;
+    month: string;
+    year: number;
+    isConfirmed: boolean;
+    confirmedBy: string;
+    confirmedAt: Date;
+  }> {
+    const response = await apiClient.post("/grades/confirm", {
+      classId,
+      subjectId,
+      month,
+      year,
+      userId,
+    });
+
+    return response;
+  },
+
+  /**
+   * Get confirmations for a class
+   */
+  async getConfirmations(
+    classId: string,
+    month: string,
+    year: number
+  ): Promise<
+    Array<{
+      id: string;
+      classId: string;
+      subjectId: string;
+      month: string;
+      year: number;
+      isConfirmed: boolean;
+      confirmedBy: string;
+      confirmedAt: Date;
+      user: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+      };
+    }>
+  > {
+    const response = await apiClient.get(
+      `/grades/confirmations/${classId}?month=${encodeURIComponent(
+        month
+      )}&year=${year}`
+    );
+
+    return response;
   },
 };

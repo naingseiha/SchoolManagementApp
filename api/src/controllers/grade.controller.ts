@@ -656,6 +656,149 @@ export class GradeController {
       });
     }
   }
+
+  // ==================== GRADE CONFIRMATION METHODS ====================
+
+  /**
+   * Confirm grades for a specific class/subject/month/year
+   */
+  static async confirmGrades(req: Request, res: Response) {
+    try {
+      const { classId, subjectId, month, year, userId } = req.body;
+
+      if (!classId || !subjectId || !month || !year || !userId) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields",
+        });
+      }
+
+      // Check if confirmation already exists
+      const existing = await prisma.gradeConfirmation.findUnique({
+        where: {
+          classId_subjectId_month_year: {
+            classId,
+            subjectId,
+            month,
+            year,
+          },
+        },
+      });
+
+      let confirmation;
+      if (existing) {
+        // Update existing confirmation
+        confirmation = await prisma.gradeConfirmation.update({
+          where: { id: existing.id },
+          data: {
+            isConfirmed: true,
+            confirmedBy: userId,
+            confirmedAt: new Date(),
+          },
+        });
+      } else {
+        // Create new confirmation
+        confirmation = await prisma.gradeConfirmation.create({
+          data: {
+            classId,
+            subjectId,
+            month,
+            year,
+            isConfirmed: true,
+            confirmedBy: userId,
+          },
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Grades confirmed successfully",
+        data: confirmation,
+      });
+    } catch (error: any) {
+      console.error("❌ Confirm grades error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to confirm grades",
+      });
+    }
+  }
+
+  /**
+   * Get all confirmations for a class (optionally filtered by month/year)
+   */
+  static async getConfirmations(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { month, year } = req.query;
+
+      const where: any = { classId };
+      if (month) where.month = month as string;
+      if (year) where.year = parseInt(year as string);
+
+      const confirmations = await prisma.gradeConfirmation.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: [{ year: "desc" }, { month: "desc" }],
+      });
+
+      return res.json({
+        success: true,
+        data: confirmations,
+      });
+    } catch (error: any) {
+      console.error("❌ Get confirmations error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to get confirmations",
+      });
+    }
+  }
+
+  /**
+   * Remove grade confirmation (revert to unconfirmed state)
+   */
+  static async removeConfirmation(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const confirmation = await prisma.gradeConfirmation.findUnique({
+        where: { id },
+      });
+
+      if (!confirmation) {
+        return res.status(404).json({
+          success: false,
+          message: "Confirmation not found",
+        });
+      }
+
+      await prisma.gradeConfirmation.delete({
+        where: { id },
+      });
+
+      return res.json({
+        success: true,
+        message: "Confirmation removed successfully",
+      });
+    } catch (error: any) {
+      console.error("❌ Remove confirmation error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to remove confirmation",
+      });
+    }
+  }
 }
 
 // ==================== EXISTING FUNCTIONS (Keep as is) ====================
