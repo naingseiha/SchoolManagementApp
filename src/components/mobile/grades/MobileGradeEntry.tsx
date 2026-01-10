@@ -131,6 +131,16 @@ export default function MobileGradeEntry({
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [confirmedAt, setConfirmedAt] = useState<Date | null>(null);
+  const [confirmations, setConfirmations] = useState<
+    Map<
+      string,
+      {
+        id: string;
+        confirmedBy: string;
+        confirmedAt: Date;
+      }
+    >
+  >(new Map());
 
   // ✅ NEW: Export state
   const [isExporting, setIsExporting] = useState(false);
@@ -281,6 +291,32 @@ export default function MobileGradeEntry({
       if (editableSubjects.length === 1) {
         setSelectedSubject(editableSubjects[0].id);
       }
+
+      // ✅ Fetch confirmations after loading grid data
+      try {
+        const confirmationsData = await gradeApi.getConfirmations(
+          selectedClass,
+          selectedMonth,
+          selectedYear
+        );
+
+        // Convert array to Map for quick lookup
+        const confirmationMap = new Map(
+          confirmationsData.map((conf) => [
+            conf.subjectId,
+            {
+              id: conf.id,
+              confirmedBy: conf.confirmedBy,
+              confirmedAt: conf.confirmedAt,
+            },
+          ])
+        );
+
+        setConfirmations(confirmationMap);
+      } catch (error: any) {
+        console.error("Error loading confirmations:", error);
+        setConfirmations(new Map());
+      }
     } catch (err: any) {
       console.error("Error loading grades:", err);
       setError(err.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យ");
@@ -316,7 +352,17 @@ export default function MobileGradeEntry({
     });
 
     setStudents(studentGrades);
-  }, [gridData, selectedSubject, subjects]);
+
+    // ✅ Check if current subject is already confirmed
+    const confirmation = confirmations.get(selectedSubject);
+    if (confirmation) {
+      setIsConfirmed(true);
+      setConfirmedAt(new Date(confirmation.confirmedAt));
+    } else {
+      setIsConfirmed(false);
+      setConfirmedAt(null);
+    }
+  }, [gridData, selectedSubject, subjects, confirmations]);
 
   // ✅ FIX: Batch save function to save multiple students at once
   const executeBatchSave = useCallback(async () => {
@@ -422,13 +468,21 @@ export default function MobileGradeEntry({
       // ✅ Reset confirmation when scores change
       setIsConfirmed(false);
       setConfirmedAt(null);
+      // ✅ Remove from confirmations Map since scores changed
+      if (selectedSubject) {
+        setConfirmations((prev) => {
+          const updated = new Map(prev);
+          updated.delete(selectedSubject);
+          return updated;
+        });
+      }
 
       // ✅ FIX: Remove per-student timeout, use batch queue instead
       if (score !== null) {
         autoSaveScore(studentId, score);
       }
     },
-    [autoSaveScore]
+    [autoSaveScore, selectedSubject]
   );
 
   // ✅ Handle blur - trigger immediate save when user leaves input
@@ -556,7 +610,7 @@ export default function MobileGradeEntry({
   ]);
 
   // ✅ NEW: Handle confirmation
-  const handleConfirmScores = useCallback(() => {
+  const handleConfirmScores = useCallback(async () => {
     // Check if there are any unsaved changes
     if (saveQueueRef.current.size > 0 || savingStudents.size > 0) {
       alert(
@@ -576,16 +630,66 @@ export default function MobileGradeEntry({
       }
     }
 
-    // Mark as confirmed
-    setIsConfirmed(true);
-    setConfirmedAt(new Date());
-    setShowReviewModal(false);
+    // ✅ Call confirmation API
+    try {
+      if (!currentUser?.id) {
+        alert("មិនអាចបញ្ជាក់បាន • Cannot confirm: User not found");
+        return;
+      }
 
-    // Show success message
-    setTimeout(() => {
-      alert("ពិន្ទុត្រូវបានបញ្ជាក់ ✓\nScores confirmed successfully!");
-    }, 300);
-  }, [students, savingStudents]);
+      if (!selectedClass || !selectedSubject) {
+        alert("មិនអាចបញ្ជាក់បាន • Cannot confirm: Missing class or subject");
+        return;
+      }
+
+      // Show loading state
+      setIsVerifying(true);
+
+      const confirmationResult = await gradeApi.confirmGrades(
+        selectedClass,
+        selectedSubject,
+        selectedMonth,
+        selectedYear,
+        currentUser.id
+      );
+
+      // ✅ Update confirmations Map
+      setConfirmations((prev) => {
+        const updated = new Map(prev);
+        updated.set(selectedSubject, {
+          id: confirmationResult.id,
+          confirmedBy: confirmationResult.confirmedBy,
+          confirmedAt: confirmationResult.confirmedAt,
+        });
+        return updated;
+      });
+
+      // Mark as confirmed
+      setIsConfirmed(true);
+      setConfirmedAt(new Date(confirmationResult.confirmedAt));
+      setShowReviewModal(false);
+      setIsVerifying(false);
+
+      // Show success message
+      setTimeout(() => {
+        alert("ពិន្ទុត្រូវបានបញ្ជាក់ ✓\nScores confirmed successfully!");
+      }, 300);
+    } catch (error: any) {
+      setIsVerifying(false);
+      console.error("Confirmation error:", error);
+      alert(
+        `មានបញ្ហាក្នុងការបញ្ជាក់ពិន្ទុ • Error confirming scores:\n${error.message}`
+      );
+    }
+  }, [
+    students,
+    savingStudents,
+    currentUser,
+    selectedClass,
+    selectedSubject,
+    selectedMonth,
+    selectedYear,
+  ]);
 
   // ✅ NEW: Export as PDF (Optimized with multi-page support)
   const exportAsPDF = useCallback(async () => {
@@ -879,8 +983,7 @@ export default function MobileGradeEntry({
               value={selectedSubject}
               onChange={(e) => {
                 setSelectedSubject(e.target.value);
-                setIsConfirmed(false);
-                setConfirmedAt(null);
+                // ✅ Don't reset confirmation here - the useEffect will handle it based on confirmations Map
               }}
               className="w-full h-13 px-4 font-battambang bg-white border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm transition-all"
               style={{ fontSize: "16px" }}

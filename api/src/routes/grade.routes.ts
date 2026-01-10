@@ -56,6 +56,29 @@ router.post("/bulk-save", GradeController.bulkSaveGrades);
  */
 router.get("/grid/:classId", GradeController.getGradesGrid);
 
+// ==================== GRADE CONFIRMATION ROUTES ====================
+
+/**
+ * @route   POST /api/grades/confirm
+ * @desc    Confirm grades for a class/subject/month/year
+ * @access  Private
+ */
+router.post("/confirm", GradeController.confirmGrades);
+
+/**
+ * @route   GET /api/grades/confirmations/:classId
+ * @desc    Get all confirmations for a class
+ * @access  Private
+ */
+router.get("/confirmations/:classId", GradeController.getConfirmations);
+
+/**
+ * @route   DELETE /api/grades/confirm/:id
+ * @desc    Remove grade confirmation
+ * @access  Private
+ */
+router.delete("/confirm/:id", GradeController.removeConfirmation);
+
 // ==================== EXISTING ROUTES ====================
 
 /**

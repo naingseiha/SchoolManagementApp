@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Lock } from "lucide-react";
+import { Lock, CheckCircle, AlertCircle } from "lucide-react";
 import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
+import { gradeApi } from "@/lib/api/grades";
 import { attendanceApi } from "@/lib/api/attendance";
 import { getOrderingMessage } from "@/lib/subjectOrder";
 
@@ -54,6 +55,24 @@ export default function GradeGridEditor({
   const [attendanceSummary, setAttendanceSummary] = useState<{
     [studentId: string]: { absent: number; permission: number };
   }>({});
+
+  // ✅ NEW: Confirmation state
+  const [confirmations, setConfirmations] = useState<
+    Map<
+      string,
+      {
+        id: string;
+        confirmedBy: string;
+        confirmedAt: Date;
+        user: {
+          firstName: string;
+          lastName: string;
+          email: string;
+          role: string;
+        };
+      }
+    >
+  >(new Map());
 
   // Use custom hooks
   const { sortedSubjects, sortedStudents } = useGradeSorting(
@@ -122,6 +141,13 @@ export default function GradeGridEditor({
     return { editable, viewOnly, total: sortedSubjects.length };
   }, [sortedSubjects]);
 
+  // ✅ NEW: Calculate unconfirmed subjects
+  const unconfirmedSubjects = useMemo(() => {
+    return sortedSubjects.filter(
+      (subject) => subject.isEditable && !confirmations.has(subject.id)
+    );
+  }, [sortedSubjects, confirmations]);
+
   // Initialize cells
   useEffect(() => {
     const initialCells: { [key: string]: CellState } = {};
@@ -165,6 +191,41 @@ export default function GradeGridEditor({
 
     if (gridData && gridData.classId && gridData.month && gridData.year) {
       fetchAttendanceSummary();
+    }
+  }, [gridData.classId, gridData.month, gridData.year]);
+
+  // ✅ NEW: Fetch confirmations
+  useEffect(() => {
+    const fetchConfirmations = async () => {
+      try {
+        const data = await gradeApi.getConfirmations(
+          gridData.classId,
+          gridData.month,
+          gridData.year
+        );
+
+        // Convert array to Map for quick lookup by subjectId
+        const confirmationMap = new Map(
+          data.map((confirmation) => [
+            confirmation.subjectId,
+            {
+              id: confirmation.id,
+              confirmedBy: confirmation.confirmedBy,
+              confirmedAt: confirmation.confirmedAt,
+              user: confirmation.user,
+            },
+          ])
+        );
+
+        setConfirmations(confirmationMap);
+      } catch (error: any) {
+        console.error("❌ Failed to fetch confirmations:", error);
+        setConfirmations(new Map());
+      }
+    };
+
+    if (gridData && gridData.classId && gridData.month && gridData.year) {
+      fetchConfirmations();
     }
   }, [gridData.classId, gridData.month, gridData.year]);
 
@@ -284,6 +345,26 @@ export default function GradeGridEditor({
         </div>
       )}
 
+      {/* ✅ NEW: Warning Banner for Unconfirmed Subjects */}
+      {unconfirmedSubjects.length > 0 && (
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-b-2 border-orange-200 px-6 py-3">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-bold text-orange-800">
+                ⚠️ មានមុខវិជ្ជា {unconfirmedSubjects.length} មិនទាន់បានបញ្ជាក់ •{" "}
+                {unconfirmedSubjects.length} Subject
+                {unconfirmedSubjects.length > 1 ? "s" : ""} Not Confirmed
+              </p>
+              <p className="text-xs text-orange-700 mt-1">
+                សូមប្រើកម្មវិធីទូរស័ព្ទដើម្បីពិនិត្យនិងបញ្ជាក់ពិន្ទុ • Use the mobile
+                app to review and confirm scores
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {pastePreview && <PasteNotification message={pastePreview} />}
 
       <div
@@ -313,20 +394,47 @@ export default function GradeGridEditor({
                   subject.isEditable || false
                 );
                 const khmerName = getKhmerShortName(subject.code);
+                const confirmation = confirmations.get(subject.id);
+                const isConfirmed = !!confirmation;
 
                 return (
                   <th
                     key={subject.id}
                     className={`px-3 py-3 text-center text-sm font-bold border-b-2 border-r border-gray-300 min-w-[70px] ${colors.header}`}
-                    title={`${subject.nameKh} (Max:  ${
+                    title={`${subject.nameKh} (Max: ${
                       subject.maxScore
                     }, Coefficient: ${subject.coefficient})${
                       !subject.isEditable ? " - មើលប៉ុណ្ណោះ" : ""
+                    }${
+                      isConfirmed
+                        ? `\n✓ បានបញ្ជាក់ដោយ: ${confirmation.user.firstName} ${confirmation.user.lastName}\nនៅ: ${new Date(
+                            confirmation.confirmedAt
+                          ).toLocaleString("km-KH")}`
+                        : subject.isEditable
+                        ? "\n⚠️ មិនទាន់បញ្ជាក់"
+                        : ""
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-1">
-                      {!subject.isEditable && <Lock className="w-3 h-3" />}
-                      <span>{khmerName}</span>
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center justify-center gap-1">
+                        {!subject.isEditable && <Lock className="w-3 h-3" />}
+                        <span>{khmerName}</span>
+                      </div>
+                      {subject.isEditable && (
+                        <div className="flex items-center gap-1">
+                          {isConfirmed ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-green-100 text-green-700 text-[10px] font-semibold">
+                              <CheckCircle className="w-2.5 h-2.5" />
+                              បញ្ជាក់
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-700 text-[10px] font-semibold">
+                              <AlertCircle className="w-2.5 h-2.5" />
+                              មិនទាន់
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </th>
                 );
