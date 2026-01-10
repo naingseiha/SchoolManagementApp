@@ -11,15 +11,132 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   workboxOptions: {
     disableDevLogs: true,
     runtimeCaching: [
+      // ✅ OPTIMIZED PHASE 2: Smart API caching for instant repeat visits
+      // Dashboard stats - cached for 5 minutes with stale-while-revalidate
+      {
+        urlPattern: /^http:\/\/localhost:5001\/api\/dashboard\/(mobile-stats|stats|grade-stats)/i,
+        handler: 'StaleWhileRevalidate',
+        method: 'GET',
+        options: {
+          cacheName: 'dashboard-api-cache',
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 5 * 60, // 5 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/.*\/api\/dashboard\/(mobile-stats|stats|grade-stats)/i,
+        handler: 'StaleWhileRevalidate',
+        method: 'GET',
+        options: {
+          cacheName: 'dashboard-api-cache-prod',
+          expiration: {
+            maxEntries: 10,
+            maxAgeSeconds: 5 * 60, // 5 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // Classes, subjects - cached for 10 minutes (changes infrequently)
+      {
+        urlPattern: /^http:\/\/localhost:5001\/api\/(classes|subjects)/i,
+        handler: 'StaleWhileRevalidate',
+        method: 'GET',
+        options: {
+          cacheName: 'metadata-api-cache',
+          expiration: {
+            maxEntries: 20,
+            maxAgeSeconds: 10 * 60, // 10 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/.*\/api\/(classes|subjects)/i,
+        handler: 'StaleWhileRevalidate',
+        method: 'GET',
+        options: {
+          cacheName: 'metadata-api-cache-prod',
+          expiration: {
+            maxEntries: 20,
+            maxAgeSeconds: 10 * 60, // 10 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // User profile - cached for 30 minutes
+      {
+        urlPattern: /^http:\/\/localhost:5001\/api\/auth\/me/i,
+        handler: 'StaleWhileRevalidate',
+        method: 'GET',
+        options: {
+          cacheName: 'user-api-cache',
+          expiration: {
+            maxEntries: 5,
+            maxAgeSeconds: 30 * 60, // 30 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/.*\/api\/auth\/me/i,
+        handler: 'StaleWhileRevalidate',
+        method: 'GET',
+        options: {
+          cacheName: 'user-api-cache-prod',
+          expiration: {
+            maxEntries: 5,
+            maxAgeSeconds: 30 * 60, // 30 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      // All other API calls - NetworkFirst (try network, fallback to cache)
       {
         urlPattern: /^http:\/\/localhost:5001\/api\/.*/i,
-        handler: 'NetworkOnly', // Never cache API calls
+        handler: 'NetworkFirst',
         method: 'GET',
+        options: {
+          cacheName: 'api-cache',
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 5 * 60, // 5 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
       },
       {
         urlPattern: /^https:\/\/.*\/api\/.*/i,
-        handler: 'NetworkOnly', // Never cache API calls in production
+        handler: 'NetworkFirst',
         method: 'GET',
+        options: {
+          cacheName: 'api-cache-prod',
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 5 * 60, // 5 minutes
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
       },
       {
         urlPattern: /\.(?:js|css)$/i,
@@ -106,33 +223,65 @@ const nextConfig = {
     } : false,
   },
 
-  // Experimental Features for Performance
+  // ✅ OPTIMIZED PHASE 6: Experimental Features for Performance
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', '@/components', '@/lib'],
   },
 
   // Production Source Maps (disabled for performance)
   productionBrowserSourceMaps: false,
 
-  // Bundle Analyzer (optional - enable when needed)
-  // webpack: (config, { isServer }) => {
-  //   if (!isServer) {
-  //     config.optimization.splitChunks = {
-  //       chunks: 'all',
-  //       cacheGroups: {
-  //         default: false,
-  //         vendors: false,
-  //         commons: {
-  //           name: 'commons',
-  //           chunks: 'all',
-  //           minChunks: 2,
-  //         },
-  //       },
-  //     };
-  //   }
-  //   return config;
-  // },
+  // ✅ OPTIMIZED PHASE 6: Advanced code splitting and chunk optimization
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Optimize chunk splitting for better caching
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          // Separate vendor chunks for better caching
+          framework: {
+            chunks: 'all',
+            name: 'framework',
+            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+          lib: {
+            test(module) {
+              return module.size() > 50000 && /node_modules[/\\]/.test(module.identifier());
+            },
+            name(module) {
+              const hash = require('crypto').createHash('sha1');
+              hash.update(module.identifier());
+              return hash.digest('hex').substring(0, 8);
+            },
+            priority: 30,
+            minChunks: 1,
+            reuseExistingChunk: true,
+          },
+          commons: {
+            name: 'commons',
+            minChunks: 2,
+            priority: 20,
+          },
+          shared: {
+            name(module, chunks) {
+              return chunks.map((chunk) => chunk.name).join('~');
+            },
+            priority: 10,
+            minChunks: 2,
+            reuseExistingChunk: true,
+          },
+        },
+        maxInitialRequests: 25,
+        minSize: 20000,
+      };
+    }
+    return config;
+  },
 
   typescript: {
     // Temporarily ignore build errors (pre-existing Button icon prop issues)
