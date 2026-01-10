@@ -234,6 +234,89 @@ export interface ComprehensiveStats {
   }>;
 }
 
+// ============================================
+// Score Progress Dashboard Types
+// ============================================
+
+export type ScoreStatus = "COMPLETE" | "PARTIAL" | "STARTED" | "EMPTY";
+
+export interface SubjectProgress {
+  id: string;
+  code: string;
+  nameKh: string;
+  nameEn: string;
+  maxScore: number;
+  coefficient: number;
+  scoreStatus: {
+    totalStudents: number;
+    studentsWithScores: number;
+    percentage: number;
+    status: ScoreStatus;
+  };
+  verification: {
+    isConfirmed: boolean;
+    confirmedBy?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
+    confirmedAt?: string;
+  };
+  lastUpdated?: string;
+}
+
+export interface ClassProgress {
+  id: string;
+  name: string;
+  grade: string;
+  section: string;
+  track: string | null;
+  studentCount: number;
+  homeroomTeacher: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    khmerName: string;
+    email: string | null;
+  } | null;
+  subjects: SubjectProgress[];
+  completionStats: {
+    totalSubjects: number;
+    completedSubjects: number;
+    completionPercentage: number;
+    verifiedSubjects: number;
+    verificationPercentage: number;
+  };
+}
+
+export interface GradeProgress {
+  grade: string;
+  totalClasses: number;
+  avgCompletion: number;
+  classes: ClassProgress[];
+}
+
+export interface ScoreProgressData {
+  month: string;
+  year: number;
+  overall: {
+    totalClasses: number;
+    totalSubjects: number;
+    completedSubjects: number;
+    completionPercentage: number;
+    verifiedSubjects: number;
+    verificationPercentage: number;
+  };
+  grades: GradeProgress[];
+}
+
+export interface ScoreProgressParams {
+  month?: string;
+  year?: number;
+  grade?: string;
+  classId?: string;
+}
+
 export const dashboardApi = {
   /**
    * Get general dashboard statistics (cached for 2 minutes)
@@ -345,6 +428,40 @@ export const dashboardApi = {
   },
 
   /**
+   * Get score import progress dashboard (cached for 5 minutes)
+   * Shows which subjects have scores imported and verified for each class
+   * ✅ OPTIMIZED: Extended cache for better mobile performance
+   *
+   * @param params - Optional filter parameters
+   * @param params.month - Filter by month (Khmer month name, e.g., "មករា", "កុម្ភៈ")
+   * @param params.year - Filter by year (e.g., 2025, 2026)
+   * @param params.grade - Filter by specific grade (7-12)
+   * @param params.classId - Filter by specific class ID
+   * @returns Score progress data with completion and verification statistics
+   */
+  getScoreProgress: async (params?: ScoreProgressParams): Promise<ScoreProgressData> => {
+    const queryParams = new URLSearchParams();
+    if (params?.month) queryParams.append("month", params.month);
+    if (params?.year) queryParams.append("year", params.year.toString());
+    if (params?.grade) queryParams.append("grade", params.grade);
+    if (params?.classId) queryParams.append("classId", params.classId);
+
+    const queryString = queryParams.toString();
+    const cacheKey = `dashboard:score-progress:${queryString || 'all'}`;
+
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        const url = `/dashboard/score-progress${queryString ? `?${queryString}` : ''}`;
+        const data = await apiClient.get(url);
+        console.log("📊 Score Progress API: Data received:", data);
+        return data;
+      },
+      5 * 60 * 1000 // ✅ Extended to 5 minutes cache for better mobile performance
+    );
+  },
+
+  /**
    * Clear dashboard cache (call after data updates)
    */
   clearCache: () => {
@@ -352,7 +469,9 @@ export const dashboardApi = {
     apiCache.delete("dashboard:grade-stats");
     // Clear all comprehensive stats caches
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('dashboard:comprehensive-stats:') || key.startsWith('dashboard:mobile-stats:')) {
+      if (key.startsWith('dashboard:comprehensive-stats:') ||
+          key.startsWith('dashboard:mobile-stats:') ||
+          key.startsWith('dashboard:score-progress:')) {
         apiCache.delete(key);
       }
     });

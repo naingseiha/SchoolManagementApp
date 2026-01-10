@@ -709,6 +709,294 @@ export class DashboardController {
   }
 
   /**
+   * Get score import progress dashboard
+   * Shows which subjects have scores imported and verified for each class
+   */
+  static async getScoreProgress(req: Request, res: Response) {
+    try {
+      const { month, year, grade, classId } = req.query;
+
+      // Get Khmer month names
+      const monthNames = [
+        "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+        "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
+      ];
+
+      const currentMonth = month ? String(month) : monthNames[new Date().getMonth()];
+      const currentYear = year ? parseInt(String(year)) : new Date().getFullYear();
+
+      // Build filter for classes
+      const classFilter: any = {};
+      if (grade) {
+        classFilter.grade = String(grade);
+      }
+      if (classId) {
+        classFilter.id = String(classId);
+      }
+
+      // 1. Fetch all classes with students and homeroom teachers
+      const classes = await prisma.class.findMany({
+        where: classFilter,
+        include: {
+          students: {
+            select: {
+              id: true,
+              khmerName: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          homeroomTeacher: {
+            select: {
+              id: true,
+              khmerName: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: [
+          { grade: "asc" },
+          { name: "asc" },
+        ],
+      });
+
+      // 2. Get all subjects for the relevant grades
+      const relevantGrades = [...new Set(classes.map(c => c.grade))];
+      const subjects = await prisma.subject.findMany({
+        where: {
+          grade: { in: relevantGrades },
+          isActive: true,
+        },
+        orderBy: { code: "asc" },
+      });
+
+      // 3. Get all grades for the specified month/year
+      const classIds = classes.map(c => c.id);
+      const grades = await prisma.grade.findMany({
+        where: {
+          classId: { in: classIds },
+          month: currentMonth,
+          year: currentYear,
+        },
+        select: {
+          id: true,
+          studentId: true,
+          subjectId: true,
+          classId: true,
+          score: true,
+          updatedAt: true,
+        },
+      });
+
+      // 4. Get all grade confirmations for the specified month/year
+      const confirmations = await prisma.gradeConfirmation.findMany({
+        where: {
+          classId: { in: classIds },
+          month: currentMonth,
+          year: currentYear,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      // 5. Create lookup maps for efficient access
+      const gradesByClassSubject = new Map<string, typeof grades>();
+      grades.forEach(g => {
+        const key = `${g.classId}:${g.subjectId}`;
+        if (!gradesByClassSubject.has(key)) {
+          gradesByClassSubject.set(key, []);
+        }
+        gradesByClassSubject.get(key)!.push(g);
+      });
+
+      const confirmationMap = new Map<string, typeof confirmations[0]>();
+      confirmations.forEach(c => {
+        const key = `${c.classId}:${c.subjectId}`;
+        confirmationMap.set(key, c);
+      });
+
+      const subjectsByGrade = new Map<string, typeof subjects>();
+      subjects.forEach(s => {
+        if (!subjectsByGrade.has(s.grade)) {
+          subjectsByGrade.set(s.grade, []);
+        }
+        subjectsByGrade.get(s.grade)!.push(s);
+      });
+
+      // Helper function to calculate score status
+      const calculateScoreStatus = (totalStudents: number, studentsWithScores: number): string => {
+        if (totalStudents === 0) return "EMPTY";
+        const percentage = (studentsWithScores / totalStudents) * 100;
+        if (percentage === 100) return "COMPLETE";
+        if (percentage >= 50) return "PARTIAL";
+        if (percentage > 0) return "STARTED";
+        return "EMPTY";
+      };
+
+      // 6. Build response data structure
+      const gradeData = new Map<string, any>();
+
+      for (const cls of classes) {
+        if (!gradeData.has(cls.grade)) {
+          gradeData.set(cls.grade, {
+            grade: cls.grade,
+            totalClasses: 0,
+            avgCompletion: 0,
+            classes: [],
+          });
+        }
+
+        const gradeInfo = gradeData.get(cls.grade)!;
+        gradeInfo.totalClasses++;
+
+        // Get subjects for this class (considering track for grades 11-12)
+        const gradeSubjects = subjectsByGrade.get(cls.grade) || [];
+        const gradeNum = parseInt(cls.grade);
+        let classSubjects = gradeSubjects;
+
+        if ((gradeNum === 11 || gradeNum === 12) && cls.track) {
+          classSubjects = gradeSubjects.filter(s =>
+            s.track === cls.track || s.track === null || s.track === "common"
+          );
+        }
+
+        const totalStudents = cls.students.length;
+
+        // Calculate subject-level stats
+        const subjectStats = classSubjects.map(subject => {
+          const key = `${cls.id}:${subject.id}`;
+          const subjectGrades = gradesByClassSubject.get(key) || [];
+          const studentsWithScores = new Set(subjectGrades.map(g => g.studentId)).size;
+          const percentage = totalStudents > 0 ? (studentsWithScores / totalStudents) * 100 : 0;
+          const status = calculateScoreStatus(totalStudents, studentsWithScores);
+
+          // Get confirmation status
+          const confirmation = confirmationMap.get(key);
+
+          // Find who last updated this subject
+          const latestGrade = subjectGrades.length > 0
+            ? subjectGrades.reduce((latest, current) =>
+                current.updatedAt > latest.updatedAt ? current : latest
+              )
+            : null;
+
+          return {
+            id: subject.id,
+            code: subject.code,
+            nameKh: subject.nameKh,
+            nameEn: subject.nameEn || subject.name,
+            maxScore: subject.maxScore,
+            coefficient: subject.coefficient,
+            scoreStatus: {
+              totalStudents,
+              studentsWithScores,
+              percentage: Math.round(percentage * 10) / 10,
+              status,
+            },
+            verification: {
+              isConfirmed: confirmation?.isConfirmed || false,
+              confirmedBy: confirmation ? {
+                id: confirmation.user.id,
+                firstName: confirmation.user.firstName,
+                lastName: confirmation.user.lastName,
+              } : undefined,
+              confirmedAt: confirmation?.confirmedAt.toISOString(),
+            },
+            lastUpdated: latestGrade?.updatedAt.toISOString(),
+          };
+        });
+
+        // Calculate class completion stats
+        const completedSubjects = subjectStats.filter(s => s.scoreStatus.status === "COMPLETE").length;
+        const verifiedSubjects = subjectStats.filter(s => s.verification.isConfirmed).length;
+        const completionPercentage = classSubjects.length > 0
+          ? (completedSubjects / classSubjects.length) * 100
+          : 0;
+        const verificationPercentage = classSubjects.length > 0
+          ? (verifiedSubjects / classSubjects.length) * 100
+          : 0;
+
+        gradeInfo.classes.push({
+          id: cls.id,
+          name: cls.name,
+          grade: cls.grade,
+          section: cls.section || "",
+          track: cls.track || null,
+          studentCount: totalStudents,
+          homeroomTeacher: cls.homeroomTeacher ? {
+            id: cls.homeroomTeacher.id,
+            firstName: cls.homeroomTeacher.firstName,
+            lastName: cls.homeroomTeacher.lastName,
+            khmerName: cls.homeroomTeacher.khmerName || `${cls.homeroomTeacher.firstName} ${cls.homeroomTeacher.lastName}`,
+            email: cls.homeroomTeacher.email,
+          } : null,
+          subjects: subjectStats,
+          completionStats: {
+            totalSubjects: classSubjects.length,
+            completedSubjects,
+            completionPercentage: Math.round(completionPercentage * 10) / 10,
+            verifiedSubjects,
+            verificationPercentage: Math.round(verificationPercentage * 10) / 10,
+          },
+        });
+      }
+
+      // Calculate average completion for each grade
+      gradeData.forEach((gradeInfo) => {
+        const totalCompletion = gradeInfo.classes.reduce(
+          (sum: number, c: any) => sum + c.completionStats.completionPercentage,
+          0
+        );
+        gradeInfo.avgCompletion = gradeInfo.classes.length > 0
+          ? Math.round((totalCompletion / gradeInfo.classes.length) * 10) / 10
+          : 0;
+      });
+
+      // Calculate overall statistics
+      const allClasses = Array.from(gradeData.values()).flatMap((g: any) => g.classes);
+      const totalClasses = allClasses.length;
+      const totalSubjects = allClasses.reduce((sum: number, c: any) => sum + c.completionStats.totalSubjects, 0);
+      const completedSubjects = allClasses.reduce((sum: number, c: any) => sum + c.completionStats.completedSubjects, 0);
+      const verifiedSubjects = allClasses.reduce((sum: number, c: any) => sum + c.completionStats.verifiedSubjects, 0);
+      const completionPercentage = totalSubjects > 0 ? (completedSubjects / totalSubjects) * 100 : 0;
+      const verificationPercentage = totalSubjects > 0 ? (verifiedSubjects / totalSubjects) * 100 : 0;
+
+      res.json({
+        success: true,
+        data: {
+          month: currentMonth,
+          year: currentYear,
+          overall: {
+            totalClasses,
+            totalSubjects,
+            completedSubjects,
+            completionPercentage: Math.round(completionPercentage * 10) / 10,
+            verifiedSubjects,
+            verificationPercentage: Math.round(verificationPercentage * 10) / 10,
+          },
+          grades: Array.from(gradeData.values()).sort((a, b) => parseInt(a.grade) - parseInt(b.grade)),
+        },
+      });
+    } catch (error) {
+      console.error("❌ Error fetching score progress:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch score progress",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  /**
    * Get comprehensive statistics with month/year filter and gender breakdown
    * For mobile statistics dashboard
    * ✅ OPTIMIZED: Reduced from 1000+ queries to ~10-15 queries
