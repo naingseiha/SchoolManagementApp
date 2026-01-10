@@ -74,7 +74,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
           },
         },
       },
-      // User profile - cached for 30 minutes
+      // User profile - cached for 30 seconds (aligned with apiClient)
       {
         urlPattern: /^http:\/\/localhost:5001\/api\/auth\/me/i,
         handler: 'StaleWhileRevalidate',
@@ -83,7 +83,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
           cacheName: 'user-api-cache',
           expiration: {
             maxEntries: 5,
-            maxAgeSeconds: 30 * 60, // 30 minutes
+            maxAgeSeconds: 30, // 30 seconds - aligned with apiClient cache
           },
           cacheableResponse: {
             statuses: [0, 200],
@@ -98,7 +98,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
           cacheName: 'user-api-cache-prod',
           expiration: {
             maxEntries: 5,
-            maxAgeSeconds: 30 * 60, // 30 minutes
+            maxAgeSeconds: 30, // 30 seconds - aligned with apiClient cache
           },
           cacheableResponse: {
             statuses: [0, 200],

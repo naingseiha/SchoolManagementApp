@@ -12,7 +12,7 @@ interface ApiResponse<T = any> {
 class ApiClient {
   private baseURL: string;
   private requestCache: Map<string, { data: any; timestamp: number }> = new Map();
-  private cacheDuration: number = 5000; // 5 seconds cache for repeated requests
+  private cacheDuration: number = 30000; // 30 seconds cache for better performance
 
   /*************  ✨ Windsurf Command ⭐  *************/
   /**

@@ -17,7 +17,6 @@ import {
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading, error: authError, isAuthenticated } = useAuth();
-  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -54,7 +53,7 @@ export default function LoginPage() {
         return;
       }
 
-      await login({ identifier, password, rememberMe });
+      await login({ identifier, password });
       // On success, login function will redirect, so we don't need to do anything here
     } catch (err: any) {
       console.error("Login error:", err);
@@ -201,23 +200,6 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
-              </div>
-
-              {/* Remember Me */}
-              <div className="flex items-center">
-                <input
-                  id="rememberMe"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer"
-                />
-                <label
-                  htmlFor="rememberMe"
-                  className="font-khmer-body ml-3 text-sm text-gray-700 cursor-pointer select-none"
-                >
-                  ចងចាំខ្ញុំ
-                </label>
               </div>
 
               {/* Submit Button */}

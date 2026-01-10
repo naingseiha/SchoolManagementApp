@@ -3,7 +3,6 @@ import { apiClient } from "./client";
 export interface LoginCredentials {
   identifier: string; // ✅ Phone or Email
   password: string;
-  rememberMe?: boolean;
 }
 
 export interface User {
@@ -32,14 +31,12 @@ export const authApi = {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log("📤 Calling login API...");
       console.log("  - Identifier:", credentials.identifier);
-      console.log("  - Remember me:", credentials.rememberMe);
 
-      // ✅ FIX: Transform identifier to email or phone based on format
+      // ✅ Transform identifier to email or phone based on format
       const isEmail = credentials.identifier.includes("@");
       const loginPayload = {
         [isEmail ? "email" : "phone"]: credentials.identifier,
         password: credentials.password,
-        rememberMe: credentials.rememberMe,
       };
 
       console.log("  - Sending as:", isEmail ? "email" : "phone");
