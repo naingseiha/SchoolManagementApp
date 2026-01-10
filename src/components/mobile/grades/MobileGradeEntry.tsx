@@ -257,13 +257,11 @@ export default function MobileGradeEntry({
           isEditable: true,
         }));
       } else if (currentUser.role === "TEACHER") {
-        const isHomeroomClass = teacherHomeroomClassId === selectedClass;
-
+        // ✅ UPDATED: INSTRUCTOR can only edit subjects they teach (same as regular teacher)
+        // No special privileges for homeroom class anymore
         data.subjects = data.subjects.map((subject) => {
           const baseCode = subject.code?.split("-")[0];
-          const isEditable = isHomeroomClass
-            ? true
-            : baseCode
+          const isEditable = baseCode
             ? teacherEditableSubjects.has(baseCode)
             : false;
 
@@ -997,12 +995,12 @@ export default function MobileGradeEntry({
             </select>
             {currentUser?.role === "TEACHER" &&
               teacherHomeroomClassId === selectedClass && (
-                <div className="mt-3 bg-green-100 border border-green-200 rounded-xl p-3">
-                  <p className="font-battambang text-xs text-green-700 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-green-200 rounded-lg flex items-center justify-center">
+                <div className="mt-3 bg-blue-100 border border-blue-200 rounded-xl p-3">
+                  <p className="font-battambang text-xs text-blue-700 flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-200 rounded-lg flex items-center justify-center">
                       🏠
                     </div>
-                    អ្នកគឺជា INSTRUCTOR - អាចបញ្ចូលពិន្ទុគ្រប់មុខវិជ្ជា
+                    អ្នកគឺជា INSTRUCTOR - អាចបញ្ចូលពិន្ទុតែមុខវិជ្ជាដែលអ្នកបង្រៀនប៉ុណ្ណោះ • You are INSTRUCTOR - can only input scores for subjects you teach
                   </p>
                 </div>
               )}

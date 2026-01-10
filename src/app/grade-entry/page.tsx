@@ -307,24 +307,23 @@ export default function GradeEntryPage() {
       } else if (currentUser.role === "TEACHER") {
         console.log("👨‍🏫 TEACHER MODE: Checking subject permissions by CODE");
 
-        // ✅ NEW: Check if this is the teacher's homeroom class
+        // ✅ Check if this is the teacher's homeroom class (for informational purposes only)
         const isHomeroomClass = teacherHomeroomClassId === selectedClassId;
 
         console.log("🏠 Homeroom Check:", {
           teacherHomeroomClassId,
           selectedClassId,
           isHomeroomClass: isHomeroomClass ? "✅ YES - INSTRUCTOR" : "❌ NO",
+          note: "INSTRUCTOR can now only edit subjects they teach (same as regular teacher)",
         });
 
         data.subjects = data.subjects.map((subject) => {
           // ✅ Extract base code and compare by CODE not ID
           const baseCode = subject.code?.split("-")[0];
 
-          // ✅ NEW: If homeroom class (INSTRUCTOR), all subjects editable
-          // Otherwise, only assigned subjects editable
-          const isEditable = isHomeroomClass
-            ? true // INSTRUCTOR can edit all subjects
-            : baseCode
+          // ✅ UPDATED: INSTRUCTOR can only edit subjects they teach (same as regular teacher)
+          // No special privileges for homeroom class anymore
+          const isEditable = baseCode
             ? teacherEditableSubjects.has(baseCode)
             : false;
 
@@ -336,9 +335,7 @@ export default function GradeEntryPage() {
               ? teacherEditableSubjects.has(baseCode)
               : false,
             finalIsEditable: isEditable,
-            reason: isHomeroomClass
-              ? "🏠 HOMEROOM INSTRUCTOR"
-              : isEditable
+            reason: isEditable
               ? "📚 ASSIGNED SUBJECT"
               : "🚫 NOT ASSIGNED",
           });
@@ -353,7 +350,7 @@ export default function GradeEntryPage() {
         console.log("📊 FINAL SUBJECT PERMISSIONS:");
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         console.log(
-          `🏠 Homeroom Class: ${isHomeroomClass ? "✅ YES" : "❌ NO"}`
+          `🏠 Homeroom Class: ${isHomeroomClass ? "✅ YES (INSTRUCTOR)" : "❌ NO"}`
         );
         console.log(
           `📚 Assigned Subjects: ${Array.from(teacherEditableSubjects).join(
@@ -378,9 +375,7 @@ export default function GradeEntryPage() {
           total: data.subjects.length,
           editable: editableCount,
           viewOnly: viewOnlyCount,
-          mode: isHomeroomClass
-            ? "🏠 HOMEROOM INSTRUCTOR"
-            : "📚 SUBJECT TEACHER",
+          mode: "📚 SUBJECT-BASED PERMISSIONS (INSTRUCTOR same as TEACHER)",
         });
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       }
