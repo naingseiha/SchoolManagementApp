@@ -10,13 +10,23 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { dashboardApi, DashboardStats } from "@/lib/api/dashboard";
-import { SimpleBarChart, SimplePieChart } from "@/components/ui/SimpleBarChart";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   SkeletonDashboard,
   SkeletonCard,
   SkeletonChart,
 } from "@/components/ui/LoadingSkeleton";
+
+// ✅ OPTIMIZED PHASE 6: Lazy load heavy chart components for code splitting
+const SimpleBarChart = dynamic(
+  () => import("@/components/ui/SimpleBarChart").then((mod) => ({ default: mod.SimpleBarChart })),
+  { ssr: false, loading: () => <SkeletonChart /> }
+);
+
+const SimplePieChart = dynamic(
+  () => import("@/components/ui/SimpleBarChart").then((mod) => ({ default: mod.SimplePieChart })),
+  { ssr: false, loading: () => <SkeletonChart /> }
+);
 import {
   Users,
   GraduationCap,
@@ -34,10 +44,10 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// Lazy load mobile dashboard for code splitting
+// ✅ OPTIMIZED PHASE 6: Lazy load mobile dashboard for code splitting
 const MobileDashboard = dynamic(
   () => import("@/components/mobile/dashboard/SimpleMobileDashboard"),
-  { ssr: false }
+  { ssr: false, loading: () => <SkeletonDashboard /> }
 );
 
 export default function DashboardPage() {

@@ -22,6 +22,8 @@ model Attendance {
 
   @@unique([studentId, classId, date, session])
   @@index([classId, date])
+  @@index([studentId, date]) // ✅ OPTIMIZED PHASE 5: For student attendance lookups
+  @@index([date, status]) // ✅ OPTIMIZED PHASE 5: For daily attendance reports
   @@map("attendance")
 }
 
@@ -69,6 +71,8 @@ model Grade {
 
   @@unique([studentId, subjectId, classId, month, year])
   @@index([classId, month, year])
+  @@index([studentId, month, year]) // ✅ OPTIMIZED PHASE 5: For student grade lookups
+  @@index([subjectId, classId]) // ✅ OPTIMIZED PHASE 5: For subject-based queries
   @@map("grades")
 }
 
@@ -111,6 +115,8 @@ model StudentMonthlySummary {
 
   @@unique([studentId, classId, month, year])
   @@index([classId, month, year])
+  @@index([studentId, year]) // ✅ OPTIMIZED PHASE 5: For student summary lookups
+  @@index([month, year, average]) // ✅ OPTIMIZED PHASE 5: For ranking queries
   @@map("student_monthly_summaries")
 }
 
@@ -157,6 +163,9 @@ model Student {
   class                     Class?                   @relation(fields: [classId], references: [id])
   user                      User?
 
+  @@index([classId]) // ✅ OPTIMIZED PHASE 5: For class-based student queries
+  @@index([grade12PassStatus]) // ✅ OPTIMIZED PHASE 5: For filtering by pass status
+  @@index([gender]) // ✅ OPTIMIZED PHASE 5: For gender-based statistics
   @@map("students")
 }
 
