@@ -7,10 +7,19 @@ const dateParser_1 = require("../utils/dateParser"); // ✅ MUST HAVE THIS
 const prisma = new client_1.PrismaClient();
 /**
  * ✅ GET students LIGHTWEIGHT (for grid/list views - fast loading)
+ * ⚡ OPTIMIZED with pagination support
  */
 const getStudentsLightweight = async (req, res) => {
     try {
         console.log("⚡ Fetching students (lightweight)...");
+        // ✅ Pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+        const skip = (page - 1) * limit;
+        console.log(`📄 Page: ${page}, Limit: ${limit}, Skip: ${skip}`);
+        // ✅ Fetch total count for pagination metadata
+        const totalCount = await prisma.student.count();
+        // ✅ Fetch paginated students
         const students = await prisma.student.findMany({
             select: {
                 id: true,
@@ -44,11 +53,21 @@ const getStudentsLightweight = async (req, res) => {
             orderBy: {
                 createdAt: "desc",
             },
+            skip,
+            take: limit,
         });
-        console.log(`⚡ Fetched ${students.length} students (lightweight)`);
+        const totalPages = Math.ceil(totalCount / limit);
+        console.log(`⚡ Fetched ${students.length} students (page ${page}/${totalPages})`);
         res.json({
             success: true,
             data: students,
+            pagination: {
+                page,
+                limit,
+                total: totalCount,
+                totalPages,
+                hasMore: page < totalPages,
+            },
         });
     }
     catch (error) {

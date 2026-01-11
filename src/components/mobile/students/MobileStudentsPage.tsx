@@ -62,8 +62,13 @@ export default function MobileStudentsPage() {
       }
       abortControllerRef.current = new AbortController();
 
-      const data = await studentsApi.getAllLightweight();
-      setStudents(data);
+      // Load all students with a large limit (mobile doesn't need pagination)
+      const response = await studentsApi.getAllLightweight(1, 10000);
+      if (response.success && Array.isArray(response.data)) {
+        setStudents(response.data);
+      } else {
+        setStudents([]);
+      }
     } catch (error: any) {
       if (error.name !== "AbortError") {
         setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យសិស្ស");
@@ -183,7 +188,7 @@ export default function MobileStudentsPage() {
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-10 h-10 text-red-600" />
           </div>
-          <h2 className="font-koulen text-2xl text-gray-900 mb-2">មានបញ្ហា</h2>
+          <h1 className="font-koulen text-2xl text-gray-900 mb-2">មានបញ្ហា</h1>
           <p className="font-battambang text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => loadStudents(false)}

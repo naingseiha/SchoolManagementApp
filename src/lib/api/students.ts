@@ -128,9 +128,18 @@ export interface BulkImportResponse {
   };
 }
 
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export interface StudentsResponse {
   success: boolean;
   data: Student[];
+  pagination?: PaginationInfo;
 }
 
 export interface StudentResponse {
@@ -257,29 +266,63 @@ const transformToBackend = (frontendData: CreateStudentData): any => {
 export const studentsApi = {
   /**
    * Get all students (LIGHTWEIGHT - fast loading for grids/lists)
-   * Cached for 3 minutes to improve performance
+   * ⚡ OPTIMIZED with pagination support
+   * @param page - Page number (default: 1)
+   * @param limit - Items per page (default: 50)
+   * @returns Students response with pagination info
    */
-  async getAllLightweight(): Promise<Student[]> {
+  async getAllLightweight(page: number = 1, limit: number = 50): Promise<StudentsResponse> {
     try {
-      return apiCache.getOrFetch(
-        "students:lightweight",
-        async () => {
-          console.log("⚡ Fetching students (lightweight)...");
-          const students = await apiClient.get<Student[]>("/students/lightweight");
+      const cacheKey = `students:lightweight:page${page}:limit${limit}`;
 
-          if (!Array.isArray(students)) {
-            console.error("❌ Expected array but got:", students);
-            return [];
+      return apiCache.getOrFetch(
+        cacheKey,
+        async () => {
+          console.log(`⚡ Fetching students (lightweight) - Page ${page}, Limit ${limit}...`);
+
+          // Fetch raw response without auto-unwrapping
+          const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"}/students/lightweight?page=${page}&limit=${limit}`;
+          const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+          const response = await fetch(url, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            cache: "no-store",
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
 
-          console.log(`⚡ Fetched ${students.length} students (lightweight)`);
-          return students.map(transformStudent);
+          const fullResponse = await response.json();
+
+          // fullResponse should be { success: true, data: [...], pagination: {...} }
+          if (fullResponse.success && Array.isArray(fullResponse.data)) {
+            console.log(`⚡ Fetched ${fullResponse.data.length} students (page ${page}/${fullResponse.pagination?.totalPages || 1})`);
+            return {
+              success: true,
+              data: fullResponse.data.map(transformStudent),
+              pagination: fullResponse.pagination,
+            };
+          }
+
+          console.error("❌ Unexpected response format:", fullResponse);
+          return {
+            success: false,
+            data: [],
+          };
         },
         3 * 60 * 1000 // 3 minutes cache
       );
     } catch (error: any) {
       console.error("❌ Error fetching students (lightweight):", error);
-      return [];
+      return {
+        success: false,
+        data: [],
+      };
     }
   },
 

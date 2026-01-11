@@ -54,13 +54,13 @@ const register = async (req, res) => {
                 role,
             },
         });
-        // ✅ FIXED: Proper JWT signing
+        // ✅ FIXED: Proper JWT signing with 365 days expiration
         const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
         const token = jsonwebtoken_1.default.sign({
             userId: user.id,
             email: user.email || user.phone || "",
             role: user.role,
-        }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "7d" });
+        }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "365d" });
         console.log("✅ User registered successfully:", user.id);
         res.status(201).json({
             success: true,
@@ -75,6 +75,7 @@ const register = async (req, res) => {
                     role: user.role,
                 },
                 token,
+                expiresIn: process.env.JWT_EXPIRES_IN || "365d",
             },
         });
     }
@@ -192,13 +193,13 @@ const login = async (req, res) => {
                 failedAttempts: 0,
             },
         });
-        // ✅ FIXED:  Proper JWT signing
+        // ✅ FIXED: Proper JWT signing with 365 days expiration
         const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
         const token = jsonwebtoken_1.default.sign({
             userId: user.id,
             email: user.email || user.phone || "",
             role: user.role,
-        }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "7d" });
+        }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "365d" });
         console.log("✅ Login successful:", user.id);
         res.json({
             success: true,
@@ -215,6 +216,7 @@ const login = async (req, res) => {
                     teacher: user.teacher,
                 },
                 token,
+                expiresIn: process.env.JWT_EXPIRES_IN || "365d",
             },
         });
     }
@@ -247,7 +249,7 @@ const refreshToken = async (req, res) => {
             userId: decoded.userId,
             email: decoded.email || "",
             role: decoded.role,
-        }, jwtSecret, { expiresIn: (process.env.JWT_EXPIRES_IN || "7d") });
+        }, jwtSecret, { expiresIn: (process.env.JWT_EXPIRES_IN || "365d") });
         res.json({
             success: true,
             message: "Token refreshed successfully",

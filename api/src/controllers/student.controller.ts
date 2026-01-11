@@ -7,11 +7,23 @@ const prisma = new PrismaClient();
 
 /**
  * ✅ GET students LIGHTWEIGHT (for grid/list views - fast loading)
+ * ⚡ OPTIMIZED with pagination support
  */
 export const getStudentsLightweight = async (req: Request, res: Response) => {
   try {
     console.log("⚡ Fetching students (lightweight)...");
 
+    // ✅ Pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = (page - 1) * limit;
+
+    console.log(`📄 Page: ${page}, Limit: ${limit}, Skip: ${skip}`);
+
+    // ✅ Fetch total count for pagination metadata
+    const totalCount = await prisma.student.count();
+
+    // ✅ Fetch paginated students
     const students = await prisma.student.findMany({
       select: {
         id: true,
@@ -45,13 +57,24 @@ export const getStudentsLightweight = async (req: Request, res: Response) => {
       orderBy: {
         createdAt: "desc",
       },
+      skip,
+      take: limit,
     });
 
-    console.log(`⚡ Fetched ${students.length} students (lightweight)`);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    console.log(`⚡ Fetched ${students.length} students (page ${page}/${totalPages})`);
 
     res.json({
       success: true,
       data: students,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     });
   } catch (error: any) {
     console.error("❌ Error fetching students (lightweight):", error);

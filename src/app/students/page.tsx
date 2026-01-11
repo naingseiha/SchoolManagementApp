@@ -10,6 +10,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
 import StudentListView from "@/components/students/StudentListView";
+import StudentListViewOptimized from "@/components/students/StudentListViewOptimized";
 import BulkImportView from "@/components/students/BulkImportView";
 import { studentsApi } from "@/lib/api/students";
 import { Users, Upload } from "lucide-react";
@@ -28,9 +29,6 @@ export default function StudentsPage() {
   const deviceType = useDeviceType();
 
   const [activeTab, setActiveTab] = useState<ViewMode>("list");
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -38,37 +36,9 @@ export default function StudentsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // ✅ Load students on mount when authenticated
-  useEffect(() => {
-    if (isAuthenticated && !authLoading && !isDataLoaded) {
-      loadStudents();
-    }
-  }, [isAuthenticated, authLoading, isDataLoaded]);
-
-  const loadStudents = async () => {
-    try {
-      setLoading(true);
-      console.log("⚡ Loading students data (lightweight)...");
-      const data = await studentsApi.getAllLightweight();
-      console.log("⚡ Loaded students:", data.length);
-      setStudents(data);
-      setIsDataLoaded(true);
-    } catch (error) {
-      console.error("Failed to load students:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleBulkImportSuccess = () => {
-    loadStudents();
     refreshStudents();
     setActiveTab("list");
-  };
-
-  const handleRefreshData = () => {
-    loadStudents();
-    refreshStudents();
   };
 
   if (authLoading) {
@@ -177,12 +147,8 @@ export default function StudentsPage() {
 
           {/* Content */}
           {activeTab === "list" ? (
-            <StudentListView
-              students={students}
+            <StudentListViewOptimized
               classes={classes}
-              isDataLoaded={isDataLoaded}
-              onLoadData={loadStudents}
-              onRefresh={handleRefreshData}
             />
           ) : (
             <BulkImportView

@@ -174,12 +174,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         ]);
       };
 
-      // Load Students (lightweight)
+      // Load Students (lightweight) - Load first page only
       setIsLoadingStudents(true);
       try {
-        const studentsData = await withTimeout(studentsApi.getAllLightweight());
-        console.log("⚡ Students loaded (lightweight):", studentsData.length);
-        setStudents(studentsData);
+        const response = await withTimeout(studentsApi.getAllLightweight(1, 50));
+        console.log("⚡ Students loaded (lightweight):", response.data?.length || 0);
+        setStudents(response.data || []);
       } catch (err: any) {
         console.warn("⚠️ Students load failed:", err.message);
         setStudents([]);
@@ -251,8 +251,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoadingStudents(true);
       setStudentsError(null);
-      const data = await studentsApi.getAllLightweight();
-      setStudents(data);
+      const response = await studentsApi.getAllLightweight(1, 50);
+      setStudents(response.data || []);
     } catch (error: any) {
       console.error("❌ Error fetching students:", error);
       setStudentsError(error.message);
