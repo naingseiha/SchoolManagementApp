@@ -246,7 +246,7 @@ export default function TrackingBookPage() {
       const row = [
         (index + 1).toString(),
         student.studentName,
-        student.gender === "male" ? "ប្រុស" : "ស្រី",
+        student.gender?.toUpperCase() === "MALE" || student.gender === "male" ? "ប្រុស" : "ស្រី",
         ...sortedTrackingData.subjects.map((subject) => {
           const score = student.subjectScores[subject.id];
           return score?.score !== null && score?.score !== undefined

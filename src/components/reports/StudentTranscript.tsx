@@ -310,7 +310,7 @@ export default function StudentTranscript({
                     ៖ {displayValue(studentData.studentName)}
                   </span>
                   <span style={{ fontSize: "10px", marginLeft: "auto" }}>
-                    ភេទ៖ {studentData.gender === "male" ? "ប្រុស" : "ស្រី"}
+                    ភេទ៖ {studentData.gender?.toUpperCase() === "MALE" || studentData.gender === "male" ? "ប្រុស" : "ស្រី"}
                   </span>
                 </div>
 
