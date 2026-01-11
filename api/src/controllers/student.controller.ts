@@ -7,12 +7,40 @@ const prisma = new PrismaClient();
 
 /**
  * ✅ GET students LIGHTWEIGHT (for grid/list views - fast loading)
+ * ⚡ OPTIMIZED with pagination support
  */
 export const getStudentsLightweight = async (req: Request, res: Response) => {
   try {
     console.log("⚡ Fetching students (lightweight)...");
 
+    // ✅ Pagination parameters
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = (page - 1) * limit;
+
+    // ✅ Filter parameters
+    const classId = req.query.classId as string | undefined;
+    const gender = req.query.gender as string | undefined;
+
+    console.log(`📄 Page: ${page}, Limit: ${limit}, Skip: ${skip}`);
+    if (classId) console.log(`🎓 Filter by class: ${classId}`);
+    if (gender) console.log(`👤 Filter by gender: ${gender}`);
+
+    // ✅ Build where clause for filtering
+    const where: any = {};
+    if (classId && classId !== "all") {
+      where.classId = classId;
+    }
+    if (gender && gender !== "all") {
+      where.gender = gender === "male" ? "MALE" : "FEMALE";
+    }
+
+    // ✅ Fetch total count with filters
+    const totalCount = await prisma.student.count({ where });
+
+    // ✅ Fetch paginated students with filters
     const students = await prisma.student.findMany({
+      where,
       select: {
         id: true,
         studentId: true,
@@ -45,13 +73,24 @@ export const getStudentsLightweight = async (req: Request, res: Response) => {
       orderBy: {
         createdAt: "desc",
       },
+      skip,
+      take: limit,
     });
 
-    console.log(`⚡ Fetched ${students.length} students (lightweight)`);
+    const totalPages = Math.ceil(totalCount / limit);
+
+    console.log(`⚡ Fetched ${students.length} students (page ${page}/${totalPages})`);
 
     res.json({
       success: true,
       data: students,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     });
   } catch (error: any) {
     console.error("❌ Error fetching students (lightweight):", error);

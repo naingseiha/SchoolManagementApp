@@ -59,6 +59,8 @@ export default function DashboardPage() {
     teachers = [],
     classes = [],
     subjects = [],
+    isLoadingStudents,
+    isLoadingClasses,
   } = useData();
 
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
@@ -95,7 +97,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingStudents || isLoadingClasses) {
     return deviceType === "mobile" ? (
       <MobileLayout title="ផ្ទាំង">
         <div className="p-4">

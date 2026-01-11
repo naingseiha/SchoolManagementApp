@@ -9,7 +9,7 @@ import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
-import StudentListView from "@/components/students/StudentListView";
+import StudentListViewV2 from "@/components/students/StudentListViewV2";
 import BulkImportView from "@/components/students/BulkImportView";
 import { studentsApi } from "@/lib/api/students";
 import { Users, Upload } from "lucide-react";
@@ -23,14 +23,11 @@ type ViewMode = "list" | "bulk-import";
 
 export default function StudentsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { classes, students: contextStudents, refreshStudents } = useData();
+  const { classes, students: contextStudents, refreshStudents, isLoadingClasses } = useData();
   const router = useRouter();
   const deviceType = useDeviceType();
 
   const [activeTab, setActiveTab] = useState<ViewMode>("list");
-  const [students, setStudents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -38,40 +35,12 @@ export default function StudentsPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // ✅ Load students on mount when authenticated
-  useEffect(() => {
-    if (isAuthenticated && !authLoading && !isDataLoaded) {
-      loadStudents();
-    }
-  }, [isAuthenticated, authLoading, isDataLoaded]);
-
-  const loadStudents = async () => {
-    try {
-      setLoading(true);
-      console.log("⚡ Loading students data (lightweight)...");
-      const data = await studentsApi.getAllLightweight();
-      console.log("⚡ Loaded students:", data.length);
-      setStudents(data);
-      setIsDataLoaded(true);
-    } catch (error) {
-      console.error("Failed to load students:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleBulkImportSuccess = () => {
-    loadStudents();
     refreshStudents();
     setActiveTab("list");
   };
 
-  const handleRefreshData = () => {
-    loadStudents();
-    refreshStudents();
-  };
-
-  if (authLoading) {
+  if (authLoading || isLoadingClasses) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -177,12 +146,8 @@ export default function StudentsPage() {
 
           {/* Content */}
           {activeTab === "list" ? (
-            <StudentListView
-              students={students}
+            <StudentListViewV2
               classes={classes}
-              isDataLoaded={isDataLoaded}
-              onLoadData={loadStudents}
-              onRefresh={handleRefreshData}
             />
           ) : (
             <BulkImportView

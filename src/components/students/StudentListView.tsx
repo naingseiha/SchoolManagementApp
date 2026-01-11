@@ -391,9 +391,9 @@ export default function StudentListView({
           {filteredStudents.length === 0 ? (
             <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-16 text-center">
               <div className="text-gray-400 text-7xl mb-4">🔍</div>
-              <h3 className="text-2xl font-koulen text-gray-900 mb-2">
+              <h1 className="text-2xl font-koulen text-gray-900 mb-2">
                 រកមិនឃើញទិន្នន័យ
-              </h3>
+              </h1>
               <p className="text-sm text-gray-600 mb-4">
                 សូមព្យាយាមស្វែងរកដោយប្រើពាក្យគន្លឹះផ្សេង
               </p>

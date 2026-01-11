@@ -21,6 +21,11 @@ const getClassesLightweight = async (req, res) => {
                 section: true,
                 track: true,
                 academicYear: true,
+                _count: {
+                    select: {
+                        students: true,
+                    },
+                },
             },
             orderBy: [{ grade: "asc" }, { section: "asc" }],
         });
