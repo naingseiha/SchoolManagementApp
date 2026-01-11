@@ -20,6 +20,8 @@ import {
   UserCheck,
   Sparkles,
   Loader2,
+  Shield,
+  UserCog,
 } from "lucide-react";
 
 function Sidebar() {
@@ -68,6 +70,20 @@ function Sidebar() {
       href: "/subjects",
       roles: ["ADMIN"],
       gradient: "from-indigo-500 to-purple-500",
+    },
+    {
+      icon: Shield,
+      label: "គ្រប់គ្រងគណនី",
+      href: "/admin/accounts",
+      roles: ["ADMIN"],
+      gradient: "from-red-500 to-orange-500",
+    },
+    {
+      icon: UserCog,
+      label: "គ្រប់គ្រងតួនាទី",
+      href: "/admin/students",
+      roles: ["ADMIN"],
+      gradient: "from-blue-500 to-indigo-500",
     },
     {
       icon: ClipboardList,
@@ -217,7 +233,7 @@ function Sidebar() {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 p-3 space-y-2 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-hide">
         {filteredMenuItems.length === 0 ? (
           <div className="p-6 text-center">
             <div className="mb-4 animate-bounce">
@@ -356,20 +372,14 @@ function Sidebar() {
         </div>
       )}
 
-      {/* Custom Scrollbar Styles */}
+      {/* Custom Scrollbar Styles - Hidden */}
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.3);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.5);
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
 
         @keyframes slideIn {
