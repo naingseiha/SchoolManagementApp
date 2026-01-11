@@ -1,20 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   Loader2,
   Download,
   AlertCircle,
   CheckCircle,
-  Clock,
   GraduationCap,
   BookOpen,
   Calendar,
   Users,
   Shield,
-  RefreshCw,
   FileText,
+  Save,
+  X,
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -27,6 +27,7 @@ import {
   getAcademicYearOptions,
 } from "@/utils/academicYear";
 import ScoreReportTemplate from "./ScoreReportTemplate";
+import { StudentScoreCard } from "./StudentScoreCard";
 
 interface Subject {
   id: string;
@@ -82,8 +83,10 @@ export default function MobileGradeEntry({
   month: propMonth,
   year: propYear,
 }: MobileGradeEntryProps = {}) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { classes, isLoadingClasses, refreshClasses } = useData();
-  const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { currentUser, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
 
   // ✅ Read classId from URL params or props
@@ -107,16 +110,16 @@ export default function MobileGradeEntry({
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Auto-save state
-  const [savingStudents, setSavingStudents] = useState<Set<string>>(new Set());
-  const [savedStudents, setSavedStudents] = useState<Set<string>>(new Set());
-  const saveTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
-  // ✅ FIX: Add queue for batch saves to prevent concurrent API calls
-  const saveQueueRef = useRef<Map<string, number | null>>(new Map());
-  const batchSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isBatchSavingRef = useRef(false);
+  // ✅ Manual save state (no auto-save)
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // ✅ NEW: Verification state
+  // ✅ Unsaved changes warning
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifiedAt, setVerifiedAt] = useState<Date | null>(null);
   const [verificationDiscrepancies, setVerificationDiscrepancies] = useState<
@@ -205,7 +208,7 @@ export default function MobileGradeEntry({
           const code = st.subject?.code;
           return code ? code.split("-")[0] : null;
         })
-        .filter((code): code is string => code !== null);
+        .filter((code: string | null): code is string => code !== null);
 
       return new Set(subjectCodes);
     }
@@ -231,6 +234,17 @@ export default function MobileGradeEntry({
       return;
     }
 
+    // ✅ Check for unsaved changes before loading new data
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        // Load data after user confirms
+        setHasUnsavedChanges(false);
+        handleLoadData();
+      });
+      setShowUnsavedWarning(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setGridData(null);
@@ -238,8 +252,7 @@ export default function MobileGradeEntry({
     setStudents([]);
     setSelectedSubject("");
     setDataLoaded(false);
-    setSavedStudents(new Set());
-    setSavingStudents(new Set());
+    setHasUnsavedChanges(false); // Reset unsaved changes
     // ✅ Reset confirmation when loading new data
     setIsConfirmed(false);
     setConfirmedAt(null);
@@ -323,6 +336,7 @@ export default function MobileGradeEntry({
     }
   };
 
+  // ✅ Load students when gridData or selectedSubject changes
   useEffect(() => {
     if (!gridData || !selectedSubject) {
       setStudents([]);
@@ -350,8 +364,12 @@ export default function MobileGradeEntry({
     });
 
     setStudents(studentGrades);
+  }, [gridData, selectedSubject, subjects]);
 
-    // ✅ Check if current subject is already confirmed
+  // ✅ Separate effect for confirmation status (doesn't affect students state)
+  useEffect(() => {
+    if (!selectedSubject) return;
+
     const confirmation = confirmations.get(selectedSubject);
     if (confirmation) {
       setIsConfirmed(true);
@@ -360,31 +378,43 @@ export default function MobileGradeEntry({
       setIsConfirmed(false);
       setConfirmedAt(null);
     }
-  }, [gridData, selectedSubject, subjects, confirmations]);
+  }, [selectedSubject, confirmations]);
 
-  // ✅ FIX: Batch save function to save multiple students at once
-  const executeBatchSave = useCallback(async () => {
-    if (!selectedClass || !selectedSubject) return;
-    if (isBatchSavingRef.current) return;
-    if (saveQueueRef.current.size === 0) return;
+  // ✅ Manual Save All function
+  const handleSaveAll = useCallback(async () => {
+    if (!hasUnsavedChanges) {
+      // No changes to save
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+      return;
+    }
 
-    // ✅ Snapshot the queue
-    const studentsToSave = new Map(saveQueueRef.current);
-    saveQueueRef.current.clear();
+    if (!selectedClass || !selectedSubject) {
+      alert("សូមជ្រើសរើសថ្នាក់ និងមុខវិជ្ជាសិន");
+      return;
+    }
 
-    isBatchSavingRef.current = true;
-
-    // Mark all as saving
-    setSavingStudents((prev) => new Set([...prev, ...studentsToSave.keys()]));
+    setSaving(true);
+    setSaveSuccess(false);
 
     try {
-      const gradesToSave = Array.from(studentsToSave.entries()).map(
-        ([studentId, score]) => ({
-          studentId,
+      // ✅ Only save students that have scores (not null/blank)
+      // If score is null, we skip it (don't create/update)
+      const gradesToSave = students
+        .filter((student) => student.score !== null)
+        .map((student) => ({
+          studentId: student.studentId,
           subjectId: selectedSubject,
-          score: score!,
-        })
-      );
+          score: student.score!,
+        }));
+
+      // If no scores to save, just mark as saved
+      if (gradesToSave.length === 0) {
+        setHasUnsavedChanges(false);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+        return;
+      }
 
       await gradeApi.bulkSaveGrades(
         selectedClass,
@@ -393,67 +423,52 @@ export default function MobileGradeEntry({
         gradesToSave
       );
 
-      // Remove from saving state
-      setSavingStudents((prev) => {
-        const next = new Set(prev);
-        studentsToSave.forEach((_, studentId) => next.delete(studentId));
-        return next;
-      });
+      // Success!
+      setHasUnsavedChanges(false);
+      setSaveSuccess(true);
 
-      // Add to saved state
-      setSavedStudents((prev) => new Set([...prev, ...studentsToSave.keys()]));
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
 
-      // Clear saved indicators after 2 seconds
-      setTimeout(() => {
-        setSavedStudents((prev) => {
-          const next = new Set(prev);
-          studentsToSave.forEach((_, studentId) => next.delete(studentId));
-          return next;
-        });
-      }, 2000);
+      // Execute pending action if exists (navigation after save)
+      if (pendingAction) {
+        pendingAction();
+        setPendingAction(null);
+      }
     } catch (error: any) {
-      setSavingStudents((prev) => {
-        const next = new Set(prev);
-        studentsToSave.forEach((_, studentId) => next.delete(studentId));
-        return next;
-      });
-      alert(`មានបញ្ហា: ${error.message}`);
+      console.error("Save error:", error);
+      alert(`មានបញ្ហាក្នុងការរក្សាទុក: ${error.message}`);
     } finally {
-      isBatchSavingRef.current = false;
-
-      // ✅ If more changes were queued during save, trigger another batch
-      if (saveQueueRef.current.size > 0) {
-        batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 500);
-      }
+      setSaving(false);
     }
-  }, [selectedClass, selectedSubject, selectedMonth, selectedYear]);
+  }, [
+    hasUnsavedChanges,
+    selectedClass,
+    selectedSubject,
+    selectedMonth,
+    selectedYear,
+    students,
+    pendingAction,
+  ]);
 
-  // ✅ Auto-save function - now queues for batch save
-  const autoSaveScore = useCallback(
-    (studentId: string, score: number | null) => {
-      if (!selectedClass || !selectedSubject) return;
-
-      // ✅ Add to batch queue
-      saveQueueRef.current.set(studentId, score);
-
-      // ✅ Clear existing batch timeout
-      if (batchSaveTimeoutRef.current) {
-        clearTimeout(batchSaveTimeoutRef.current);
-      }
-
-      // ✅ Schedule batch save after 3 seconds of inactivity (increased from 1s to prevent partial saves)
-      batchSaveTimeoutRef.current = setTimeout(executeBatchSave, 3000);
-    },
-    [selectedClass, selectedSubject, executeBatchSave]
-  );
-
-  // ✅ Handle score change with auto-save
+  // ✅ Handle score change - MANUAL SAVE ONLY
   const handleScoreChange = useCallback(
     (studentId: string, value: string, maxScore: number) => {
-      const score = value === "" ? null : parseFloat(value);
+      // Parse and validate the score
+      let score: number | null = null;
 
-      if (score !== null && score > maxScore) {
-        return;
+      if (value !== "") {
+        const parsed = parseFloat(value);
+        // Ensure valid number (not NaN) and within range
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= maxScore) {
+          score = parsed;
+        } else if (!isNaN(parsed) && parsed > maxScore) {
+          // Invalid: exceeds max score, don't update
+          return;
+        } else {
+          // Invalid input (NaN), don't update
+          return;
+        }
       }
 
       // Update local state immediately
@@ -462,6 +477,9 @@ export default function MobileGradeEntry({
           student.studentId === studentId ? { ...student, score } : student
         )
       );
+
+      // ✅ Mark as unsaved (NO AUTO-SAVE)
+      setHasUnsavedChanges(true);
 
       // ✅ Reset confirmation when scores change
       setIsConfirmed(false);
@@ -474,32 +492,21 @@ export default function MobileGradeEntry({
           return updated;
         });
       }
-
-      // ✅ FIX: Remove per-student timeout, use batch queue instead
-      if (score !== null) {
-        autoSaveScore(studentId, score);
-      }
     },
-    [autoSaveScore, selectedSubject]
+    [selectedSubject]
   );
 
-  // ✅ Handle blur - trigger immediate save when user leaves input
-  const handleBlur = useCallback(
-    (studentId: string) => {
-      if (saveQueueRef.current.has(studentId)) {
-        // Cancel pending timeout and save immediately
-        if (batchSaveTimeoutRef.current) {
-          clearTimeout(batchSaveTimeoutRef.current);
-        }
-        executeBatchSave();
-      }
-    },
-    [executeBatchSave]
-  );
+  // ✅ No auto-save on blur - user must click Save All button
 
-  // ✅ NEW: Verify scores - reload from database and compare
+  // ✅ Verify scores - reload from database and compare
   const handleVerifyScores = useCallback(async () => {
     if (!selectedClass || !selectedSubject || !gridData) {
+      return;
+    }
+
+    // Check for unsaved changes first
+    if (hasUnsavedChanges) {
+      alert("សូមរក្សាទុកការផ្លាស់ប្តូរសិន • Please save changes first");
       return;
     }
 
@@ -509,16 +516,6 @@ export default function MobileGradeEntry({
     setIncompleteCount(0);
 
     try {
-      // Force save any pending changes first
-      if (saveQueueRef.current.size > 0) {
-        if (batchSaveTimeoutRef.current) {
-          clearTimeout(batchSaveTimeoutRef.current);
-        }
-        await executeBatchSave();
-        // Wait a bit for the save to complete
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
-
       // Reload fresh data from database
       const freshData = await gradeApi.getGradesGrid(
         selectedClass,
@@ -604,15 +601,15 @@ export default function MobileGradeEntry({
     gridData,
     students,
     subjects,
-    executeBatchSave,
+    hasUnsavedChanges,
   ]);
 
-  // ✅ NEW: Handle confirmation
+  // ✅ Handle confirmation
   const handleConfirmScores = useCallback(async () => {
     // Check if there are any unsaved changes
-    if (saveQueueRef.current.size > 0 || savingStudents.size > 0) {
+    if (hasUnsavedChanges || saving) {
       alert(
-        "សូមរង់ចាំពិន្ទុរក្សាទុករួច • Please wait for all scores to save first"
+        "សូមរក្សាទុកការផ្លាស់ប្តូរសិន • Please save changes first"
       );
       return;
     }
@@ -681,7 +678,8 @@ export default function MobileGradeEntry({
     }
   }, [
     students,
-    savingStudents,
+    hasUnsavedChanges,
+    saving,
     currentUser,
     selectedClass,
     selectedSubject,
@@ -807,15 +805,115 @@ export default function MobileGradeEntry({
     }
   }, [confirmedAt]);
 
-  // ✅ FIX: Cleanup timeouts on unmount
+  // ✅ Navigation handlers with unsaved changes warning
+  const handleMonthChange = (newMonth: string) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedMonth(newMonth);
+        setStudents([]);
+        setDataLoaded(false);
+        setHasUnsavedChanges(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedMonth(newMonth);
+      setStudents([]);
+      setDataLoaded(false);
+    }
+  };
+
+  const handleYearChange = (newYear: number) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedYear(newYear);
+        setStudents([]);
+        setDataLoaded(false);
+        setHasUnsavedChanges(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedYear(newYear);
+      setStudents([]);
+      setDataLoaded(false);
+    }
+  };
+
+  const handleClassChange = (newClassId: string) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedClass(newClassId);
+        setSelectedSubject("");
+        setStudents([]);
+        setDataLoaded(false);
+        setHasUnsavedChanges(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedClass(newClassId);
+      setSelectedSubject("");
+      setStudents([]);
+      setDataLoaded(false);
+    }
+  };
+
+  const handleSubjectChange = (newSubjectId: string) => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setSelectedSubject(newSubjectId);
+        setHasUnsavedChanges(false);
+      });
+      setShowUnsavedWarning(true);
+    } else {
+      setSelectedSubject(newSubjectId);
+    }
+  };
+
+  // ✅ Warning dialog handlers
+  const handleSaveAndContinue = async () => {
+    try {
+      setSaving(true);
+      await handleSaveAll();
+      setShowUnsavedWarning(false);
+    } catch (error) {
+      console.error("Error during save and continue:", error);
+      setShowUnsavedWarning(false);
+      setSaving(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setShowUnsavedWarning(false);
+    setHasUnsavedChanges(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelChange = () => {
+    setShowUnsavedWarning(false);
+    setPendingAction(null);
+  };
+
+  // ✅ Block navigation when there are unsaved changes
   useEffect(() => {
-    return () => {
-      saveTimeouts.current.forEach((timeout) => clearTimeout(timeout));
-      if (batchSaveTimeoutRef.current) {
-        clearTimeout(batchSaveTimeoutRef.current);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
       }
     };
-  }, []);
+
+    // Add event listener for browser back/forward/refresh
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  // Note: Tab bar navigation is now handled via onNavigate callback in MobileLayout
 
   if (authLoading) {
     return (
@@ -827,8 +925,22 @@ export default function MobileGradeEntry({
     );
   }
 
+  // ✅ Handle navigation from tab bar
+  const handleNavigate = useCallback((href: string) => {
+    // If has unsaved changes and trying to navigate away
+    if (hasUnsavedChanges && href !== pathname) {
+      setPendingAction(() => () => {
+        // Navigate after user confirms
+        router.push(href);
+      });
+      setShowUnsavedWarning(true);
+      return false; // Prevent navigation
+    }
+    return true; // Allow navigation
+  }, [hasUnsavedChanges, pathname, router]);
+
   return (
-    <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ">
+    <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ" onNavigate={handleNavigate}>
       {/* Clean Modern Header */}
       <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-3 mb-4">
@@ -861,11 +973,7 @@ export default function MobileGradeEntry({
             </div>
             <select
               value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setDataLoaded(false);
-                setSelectedSubject("");
-              }}
+              onChange={(e) => handleClassChange(e.target.value)}
               disabled={isLoadingClasses}
               className="w-full h-12 px-4 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 transition-all"
               style={{ fontSize: "16px" }}
@@ -894,10 +1002,7 @@ export default function MobileGradeEntry({
             <div className="grid grid-cols-2 gap-3">
               <select
                 value={selectedMonth}
-                onChange={(e) => {
-                  setSelectedMonth(e.target.value);
-                  setDataLoaded(false);
-                }}
+                onChange={(e) => handleMonthChange(e.target.value)}
                 className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
@@ -910,10 +1015,7 @@ export default function MobileGradeEntry({
 
               <select
                 value={selectedYear.toString()}
-                onChange={(e) => {
-                  setSelectedYear(parseInt(e.target.value));
-                  setDataLoaded(false);
-                }}
+                onChange={(e) => handleYearChange(parseInt(e.target.value))}
                 className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
@@ -979,10 +1081,7 @@ export default function MobileGradeEntry({
             </div>
             <select
               value={selectedSubject}
-              onChange={(e) => {
-                setSelectedSubject(e.target.value);
-                // ✅ Don't reset confirmation here - the useEffect will handle it based on confirmations Map
-              }}
+              onChange={(e) => handleSubjectChange(e.target.value)}
               className="w-full h-13 px-4 font-battambang bg-white border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm transition-all"
               style={{ fontSize: "16px" }}
             >
@@ -1051,16 +1150,54 @@ export default function MobileGradeEntry({
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-2xl px-4 py-3">
-                      <CheckCircle className="w-6 h-6 text-white mx-auto mb-1" />
-                      <p className="font-battambang text-xs text-purple-100 whitespace-nowrap">
-                        Auto-Save
-                      </p>
-                      <p className="font-battambang text-[10px] text-white/90">
-                        ស្វ័យប្រវត្តិ
-                      </p>
-                    </div>
+                  <div className="flex flex-col gap-2">
+                    {/* Save All Button */}
+                    <button
+                      onClick={handleSaveAll}
+                      disabled={!hasUnsavedChanges || saving}
+                      className={`px-5 py-3 rounded-xl font-battambang font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-[0.95] transition-all whitespace-nowrap ${
+                        hasUnsavedChanges
+                          ? "bg-white text-purple-600 hover:bg-purple-50"
+                          : "bg-white/20 backdrop-blur-sm border border-white/30 text-white cursor-not-allowed"
+                      }`}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>កំពុងរក្សា...</span>
+                        </>
+                      ) : hasUnsavedChanges ? (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>រក្សាទុក</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>រក្សារួច</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Confirm Button - Only show when saved and not confirmed */}
+                    {!hasUnsavedChanges && !isConfirmed && students.some((s) => s.score !== null) && (
+                      <button
+                        onClick={() => setShowReviewModal(true)}
+                        disabled={saving}
+                        className="px-4 py-2 rounded-xl font-battambang font-semibold text-xs flex items-center justify-center gap-1.5 bg-orange-500/90 hover:bg-orange-600 text-white shadow-md active:scale-[0.95] transition-all whitespace-nowrap"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>បញ្ជាក់</span>
+                      </button>
+                    )}
+
+                    {/* Confirmed Badge */}
+                    {isConfirmed && (
+                      <div className="px-3 py-1.5 rounded-lg bg-green-500/90 text-white flex items-center justify-center gap-1.5 text-xs font-battambang font-medium">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>បានបញ្ជាក់</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1162,101 +1299,21 @@ export default function MobileGradeEntry({
             {/* Modern Student Cards */}
             <div className="space-y-2.5">
               {students.map((student, index) => {
-                const isSaving = savingStudents.has(student.studentId);
-                const isSaved = savedStudents.has(student.studentId);
                 const hasDiscrepancy = verificationDiscrepancies.has(
                   student.studentId
                 );
                 const isIncomplete = incompleteScores.has(student.studentId);
 
                 return (
-                  <div
+                  <StudentScoreCard
                     key={student.studentId}
-                    className={`bg-white rounded-2xl shadow-sm border-2 p-4 hover:shadow-md transition-all ${
-                      hasDiscrepancy
-                        ? "border-orange-300 bg-orange-50 animate-pulse"
-                        : isIncomplete
-                        ? "border-yellow-300 bg-yellow-50 animate-pulse"
-                        : "border-gray-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Student Number Badge */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
-                        <span className="font-koulen text-base text-purple-700">
-                          {index + 1}
-                        </span>
-                      </div>
-
-                      {/* Student Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-battambang text-sm font-semibold text-gray-900 truncate mb-0.5">
-                          {student.khmerName}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-battambang font-medium ${
-                              student.gender === "MALE"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-pink-100 text-pink-700"
-                            }`}
-                          >
-                            {student.gender === "MALE" ? "ប្រុស" : "ស្រី"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Score Input */}
-                      <div className="flex-shrink-0 w-20 relative">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={
-                            student.score !== null
-                              ? student.score.toString()
-                              : ""
-                          }
-                          onChange={(e) =>
-                            handleScoreChange(
-                              student.studentId,
-                              e.target.value,
-                              student.maxScore
-                            )
-                          }
-                          onBlur={() => handleBlur(student.studentId)}
-                          disabled={isSaving}
-                          className={`w-full h-12 px-2 text-center font-battambang border-2 rounded-xl text-base font-bold focus:ring-2 focus:ring-purple-500 focus:border-purple-400 focus:bg-white transition-all disabled:opacity-70 disabled:cursor-not-allowed ${
-                            student.score === 0
-                              ? "bg-red-50 border-red-300 text-red-700"
-                              : "bg-purple-50 border-purple-200"
-                          }`}
-                          placeholder="0"
-                          style={{ fontSize: "16px" }}
-                        />
-                        {/* Absent indicator badge */}
-                        {student.score === 0 && (
-                          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-tight shadow-md">
-                            A
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Save Status Icon */}
-                      <div className="flex-shrink-0 w-8 flex items-center justify-center">
-                        {isSaving ? (
-                          <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
-                        ) : isSaved ? (
-                          <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          </div>
-                        ) : student.score !== null ? (
-                          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
+                    student={student}
+                    index={index}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    hasDiscrepancy={hasDiscrepancy}
+                    isIncomplete={isIncomplete}
+                    onScoreChange={handleScoreChange}
+                  />
                 );
               })}
             </div>
@@ -1303,54 +1360,24 @@ export default function MobileGradeEntry({
           </div>
         )}
 
-        {/* ✅ NEW: Floating Action Buttons */}
-        {selectedSubject && students.length > 0 && !loading && (
-          <div className="fixed right-5 bottom-24 z-40 flex flex-col items-end gap-3">
-            {/* Confirmation Status Badge */}
-            {isConfirmed && (
-              <div className="bg-green-600 text-white px-3 py-2 rounded-xl text-xs font-battambang font-medium shadow-lg animate-in slide-in-from-right duration-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>បានបញ្ជាក់ • Confirmed</span>
+        {/* ✅ Save Success Banner */}
+        {saveSuccess && (
+          <div className="fixed top-20 left-4 right-4 z-50 animate-in slide-in-from-top duration-300">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl shadow-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-battambang text-sm font-bold mb-0.5">
+                    រក្សាទុកបានជោគជ័យ ✓
+                  </p>
+                  <p className="font-battambang text-xs text-green-50">
+                    ពិន្ទុទាំងអស់ត្រូវបានរក្សាទុក • All scores saved
+                  </p>
                 </div>
               </div>
-            )}
-
-            {/* Review & Confirm Button - Primary action when not confirmed */}
-            {!isConfirmed && students.some((s) => s.score !== null) && (
-              <button
-                onClick={() => setShowReviewModal(true)}
-                disabled={savingStudents.size > 0}
-                className="relative w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:from-gray-300 disabled:to-gray-400"
-              >
-                <Shield className="w-7 h-7 text-white" />
-                {savingStudents.size === 0 && (
-                  <span className="absolute inset-0 rounded-full border-4 border-orange-400 opacity-0 animate-ping"></span>
-                )}
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">!</span>
-                </div>
-              </button>
-            )}
-
-            {/* Verify Database Button - Secondary action */}
-            <button
-              onClick={handleVerifyScores}
-              disabled={isVerifying}
-              className={`relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 ${
-                isVerifying
-                  ? "bg-gradient-to-r from-blue-500 to-blue-600 animate-pulse"
-                  : isConfirmed
-                  ? "bg-gradient-to-r from-green-500 to-green-600"
-                  : "bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
-              }`}
-            >
-              {isVerifying ? (
-                <Loader2 className="w-6 h-6 text-white animate-spin" />
-              ) : (
-                <RefreshCw className="w-6 h-6 text-white" />
-              )}
-            </button>
+            </div>
           </div>
         )}
 
@@ -1626,13 +1653,18 @@ export default function MobileGradeEntry({
               <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
                 <button
                   onClick={handleConfirmScores}
-                  disabled={savingStudents.size > 0}
+                  disabled={saving || hasUnsavedChanges}
                   className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-300 disabled:to-gray-400 text-white font-battambang font-bold text-base py-4 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
-                  {savingStudents.size > 0 ? (
+                  {saving ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       រង់ចាំ...
+                    </>
+                  ) : hasUnsavedChanges ? (
+                    <>
+                      <AlertCircle className="w-5 h-5" />
+                      សូមរក្សាទុកសិន • Save First
                     </>
                   ) : (
                     <>
@@ -1682,6 +1714,72 @@ export default function MobileGradeEntry({
           </div>
         )}
       </div>
+
+      {/* ✅ Unsaved Changes Warning Dialog */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-7 h-7 text-orange-600" />
+              </div>
+              <div>
+                <h1 className="font-koulen text-xl text-gray-900">
+                  មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
+                </h1>
+                <p className="text-sm text-gray-600 font-battambang">
+                  Unsaved Changes
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6 font-battambang leading-relaxed">
+              អ្នកមានពិន្ទុដែលមិនទាន់រក្សាទុក។ តើអ្នកចង់រក្សាទុកវាឬបោះបង់?
+              <br />
+              <span className="text-gray-500">
+                You have unsaved scores. Do you want to save or discard them?
+              </span>
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleSaveAndContinue}
+                disabled={saving}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-battambang font-bold py-3.5 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    កំពុងរក្សាទុក...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    រក្សាទុក & បន្ត • Save & Continue
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleDiscardChanges}
+                disabled={saving}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-battambang font-bold py-3.5 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <X className="w-5 h-5" />
+                បោះបង់ការផ្លាស់ប្តូរ • Discard Changes
+              </button>
+
+              <button
+                onClick={handleCancelChange}
+                disabled={saving}
+                className="w-full bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 font-battambang font-medium py-3 px-6 rounded-xl active:scale-[0.98] transition-all"
+              >
+                បោះបង់ • Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </MobileLayout>
   );
 }
