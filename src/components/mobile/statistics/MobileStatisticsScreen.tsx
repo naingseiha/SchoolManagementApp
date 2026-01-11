@@ -98,9 +98,9 @@ export default function MobileStatisticsScreen() {
             <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <XCircle className="w-10 h-10 text-red-600" />
             </div>
-            <h2 className="font-koulen text-2xl text-gray-900 mb-2">
+            <h1 className="font-koulen text-2xl text-gray-900 mb-2">
               មានបញ្ហា
-            </h2>
+            </h1>
             <p className="font-battambang text-gray-600 mb-6">{error}</p>
             <button
               onClick={() => loadStats()}
@@ -289,9 +289,9 @@ export default function MobileStatisticsScreen() {
           <div className="px-5 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <Trophy className="w-5 h-5 text-orange-500" />
-              <h3 className="font-koulen text-lg text-gray-900">
+              <h1 className="font-koulen text-lg text-gray-900">
                 ថ្នាក់ល្អបំផុត
-              </h3>
+              </h1>
             </div>
             <div className="space-y-2">
               {stats.topPerformingClasses.slice(0, 5).map((cls, index) => (

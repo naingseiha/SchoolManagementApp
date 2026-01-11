@@ -23,7 +23,7 @@ type ViewMode = "list" | "bulk-import";
 
 export default function StudentsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { classes, students: contextStudents, refreshStudents } = useData();
+  const { classes, students: contextStudents, refreshStudents, isLoadingClasses } = useData();
   const router = useRouter();
   const deviceType = useDeviceType();
 
@@ -40,7 +40,7 @@ export default function StudentsPage() {
     setActiveTab("list");
   };
 
-  if (authLoading) {
+  if (authLoading || isLoadingClasses) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
