@@ -9,8 +9,7 @@ import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
-import StudentListView from "@/components/students/StudentListView";
-import StudentListViewOptimized from "@/components/students/StudentListViewOptimized";
+import StudentListViewV2 from "@/components/students/StudentListViewV2";
 import BulkImportView from "@/components/students/BulkImportView";
 import { studentsApi } from "@/lib/api/students";
 import { Users, Upload } from "lucide-react";
@@ -147,7 +146,7 @@ export default function StudentsPage() {
 
           {/* Content */}
           {activeTab === "list" ? (
-            <StudentListViewOptimized
+            <StudentListViewV2
               classes={classes}
             />
           ) : (

@@ -271,17 +271,34 @@ export const studentsApi = {
    * @param limit - Items per page (default: 50)
    * @returns Students response with pagination info
    */
-  async getAllLightweight(page: number = 1, limit: number = 50): Promise<StudentsResponse> {
+  async getAllLightweight(
+    page: number = 1,
+    limit: number = 50,
+    classId?: string,
+    gender?: string
+  ): Promise<StudentsResponse> {
     try {
-      const cacheKey = `students:lightweight:page${page}:limit${limit}`;
+      const cacheKey = `students:lightweight:page${page}:limit${limit}:class${classId || "all"}:gender${gender || "all"}`;
 
       return apiCache.getOrFetch(
         cacheKey,
         async () => {
-          console.log(`⚡ Fetching students (lightweight) - Page ${page}, Limit ${limit}...`);
+          // Build query params
+          const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString(),
+          });
+          if (classId && classId !== "all") {
+            params.append("classId", classId);
+          }
+          if (gender && gender !== "all") {
+            params.append("gender", gender);
+          }
+
+          console.log(`⚡ Fetching students (lightweight) - Page ${page}, Limit ${limit}, Class: ${classId || "all"}, Gender: ${gender || "all"}...`);
 
           // Fetch raw response without auto-unwrapping
-          const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"}/students/lightweight?page=${page}&limit=${limit}`;
+          const url = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"}/students/lightweight?${params.toString()}`;
           const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
           const response = await fetch(url, {

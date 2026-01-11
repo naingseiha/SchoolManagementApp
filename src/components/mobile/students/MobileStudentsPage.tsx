@@ -63,7 +63,7 @@ export default function MobileStudentsPage() {
       abortControllerRef.current = new AbortController();
 
       // Load all students with a large limit (mobile doesn't need pagination)
-      const response = await studentsApi.getAllLightweight(1, 10000);
+      const response = await studentsApi.getAllLightweight(1, 10000, undefined, undefined);
       if (response.success && Array.isArray(response.data)) {
         setStudents(response.data);
       } else {

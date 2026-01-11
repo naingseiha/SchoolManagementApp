@@ -16,11 +16,27 @@ const getStudentsLightweight = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;
         const skip = (page - 1) * limit;
+        // ✅ Filter parameters
+        const classId = req.query.classId;
+        const gender = req.query.gender;
         console.log(`📄 Page: ${page}, Limit: ${limit}, Skip: ${skip}`);
-        // ✅ Fetch total count for pagination metadata
-        const totalCount = await prisma.student.count();
-        // ✅ Fetch paginated students
+        if (classId)
+            console.log(`🎓 Filter by class: ${classId}`);
+        if (gender)
+            console.log(`👤 Filter by gender: ${gender}`);
+        // ✅ Build where clause for filtering
+        const where = {};
+        if (classId && classId !== "all") {
+            where.classId = classId;
+        }
+        if (gender && gender !== "all") {
+            where.gender = gender === "male" ? "MALE" : "FEMALE";
+        }
+        // ✅ Fetch total count with filters
+        const totalCount = await prisma.student.count({ where });
+        // ✅ Fetch paginated students with filters
         const students = await prisma.student.findMany({
+            where,
             select: {
                 id: true,
                 studentId: true,
