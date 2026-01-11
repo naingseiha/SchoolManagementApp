@@ -264,37 +264,44 @@ Assigns student roles (class leaders).
   - Otherwise → Student Code
 - Sends appropriate field to backend
 
-## 📋 Next Steps (Not Yet Implemented)
+## 📋 Implementation Status
 
-### Phase 6: Frontend - Admin Dashboard
-- [ ] Create account management UI
-- [ ] Add deactivation controls
-- [ ] Add activation controls
-- [ ] Show statistics dashboard
+### Phase 6: Frontend - Admin Dashboard ✅ COMPLETED
+- ✅ Create account management UI (`/admin/accounts`)
+- ✅ Add deactivation controls (all, by grade, by class)
+- ✅ Add activation controls (all, by grade, by class, specific students)
+- ✅ Show statistics dashboard (overall and by grade)
 
-### Phase 7: Frontend - Student Role Management
-- [ ] Add role selector in student form
-- [ ] Display role badges in student list
-- [ ] Validate leader assignments
+### Phase 7: Frontend - Student Role Management ✅ COMPLETED
+- ✅ Add role management UI (`/admin/students`)
+- ✅ Display role badges in student list
+- ✅ Add role selector with modal
+- ✅ Create student accounts
+- ✅ Reset student passwords
+- ✅ Validate leader assignments (backend validates)
 
-### Phase 8: Frontend - Student Portal
-- [ ] Create student dashboard
-- [ ] View own grades
-- [ ] View own attendance
-- [ ] Change password feature
+### Phase 8: Frontend - Student Portal ✅ COMPLETED
+- ✅ Create student dashboard (`/student-portal`)
+- ✅ Display student profile and role
+- ⏳ View own grades (placeholder - needs backend API)
+- ⏳ View own attendance (placeholder - needs backend API)
+- ⏳ Change password feature (placeholder - needs backend API)
 
-### Phase 9: Testing
-- [ ] Test all login methods
-- [ ] Test bulk operations
-- [ ] Test role validations
-- [ ] Test access controls
+### Phase 9: Testing ⏳ IN PROGRESS
+- ✅ Test login with student code
+- ✅ Test login with email
+- ✅ Test login with phone
+- [ ] Test bulk deactivation operations
+- [ ] Test bulk activation operations
+- [ ] Test role assignment validations
+- [ ] Test access controls (admin vs student)
 
-### Phase 10: Production Deployment
-- [ ] Run database migration: `npx prisma migrate deploy`
-- [ ] Test on staging
-- [ ] Create database backup
+### Phase 10: Production Deployment ⏳ READY
+- ⚠️ Run database migration: `npx prisma migrate deploy`
+- [ ] Test on staging environment
+- [ ] Create database backup before migration
 - [ ] Deploy to production
-- [ ] Monitor resource usage
+- [ ] Monitor resource usage after deployment
 
 ## 🔒 Security Features
 
@@ -358,8 +365,12 @@ This will:
 
 ### Frontend
 - ✅ `src/lib/api/auth.ts` - Student login API client
+- ✅ `src/lib/api/admin.ts` - Admin operations API client
 - ✅ `src/app/(auth)/login/page.tsx` - Teacher/Student login toggle
 - ✅ `src/context/AuthContext.tsx` - Already supports new login
+- ✅ `src/app/admin/accounts/page.tsx` - **NEW**: Account management dashboard
+- ✅ `src/app/admin/students/page.tsx` - **NEW**: Student role management
+- ✅ `src/app/student-portal/page.tsx` - **NEW**: Student portal dashboard
 
 ## 📚 API Endpoint Summary
 
