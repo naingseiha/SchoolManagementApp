@@ -64,7 +64,11 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export default function MobileBottomNav() {
+interface MobileBottomNavProps {
+  onNavigate?: (href: string) => boolean; // Returns false to prevent navigation
+}
+
+export default function MobileBottomNav({ onNavigate }: MobileBottomNavProps = {}) {
   const pathname = usePathname();
   const { currentUser } = useAuth();
 
@@ -89,10 +93,18 @@ export default function MobileBottomNav() {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
 
+          const handleClick = (e: React.MouseEvent) => {
+            // If onNavigate returns false, prevent navigation
+            if (onNavigate && !onNavigate(item.href)) {
+              e.preventDefault();
+            }
+          };
+
           return (
             <Link
               key={item.id}
               href={item.href}
+              onClick={handleClick}
               className={`flex flex-col items-center justify-center touch-feedback transition-all ${
                 isActive
                   ? "text-blue-600"

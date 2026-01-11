@@ -6,6 +6,7 @@ interface MobileLayoutProps {
   title: string;
   showMenu?: boolean;
   onMenuClick?: () => void;
+  onNavigate?: (href: string) => boolean; // Returns false to prevent navigation
 }
 
 export default function MobileLayout({
@@ -13,6 +14,7 @@ export default function MobileLayout({
   title,
   showMenu = false,
   onMenuClick,
+  onNavigate,
 }: MobileLayoutProps) {
   return (
     <div className="flex flex-col h-screen bg-gray-50 mobile-touch">
@@ -20,7 +22,7 @@ export default function MobileLayout({
       <main className="flex-1 overflow-y-auto pb-20 mobile-scroll">
         {children}
       </main>
-      <MobileBottomNav />
+      <MobileBottomNav onNavigate={onNavigate} />
     </div>
   );
 }
