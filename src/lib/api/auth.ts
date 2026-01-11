@@ -33,9 +33,12 @@ export const authApi = {
       console.log("📤 Calling login API...");
       console.log("  - Identifier:", credentials.identifier);
 
-      // ✅ Transform identifier to email, phone, or studentCode based on format
+      // ✅ Smart detection: email, phone, or studentCode
       const isEmail = credentials.identifier.includes("@");
-      const isPhone = /^[0-9+\-\s()]+$/.test(credentials.identifier);
+      // Phone: starts with 0 and 9-10 digits (Cambodian format)
+      const isPhone = /^0\d{8,9}$/.test(credentials.identifier);
+      // Student code: 8 digits NOT starting with 0, or any non-numeric
+      const isStudentCode = !isEmail && !isPhone;
       
       let loginPayload: any = {
         password: credentials.password,
@@ -49,7 +52,7 @@ export const authApi = {
         loginPayload.phone = credentials.identifier;
         console.log("  - Sending as: phone");
       } else {
-        // Assume it's a student code
+        // Student code or any other identifier
         loginPayload.studentCode = credentials.identifier;
         console.log("  - Sending as: studentCode");
       }
