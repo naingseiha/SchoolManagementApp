@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/useToast";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import GradeGridEditor from "@/components/grades/GradeGridEditor";
+import { GradeGridSkeleton } from "@/components/grades/GradeGridSkeleton";
 import { useDeviceType } from "@/lib/utils/deviceDetection";
 import dynamic from "next/dynamic";
 import {
@@ -722,14 +723,7 @@ export default function GradeEntryPage() {
 
             {/* Grid */}
             {loading ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
-                <div className="flex flex-col items-center justify-center">
-                  <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mb-4" />
-                  <p className="text-sm font-medium text-gray-600">
-                    កំពុងផ្ទុកទិន្នន័យ...
-                  </p>
-                </div>
-              </div>
+              <GradeGridSkeleton />
             ) : gridData ? (
               <GradeGridEditor
                 gridData={gridData}

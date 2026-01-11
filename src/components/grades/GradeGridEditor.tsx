@@ -6,12 +6,14 @@ import type { GradeGridData, BulkSaveGradeItem } from "@/lib/api/grades";
 import { gradeApi } from "@/lib/api/grades";
 import { attendanceApi } from "@/lib/api/attendance";
 import { getOrderingMessage } from "@/lib/subjectOrder";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { GridHeader } from "./GridHeader";
 import { PasteNotification } from "./PasteNotification";
 import { GradeCell } from "./GradeCell";
 import { GridFooter } from "./GridFooter";
 import { FloatingSavePanel } from "./FloatingSavePanel";
+import { StudentRow } from "./StudentRow";
 import { useGradeSorting } from "./useGradeSorting";
 import { useGradeCalculations } from "./useGradeCalculations";
 import { useGradeHandlers } from "./useGradeHandlers";
@@ -323,6 +325,16 @@ export default function GradeGridEditor({
     }
   };
 
+  // ✅ Setup virtualization for the table
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: rankedStudents.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 45, // Estimated row height in pixels
+    overscan: 5, // Render 5 extra rows above and below for smooth scrolling
+  });
+
   return (
     <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative">
       <GridHeader
@@ -368,6 +380,7 @@ export default function GradeGridEditor({
       {pastePreview && <PasteNotification message={pastePreview} />}
 
       <div
+        ref={tableContainerRef}
         className="overflow-auto"
         style={{
           maxHeight: "calc(100vh - 260px)",
@@ -461,118 +474,58 @@ export default function GradeGridEditor({
             </tr>
           </thead>
           <tbody>
-            {rankedStudents.map((student, studentIndex) => {
-              const rowBg = studentIndex % 2 === 0 ? "bg-white" : "bg-gray-50";
+            {/* Spacer row for virtual scrolling - top padding */}
+            {rowVirtualizer.getVirtualItems().length > 0 && rowVirtualizer.getVirtualItems()[0].index > 0 && (
+              <tr>
+                <td
+                  colSpan={sortedSubjects.length + 9}
+                  style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }}
+                />
+              </tr>
+            )}
+
+            {/* Render only visible rows */}
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const studentIndex = virtualRow.index;
+              const student = rankedStudents[studentIndex];
 
               return (
-                <tr
+                <StudentRow
                   key={student.studentId}
-                  className={`${rowBg} hover:bg-indigo-50/50 transition-colors`}
-                >
-                  <td
-                    className={`sticky left-0 z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2. 5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
-                  >
-                    {studentIndex + 1}
-                  </td>
-                  <td
-                    className={`sticky left-12 z-10 ${rowBg} hover:bg-indigo-50/50 px-4 py-2.5 text-sm font-semibold text-gray-800 border-b border-r border-gray-200`}
-                  >
-                    {student.studentName}
-                  </td>
-                  <td
-                    className={`sticky left-[220px] z-10 ${rowBg} hover:bg-indigo-50/50 px-3 py-2.5 text-center border-b border-r border-gray-200`}
-                  >
-                    <span
-                      className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                        student.gender === "MALE"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-pink-100 text-pink-700"
-                      }`}
-                    >
-                      {student.gender === "MALE" ? "ប" : "ស"}
-                    </span>
-                  </td>
-
-                  {sortedSubjects.map((subject, subjectIndex) => {
-                    const cellKey = `${student.studentId}_${subject.id}`;
-                    const cell = cells[cellKey];
-                    const colors = getSubjectColor(
-                      subject.code,
-                      subject.isEditable || false
-                    );
-
-                    if (!cell)
-                      return (
-                        <td
-                          key={subject.id}
-                          className={`border-b border-r border-gray-200 ${colors.cell}`}
-                        />
-                      );
-
-                    return (
-                      <td
-                        key={subject.id}
-                        className={`px-2 py-2 text-center border-b border-r border-gray-200 ${colors.cell}`}
-                      >
-                        <GradeCell
-                          cell={cell}
-                          cellKey={cellKey}
-                          studentIndex={studentIndex}
-                          subjectIndex={subjectIndex}
-                          pasteMode={pasteMode}
-                          pastedCells={pastedCells}
-                          editedCells={editedCells}
-                          isLoading={isLoading}
-                          saving={saving}
-                          onCellChange={handleCellChange}
-                          onKeyDown={(e, si, subi) =>
-                            handleKeyDown(
-                              e,
-                              si,
-                              subi,
-                              sortedStudents.length,
-                              sortedSubjects.length,
-                              sortedStudents,
-                              inputRefs
-                            )
-                          }
-                          onPaste={handlePaste}
-                          onBlur={handleBlur}
-                          inputRef={(el) => {
-                            if (el) inputRefs.current[cellKey] = el;
-                          }}
-                        />
-                      </td>
-                    );
-                  })}
-
-                  <td className="px-3 py-2.5 text-center text-sm font-bold border-b border-r border-gray-200 bg-blue-50/50 text-blue-700">
-                    {student.totalScore}
-                  </td>
-                  <td className="px-3 py-2.5 text-center text-base font-bold border-b border-r border-gray-200 bg-green-50/50 text-green-700">
-                    {student.average}
-                  </td>
-                  <td className="px-2 py-2.5 text-center border-b border-r border-gray-200 bg-yellow-50/50">
-                    <span
-                      className={`inline-flex items-center justify-center px-3 py-1 rounded-md text-sm font-bold ${getGradeLevelColor(
-                        student.gradeLevel
-                      )}`}
-                    >
-                      {student.gradeLevel}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-center text-sm font-bold border-b border-r border-gray-200 bg-indigo-50/50 text-indigo-700">
-                    #{student.rank}
-                  </td>
-                  <td className="px-3 py-2.5 text-center text-sm font-semibold border-b border-r border-gray-200 bg-red-50/50 text-red-600">
-                    {student.absent || "-"}
-                  </td>
-                  <td className="px-3 py-2.5 text-center text-sm font-semibold border-b border-gray-200 bg-orange-50/50 text-orange-600">
-                    {student.permission || "-"}
-                  </td>
-                </tr>
+                  student={student}
+                  studentIndex={studentIndex}
+                  sortedSubjects={sortedSubjects}
+                  cells={cells}
+                  pasteMode={pasteMode}
+                  pastedCells={pastedCells}
+                  editedCells={editedCells}
+                  isLoading={isLoading}
+                  saving={saving}
+                  inputRefs={inputRefs}
+                  onCellChange={handleCellChange}
+                  onKeyDown={handleKeyDown}
+                  onPaste={handlePaste}
+                  onBlur={handleBlur}
+                  totalStudents={sortedStudents.length}
+                  sortedStudents={sortedStudents}
+                />
               );
             })}
+
+            {/* Spacer row for virtual scrolling - bottom padding */}
+            {rowVirtualizer.getVirtualItems().length > 0 && (
+              <tr>
+                <td
+                  colSpan={sortedSubjects.length + 9}
+                  style={{
+                    height: `${
+                      rowVirtualizer.getTotalSize() -
+                      (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end || 0)
+                    }px`,
+                  }}
+                />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
