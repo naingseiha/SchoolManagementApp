@@ -1,8 +1,9 @@
 import { apiClient } from "./client";
 
 export interface LoginCredentials {
-  identifier: string; // ✅ Phone or Email
+  identifier: string; // ✅ Can be: studentCode, phone, or email
   password: string;
+  studentCode?: string; // ✅ Optional explicit student code field
 }
 
 export interface User {
@@ -32,14 +33,26 @@ export const authApi = {
       console.log("📤 Calling login API...");
       console.log("  - Identifier:", credentials.identifier);
 
-      // ✅ Transform identifier to email or phone based on format
+      // ✅ Transform identifier to email, phone, or studentCode based on format
       const isEmail = credentials.identifier.includes("@");
-      const loginPayload = {
-        [isEmail ? "email" : "phone"]: credentials.identifier,
+      const isPhone = /^[0-9+\-\s()]+$/.test(credentials.identifier);
+      
+      let loginPayload: any = {
         password: credentials.password,
       };
 
-      console.log("  - Sending as:", isEmail ? "email" : "phone");
+      // Determine which field to use
+      if (isEmail) {
+        loginPayload.email = credentials.identifier;
+        console.log("  - Sending as: email");
+      } else if (isPhone) {
+        loginPayload.phone = credentials.identifier;
+        console.log("  - Sending as: phone");
+      } else {
+        // Assume it's a student code
+        loginPayload.studentCode = credentials.identifier;
+        console.log("  - Sending as: studentCode");
+      }
 
       const data = await apiClient.post<LoginResponseData>(
         "/auth/login",

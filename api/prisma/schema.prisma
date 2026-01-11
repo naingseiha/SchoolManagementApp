@@ -157,6 +157,10 @@ model Student {
   previousSchool            String?
   repeatingGrade            String?
   transferredFrom           String?
+  studentRole               StudentRole              @default(GENERAL)
+  isAccountActive           Boolean                  @default(true)
+  accountDeactivatedAt      DateTime?
+  deactivationReason        String?
   attendance                Attendance[]
   grades                    Grade[]
   monthlySummaries          StudentMonthlySummary[]
@@ -166,6 +170,8 @@ model Student {
   @@index([classId]) // ✅ OPTIMIZED PHASE 5: For class-based student queries
   @@index([grade12PassStatus]) // ✅ OPTIMIZED PHASE 5: For filtering by pass status
   @@index([gender]) // ✅ OPTIMIZED PHASE 5: For gender-based statistics
+  @@index([isAccountActive]) // For filtering active/inactive accounts
+  @@index([classId, studentRole]) // For querying class leaders
   @@map("students")
 }
 
@@ -329,4 +335,11 @@ enum WorkingLevel {
   FRAMEWORK_C
   CONTRACT
   PROBATION
+}
+
+enum StudentRole {
+  GENERAL
+  CLASS_LEADER
+  VICE_LEADER_1
+  VICE_LEADER_2
 }
