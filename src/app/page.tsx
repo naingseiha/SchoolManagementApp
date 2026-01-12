@@ -74,7 +74,12 @@ export default function DashboardPage() {
       console.log("⚠️ Not authenticated, redirecting to login...");
       router.push("/login");
     }
-  }, [isAuthenticated, isLoading, router]);
+    // Redirect students to their portal
+    if (!isLoading && isAuthenticated && currentUser?.role === "STUDENT") {
+      console.log("📍 Student detected, redirecting to student portal...");
+      router.push("/student-portal");
+    }
+  }, [isAuthenticated, isLoading, currentUser, router]);
 
   // Fetch dashboard statistics
   useEffect(() => {

@@ -221,12 +221,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("📍 Redirecting based on role:", result.user.role);
 
-      // ✅ Prefetch dashboard for faster navigation
-      router.prefetch("/");
-
-      // Redirect to main dashboard (root page) - prefetch makes this instant
-      console.log("→ Redirecting to dashboard");
-      router.push("/");
+      // ✅ Role-based redirect
+      if (result.user.role === "STUDENT") {
+        console.log("→ Redirecting student to student portal");
+        router.prefetch("/student-portal");
+        router.push("/student-portal");
+      } else {
+        console.log("→ Redirecting to dashboard");
+        router.prefetch("/");
+        router.push("/");
+      }
 
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     } catch (err: any) {
