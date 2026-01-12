@@ -468,38 +468,124 @@ export default function StudentPortalPage() {
                   <p className="text-gray-600 text-sm">កំពុងផ្ទុក...</p>
                 </div>
               ) : gradesData && gradesData.grades.length > 0 ? (
-                <div className="space-y-3">
-                  {gradesData.grades.map((grade) => (
-                    <div key={grade.id} className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-gray-900">{grade.subject.nameKh}</h3>
-                        <span className={`text-2xl font-bold ${(grade.percentage || 0) >= 50 ? 'text-green-600' : 'text-red-600'}`}>
-                          {grade.score?.toFixed(1) || '0'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm text-gray-600">
-                        <span>ពិន្ទុសរុប: {grade.maxScore}</span>
-                        <span>ភាគរយ: {grade.percentage?.toFixed(1) || '0'}%</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  {/* Summary Card */}
                   {gradesData.summaries && gradesData.summaries.length > 0 && (
-                    <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-lg p-5 text-white">
-                      <h3 className="font-bold mb-3">សង្ខេបពិន្ទុ</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-indigo-100">មធ្យមភាគ</p>
-                          <p className="text-3xl font-bold">{gradesData.summaries[0].average?.toFixed(2) || '0.00'}</p>
-                        </div>
-                        {gradesData.summaries[0].classRank && (
-                          <div>
-                            <p className="text-sm text-indigo-100">លំដាប់ថ្នាក់</p>
-                            <p className="text-3xl font-bold">#{gradesData.summaries[0].classRank}</p>
+                    <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
+                      <div className="relative">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="bg-white bg-opacity-20 p-2 rounded-xl">
+                            <Award className="w-5 h-5 text-white" />
                           </div>
-                        )}
+                          <h3 className="font-bold text-lg">សង្ខេបពិន្ទុ</h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                            <p className="text-xs text-indigo-100 mb-1">មធ្យមភាគ</p>
+                            <p className="text-2xl font-bold">{gradesData.summaries[0].average?.toFixed(2) || '0.00'}</p>
+                          </div>
+                          {gradesData.summaries[0].classRank && (
+                            <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                              <p className="text-xs text-indigo-100 mb-1">លំដាប់ថ្នាក់</p>
+                              <p className="text-2xl font-bold">#{gradesData.summaries[0].classRank}</p>
+                            </div>
+                          )}
+                          <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                            <p className="text-xs text-indigo-100 mb-1">មុខវិជ្ជា</p>
+                            <p className="text-2xl font-bold">{gradesData.grades.length}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
+
+                  {/* Grades List */}
+                  <div className="space-y-3">
+                    {gradesData.grades.map((grade) => {
+                      const percentage = grade.percentage || ((grade.score / grade.maxScore) * 100);
+                      const isPass = percentage >= 50;
+                      
+                      return (
+                        <div 
+                          key={grade.id} 
+                          className="bg-white rounded-2xl shadow-md border-2 border-gray-100 overflow-hidden hover:shadow-lg transition-all"
+                        >
+                          {/* Top Section - Subject and Score */}
+                          <div className="p-4 pb-3">
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex-1">
+                                <h3 className="font-bold text-gray-900 text-base leading-tight mb-1">
+                                  {grade.subject.nameKh}
+                                </h3>
+                                <p className="text-xs text-gray-500">
+                                  {grade.subject.code} • ក្រមសិលា: {grade.subject.coefficient}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <div className={`inline-flex items-baseline gap-1 px-3 py-1 rounded-xl ${
+                                  isPass 
+                                    ? 'bg-green-50' 
+                                    : 'bg-red-50'
+                                }`}>
+                                  <span className={`text-2xl font-bold ${
+                                    isPass ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {grade.score?.toFixed(1) || '0'}
+                                  </span>
+                                  <span className="text-sm text-gray-600 font-medium">
+                                    /{grade.maxScore}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-gray-600 font-medium">ភាគរយសម្រេច</span>
+                                <span className={`font-bold ${
+                                  isPass ? 'text-green-600' : 'text-red-600'
+                                }`}>
+                                  {percentage.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`absolute top-0 left-0 h-full rounded-full transition-all ${
+                                    isPass 
+                                      ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                                      : 'bg-gradient-to-r from-red-500 to-rose-500'
+                                  }`}
+                                  style={{ width: `${Math.min(percentage, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Bottom Section - Status Badge */}
+                          <div className={`px-4 py-2 ${
+                            isPass 
+                              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-t border-green-100' 
+                              : 'bg-gradient-to-r from-red-50 to-rose-50 border-t border-red-100'
+                          }`}>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs font-bold ${
+                                isPass ? 'text-green-700' : 'text-red-700'
+                              }`}>
+                                {isPass ? '✓ ជាប់' : '✗ ធ្លាក់'}
+                              </span>
+                              <div className="flex items-center gap-4 text-xs text-gray-600">
+                                <span>ខែ: {grade.month}</span>
+                                <span>ឆ្នាំ: {grade.year}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : gradesData ? (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl shadow-sm p-8 text-center border-2 border-dashed border-gray-300">
