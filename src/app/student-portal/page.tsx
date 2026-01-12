@@ -18,18 +18,21 @@ import {
   CheckCircle,
   RefreshCw,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Edit
 } from "lucide-react";
 import {
   getMyProfile,
   getMyGrades,
   getMyAttendance,
   changeMyPassword,
+  updateMyProfile,
   type StudentProfile,
   type GradesResponse,
   type AttendanceResponse,
 } from "@/lib/api/student-portal";
 import { getCurrentAcademicYear } from "@/utils/academicYear";
+import StudentProfileEditForm from "@/components/mobile/student-portal/StudentProfileEditForm";
 
 const ROLE_LABELS = {
   GENERAL: "សិស្សធម្មតា",
@@ -68,6 +71,7 @@ export default function StudentPortalPage() {
   // State management
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -84,6 +88,14 @@ export default function StudentPortalPage() {
   // Filter state
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+
+  // Clear message after 3 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   // Auth check
   useEffect(() => {
@@ -185,6 +197,21 @@ export default function StudentPortalPage() {
     }
   }, [newPassword, confirmPassword, oldPassword]);
 
+  const handleUpdateProfile = useCallback(async (data: any) => {
+    try {
+      setLoading(true);
+      await updateMyProfile(data);
+      setMessage({ type: 'success', text: 'កែប្រែព័ត៌មានបានជោគជ័យ' });
+      setIsEditingProfile(false);
+      await loadProfile(); // Reload profile data
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'មានបញ្ហាក្នុងការកែប្រែព័ត៌មាន' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -222,6 +249,19 @@ export default function StudentPortalPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Message Toast */}
+      {message && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full px-4">
+          <div className={`rounded-2xl shadow-xl p-4 ${
+            message.type === 'success' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            <p className="font-bold text-center">{message.text}</p>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="max-w-md mx-auto min-h-screen pb-24">
         <div className="p-5">
@@ -503,99 +543,118 @@ export default function StudentPortalPage() {
 
           {/* Profile Tab */}
           {activeTab === "profile" && profile && (
-            <div className="space-y-6">
-              {/* Profile Header */}
-              <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-xl p-8 text-center">
-                <div className="w-20 h-20 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white border-opacity-30">
-                  <User className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2">{studentName}</h2>
-                <p className="text-blue-100">{profile.email || profile.student.khmerName || "គ្មានអ៊ីមែល"}</p>
-                <div className="inline-block bg-white bg-opacity-20 backdrop-blur-sm px-4 py-2 rounded-full mt-3">
-                  <p className="text-white text-sm font-medium">{profile.student?.class?.name || "N/A"}</p>
-                </div>
-              </div>
+            <>
+              {isEditingProfile ? (
+                <StudentProfileEditForm
+                  profile={profile}
+                  onSave={handleUpdateProfile}
+                  onCancel={() => setIsEditingProfile(false)}
+                  isSubmitting={loading}
+                />
+              ) : (
+                <div className="space-y-6">
+                  {/* Profile Header */}
+                  <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-xl p-8 text-center">
+                    <div className="w-20 h-20 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white border-opacity-30">
+                      <User className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-2">{studentName}</h2>
+                    <p className="text-blue-100">{profile.email || profile.student.khmerName || "គ្មានអ៊ីមែល"}</p>
+                    <div className="inline-block bg-white bg-opacity-20 backdrop-blur-sm px-4 py-2 rounded-full mt-3">
+                      <p className="text-white text-sm font-medium">{profile.student?.class?.name || "N/A"}</p>
+                    </div>
+                  </div>
 
-              {/* Profile Info */}
-              <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
-                <div className="bg-gray-50 p-4 border-b">
-                  <h3 className="font-bold text-gray-900">ព័ត៌មានផ្ទាល់ខ្លួន</h3>
-                </div>
-                <div className="divide-y">
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">នាមខ្លួន</span>
-                    <span className="font-bold text-gray-900">{profile.firstName}</span>
-                  </div>
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">នាមត្រកូល</span>
-                    <span className="font-bold text-gray-900">{profile.lastName}</span>
-                  </div>
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">ឈ្មោះជាភាសាខ្មែរ</span>
-                    <span className="font-bold text-gray-900">{profile.student.khmerName || "N/A"}</span>
-                  </div>
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">អ៊ីមែល</span>
-                    <span className="font-bold text-gray-900 text-sm">{profile.email || "N/A"}</span>
-                  </div>
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">លេខទូរស័ព្ទ</span>
-                    <span className="font-bold text-gray-900">{profile.student.phoneNumber || profile.phone || "N/A"}</span>
-                  </div>
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">ថ្នាក់</span>
-                    <span className="font-bold text-gray-900">{profile.student?.class?.name || "N/A"}</span>
-                  </div>
-                  <div className="p-4 flex justify-between">
-                    <span className="text-gray-600">តួនាទី</span>
-                    <span className="font-bold text-gray-900">{ROLE_LABELS[profile.student?.studentRole as keyof typeof ROLE_LABELS] || "N/A"}</span>
-                  </div>
-                  {profile.student.dateOfBirth && (
-                    <div className="p-4 flex justify-between">
-                      <span className="text-gray-600">ថ្ងៃកំណើត</span>
-                      <span className="font-bold text-gray-900">{new Date(profile.student.dateOfBirth).toLocaleDateString('km-KH')}</span>
+                  {/* Profile Info */}
+                  <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+                    <div className="bg-gray-50 p-4 border-b">
+                      <h3 className="font-bold text-gray-900">ព័ត៌មានផ្ទាល់ខ្លួន</h3>
                     </div>
-                  )}
-                  {profile.student.gender && (
-                    <div className="p-4 flex justify-between">
-                      <span className="text-gray-600">ភេទ</span>
-                      <span className="font-bold text-gray-900">{profile.student.gender === 'MALE' ? 'ប្រុស' : 'ស្រី'}</span>
+                    <div className="divide-y">
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">នាមខ្លួន</span>
+                        <span className="font-bold text-gray-900">{profile.firstName}</span>
+                      </div>
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">នាមត្រកូល</span>
+                        <span className="font-bold text-gray-900">{profile.lastName}</span>
+                      </div>
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">ឈ្មោះជាភាសាខ្មែរ</span>
+                        <span className="font-bold text-gray-900">{profile.student.khmerName || "N/A"}</span>
+                      </div>
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">អ៊ីមែល</span>
+                        <span className="font-bold text-gray-900 text-sm">{profile.email || "N/A"}</span>
+                      </div>
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">លេខទូរស័ព្ទ</span>
+                        <span className="font-bold text-gray-900">{profile.student.phoneNumber || profile.phone || "N/A"}</span>
+                      </div>
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">ថ្នាក់</span>
+                        <span className="font-bold text-gray-900">{profile.student?.class?.name || "N/A"}</span>
+                      </div>
+                      <div className="p-4 flex justify-between">
+                        <span className="text-gray-600">តួនាទី</span>
+                        <span className="font-bold text-gray-900">{ROLE_LABELS[profile.student?.studentRole as keyof typeof ROLE_LABELS] || "N/A"}</span>
+                      </div>
+                      {profile.student.dateOfBirth && (
+                        <div className="p-4 flex justify-between">
+                          <span className="text-gray-600">ថ្ងៃកំណើត</span>
+                          <span className="font-bold text-gray-900">{new Date(profile.student.dateOfBirth).toLocaleDateString('km-KH')}</span>
+                        </div>
+                      )}
+                      {profile.student.gender && (
+                        <div className="p-4 flex justify-between">
+                          <span className="text-gray-600">ភេទ</span>
+                          <span className="font-bold text-gray-900">{profile.student.gender === 'MALE' ? 'ប្រុស' : 'ស្រី'}</span>
+                        </div>
+                      )}
+                      {profile.student.currentAddress && (
+                        <div className="p-4 flex justify-between items-start">
+                          <span className="text-gray-600">អាសយដ្ឋាន</span>
+                          <span className="font-bold text-gray-900 text-right max-w-[60%]">{profile.student.currentAddress}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {profile.student.currentAddress && (
-                    <div className="p-4 flex justify-between items-start">
-                      <span className="text-gray-600">អាសយដ្ឋាន</span>
-                      <span className="font-bold text-gray-900 text-right max-w-[60%]">{profile.student.currentAddress}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={() => setShowPasswordModal(true)}
-                  className="w-full flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
-                >
-                  <Lock className="w-6 h-6" />
-                  <span className="flex-1 text-left font-bold">ផ្លាស់ប្តូរពាក្យសម្ងាត់</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-4 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
-                >
-                  <LogOut className="w-6 h-6" />
-                  <span className="flex-1 text-left font-bold">ចាកចេញ</span>
-                </button>
-              </div>
-            </div>
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setIsEditingProfile(true)}
+                      className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
+                    >
+                      <Edit className="w-6 h-6" />
+                      <span className="flex-1 text-left font-bold">កែប្រែព័ត៌មាន</span>
+                    </button>
+                    <button
+                      onClick={() => setShowPasswordModal(true)}
+                      className="w-full flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
+                    >
+                      <Lock className="w-6 h-6" />
+                      <span className="flex-1 text-left font-bold">ផ្លាស់ប្តូរពាក្យសម្ងាត់</span>
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-4 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
+                    >
+                      <LogOut className="w-6 h-6" />
+                      <span className="flex-1 text-left font-bold">ចាកចេញ</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl max-w-md mx-auto">
-        <div className="grid grid-cols-4 gap-0 p-2">
+      {!isEditingProfile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl max-w-md mx-auto">
+          <div className="grid grid-cols-4 gap-0 p-2">
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center py-3 px-2 text-xs font-bold transition-all rounded-xl ${
@@ -642,6 +701,7 @@ export default function StudentPortalPage() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Password Change Modal */}
       {showPasswordModal && (

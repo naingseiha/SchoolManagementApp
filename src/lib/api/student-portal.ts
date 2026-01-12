@@ -163,13 +163,35 @@ export const updateMyProfile = async (
   data: Partial<{
     firstName: string;
     lastName: string;
+    khmerName: string;
+    englishName: string;
+    dateOfBirth: string;
+    gender: string;
     email: string;
     phone: string;
     phoneNumber: string;
     currentAddress: string;
     placeOfBirth: string;
+    fatherName: string;
+    motherName: string;
     parentPhone: string;
     parentOccupation: string;
+    previousGrade: string;
+    previousSchool: string;
+    repeatingGrade: string;
+    transferredFrom: string;
+    grade9ExamSession: string;
+    grade9ExamCenter: string;
+    grade9ExamRoom: string;
+    grade9ExamDesk: string;
+    grade9PassStatus: string;
+    grade12ExamSession: string;
+    grade12ExamCenter: string;
+    grade12ExamRoom: string;
+    grade12ExamDesk: string;
+    grade12Track: string;
+    grade12PassStatus: string;
+    remarks: string;
   }>
 ): Promise<StudentProfile> => {
   const response = await apiClient.put("/student-portal/profile", data);

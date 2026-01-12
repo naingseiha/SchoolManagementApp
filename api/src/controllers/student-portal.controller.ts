@@ -353,11 +353,33 @@ export const updateMyProfile = async (req: Request, res: Response) => {
       lastName,
       email,
       phone,
+      khmerName,
+      englishName,
+      dateOfBirth,
+      gender,
       phoneNumber,
       currentAddress,
       placeOfBirth,
+      fatherName,
+      motherName,
       parentPhone,
       parentOccupation,
+      previousGrade,
+      previousSchool,
+      repeatingGrade,
+      transferredFrom,
+      grade9ExamSession,
+      grade9ExamCenter,
+      grade9ExamRoom,
+      grade9ExamDesk,
+      grade9PassStatus,
+      grade12ExamSession,
+      grade12ExamCenter,
+      grade12ExamRoom,
+      grade12ExamDesk,
+      grade12Track,
+      grade12PassStatus,
+      remarks,
     } = req.body;
 
     if (!userId) {
@@ -386,19 +408,38 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     if (email !== undefined) userUpdateData.email = email;
     if (phone !== undefined) userUpdateData.phone = phone;
 
-    // Update student data
+    // Update student data - all fields
     const studentUpdateData: any = {};
     if (firstName !== undefined) studentUpdateData.firstName = firstName;
     if (lastName !== undefined) studentUpdateData.lastName = lastName;
+    if (khmerName !== undefined) studentUpdateData.khmerName = khmerName;
+    if (englishName !== undefined) studentUpdateData.englishName = englishName;
+    if (dateOfBirth !== undefined) studentUpdateData.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) studentUpdateData.gender = gender;
     if (email !== undefined) studentUpdateData.email = email;
     if (phoneNumber !== undefined) studentUpdateData.phoneNumber = phoneNumber;
-    if (currentAddress !== undefined)
-      studentUpdateData.currentAddress = currentAddress;
-    if (placeOfBirth !== undefined)
-      studentUpdateData.placeOfBirth = placeOfBirth;
+    if (currentAddress !== undefined) studentUpdateData.currentAddress = currentAddress;
+    if (placeOfBirth !== undefined) studentUpdateData.placeOfBirth = placeOfBirth;
+    if (fatherName !== undefined) studentUpdateData.fatherName = fatherName;
+    if (motherName !== undefined) studentUpdateData.motherName = motherName;
     if (parentPhone !== undefined) studentUpdateData.parentPhone = parentPhone;
-    if (parentOccupation !== undefined)
-      studentUpdateData.parentOccupation = parentOccupation;
+    if (parentOccupation !== undefined) studentUpdateData.parentOccupation = parentOccupation;
+    if (previousGrade !== undefined) studentUpdateData.previousGrade = previousGrade;
+    if (previousSchool !== undefined) studentUpdateData.previousSchool = previousSchool;
+    if (repeatingGrade !== undefined) studentUpdateData.repeatingGrade = repeatingGrade;
+    if (transferredFrom !== undefined) studentUpdateData.transferredFrom = transferredFrom;
+    if (grade9ExamSession !== undefined) studentUpdateData.grade9ExamSession = grade9ExamSession;
+    if (grade9ExamCenter !== undefined) studentUpdateData.grade9ExamCenter = grade9ExamCenter;
+    if (grade9ExamRoom !== undefined) studentUpdateData.grade9ExamRoom = grade9ExamRoom;
+    if (grade9ExamDesk !== undefined) studentUpdateData.grade9ExamDesk = grade9ExamDesk;
+    if (grade9PassStatus !== undefined) studentUpdateData.grade9PassStatus = grade9PassStatus;
+    if (grade12ExamSession !== undefined) studentUpdateData.grade12ExamSession = grade12ExamSession;
+    if (grade12ExamCenter !== undefined) studentUpdateData.grade12ExamCenter = grade12ExamCenter;
+    if (grade12ExamRoom !== undefined) studentUpdateData.grade12ExamRoom = grade12ExamRoom;
+    if (grade12ExamDesk !== undefined) studentUpdateData.grade12ExamDesk = grade12ExamDesk;
+    if (grade12Track !== undefined) studentUpdateData.grade12Track = grade12Track;
+    if (grade12PassStatus !== undefined) studentUpdateData.grade12PassStatus = grade12PassStatus;
+    if (remarks !== undefined) studentUpdateData.remarks = remarks;
 
     // Update both user and student records
     await prisma.$transaction([
@@ -424,6 +465,7 @@ export const updateMyProfile = async (req: Request, res: Response) => {
                 name: true,
                 grade: true,
                 section: true,
+                track: true,
               },
             },
           },
