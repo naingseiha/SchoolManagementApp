@@ -14,8 +14,6 @@ export const prisma =
         url: process.env.DIRECT_URL || process.env.DATABASE_URL,
       },
     },
-    // ✅ Configure connection pool and timeouts
-    // Note: These are client-side settings
   });
 
 // ✅ Prevent multiple instances in development
@@ -23,8 +21,8 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-// ✅ Connection retry logic for Neon cold starts
-export const connectDatabase = async (maxRetries = 5, retryDelay = 3000) => {
+// ✅ Connection retry logic for Neon cold starts with exponential backoff
+export const connectDatabase = async (maxRetries = 5, initialDelay = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(
@@ -40,6 +38,8 @@ export const connectDatabase = async (maxRetries = 5, retryDelay = 3000) => {
       console.log(`❌ Connection attempt ${attempt} failed:`, error.message);
 
       if (attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+        const retryDelay = initialDelay * Math.pow(2, attempt - 1);
         console.log(`⏳ Retrying in ${retryDelay / 1000}s...`);
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
       } else {

@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
-const prisma = new PrismaClient();
+import { prisma } from "../config/database";
 
 /**
  * ✅ REGISTER - បង្កើតគណនីថ្មី
@@ -140,13 +138,23 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // ✅ Optimized: Only fetch essential data for login, load relations later
     const user = await prisma.user.findFirst({
       where: {
         OR: whereConditions,
       },
       include: {
         student: {
-          include: {
+          select: {
+            id: true,
+            studentId: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
+            isAccountActive: true,
+            deactivationReason: true,
+            studentRole: true,
+            classId: true,
             class: {
               select: {
                 id: true,
@@ -157,37 +165,14 @@ export const login = async (req: Request, res: Response) => {
           },
         },
         teacher: {
-          include: {
-            homeroomClass: {
-              select: {
-                id: true,
-                name: true,
-                grade: true,
-              },
-            },
-            subjectTeachers: {
-              include: {
-                subject: {
-                  select: {
-                    id: true,
-                    code: true,
-                    name: true,
-                    nameKh: true,
-                  },
-                },
-              },
-            },
-            teacherClasses: {
-              include: {
-                class: {
-                  select: {
-                    id: true,
-                    name: true,
-                    grade: true,
-                  },
-                },
-              },
-            },
+          select: {
+            id: true,
+            teacherId: true,
+            firstName: true,
+            lastName: true,
+            khmerName: true,
+            position: true,
+            homeroomClassId: true,
           },
         },
       },
