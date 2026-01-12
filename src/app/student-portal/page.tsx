@@ -111,18 +111,7 @@ export default function StudentPortalPage() {
     }
   }, [currentUser]);
 
-  // Load data when filters change
-  useEffect(() => {
-    if (profile && activeTab === "grades") {
-      loadGrades();
-    }
-  }, [selectedMonth, selectedYear, activeTab, profile]);
-
-  useEffect(() => {
-    if (profile && activeTab === "attendance") {
-      loadAttendance();
-    }
-  }, [selectedMonth, selectedYear, activeTab, profile]);
+  // Manual loading - removed automatic data loading
 
   // Data loading functions
   const loadProfile = async () => {
@@ -220,12 +209,7 @@ export default function StudentPortalPage() {
 
   const handleTabChange = useCallback((tab: TabType) => {
     setActiveTab(tab);
-    if (tab === "grades" && !gradesData) {
-      loadGrades();
-    } else if (tab === "attendance" && !attendanceData) {
-      loadAttendance();
-    }
-  }, [gradesData, attendanceData]);
+  }, []);
 
   const studentName = useMemo(() => {
     if (!profile) return currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : "";
@@ -267,69 +251,156 @@ export default function StudentPortalPage() {
         <div className="p-5">
           {/* Dashboard Tab */}
           {activeTab === "dashboard" && (
-            <div className="space-y-6">
-              {/* Hero Header */}
-              <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-8 overflow-hidden">
+            <div className="space-y-5">
+              {/* Welcome Header */}
+              <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-2xl p-6 overflow-hidden">
                 <div className="absolute inset-0 opacity-10">
                   <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full blur-3xl"></div>
                   <div className="absolute bottom-0 right-0 w-40 h-40 bg-white rounded-full blur-3xl"></div>
                 </div>
                 <div className="relative z-10">
-                  <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-start gap-3 mb-3">
                     <div className="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-2xl">
-                      <User className="w-8 h-8 text-white" />
+                      <User className="w-7 h-7 text-white" />
                     </div>
-                    <div>
-                      <h1 className="text-2xl font-bold text-white">{studentName}</h1>
-                      <p className="text-indigo-100 text-sm">{student?.class?.name || "N/A"} • {roleLabel}</p>
+                    <div className="flex-1">
+                      <p className="text-indigo-100 text-sm mb-1">សួស្តី,</p>
+                      <h1 className="text-xl font-bold text-white leading-tight">{studentName}</h1>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="inline-flex items-center gap-2 bg-white bg-opacity-20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      <span className="text-white text-sm font-medium">{student?.class?.name || "N/A"}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 bg-white bg-opacity-20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                      <span className="text-white text-sm font-medium">{roleLabel}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-indigo-100 p-2 rounded-xl">
-                      <TrendingUp className="w-5 h-5 text-indigo-600" />
+              {/* Stats Overview */}
+              <div>
+                <h2 className="text-base font-bold text-gray-900 mb-3 px-1">ស្ថិតិទូទៅ</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm p-4 border-2 border-blue-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-blue-600 p-2 rounded-xl shadow-sm">
+                        <TrendingUp className="w-4 h-4 text-white" />
+                      </div>
+                      <p className="text-xs font-bold text-blue-900">មធ្យមភាគ</p>
                     </div>
+                    <p className="text-3xl font-bold text-blue-700">
+                      {gradesData?.statistics?.averageScore?.toFixed(1) || "--"}
+                    </p>
+                    <p className="text-xs text-blue-600 mt-1">ពិន្ទុមធ្យម</p>
                   </div>
-                  <p className="text-sm text-gray-600 font-medium">មធ្យមភាគ</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {gradesData?.statistics?.averageScore?.toFixed(1) || "--"}
-                  </p>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="bg-green-100 p-2 rounded-xl">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-sm p-4 border-2 border-green-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-green-600 p-2 rounded-xl shadow-sm">
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                      <p className="text-xs font-bold text-green-900">ការចូលរៀន</p>
                     </div>
+                    <p className="text-3xl font-bold text-green-700">
+                      {attendanceData?.statistics?.attendanceRate?.toFixed(0) || "--"}%
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">អត្រាចូលរៀន</p>
                   </div>
-                  <p className="text-sm text-gray-600 font-medium">ការចូលរៀន</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {attendanceData?.statistics?.attendanceRate?.toFixed(1) || "--"}%
-                  </p>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-sm p-4 border-2 border-purple-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-purple-600 p-2 rounded-xl shadow-sm">
+                        <BookOpen className="w-4 h-4 text-white" />
+                      </div>
+                      <p className="text-xs font-bold text-purple-900">មុខវិជ្ជា</p>
+                    </div>
+                    <p className="text-3xl font-bold text-purple-700">
+                      {gradesData?.grades?.length || "--"}
+                    </p>
+                    <p className="text-xs text-purple-600 mt-1">សរុបមុខវិជ្ជា</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-sm p-4 border-2 border-amber-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-amber-600 p-2 rounded-xl shadow-sm">
+                        <Award className="w-4 h-4 text-white" />
+                      </div>
+                      <p className="text-xs font-bold text-amber-900">លំដាប់</p>
+                    </div>
+                    <p className="text-3xl font-bold text-amber-700">
+                      {gradesData?.summaries?.[0]?.classRank ? `#${gradesData.summaries[0].classRank}` : "--"}
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1">លំដាប់ថ្នាក់</p>
+                  </div>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="space-y-3">
-                <h2 className="text-lg font-bold text-gray-900">ធ្វើសកម្មភាពរហ័ស</h2>
-                <button
-                  onClick={() => handleTabChange("grades")}
-                  className="w-full flex items-center gap-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
-                >
-                  <BookOpen className="w-6 h-6" />
-                  <span className="flex-1 text-left font-bold">មើលពិន្ទុ</span>
-                </button>
-                <button
-                  onClick={() => handleTabChange("attendance")}
-                  className="w-full flex items-center gap-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
-                >
-                  <Calendar className="w-6 h-6" />
-                  <span className="flex-1 text-left font-bold">មើលការចូលរៀន</span>
-                </button>
+              <div>
+                <h2 className="text-base font-bold text-gray-900 mb-3 px-1">សកម្មភាពរហ័ស</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleTabChange("grades")}
+                    className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-all active:scale-95"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="bg-white bg-opacity-20 p-2.5 rounded-xl">
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold">មើលពិន្ទុ</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleTabChange("attendance")}
+                    className="bg-gradient-to-br from-green-600 to-emerald-600 text-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-all active:scale-95"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="bg-white bg-opacity-20 p-2.5 rounded-xl">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold">មើលការចូលរៀន</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleTabChange("profile")}
+                    className="bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-all active:scale-95"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="bg-white bg-opacity-20 p-2.5 rounded-xl">
+                        <User className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold">ព័ត៌មានផ្ទាល់ខ្លួន</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="bg-gradient-to-br from-rose-600 to-pink-600 text-white rounded-2xl shadow-lg p-4 hover:shadow-xl transition-all active:scale-95"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="bg-white bg-opacity-20 p-2.5 rounded-xl">
+                        <Lock className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold">ប្តូរពាក្យសម្ងាត់</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Info Card */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-4 border-2 border-gray-200">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-600 p-2 rounded-lg">
+                    <AlertCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-900 mb-1 text-sm">ព័ត៌មានសំខាន់</h3>
+                    <p className="text-xs text-gray-700 leading-relaxed">
+                      សូមចុចប៊ូតុង "ផ្ទុកទិន្នន័យ" នៅក្នុងផ្នែកពិន្ទុ និងការចូលរៀន ដើម្បីមើលព័ត៌មានថ្មីបំផុត។
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -380,6 +451,17 @@ export default function StudentPortalPage() {
                 </div>
               </div>
 
+              {/* Load Button */}
+              {!gradesData && !dataLoading && (
+                <button
+                  onClick={loadGrades}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
+                >
+                  <BookOpen className="w-6 h-6" />
+                  <span className="font-bold text-lg">ផ្ទុកទិន្នន័យពិន្ទុ</span>
+                </button>
+              )}
+
               {dataLoading ? (
                 <div className="text-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
@@ -419,13 +501,13 @@ export default function StudentPortalPage() {
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : gradesData ? (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl shadow-sm p-8 text-center border-2 border-dashed border-gray-300">
                   <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 font-medium">មិនទាន់មានទិន្នន័យពិន្ទុ</p>
                   <p className="text-sm text-gray-500 mt-2">សម្រាប់ {selectedMonth} {selectedYear}</p>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
@@ -474,6 +556,17 @@ export default function StudentPortalPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Load Button */}
+              {!attendanceData && !dataLoading && (
+                <button
+                  onClick={loadAttendance}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
+                >
+                  <Calendar className="w-6 h-6" />
+                  <span className="font-bold text-lg">ផ្ទុកទិន្នន័យការចូលរៀន</span>
+                </button>
+              )}
 
               {dataLoading ? (
                 <div className="text-center py-8">
@@ -531,13 +624,13 @@ export default function StudentPortalPage() {
                     );
                   })}
                 </div>
-              ) : (
+              ) : attendanceData ? (
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl shadow-sm p-8 text-center border-2 border-dashed border-gray-300">
                   <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 font-medium">មិនទាន់មានទិន្នន័យការចូលរៀន</p>
                   <p className="text-sm text-gray-500 mt-2">សម្រាប់ {selectedMonth} {selectedYear}</p>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
 
