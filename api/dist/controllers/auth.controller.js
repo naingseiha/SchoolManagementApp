@@ -4,10 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.logout = exports.getCurrentUser = exports.refreshToken = exports.login = exports.register = void 0;
-const client_1 = require("@prisma/client");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const prisma = new client_1.PrismaClient();
+const database_1 = require("../config/database");
 /**
  * ✅ REGISTER - បង្កើតគណនីថ្មី
  */
@@ -22,7 +21,7 @@ const register = async (req, res) => {
             });
         }
         if (email) {
-            const existingUser = await prisma.user.findUnique({
+            const existingUser = await database_1.prisma.user.findUnique({
                 where: { email },
             });
             if (existingUser) {
@@ -33,7 +32,7 @@ const register = async (req, res) => {
             }
         }
         if (phone) {
-            const existingPhone = await prisma.user.findUnique({
+            const existingPhone = await database_1.prisma.user.findUnique({
                 where: { phone },
             });
             if (existingPhone) {
@@ -44,7 +43,7 @@ const register = async (req, res) => {
             }
         }
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-        const user = await prisma.user.create({
+        const user = await database_1.prisma.user.create({
             data: {
                 email: email || undefined,
                 phone: phone || undefined,
@@ -124,13 +123,23 @@ const login = async (req, res) => {
                 }
             });
         }
-        const user = await prisma.user.findFirst({
+        // ✅ Optimized: Only fetch essential data for login, load relations later
+        const user = await database_1.prisma.user.findFirst({
             where: {
                 OR: whereConditions,
             },
             include: {
                 student: {
-                    include: {
+                    select: {
+                        id: true,
+                        studentId: true,
+                        firstName: true,
+                        lastName: true,
+                        khmerName: true,
+                        isAccountActive: true,
+                        deactivationReason: true,
+                        studentRole: true,
+                        classId: true,
                         class: {
                             select: {
                                 id: true,
@@ -141,37 +150,14 @@ const login = async (req, res) => {
                     },
                 },
                 teacher: {
-                    include: {
-                        homeroomClass: {
-                            select: {
-                                id: true,
-                                name: true,
-                                grade: true,
-                            },
-                        },
-                        subjectTeachers: {
-                            include: {
-                                subject: {
-                                    select: {
-                                        id: true,
-                                        code: true,
-                                        name: true,
-                                        nameKh: true,
-                                    },
-                                },
-                            },
-                        },
-                        teacherClasses: {
-                            include: {
-                                class: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        grade: true,
-                                    },
-                                },
-                            },
-                        },
+                    select: {
+                        id: true,
+                        teacherId: true,
+                        firstName: true,
+                        lastName: true,
+                        khmerName: true,
+                        position: true,
+                        homeroomClassId: true,
                     },
                 },
             },
@@ -184,7 +170,7 @@ const login = async (req, res) => {
         }
         const isPasswordValid = await bcryptjs_1.default.compare(password, user.password);
         if (!isPasswordValid) {
-            await prisma.user.update({
+            await database_1.prisma.user.update({
                 where: { id: user.id },
                 data: {
                     failedAttempts: user.failedAttempts + 1,
@@ -209,7 +195,7 @@ const login = async (req, res) => {
                 deactivationReason: user.student.deactivationReason,
             });
         }
-        await prisma.user.update({
+        await database_1.prisma.user.update({
             where: { id: user.id },
             data: {
                 lastLogin: new Date(),
@@ -310,7 +296,7 @@ const getCurrentUser = async (req, res) => {
                 message: "Unauthorized",
             });
         }
-        const user = await prisma.user.findUnique({
+        const user = await database_1.prisma.user.findUnique({
             where: { id: userId },
             select: {
                 id: true,

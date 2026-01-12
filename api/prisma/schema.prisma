@@ -286,6 +286,9 @@ model User {
   student            Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
   teacher            Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
+  @@index([email, isActive])
+  @@index([phone, isActive])
+  @@index([studentId, isActive])
   @@map("users")
 }
 

@@ -60,12 +60,18 @@ class ApiClient {
     const headers = this.getHeaders();
 
     try {
+      // ✅ Add timeout for better UX (20 seconds for GET)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
       const response = await fetch(url, {
         method: "GET",
         headers,
         cache: "no-store",
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       console.log("📥 Response status:", response.status);
 
       if (!response.ok) {
@@ -95,6 +101,10 @@ class ApiClient {
 
       return result;
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error("❌ Request timeout");
+        throw new Error("Request timeout. Please check your connection and try again.");
+      }
       console.error("❌ GET Failed:", error);
       throw error;
     }
@@ -112,13 +122,19 @@ class ApiClient {
     const headers = this.getHeaders();
 
     try {
+      // ✅ Add timeout for better UX (30 seconds for login)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch(url, {
         method: "POST",
         headers,
         body: body ? JSON.stringify(body) : undefined,
-        cache: "no-store", // ✅ Disable caching
+        cache: "no-store",
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       console.log("📥 Response status:", response.status);
 
       if (!response.ok) {
@@ -133,6 +149,10 @@ class ApiClient {
       console.log("✅ POST Success");
       return fullResponse.data;
     } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error("❌ Request timeout");
+        throw new Error("Request timeout. Please check your connection and try again.");
+      }
       console.error("❌ POST Failed:", error);
       throw error;
     }
