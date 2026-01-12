@@ -19,7 +19,9 @@ import {
   RefreshCw,
   Clock,
   AlertCircle,
-  Edit
+  Edit,
+  CalendarCheck,
+  X
 } from "lucide-react";
 import {
   getMyProfile,
@@ -661,54 +663,167 @@ export default function StudentPortalPage() {
                 </div>
               ) : attendanceData && attendanceData.attendance.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Statistics Summary */}
-                  <div className="bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl shadow-lg p-5 text-white">
-                    <h3 className="font-bold mb-3">ស្ថិតិការចូលរៀន</h3>
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div>
-                        <p className="text-sm text-green-100">ឡើង</p>
-                        <p className="text-2xl font-bold">{attendanceData.statistics?.presentCount || 0}</p>
+                  {/* Enhanced Statistics Summary */}
+                  <div className="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="bg-white bg-opacity-20 p-2 rounded-xl">
+                          <CalendarCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="font-bold text-lg">ស្ថិតិការចូលរៀន</h3>
                       </div>
-                      <div>
-                        <p className="text-sm text-green-100">គ្មាន</p>
-                        <p className="text-2xl font-bold">{attendanceData.statistics?.absentCount || 0}</p>
+
+                      {/* Stats Grid - 4 columns */}
+                      <div className="grid grid-cols-4 gap-2 mb-4">
+                        <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <CheckCircle className="w-4 h-4" />
+                          </div>
+                          <p className="text-xs text-green-100 mb-1">ឡើង</p>
+                          <p className="text-xl font-bold">{attendanceData.statistics?.presentCount || 0}</p>
+                        </div>
+                        <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <X className="w-4 h-4" />
+                          </div>
+                          <p className="text-xs text-green-100 mb-1">គ្មាន</p>
+                          <p className="text-xl font-bold">{attendanceData.statistics?.absentCount || 0}</p>
+                        </div>
+                        <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <AlertCircle className="w-4 h-4" />
+                          </div>
+                          <p className="text-xs text-green-100 mb-1">អនុញ្ញាត</p>
+                          <p className="text-xl font-bold">{attendanceData.statistics?.permissionCount || 0}</p>
+                        </div>
+                        <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <Clock className="w-4 h-4" />
+                          </div>
+                          <p className="text-xs text-green-100 mb-1">យឺត</p>
+                          <p className="text-xl font-bold">{attendanceData.statistics?.lateCount || 0}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-green-100">អត្រា</p>
-                        <p className="text-2xl font-bold">{attendanceData.statistics?.attendanceRate?.toFixed(1) || '0'}%</p>
+
+                      {/* Summary Row */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-3">
+                          <p className="text-xs text-green-100 mb-1">សរុបថ្ងៃ</p>
+                          <p className="text-2xl font-bold">{attendanceData.statistics?.totalDays || 0}</p>
+                        </div>
+                        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-3">
+                          <p className="text-xs text-green-100 mb-1">អត្រាចូលរៀន</p>
+                          <p className="text-2xl font-bold">{attendanceData.statistics?.attendanceRate?.toFixed(1) || '0'}%</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Attendance Records */}
-                  {attendanceData.attendance.map((record) => {
-                    const statusColors = {
-                      PRESENT: "bg-green-50 border-green-200 text-green-800",
-                      ABSENT: "bg-red-50 border-red-200 text-red-800",
-                      LATE: "bg-yellow-50 border-yellow-200 text-yellow-800",
-                      PERMISSION: "bg-blue-50 border-blue-200 text-blue-800",
-                    };
-                    const statusLabels = {
-                      PRESENT: "ឡើង",
-                      ABSENT: "គ្មាន",
-                      LATE: "យឺត",
-                      PERMISSION: "អនុញ្ញាត",
-                    };
-                    return (
-                      <div key={record.id} className={`rounded-2xl shadow-sm p-4 border-2 ${statusColors[record.status]}`}>
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-bold">{new Date(record.date).toLocaleDateString('km-KH')}</p>
-                            <p className="text-sm">{record.session === 'MORNING' ? 'ព្រឹក' : 'ល្ងាច'}</p>
+                  {/* Attendance Records - Enhanced */}
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900 mb-3 px-1">កំណត់ត្រារាយមុខ</h3>
+                    <div className="space-y-3">
+                      {attendanceData.attendance.map((record) => {
+                        const statusConfig = {
+                          PRESENT: {
+                            bg: "bg-gradient-to-r from-green-50 to-emerald-50",
+                            border: "border-green-200",
+                            iconBg: "bg-green-600",
+                            textColor: "text-green-800",
+                            label: "ឡើង",
+                            icon: <CheckCircle className="w-4 h-4 text-white" />,
+                          },
+                          ABSENT: {
+                            bg: "bg-gradient-to-r from-red-50 to-rose-50",
+                            border: "border-red-200",
+                            iconBg: "bg-red-600",
+                            textColor: "text-red-800",
+                            label: "គ្មាន",
+                            icon: <X className="w-4 h-4 text-white" />,
+                          },
+                          LATE: {
+                            bg: "bg-gradient-to-r from-yellow-50 to-amber-50",
+                            border: "border-yellow-200",
+                            iconBg: "bg-yellow-600",
+                            textColor: "text-yellow-800",
+                            label: "យឺត",
+                            icon: <Clock className="w-4 h-4 text-white" />,
+                          },
+                          PERMISSION: {
+                            bg: "bg-gradient-to-r from-blue-50 to-indigo-50",
+                            border: "border-blue-200",
+                            iconBg: "bg-blue-600",
+                            textColor: "text-blue-800",
+                            label: "អនុញ្ញាត",
+                            icon: <AlertCircle className="w-4 h-4 text-white" />,
+                          },
+                        };
+
+                        const config = statusConfig[record.status];
+                        const date = new Date(record.date);
+                        const dayOfWeek = date.toLocaleDateString('km-KH', { weekday: 'long' });
+                        const dateStr = date.toLocaleDateString('km-KH', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        });
+
+                        return (
+                          <div 
+                            key={record.id} 
+                            className={`${config.bg} rounded-2xl shadow-sm border-2 ${config.border} overflow-hidden`}
+                          >
+                            <div className="p-4">
+                              <div className="flex items-start gap-3">
+                                {/* Status Icon */}
+                                <div className={`${config.iconBg} p-2 rounded-xl shrink-0`}>
+                                  {config.icon}
+                                </div>
+
+                                {/* Main Content */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2 mb-2">
+                                    <div className="flex-1">
+                                      <p className={`font-bold ${config.textColor} text-base leading-tight`}>
+                                        {dateStr}
+                                      </p>
+                                      <p className="text-xs text-gray-600 mt-0.5">
+                                        {dayOfWeek}
+                                      </p>
+                                    </div>
+                                    <div className={`${config.iconBg} bg-opacity-10 px-3 py-1 rounded-lg`}>
+                                      <span className={`text-xs font-bold ${config.textColor}`}>
+                                        {config.label}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Session Info */}
+                                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>{record.session === 'MORNING' ? 'វេលាព្រឹក' : 'វេលាល្ងាច'}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Remarks if any */}
+                                  {record.remarks && (
+                                    <div className="mt-2 pt-2 border-t border-gray-200">
+                                      <p className="text-xs text-gray-700 italic">
+                                        <span className="font-semibold">សម្គាល់:</span> {record.remarks}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          <span className="font-bold text-lg">{statusLabels[record.status]}</span>
-                        </div>
-                        {record.remarks && (
-                          <p className="text-sm mt-2">{record.remarks}</p>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               ) : attendanceData ? (
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl shadow-sm p-8 text-center border-2 border-dashed border-gray-300">
