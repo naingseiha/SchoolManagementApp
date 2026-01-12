@@ -556,19 +556,21 @@ export default function StudentPortalPage() {
                   {gradesData.summaries && gradesData.summaries.length > 0 && (
                     <>
                       {/* Placeholder div to maintain layout when fixed */}
-                      {isHeaderSticky && (
-                        <div className="h-[200px]"></div>
-                      )}
-                      
+                      {isHeaderSticky && <div className="h-[200px]"></div>}
+
                       {/* Summary Card with conditional fixed positioning */}
                       <div
                         className={`${
                           isHeaderSticky
-                            ? "fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-gray-50 to-gray-100 pt-4 pb-4 shadow-lg animate-in slide-in-from-top duration-300"
+                            ? "fixed -top-4 left-0 right-0 z-50 bg-gradient-to-br from-gray-50 to-gray-100 pt-9 pb-4 shadow-lg animate-in slide-in-from-top duration-300"
                             : ""
                         } transition-all`}
                       >
-                        <div className={`${isHeaderSticky ? "max-w-md mx-auto px-5" : ""}`}>
+                        <div
+                          className={`${
+                            isHeaderSticky ? "max-w-md mx-auto px-5" : ""
+                          }`}
+                        >
                           <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
                             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
@@ -577,7 +579,9 @@ export default function StudentPortalPage() {
                                 <div className="bg-white bg-opacity-20 p-2 rounded-xl">
                                   <Award className="w-5 h-5 text-white" />
                                 </div>
-                                <h1 className="font-bold text-lg">សង្ខេបពិន្ទុ</h1>
+                                <h1 className="font-bold text-lg">
+                                  សង្ខេបពិន្ទុ
+                                </h1>
                               </div>
                               <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
@@ -585,8 +589,9 @@ export default function StudentPortalPage() {
                                     មធ្យមភាគ
                                   </p>
                                   <p className="text-2xl font-bold">
-                                    {gradesData.summaries[0].average?.toFixed(2) ||
-                                      "0.00"}
+                                    {gradesData.summaries[0].average?.toFixed(
+                                      2
+                                    ) || "0.00"}
                                   </p>
                                 </div>
                                 {gradesData.summaries[0].classRank && (
@@ -604,7 +609,9 @@ export default function StudentPortalPage() {
                                     សរុប
                                   </p>
                                   <p className="text-2xl font-bold">
-                                    {gradesData.summaries[0].totalScore?.toFixed(1) || "0"}
+                                    {gradesData.summaries[0].totalScore?.toFixed(
+                                      1
+                                    ) || "0"}
                                   </p>
                                 </div>
                               </div>
