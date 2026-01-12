@@ -99,6 +99,9 @@ export default function StudentPortalPage() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
 
+  // Sticky header state
+  const [isHeaderSticky, setIsHeaderSticky] = useState(false);
+
   // Clear message after 3 seconds
   useEffect(() => {
     if (message) {
@@ -120,6 +123,20 @@ export default function StudentPortalPage() {
       loadProfile();
     }
   }, [currentUser]);
+
+  // Scroll listener for sticky header (grades tab only)
+  useEffect(() => {
+    if (activeTab !== "grades") return;
+
+    const handleScroll = () => {
+      // Check if scrolled past 350px (approximately where filters end)
+      const scrollPosition = window.scrollY;
+      setIsHeaderSticky(scrollPosition > 350);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [activeTab]);
 
   // Manual loading - removed automatic data loading
 
@@ -535,49 +552,67 @@ export default function StudentPortalPage() {
                 </div>
               ) : gradesData && gradesData.grades.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Summary Card */}
+                  {/* Summary Card - JavaScript-based Sticky */}
                   {gradesData.summaries && gradesData.summaries.length > 0 && (
-                    <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
-                      <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
-                      <div className="relative">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="bg-white bg-opacity-20 p-2 rounded-xl">
-                            <Award className="w-5 h-5 text-white" />
-                          </div>
-                          <h1 className="font-bold text-lg">សង្ខេបពិន្ទុ</h1>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                          <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
-                            <p className="text-xs text-indigo-100 mb-1">
-                              មធ្យមភាគ
-                            </p>
-                            <p className="text-2xl font-bold">
-                              {gradesData.summaries[0].average?.toFixed(2) ||
-                                "0.00"}
-                            </p>
-                          </div>
-                          {gradesData.summaries[0].classRank && (
-                            <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
-                              <p className="text-xs text-indigo-100 mb-1">
-                                លំដាប់ថ្នាក់
-                              </p>
-                              <p className="text-2xl font-bold">
-                                #{gradesData.summaries[0].classRank}
-                              </p>
+                    <>
+                      {/* Placeholder div to maintain layout when fixed */}
+                      {isHeaderSticky && (
+                        <div className="h-[200px]"></div>
+                      )}
+                      
+                      {/* Summary Card with conditional fixed positioning */}
+                      <div
+                        className={`${
+                          isHeaderSticky
+                            ? "fixed top-0 left-0 right-0 z-50 bg-gradient-to-br from-gray-50 to-gray-100 pt-4 pb-4 shadow-lg animate-in slide-in-from-top duration-300"
+                            : ""
+                        } transition-all`}
+                      >
+                        <div className={`${isHeaderSticky ? "max-w-md mx-auto px-5" : ""}`}>
+                          <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
+                            <div className="relative">
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="bg-white bg-opacity-20 p-2 rounded-xl">
+                                  <Award className="w-5 h-5 text-white" />
+                                </div>
+                                <h1 className="font-bold text-lg">សង្ខេបពិន្ទុ</h1>
+                              </div>
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                                  <p className="text-xs text-indigo-100 mb-1">
+                                    មធ្យមភាគ
+                                  </p>
+                                  <p className="text-2xl font-bold">
+                                    {gradesData.summaries[0].average?.toFixed(2) ||
+                                      "0.00"}
+                                  </p>
+                                </div>
+                                {gradesData.summaries[0].classRank && (
+                                  <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                                    <p className="text-xs text-indigo-100 mb-1">
+                                      លំដាប់ថ្នាក់
+                                    </p>
+                                    <p className="text-2xl font-bold">
+                                      #{gradesData.summaries[0].classRank}
+                                    </p>
+                                  </div>
+                                )}
+                                <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
+                                  <p className="text-xs text-indigo-100 mb-1">
+                                    សរុប
+                                  </p>
+                                  <p className="text-2xl font-bold">
+                                    {gradesData.summaries[0].totalScore?.toFixed(1) || "0"}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                          <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
-                            <p className="text-xs text-indigo-100 mb-1">
-                              មុខវិជ្ជា
-                            </p>
-                            <p className="text-2xl font-bold">
-                              {gradesData.grades.length}
-                            </p>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </>
                   )}
 
                   {/* Grades List */}
@@ -601,7 +636,7 @@ export default function StudentPortalPage() {
                                   {grade.subject.nameKh}
                                 </h1>
                                 <p className="text-xs text-gray-500">
-                                  {grade.subject.code} • ក្រមសិលា:{" "}
+                                  {grade.subject.code} • មេគុណពិន្ទុ:{" "}
                                   {grade.subject.coefficient}
                                 </p>
                               </div>
