@@ -37,7 +37,7 @@ import { getCurrentAcademicYear } from "@/utils/academicYear";
 import StudentProfileEditForm from "@/components/mobile/student-portal/StudentProfileEditForm";
 
 const ROLE_LABELS = {
-  GENERAL: "សិស្សធម្មតា",
+  GENERAL: "សិស្សទូទៅ",
   CLASS_LEADER: "ប្រធានថ្នាក់",
   VICE_LEADER_1: "អនុប្រធានទី១",
   VICE_LEADER_2: "អនុប្រធានទី២",
@@ -1012,141 +1012,184 @@ export default function StudentPortalPage() {
                   isSubmitting={loading}
                 />
               ) : (
-                <div className="space-y-6">
-                  {/* Profile Header */}
-                  <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-3xl shadow-xl p-8 text-center">
-                    <div className="w-20 h-20 bg-white bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white border-opacity-30">
-                      <User className="w-10 h-10 text-white" />
+                <div className="space-y-5">
+                  {/* Modern Profile Header Card */}
+                  <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-[2rem] shadow-2xl">
+                    {/* Decorative Background Pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-32 translate-x-32"></div>
+                      <div className="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-24 -translate-x-24"></div>
                     </div>
-                    <h1 className="text-xl font-bold text-white mb-2">
-                      {studentName}
-                    </h1>
-                    <p className="text-blue-100">
-                      {profile.email ||
-                        profile.student.khmerName ||
-                        "គ្មានអ៊ីមែល"}
-                    </p>
-                    <div className="inline-block bg-white bg-opacity-20 backdrop-blur-sm px-4 py-2 rounded-full mt-3">
-                      <p className="text-white text-sm font-medium">
-                        {profile.student?.class?.name || "N/A"}
+
+                    <div className="relative p-8 text-center">
+                      {/* Avatar */}
+                      <div className="relative inline-block mb-4">
+                        <div className="w-24 h-24 bg-white bg-opacity-20 backdrop-blur-xl rounded-3xl flex items-center justify-center border-4 border-white border-opacity-40 shadow-2xl">
+                          <User className="w-12 h-12 text-white" />
+                        </div>
+                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-400 rounded-full border-4 border-white shadow-lg"></div>
+                      </div>
+
+                      {/* Name */}
+                      <h1 className="text-2xl font-black text-white mb-1 tracking-tight">
+                        {profile.student.khmerName}
+                      </h1>
+                      <p className="text-indigo-100 font-medium mb-4">
+                        {profile.student.englishName ||
+                          `${profile.firstName} ${profile.lastName}`}
                       </p>
+
+                      {/* Info Pills */}
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        <div className="bg-white bg-opacity-20 backdrop-blur-sm px-4 py-2 rounded-full border border-white border-opacity-30">
+                          <p className="text-white text-sm font-bold">
+                            {profile.student?.class?.name || "N/A"}
+                          </p>
+                        </div>
+                        <div className="bg-white bg-opacity-20 backdrop-blur-sm px-4 py-2 rounded-full border border-white border-opacity-30">
+                          <p className="text-white text-sm font-bold">
+                            {ROLE_LABELS[
+                              profile.student
+                                ?.studentRole as keyof typeof ROLE_LABELS
+                            ] || "N/A"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Profile Info */}
-                  <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
-                    <div className="bg-gray-50 p-4 border-b">
-                      <h1 className="font-bold text-gray-900">
-                        ព័ត៌មានផ្ទាល់ខ្លួន
-                      </h1>
-                    </div>
-                    <div className="divide-y">
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">នាមខ្លួន</span>
-                        <span className="font-bold text-gray-900">
-                          {profile.firstName}
-                        </span>
-                      </div>
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">នាមត្រកូល</span>
-                        <span className="font-bold text-gray-900">
-                          {profile.lastName}
-                        </span>
-                      </div>
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">ឈ្មោះជាភាសាខ្មែរ</span>
-                        <span className="font-bold text-gray-900">
-                          {profile.student.khmerName || "N/A"}
-                        </span>
-                      </div>
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">អ៊ីមែល</span>
-                        <span className="font-bold text-gray-900 text-sm">
-                          {profile.email || "N/A"}
-                        </span>
-                      </div>
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">លេខទូរស័ព្ទ</span>
-                        <span className="font-bold text-gray-900">
-                          {profile.student.phoneNumber ||
-                            profile.phone ||
-                            "N/A"}
-                        </span>
-                      </div>
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">ថ្នាក់</span>
-                        <span className="font-bold text-gray-900">
-                          {profile.student?.class?.name || "N/A"}
-                        </span>
-                      </div>
-                      <div className="p-4 flex justify-between">
-                        <span className="text-gray-600">តួនាទី</span>
-                        <span className="font-bold text-gray-900">
-                          {ROLE_LABELS[
-                            profile.student
-                              ?.studentRole as keyof typeof ROLE_LABELS
-                          ] || "N/A"}
-                        </span>
-                      </div>
-                      {profile.student.dateOfBirth && (
-                        <div className="p-4 flex justify-between">
-                          <span className="text-gray-600">ថ្ងៃកំណើត</span>
-                          <span className="font-bold text-gray-900">
-                            {new Date(
-                              profile.student.dateOfBirth
-                            ).toLocaleDateString("km-KH")}
-                          </span>
+                  {/* Quick Stats Cards */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 border-2 border-blue-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                          <Calendar className="w-6 h-6 text-white" />
                         </div>
-                      )}
-                      {profile.student.gender && (
-                        <div className="p-4 flex justify-between">
-                          <span className="text-gray-600">ភេទ</span>
-                          <span className="font-bold text-gray-900">
+                        <div>
+                          <p className="text-xs text-gray-600 font-medium">
+                            ថ្ងៃកំណើត
+                          </p>
+                          <p className="text-sm font-black text-gray-900">
+                            {profile.student.dateOfBirth
+                              ? new Date(
+                                  profile.student.dateOfBirth
+                                ).toLocaleDateString("km-KH")
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border-2 border-purple-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                          <User className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-600 font-medium">
+                            ភេទ
+                          </p>
+                          <p className="text-sm font-black text-gray-900">
                             {profile.student.gender === "MALE"
                               ? "ប្រុស"
                               : "ស្រី"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact Information Card */}
+                  <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-4">
+                      <h2 className="text-white font-black text-lg flex items-center gap-2">
+                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                          <User className="w-4 h-4" />
+                        </div>
+                        ព័ត៌មានទំនាក់ទំនង
+                      </h2>
+                    </div>
+                    <div className="p-1">
+                      <div className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 font-medium text-sm">
+                            អ៊ីមែល
+                          </span>
+                          <span className="font-bold text-gray-900 text-sm">
+                            {profile.email || "N/A"}
                           </span>
                         </div>
-                      )}
+                      </div>
+                      <div className="h-px bg-gray-100"></div>
+                      <div className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 font-medium text-sm">
+                            លេខទូរស័ព្ទ
+                          </span>
+                          <span className="font-bold text-gray-900">
+                            {profile.student.phoneNumber ||
+                              profile.phone ||
+                              "N/A"}
+                          </span>
+                        </div>
+                      </div>
                       {profile.student.currentAddress && (
-                        <div className="p-4 flex justify-between items-start">
-                          <span className="text-gray-600">អាសយដ្ឋាន</span>
-                          <span className="font-bold text-gray-900 text-right max-w-[60%]">
-                            {profile.student.currentAddress}
-                          </span>
-                        </div>
+                        <>
+                          <div className="h-px bg-gray-100"></div>
+                          <div className="p-4 hover:bg-gray-50 transition-colors">
+                            <div className="flex justify-between items-start">
+                              <span className="text-gray-600 font-medium text-sm">
+                                អាសយដ្ឋាន
+                              </span>
+                              <span className="font-bold text-gray-900 text-right max-w-[60%]">
+                                {profile.student.currentAddress}
+                              </span>
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="space-y-3">
+                  {/* Action Buttons - Modern Design */}
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setIsEditingProfile(true)}
-                      className="w-full flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
+                      className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-2xl shadow-lg p-5 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
                     >
-                      <Edit className="w-6 h-6" />
-                      <span className="flex-1 text-left font-bold">
-                        កែប្រែព័ត៌មាន
-                      </span>
+                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                          <Edit className="w-6 h-6" />
+                        </div>
+                        <span className="font-black text-sm">កែប្រែ</span>
+                      </div>
                     </button>
+
                     <button
                       onClick={() => setShowPasswordModal(true)}
-                      className="w-full flex items-center gap-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
+                      className="group relative overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-2xl shadow-lg p-5 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
                     >
-                      <Lock className="w-6 h-6" />
-                      <span className="flex-1 text-left font-bold">
-                        ផ្លាស់ប្តូរពាក្យសម្ងាត់
-                      </span>
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-4 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all"
-                    >
-                      <LogOut className="w-6 h-6" />
-                      <span className="flex-1 text-left font-bold">ចាកចេញ</span>
+                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                          <Lock className="w-6 h-6" />
+                        </div>
+                        <span className="font-black text-sm">ពាក្យសម្ងាត់</span>
+                      </div>
                     </button>
                   </div>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full group relative overflow-hidden bg-gradient-to-r from-red-500 to-rose-500 text-white rounded-2xl shadow-lg p-5 hover:shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                    <div className="flex items-center justify-center gap-3">
+                      <LogOut className="w-6 h-6" />
+                      <span className="font-black text-lg">ចាកចេញ</span>
+                    </div>
+                  </button>
                 </div>
               )}
             </>

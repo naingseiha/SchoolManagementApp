@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Save, X, Loader2, User } from "lucide-react";
+import { Save, X, Loader2, User, Phone, Mail, MapPin, Calendar, Users, BookOpen, Award, FileText } from "lucide-react";
 import { StudentProfile } from "@/lib/api/student-portal";
 
 interface StudentProfileEditFormProps {
@@ -20,9 +20,11 @@ const InputField = ({
   type = "text",
   required = false,
   placeholder = "",
+  icon,
 }: any) => (
-  <div>
-    <label className="block text-sm font-bold text-gray-700 mb-2">
+  <div className="group">
+    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+      {icon && <span className="text-indigo-500">{icon}</span>}
       {label} {required && <span className="text-red-500">*</span>}
     </label>
     <input
@@ -32,15 +34,21 @@ const InputField = ({
       onChange={onChange}
       required={required}
       placeholder={placeholder}
-      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium bg-white"
+      className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 font-medium bg-white transition-all hover:border-gray-300"
     />
   </div>
 );
 
-const SectionTitle = ({ title }: { title: string }) => (
-  <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-indigo-600">
-    <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
-    <h1 className="text-lg font-black text-gray-900">{title}</h1>
+const SectionTitle = ({ title, icon }: { title: string; icon?: any }) => (
+  <div className="flex items-center gap-3 mb-5">
+    {icon && (
+      <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+        {icon}
+      </div>
+    )}
+    <h1 className="text-xl font-black text-gray-900 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+      {title}
+    </h1>
   </div>
 );
 
@@ -53,7 +61,7 @@ export default function StudentProfileEditForm({
   const [formData, setFormData] = useState({
     // Basic Info
     khmerName: profile.student.khmerName || "",
-    englishName: `${profile.firstName} ${profile.lastName}`,
+    englishName: profile.student.englishName || `${profile.firstName} ${profile.lastName}`,
     firstName: profile.firstName || "",
     lastName: profile.lastName || "",
     gender: profile.student.gender || "MALE",
@@ -125,30 +133,52 @@ export default function StudentProfileEditForm({
       return;
     }
 
-    await onSave(formData);
+    // Split englishName into firstName and lastName for proper database storage
+    const englishNameParts = formData.englishName.trim().split(/\s+/);
+    const submitData = {
+      ...formData,
+      // If englishName has multiple words, use last as lastName, rest as firstName
+      firstName: englishNameParts.length > 1 
+        ? englishNameParts.slice(0, -1).join(" ") 
+        : englishNameParts[0] || "",
+      lastName: englishNameParts.length > 1 
+        ? englishNameParts[englishNameParts.length - 1] 
+        : "",
+    };
+
+    await onSave(submitData);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 -m-5 mb-0 rounded-3xl shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="bg-white bg-opacity-20 backdrop-blur-sm p-2 rounded-xl">
-            <User className="w-6 h-6" />
+    <div className="space-y-5 pb-4">
+      {/* Modern Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white p-6 -m-5 mb-0 rounded-[2rem] shadow-2xl">
+        {/* Decorative Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-20 translate-x-20"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-16 -translate-x-16"></div>
+        </div>
+        
+        <div className="relative flex items-center gap-4">
+          <div className="w-14 h-14 bg-white bg-opacity-20 backdrop-blur-xl rounded-2xl flex items-center justify-center border-2 border-white border-opacity-40">
+            <User className="w-7 h-7" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold">កែប្រែព័ត៌មានផ្ទាល់ខ្លួន</h1>
-            <p className="text-sm text-indigo-100">
+          <div className="flex-1">
+            <h1 className="text-2xl font-black tracking-tight">កែប្រែព័ត៌មាន</h1>
+            <p className="text-sm text-indigo-100 font-medium">
               សូមបំពេញព័ត៌មានអោយបានគ្រប់គ្រាន់
             </p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Basic Information */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="ព័ត៌មានទូទៅ" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="ព័ត៌មានទូទៅ" 
+            icon={<User className="w-5 h-5 text-white" />}
+          />
           <div className="space-y-4">
             <InputField
               label="គោត្តនាមនិងនាម (ខ្មែរ)"
@@ -165,7 +195,7 @@ export default function StudentProfileEditForm({
               onChange={handleChange}
               placeholder="Sok Chantha"
             />
-            <div>
+            <div className="group">
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 ភេទ <span className="text-red-500">*</span>
               </label>
@@ -174,7 +204,7 @@ export default function StudentProfileEditForm({
                 value={formData.gender}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium bg-white"
+                className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 font-medium bg-white transition-all hover:border-gray-300"
               >
                 <option value="MALE">ប្រុស (Male)</option>
                 <option value="FEMALE">ស្រី (Female)</option>
@@ -206,8 +236,11 @@ export default function StudentProfileEditForm({
         </div>
 
         {/* Contact Information */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="ព័ត៌មានទំនាក់ទំនង" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="ព័ត៌មានទំនាក់ទំនង" 
+            icon={<Phone className="w-5 h-5 text-white" />}
+          />
           <div className="space-y-4">
             <InputField
               label="លេខទូរសព្ទ"
@@ -229,8 +262,11 @@ export default function StudentProfileEditForm({
         </div>
 
         {/* Parent Information */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="ព័ត៌មានឪពុកម្តាយ" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="ព័ត៌មានឪពុកម្តាយ" 
+            icon={<Users className="w-5 h-5 text-white" />}
+          />
           <div className="space-y-4">
             <InputField
               label="ឈ្មោះឪពុក"
@@ -265,8 +301,11 @@ export default function StudentProfileEditForm({
         </div>
 
         {/* Academic History */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="ប្រវត្តិសិក្សា" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="ប្រវត្តិសិក្សា" 
+            icon={<BookOpen className="w-5 h-5 text-white" />}
+          />
           <div className="space-y-4">
             <InputField
               label="ឡើងពីថ្នាក់"
@@ -300,8 +339,11 @@ export default function StudentProfileEditForm({
         </div>
 
         {/* Grade 9 Exam */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="ប្រឡងថ្នាក់ទី៩ (សញ្ញាបត្រមធ្យមសិក្សាបឋមភូមិ)" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="ប្រឡងថ្នាក់ទី៩" 
+            icon={<Award className="w-5 h-5 text-white" />}
+          />
           <div className="space-y-4">
             <InputField
               label="សម័យប្រឡង"
@@ -331,7 +373,7 @@ export default function StudentProfileEditForm({
               onChange={handleChange}
               placeholder="០១"
             />
-            <div>
+            <div className="group">
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 ស្ថានភាពប្រឡង
               </label>
@@ -339,7 +381,7 @@ export default function StudentProfileEditForm({
                 name="grade9PassStatus"
                 value={formData.grade9PassStatus}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium bg-white"
+                className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 font-medium bg-white transition-all hover:border-gray-300"
               >
                 <option value="">-- ជ្រើសរើស --</option>
                 <option value="ជាប់">ជាប់ (Passed)</option>
@@ -351,8 +393,11 @@ export default function StudentProfileEditForm({
         </div>
 
         {/* Grade 12 Exam */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="ប្រឡងថ្នាក់ទី១២ (សញ្ញាបត្រមធ្យមសិក្សាទុតិយភូមិ)" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="ប្រឡងថ្នាក់ទី១២" 
+            icon={<Award className="w-5 h-5 text-white" />}
+          />
           <div className="space-y-4">
             <InputField
               label="សម័យប្រឡង"
@@ -382,7 +427,7 @@ export default function StudentProfileEditForm({
               onChange={handleChange}
               placeholder="០១"
             />
-            <div>
+            <div className="group">
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 ផ្លូវសិក្សា
               </label>
@@ -390,14 +435,14 @@ export default function StudentProfileEditForm({
                 name="grade12Track"
                 value={formData.grade12Track}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium bg-white"
+                className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 font-medium bg-white transition-all hover:border-gray-300"
               >
                 <option value="">-- ជ្រើសរើស --</option>
                 <option value="វិទ្យាសាស្ត្រ">វិទ្យាសាស្ត្រ (Science)</option>
                 <option value="សង្គម">សង្គម (Social)</option>
               </select>
             </div>
-            <div>
+            <div className="group">
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 ស្ថានភាពប្រឡង
               </label>
@@ -405,7 +450,7 @@ export default function StudentProfileEditForm({
                 name="grade12PassStatus"
                 value={formData.grade12PassStatus}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium bg-white"
+                className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 font-medium bg-white transition-all hover:border-gray-300"
               >
                 <option value="">-- ជ្រើសរើស --</option>
                 <option value="ជាប់">ជាប់ (Passed)</option>
@@ -417,43 +462,48 @@ export default function StudentProfileEditForm({
         </div>
 
         {/* Remarks */}
-        <div className="bg-white rounded-3xl shadow-lg p-6">
-          <SectionTitle title="កំណត់សម្គាល់" />
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-gray-100">
+          <SectionTitle 
+            title="កំណត់សម្គាល់" 
+            icon={<FileText className="w-5 h-5 text-white" />}
+          />
           <textarea
             name="remarks"
             value={formData.remarks}
             onChange={handleChange}
             rows={4}
             placeholder="កំណត់សម្គាល់ផ្សេងៗ..."
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium bg-white"
+            className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500 font-medium bg-white transition-all hover:border-gray-300 resize-none"
           />
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3 pt-2">
+        <div className="grid grid-cols-2 gap-3 pt-2 sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 -mx-5 px-5 pb-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={isSubmitting}
-            className="flex-1 px-6 py-4 bg-gray-200 text-gray-700 rounded-2xl hover:bg-gray-300 font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
+            className="group relative overflow-hidden px-6 py-4 bg-gradient-to-br from-gray-400 to-gray-500 text-white rounded-2xl hover:shadow-xl font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
           >
-            <X className="w-5 h-5" />
-            បោះបង់
+            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+            <X className="w-5 h-5 relative z-10" />
+            <span className="relative z-10">បោះបង់</span>
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl hover:from-indigo-700 hover:to-purple-700 font-bold shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="group relative overflow-hidden px-6 py-4 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl hover:shadow-2xl font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
           >
+            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
             {isSubmitting ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                កំពុងរក្សាទុក...
+                <Loader2 className="w-5 h-5 animate-spin relative z-10" />
+                <span className="relative z-10">កំពុងរក្សាទុក...</span>
               </>
             ) : (
               <>
-                <Save className="w-5 h-5" />
-                រក្សាទុក
+                <Save className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">រក្សាទុក</span>
               </>
             )}
           </button>

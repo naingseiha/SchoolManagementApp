@@ -11,6 +11,7 @@ export interface StudentProfile {
     id: string;
     studentId: string;
     khmerName: string;
+    englishName?: string;
     dateOfBirth: string;
     gender: string;
     phoneNumber?: string;
@@ -18,6 +19,24 @@ export interface StudentProfile {
     placeOfBirth?: string;
     parentPhone?: string;
     parentOccupation?: string;
+    fatherName?: string;
+    motherName?: string;
+    previousGrade?: string;
+    previousSchool?: string;
+    repeatingGrade?: string;
+    transferredFrom?: string;
+    grade9ExamSession?: string;
+    grade9ExamCenter?: string;
+    grade9ExamRoom?: string;
+    grade9ExamDesk?: string;
+    grade9PassStatus?: string;
+    grade12ExamSession?: string;
+    grade12ExamCenter?: string;
+    grade12ExamRoom?: string;
+    grade12ExamDesk?: string;
+    grade12Track?: string;
+    grade12PassStatus?: string;
+    remarks?: string;
     studentRole: string;
     isAccountActive: boolean;
     class?: {
