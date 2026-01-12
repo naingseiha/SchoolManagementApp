@@ -90,27 +90,43 @@ const register = async (req, res) => {
 };
 exports.register = register;
 /**
- * ✅ LOGIN - ចូលប្រើប្រាស់
+ * ✅ LOGIN - ចូលប្រើប្រាស់ (Supports Teacher & Student Login)
+ * Students can login with: studentCode, email, or phone
+ * Teachers can login with: email or phone
  */
 const login = async (req, res) => {
     try {
-        const { email, phone, password } = req.body;
-        console.log("🔐 LOGIN REQUEST:", { email, phone });
+        const { email, phone, password, studentCode } = req.body;
+        console.log("🔐 LOGIN REQUEST:", { email, phone, studentCode });
         if (!password) {
             return res.status(400).json({
                 success: false,
                 message: "សូមបញ្ចូលពាក្យសម្ងាត់\nPassword is required",
             });
         }
-        if (!email && !phone) {
+        if (!email && !phone && !studentCode) {
             return res.status(400).json({
                 success: false,
-                message: "សូមបញ្ចូលអ៊ីមែល ឬលេខទូរសព្ទ\nEmail or phone is required",
+                message: "សូមបញ្ចូលលេខកូដសិស្ស អ៊ីមែល ឬលេខទូរសព្ទ\nStudent code, email or phone is required",
+            });
+        }
+        // ✅ Build flexible query to support student login via studentCode/email/phone
+        const whereConditions = [];
+        if (email)
+            whereConditions.push({ email });
+        if (phone)
+            whereConditions.push({ phone });
+        if (studentCode) {
+            // For student login via studentCode
+            whereConditions.push({
+                student: {
+                    studentId: studentCode
+                }
             });
         }
         const user = await prisma.user.findFirst({
             where: {
-                OR: [{ email: email || undefined }, { phone: phone || undefined }],
+                OR: whereConditions,
             },
             include: {
                 student: {
@@ -185,6 +201,14 @@ const login = async (req, res) => {
                 message: "គណនីត្រូវបានបិទ\nAccount is disabled",
             });
         }
+        // ✅ Check if student account is deactivated
+        if (user.role === "STUDENT" && user.student && !user.student.isAccountActive) {
+            return res.status(403).json({
+                success: false,
+                message: "គណនីសិស្សត្រូវបានបិទ\nStudent account is deactivated",
+                deactivationReason: user.student.deactivationReason,
+            });
+        }
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -197,10 +221,13 @@ const login = async (req, res) => {
         const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
         const token = jsonwebtoken_1.default.sign({
             userId: user.id,
-            email: user.email || user.phone || "",
+            email: user.email || user.phone || user.student?.studentId || "",
             role: user.role,
+            studentRole: user.student?.studentRole || null,
+            studentId: user.student?.id || null,
+            teacherId: user.teacher?.id || null,
         }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "365d" });
-        console.log("✅ Login successful:", user.id);
+        console.log("✅ Login successful:", user.id, "Role:", user.role);
         res.json({
             success: true,
             message: "ចូលប្រើប្រាស់បានជោគជ័យ\nLogin successful",
