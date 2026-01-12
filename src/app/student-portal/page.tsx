@@ -102,6 +102,48 @@ export default function StudentPortalPage() {
   // Sticky header state
   const [isHeaderSticky, setIsHeaderSticky] = useState(false);
 
+  // Data loading functions (defined before useEffect hooks that use them)
+  const loadProfile = useCallback(async () => {
+    try {
+      const data = await getMyProfile();
+      setProfile(data);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    }
+  }, []);
+
+  const loadGrades = useCallback(async () => {
+    setDataLoading(true);
+    try {
+      const data = await getMyGrades({
+        year: selectedYear,
+        month: selectedMonth,
+      });
+      setGradesData(data);
+    } catch (error) {
+      console.error("Error loading grades:", error);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [selectedYear, selectedMonth]);
+
+  const loadAttendance = useCallback(async () => {
+    setDataLoading(true);
+    try {
+      const monthNumber =
+        MONTHS.find((m) => m.value === selectedMonth)?.number || 1;
+      const data = await getMyAttendance({
+        month: monthNumber,
+        year: selectedYear,
+      });
+      setAttendanceData(data);
+    } catch (error) {
+      console.error("Error loading attendance:", error);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [selectedYear, selectedMonth]);
+
   // Clear message after 3 seconds
   useEffect(() => {
     if (message) {
@@ -122,7 +164,15 @@ export default function StudentPortalPage() {
     if (currentUser && currentUser.role === "STUDENT") {
       loadProfile();
     }
-  }, [currentUser]);
+  }, [currentUser, loadProfile]);
+
+  // Load initial data for dashboard on mount
+  useEffect(() => {
+    if (currentUser && currentUser.role === "STUDENT") {
+      loadGrades();
+      loadAttendance();
+    }
+  }, [currentUser, loadGrades, loadAttendance]);
 
   // Scroll listener for sticky header (grades tab only)
   useEffect(() => {
@@ -137,50 +187,6 @@ export default function StudentPortalPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [activeTab]);
-
-  // Manual loading - removed automatic data loading
-
-  // Data loading functions
-  const loadProfile = async () => {
-    try {
-      const data = await getMyProfile();
-      setProfile(data);
-    } catch (error) {
-      console.error("Error loading profile:", error);
-    }
-  };
-
-  const loadGrades = async () => {
-    setDataLoading(true);
-    try {
-      const data = await getMyGrades({
-        year: selectedYear,
-        month: selectedMonth,
-      });
-      setGradesData(data);
-    } catch (error) {
-      console.error("Error loading grades:", error);
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
-  const loadAttendance = async () => {
-    setDataLoading(true);
-    try {
-      const monthNumber =
-        MONTHS.find((m) => m.value === selectedMonth)?.number || 1;
-      const data = await getMyAttendance({
-        month: monthNumber,
-        year: selectedYear,
-      });
-      setAttendanceData(data);
-    } catch (error) {
-      console.error("Error loading attendance:", error);
-    } finally {
-      setDataLoading(false);
-    }
-  };
 
   // Handlers
   const handleChangePassword = useCallback(async () => {
