@@ -40,7 +40,7 @@ const InputField = ({
 const SectionTitle = ({ title }: { title: string }) => (
   <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-indigo-600">
     <div className="w-1 h-6 bg-indigo-600 rounded-full"></div>
-    <h3 className="text-lg font-black text-gray-900">{title}</h3>
+    <h1 className="text-lg font-black text-gray-900">{title}</h1>
   </div>
 );
 
@@ -59,31 +59,31 @@ export default function StudentProfileEditForm({
     gender: profile.student.gender || "MALE",
     dateOfBirth: profile.student.dateOfBirth || "",
     placeOfBirth: profile.student.placeOfBirth || "",
-    
+
     // Contact Info
     phoneNumber: profile.student.phoneNumber || profile.phone || "",
     email: profile.email || "",
     currentAddress: profile.student.currentAddress || "",
-    
+
     // Parent Info
     fatherName: (profile.student as any).fatherName || "",
     motherName: (profile.student as any).motherName || "",
     parentPhone: profile.student.parentPhone || "",
     parentOccupation: profile.student.parentOccupation || "",
-    
+
     // Academic History
     previousGrade: (profile.student as any).previousGrade || "",
     previousSchool: (profile.student as any).previousSchool || "",
     repeatingGrade: (profile.student as any).repeatingGrade || "",
     transferredFrom: (profile.student as any).transferredFrom || "",
-    
+
     // Grade 9 Exam
     grade9ExamSession: (profile.student as any).grade9ExamSession || "",
     grade9ExamCenter: (profile.student as any).grade9ExamCenter || "",
     grade9ExamRoom: (profile.student as any).grade9ExamRoom || "",
     grade9ExamDesk: (profile.student as any).grade9ExamDesk || "",
     grade9PassStatus: (profile.student as any).grade9PassStatus || "",
-    
+
     // Grade 12 Exam
     grade12ExamSession: (profile.student as any).grade12ExamSession || "",
     grade12ExamCenter: (profile.student as any).grade12ExamCenter || "",
@@ -91,22 +91,25 @@ export default function StudentProfileEditForm({
     grade12ExamDesk: (profile.student as any).grade12ExamDesk || "",
     grade12Track: (profile.student as any).grade12Track || "",
     grade12PassStatus: (profile.student as any).grade12PassStatus || "",
-    
+
     // Remarks
     remarks: (profile.student as any).remarks || "",
   });
 
-  const handleChange = useCallback((
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  }, []);
+  const handleChange = useCallback(
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >
+    ) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    },
+    []
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,7 +138,9 @@ export default function StudentProfileEditForm({
           </div>
           <div>
             <h1 className="text-xl font-bold">កែប្រែព័ត៌មានផ្ទាល់ខ្លួន</h1>
-            <p className="text-sm text-indigo-100">សូមបំពេញព័ត៌មានអោយបានគ្រប់គ្រាន់</p>
+            <p className="text-sm text-indigo-100">
+              សូមបំពេញព័ត៌មានអោយបានគ្រប់គ្រាន់
+            </p>
           </div>
         </div>
       </div>
@@ -227,12 +232,12 @@ export default function StudentProfileEditForm({
         <div className="bg-white rounded-3xl shadow-lg p-6">
           <SectionTitle title="ព័ត៌មានឪពុកម្តាយ" />
           <div className="space-y-4">
-            <InputField 
-              label="ឈ្មោះឪពុក" 
+            <InputField
+              label="ឈ្មោះឪពុក"
               name="fatherName"
               value={formData.fatherName}
               onChange={handleChange}
-              placeholder="ឈ្មោះឪពុក" 
+              placeholder="ឈ្មោះឪពុក"
             />
             <InputField
               label="ឈ្មោះម្តាយ"
