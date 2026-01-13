@@ -20,7 +20,7 @@ type LoginMode = "teacher" | "student";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error: authError, isAuthenticated } = useAuth();
+  const { login, isLoading, error: authError, isAuthenticated, currentUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("teacher");
 
@@ -33,11 +33,18 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      console.log("✅ User already authenticated, redirecting to dashboard");
-      router.push("/");
+    if (isAuthenticated && !isLoading && currentUser) {
+      console.log("✅ User already authenticated, redirecting...");
+      // Redirect based on role
+      if (currentUser.role === "STUDENT") {
+        console.log("→ Redirecting student to student portal");
+        router.push("/student-portal");
+      } else {
+        console.log("→ Redirecting to dashboard");
+        router.push("/");
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, currentUser, router]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

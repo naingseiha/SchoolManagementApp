@@ -67,7 +67,12 @@ const getCurrentKhmerMonth = () => {
 type TabType = "dashboard" | "grades" | "attendance" | "profile";
 
 export default function StudentPortalPage() {
-  const { currentUser, isLoading: authLoading } = useAuth();
+  const {
+    currentUser,
+    isLoading: authLoading,
+    isAuthenticated,
+    logout,
+  } = useAuth();
   const router = useRouter();
 
   // State management
@@ -152,12 +157,18 @@ export default function StudentPortalPage() {
     }
   }, [message]);
 
-  // Auth check
+  // Auth check - redirect if not authenticated or not a student
   useEffect(() => {
-    if (!authLoading && (!currentUser || currentUser.role !== "STUDENT")) {
-      router.push("/login");
+    if (!authLoading) {
+      if (!isAuthenticated || !currentUser) {
+        console.log("⚠️ Not authenticated, redirecting to login...");
+        router.push("/login");
+      } else if (currentUser.role !== "STUDENT") {
+        console.log("⚠️ Not a student, redirecting to dashboard...");
+        router.push("/");
+      }
     }
-  }, [currentUser, authLoading, router]);
+  }, [isAuthenticated, currentUser, authLoading, router]);
 
   // Load profile on mount
   useEffect(() => {
@@ -245,21 +256,16 @@ export default function StudentPortalPage() {
   }, []);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/login");
-  }, [router]);
+    logout();
+  }, [logout]);
 
   const handleTabChange = useCallback((tab: TabType) => {
     setActiveTab(tab);
   }, []);
 
   const studentName = useMemo(() => {
-    if (!profile)
-      return currentUser
-        ? `${currentUser.lastName} ${currentUser.firstName}`
-        : "";
-    return `${profile.lastName} ${profile.firstName}`;
+    if (!profile) return currentUser ? `${currentUser.student.khmerName}` : "";
+    return `${profile.student.khmerName}`;
   }, [profile, currentUser]);
 
   // Early returns
