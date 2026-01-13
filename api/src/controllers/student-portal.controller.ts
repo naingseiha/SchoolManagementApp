@@ -127,48 +127,116 @@ export const getMyGrades = async (req: Request, res: Response) => {
       orderBy: [{ year: "desc" }, { monthNumber: "desc" }],
     });
 
-    // Get monthly summaries
-    const summaries = await prisma.studentMonthlySummary.findMany({
-      where: {
-        studentId,
-        ...(year && { year: parseInt(year as string) }),
-        ...(month && { month: month as string }),
-      },
-      include: {
-        class: {
-          select: {
-            id: true,
-            name: true,
-            grade: true,
-          },
-        },
-      },
-      orderBy: [{ year: "desc" }, { monthNumber: "desc" }],
-    });
+    // ✅ NO LONGER USING StudentMonthlySummary - calculating everything dynamically!
 
     // Calculate statistics
-    // ✅ FIXED: Calculate average properly (totalScore / totalCoefficient)
+    // ✅ FIXED: Calculate average properly using ALL subjects for the class
     const totalGrades = grades.length;
-    
-    // Calculate total score and total coefficient
+
+    // Get ALL subjects for the student's class/grade (like report page does)
+    let allSubjects: any[] = [];
+    if (user.student.classId) {
+      const studentClass = await prisma.class.findUnique({
+        where: { id: user.student.classId },
+      });
+
+      if (studentClass) {
+        const whereClause: any = {
+          grade: studentClass.grade,
+          isActive: true,
+        };
+
+        // For Grade 11 & 12, filter by track
+        const gradeNum = parseInt(studentClass.grade);
+        if ((gradeNum === 11 || gradeNum === 12) && studentClass.track) {
+          whereClause.OR = [
+            { track: studentClass.track },
+            { track: null },
+            { track: "common" },
+          ];
+        }
+
+        allSubjects = await prisma.subject.findMany({
+          where: whereClause,
+        });
+      }
+    }
+
+    // Calculate total score from grades that exist
     const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
-    const totalCoefficient = grades.reduce(
-      (sum, g) => sum + (g.subject.coefficient || 1),
-      0
-    );
-    
+
+    // Calculate total coefficient from ALL subjects (not just graded ones)
+    const totalCoefficient = allSubjects.length > 0
+      ? allSubjects.reduce((sum, s) => sum + (s.coefficient || 1), 0)
+      : grades.reduce((sum, g) => sum + (g.subject.coefficient || 1), 0);
+
     // ✅ Average = totalScore / totalCoefficient (same as report page)
     const averageScore =
       totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+
+    // ✅ Calculate class rank dynamically (like report page does)
+    let classRank = null;
+    if (user.student.classId && year && month) {
+      // Get all students in the same class
+      const classStudents = await prisma.student.findMany({
+        where: { classId: user.student.classId },
+        select: { id: true },
+      });
+
+      // Calculate average for each student
+      const studentAverages = await Promise.all(
+        classStudents.map(async (student) => {
+          const studentGrades = await prisma.grade.findMany({
+            where: {
+              studentId: student.id,
+              classId: user.student.classId,
+              month: month as string,
+              year: parseInt(year as string),
+            },
+            include: { subject: true },
+          });
+
+          const studentScore = studentGrades.reduce(
+            (sum, g) => sum + (g.score || 0),
+            0
+          );
+          const studentAvg =
+            totalCoefficient > 0 ? studentScore / totalCoefficient : 0;
+
+          return {
+            studentId: student.id,
+            average: studentAvg,
+          };
+        })
+      );
+
+      // Sort by average descending and find rank
+      const sorted = studentAverages
+        .sort((a, b) => b.average - a.average)
+        .map((s, index) => ({ ...s, rank: index + 1 }));
+
+      const currentStudent = sorted.find((s) => s.studentId === studentId);
+      classRank = currentStudent?.rank || null;
+    }
+
+    // ✅ Calculate grade level (same as report page)
+    let gradeLevel = "F";
+    if (averageScore >= 45) gradeLevel = "A";
+    else if (averageScore >= 40) gradeLevel = "B";
+    else if (averageScore >= 35) gradeLevel = "C";
+    else if (averageScore >= 30) gradeLevel = "D";
+    else if (averageScore >= 25) gradeLevel = "E";
 
     res.json({
       success: true,
       data: {
         grades,
-        summaries,
         statistics: {
           totalGrades,
+          totalScore: parseFloat(totalScore.toFixed(2)),
           averageScore: parseFloat(averageScore.toFixed(2)),
+          classRank,
+          gradeLevel,
         },
       },
     });
@@ -245,7 +313,7 @@ export const getMyAttendance = async (req: Request, res: Response) => {
     });
 
     // Calculate statistics
-    const totalDays = attendance.length;
+    const recordedDays = attendance.length;
     const presentCount = attendance.filter(
       (a) => a.status === "PRESENT"
     ).length;
@@ -255,20 +323,44 @@ export const getMyAttendance = async (req: Request, res: Response) => {
     ).length;
     const lateCount = attendance.filter((a) => a.status === "LATE").length;
 
-    const attendanceRate =
-      totalDays > 0 ? (presentCount / totalDays) * 100 : 0;
+    // ✅ FIXED: Attendance rate calculation based on total days in the month
+    // Get number of days in the specified month
+    let totalDaysInMonth = 30; // default
+    if (month && year) {
+      const monthNumber = parseInt(month as string);
+      const yearNumber = parseInt(year as string);
+      // Get actual number of days in the month
+      totalDaysInMonth = new Date(yearNumber, monthNumber, 0).getDate();
+    } else if (startDate && endDate) {
+      // If date range is specified, calculate days between
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      totalDaysInMonth = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    // Calculate attendance rate:
+    // - Total days NOT attended = Absent + Permission
+    // - Days attended = Total days in month - (Absent + Permission)
+    // - Rate = (Days attended / Total days in month) * 100
+    const daysNotAttended = absentCount + permissionCount;
+    const daysAttended = totalDaysInMonth - daysNotAttended;
+    const attendanceRate = (daysAttended / totalDaysInMonth) * 100;
+
+    // Ensure rate doesn't go below 0 or above 100
+    const finalAttendanceRate = Math.max(0, Math.min(100, attendanceRate));
 
     res.json({
       success: true,
       data: {
         attendance,
         statistics: {
-          totalDays,
+          totalDays: totalDaysInMonth, // Total days in the month
+          recordedDays, // Number of attendance records
           presentCount,
           absentCount,
           permissionCount,
           lateCount,
-          attendanceRate: parseFloat(attendanceRate.toFixed(2)),
+          attendanceRate: parseFloat(finalAttendanceRate.toFixed(2)),
         },
       },
     });

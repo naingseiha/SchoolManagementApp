@@ -140,6 +140,7 @@ export default function StudentPortalPage() {
 
   const loadGrades = useCallback(async () => {
     setDataLoading(true);
+    setGradesData(null); // ✅ Clear old data immediately to show loading
     try {
       const data = await getMyGrades({
         year: selectedYear,
@@ -155,6 +156,7 @@ export default function StudentPortalPage() {
 
   const loadAttendance = useCallback(async () => {
     setDataLoading(true);
+    setAttendanceData(null); // ✅ Clear old data immediately to show loading
     try {
       const monthNumber =
         MONTHS.find((m) => m.value === selectedMonth)?.number || 1;
@@ -367,71 +369,90 @@ export default function StudentPortalPage() {
                 <h1 className="text-base font-bold text-gray-900 mb-3 px-1">
                   ស្ថិតិទូទៅ
                 </h1>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm p-4 border-2 border-blue-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="bg-blue-600 p-2 rounded-xl shadow-sm">
-                        <TrendingUp className="w-4 h-4 text-white" />
+
+                {/* Check if no grades imported yet */}
+                {gradesData && gradesData.grades && gradesData.grades.length === 0 ? (
+                  <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl shadow-sm p-6 border-2 border-yellow-200">
+                    <div className="text-center">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-3">
+                        <Clock className="w-8 h-8 text-yellow-600" />
                       </div>
-                      <p className="text-xs font-bold text-blue-900">
-                        មធ្យមភាគ
+                      <h2 className="text-lg font-bold text-yellow-900 mb-2">
+                        មិនទាន់មានពិន្ទុ
+                      </h2>
+                      <p className="text-sm text-yellow-700 leading-relaxed">
+                        ពិន្ទុសម្រាប់ខែនេះនឹងបង្ហាញនៅពេលគ្រូបញ្ចូលពិន្ទុរួចរាល់។<br />
+                        សូមត្រលប់មកពិនិត្យម្តងទៀតនៅពេលក្រោយ។
                       </p>
                     </div>
-                    <p className="text-3xl font-bold text-blue-700">
-                      {gradesData?.statistics?.averageScore?.toFixed(1) || "--"}
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">ពិន្ទុមធ្យម</p>
                   </div>
-
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-sm p-4 border-2 border-green-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="bg-green-600 p-2 rounded-xl shadow-sm">
-                        <CheckCircle className="w-4 h-4 text-white" />
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm p-4 border-2 border-blue-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="bg-blue-600 p-2 rounded-xl shadow-sm">
+                          <TrendingUp className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-xs font-bold text-blue-900">
+                          មធ្យមភាគ
+                        </p>
                       </div>
-                      <p className="text-xs font-bold text-green-900">
-                        ការចូលរៀន
+                      <p className="text-3xl font-bold text-blue-700">
+                        {gradesData?.statistics?.averageScore?.toFixed(1) || "0.0"}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">ពិន្ទុមធ្យម</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-sm p-4 border-2 border-green-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="bg-green-600 p-2 rounded-xl shadow-sm">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-xs font-bold text-green-900">
+                          ការចូលរៀន
+                        </p>
+                      </div>
+                      <p className="text-3xl font-bold text-green-700">
+                        {attendanceData?.statistics?.attendanceRate !== undefined
+                          ? `${attendanceData.statistics.attendanceRate.toFixed(0)}%`
+                          : "100%"}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">អត្រាចូលរៀន</p>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-sm p-4 border-2 border-purple-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="bg-purple-600 p-2 rounded-xl shadow-sm">
+                          <BookOpen className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-xs font-bold text-purple-900">
+                          មុខវិជ្ជា
+                        </p>
+                      </div>
+                      <p className="text-3xl font-bold text-purple-700">
+                        {gradesData?.grades?.length || "0"}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        សរុបមុខវិជ្ជា
                       </p>
                     </div>
-                    <p className="text-3xl font-bold text-green-700">
-                      {attendanceData?.statistics?.attendanceRate?.toFixed(0) ||
-                        "--"}
-                      %
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">អត្រាចូលរៀន</p>
-                  </div>
 
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-sm p-4 border-2 border-purple-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="bg-purple-600 p-2 rounded-xl shadow-sm">
-                        <BookOpen className="w-4 h-4 text-white" />
+                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-sm p-4 border-2 border-amber-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="bg-amber-600 p-2 rounded-xl shadow-sm">
+                          <Award className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-xs font-bold text-amber-900">លំដាប់</p>
                       </div>
-                      <p className="text-xs font-bold text-purple-900">
-                        មុខវិជ្ជា
+                      <p className="text-3xl font-bold text-amber-700">
+                        {gradesData?.statistics?.classRank
+                          ? `#${gradesData.statistics.classRank}`
+                          : "--"}
                       </p>
+                      <p className="text-xs text-amber-600 mt-1">លំដាប់ថ្នាក់</p>
                     </div>
-                    <p className="text-3xl font-bold text-purple-700">
-                      {gradesData?.grades?.length || "--"}
-                    </p>
-                    <p className="text-xs text-purple-600 mt-1">
-                      សរុបមុខវិជ្ជា
-                    </p>
                   </div>
-
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-sm p-4 border-2 border-amber-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="bg-amber-600 p-2 rounded-xl shadow-sm">
-                        <Award className="w-4 h-4 text-white" />
-                      </div>
-                      <p className="text-xs font-bold text-amber-900">លំដាប់</p>
-                    </div>
-                    <p className="text-3xl font-bold text-amber-700">
-                      {gradesData?.summaries?.[0]?.classRank
-                        ? `#${gradesData.summaries[0].classRank}`
-                        : "--"}
-                    </p>
-                    <p className="text-xs text-amber-600 mt-1">លំដាប់ថ្នាក់</p>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Quick Actions */}
@@ -578,15 +599,25 @@ export default function StudentPortalPage() {
                 </button>
               )}
 
-              {dataLoading ? (
-                <div className="text-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">កំពុងផ្ទុក...</p>
+              {/* Initial Loading State */}
+              {!gradesData && dataLoading && allSubjects.length === 0 && (
+                <div className="text-center py-12">
+                  <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium">កំពុងផ្ទុកទិន្នន័យ...</p>
                 </div>
-              ) : allSubjects.length > 0 ? (
-                <div className="space-y-4">
+              )}
+
+              {allSubjects.length > 0 ? (
+                <div className="space-y-4 relative">
+                  {/* ✅ Loading Overlay */}
+                  {dataLoading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-2xl">
+                      <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mb-3" />
+                      <p className="text-gray-700 font-medium">កំពុងផ្ទុកពិន្ទុ...</p>
+                    </div>
+                  )}
                   {/* Summary Card - JavaScript-based Sticky */}
-                  {gradesData?.summaries && gradesData.summaries.length > 0 && (
+                  {gradesData?.statistics && (
                     <>
                       {/* Placeholder div to maintain layout when fixed */}
                       {isHeaderSticky && <div className="h-[200px]"></div>}
@@ -622,18 +653,18 @@ export default function StudentPortalPage() {
                                     មធ្យមភាគ
                                   </p>
                                   <p className="text-2xl font-bold">
-                                    {gradesData.summaries[0].average?.toFixed(
+                                    {gradesData.statistics.averageScore?.toFixed(
                                       2
                                     ) || "0.00"}
                                   </p>
                                 </div>
-                                {gradesData.summaries[0].classRank && (
+                                {gradesData.statistics.classRank && (
                                   <div className="bg-white bg-opacity-15 backdrop-blur-sm rounded-2xl p-3 text-center">
                                     <p className="text-xs text-indigo-100 mb-1">
                                       លំដាប់ថ្នាក់
                                     </p>
                                     <p className="text-2xl font-bold">
-                                      #{gradesData.summaries[0].classRank}
+                                      #{gradesData.statistics.classRank}
                                     </p>
                                   </div>
                                 )}
@@ -642,7 +673,7 @@ export default function StudentPortalPage() {
                                     សរុប
                                   </p>
                                   <p className="text-2xl font-bold">
-                                    {gradesData.summaries[0].totalScore?.toFixed(
+                                    {gradesData.statistics.totalScore?.toFixed(
                                       1
                                     ) || "0"}
                                   </p>
@@ -895,13 +926,23 @@ export default function StudentPortalPage() {
                 </button>
               )}
 
-              {dataLoading ? (
-                <div className="text-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
-                  <p className="text-gray-600 text-sm">កំពុងផ្ទុក...</p>
+              {/* Initial Loading State */}
+              {!attendanceData && dataLoading && (
+                <div className="text-center py-12">
+                  <Loader2 className="w-12 h-12 animate-spin text-green-600 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium">កំពុងផ្ទុកទិន្នន័យ...</p>
                 </div>
-              ) : attendanceData ? (
-                <div className="space-y-4">
+              )}
+
+              {attendanceData ? (
+                <div className="space-y-4 relative">
+                  {/* ✅ Loading Overlay */}
+                  {dataLoading && (
+                    <div className="absolute inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-2xl min-h-[400px]">
+                      <Loader2 className="w-12 h-12 animate-spin text-green-600 mb-3" />
+                      <p className="text-gray-700 font-medium">កំពុងផ្ទុកការចូលរៀន...</p>
+                    </div>
+                  )}
                   {/* Enhanced Statistics Summary */}
                   <div className="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
@@ -962,7 +1003,7 @@ export default function StudentPortalPage() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-3">
                           <p className="text-xs text-green-100 mb-1">
-                            សរុបថ្ងៃ
+                            សរុបថ្ងៃក្នុងខែ
                           </p>
                           <p className="text-2xl font-bold">
                             {attendanceData.statistics?.totalDays || 0}
@@ -973,26 +1014,7 @@ export default function StudentPortalPage() {
                             អត្រាចូលរៀន
                           </p>
                           <p className="text-2xl font-bold">
-                            {(() => {
-                              const totalDays =
-                                attendanceData.statistics?.totalDays || 0;
-                              const presentCount =
-                                attendanceData.statistics?.presentCount || 0;
-                              const lateCount =
-                                attendanceData.statistics?.lateCount || 0;
-
-                              // If no attendance records exist, assume 100% (no attendance taken yet or perfect attendance)
-                              if (totalDays === 0) {
-                                return "100%";
-                              }
-
-                              // Calculate attendance rate: (Present + Late) / Total
-                              // Late students are still counted as attended
-                              const attendedCount = presentCount + lateCount;
-                              const rate = (attendedCount / totalDays) * 100;
-
-                              return `${rate.toFixed(1)}%`;
-                            })()}
+                            {attendanceData.statistics?.attendanceRate?.toFixed(1) || "100.0"}%
                           </p>
                         </div>
                       </div>
