@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Save, X, Loader2, User, Phone, Mail, MapPin, Calendar, Users, BookOpen, Award, FileText } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Save, X, Loader2, User, Phone, Mail, MapPin, Calendar, Users, BookOpen, Award, FileText, AlertCircle } from "lucide-react";
 import { StudentProfile } from "@/lib/api/student-portal";
 
 interface StudentProfileEditFormProps {
@@ -9,6 +9,7 @@ interface StudentProfileEditFormProps {
   onSave: (data: any) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
+  onUnsavedChanges?: (hasChanges: boolean) => void; // Notify parent of unsaved changes
 }
 
 // Move InputField outside component to prevent re-creation
@@ -57,7 +58,13 @@ export default function StudentProfileEditForm({
   onSave,
   onCancel,
   isSubmitting,
+  onUnsavedChanges,
 }: StudentProfileEditFormProps) {
+  // Track unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   const [formData, setFormData] = useState({
     // Basic Info
     khmerName: profile.student.khmerName || "",
@@ -115,8 +122,13 @@ export default function StudentProfileEditForm({
         ...prev,
         [name]: value,
       }));
+      // Mark as having unsaved changes
+      if (!hasUnsavedChanges) {
+        setHasUnsavedChanges(true);
+        onUnsavedChanges?.(true);
+      }
     },
-    []
+    [hasUnsavedChanges, onUnsavedChanges]
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,27 +159,93 @@ export default function StudentProfileEditForm({
     };
 
     await onSave(submitData);
+    // Clear unsaved changes flag after successful save
+    setHasUnsavedChanges(false);
+    onUnsavedChanges?.(false);
   };
+
+  // Handle cancel with unsaved changes check
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      setPendingAction(() => onCancel);
+      setShowUnsavedWarning(true);
+    } else {
+      onCancel();
+    }
+  };
+
+  // Warning dialog handlers
+  const handleSaveAndContinue = async () => {
+    try {
+      await handleSubmit(new Event('submit') as any);
+      setShowUnsavedWarning(false);
+      if (pendingAction) {
+        pendingAction();
+        setPendingAction(null);
+      }
+    } catch (error) {
+      console.error("Error during save and continue:", error);
+      setShowUnsavedWarning(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setShowUnsavedWarning(false);
+    setHasUnsavedChanges(false);
+    onUnsavedChanges?.(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  const handleCancelChange = () => {
+    setShowUnsavedWarning(false);
+    setPendingAction(null);
+  };
+
+  // Block browser navigation when there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   return (
     <div className="space-y-5 pb-4">
-      {/* Modern Header */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white p-6 -m-5 mb-0 rounded-[2rem] shadow-2xl">
+      {/* Improved Modern Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white p-5 -m-5 mb-0 rounded-b-[2rem] shadow-2xl">
         {/* Decorative Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-20 translate-x-20"></div>
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-16 -translate-x-16"></div>
         </div>
         
-        <div className="relative flex items-center gap-4">
-          <div className="w-14 h-14 bg-white bg-opacity-20 backdrop-blur-xl rounded-2xl flex items-center justify-center border-2 border-white border-opacity-40">
-            <User className="w-7 h-7" />
+        <div className="relative flex items-start gap-4">
+          <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-lg">
+            <User className="w-6 h-6" />
           </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-black tracking-tight">កែប្រែព័ត៌មាន</h1>
-            <p className="text-sm text-indigo-100 font-medium">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-black tracking-tight mb-1">កែប្រែព័ត៌មាន</h1>
+            <p className="text-xs text-white/90 font-medium">
               សូមបំពេញព័ត៌មានអោយបានគ្រប់គ្រាន់
             </p>
+            {hasUnsavedChanges && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs bg-yellow-400/20 text-yellow-100 px-3 py-1.5 rounded-full border border-yellow-300/30 backdrop-blur-sm w-fit">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span className="font-semibold">មានការផ្លាស់ប្តូរមិនទាន់រក្សា</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -481,7 +559,7 @@ export default function StudentProfileEditForm({
         <div className="grid grid-cols-2 gap-3 pt-2 sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 -mx-5 px-5 pb-2">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             disabled={isSubmitting}
             className="group relative overflow-hidden px-6 py-4 bg-gradient-to-br from-gray-400 to-gray-500 text-white rounded-2xl hover:shadow-xl font-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95"
           >
@@ -509,6 +587,70 @@ export default function StudentProfileEditForm({
           </button>
         </div>
       </form>
+
+      {/* Unsaved Changes Warning Dialog */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-7 h-7 text-orange-600" />
+              </div>
+              <div>
+                <h1 className="font-koulen text-xl text-gray-900">
+                  មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
+                </h1>
+                <p className="text-sm text-gray-600 font-battambang">
+                  Unsaved Changes
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6 font-battambang leading-relaxed">
+              អ្នកមានព័ត៌មានដែលមិនទាន់រក្សាទុក។ តើអ្នកចង់រក្សាទុកវាឬបោះបង់?
+              <br />
+              <span className="text-gray-500">
+                You have unsaved information. Do you want to save or discard it?
+              </span>
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleSaveAndContinue}
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-battambang font-bold py-3.5 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    កំពុងរក្សា...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    រក្សាទុក • Save
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleDiscardChanges}
+                disabled={isSubmitting}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-battambang font-bold py-3.5 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <X className="w-5 h-5" />
+                បោះបង់ • Discard
+              </button>
+              <button
+                onClick={handleCancelChange}
+                disabled={isSubmitting}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-battambang font-bold py-3.5 px-6 rounded-xl active:scale-[0.98] transition-all"
+              >
+                ត្រឡប់ក្រោយ • Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
