@@ -2,13 +2,26 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/**
+ * Calculate monthly summaries for a specific month and year
+ * Usage: npx ts-node src/scripts/calculate-monthly-summaries-dynamic.ts <month> <year>
+ * Example: npx ts-node src/scripts/calculate-monthly-summaries-dynamic.ts "មករា" 2025
+ */
 async function calculateMonthlySummaries() {
   try {
-    console.log("🔄 Starting monthly summary calculation...");
+    // Get month and year from command line arguments
+    const args = process.argv.slice(2);
 
-    // ✅ HARDCODED: Process មករា 2025 to recalculate existing data
-    const currentYear = 2025;
-    const currentMonth = "មករា";
+    if (args.length < 2) {
+      console.error("❌ Usage: npx ts-node calculate-monthly-summaries-dynamic.ts <month> <year>");
+      console.error("   Example: npx ts-node calculate-monthly-summaries-dynamic.ts \"មករា\" 2025");
+      process.exit(1);
+    }
+
+    const currentMonth = args[0];
+    const currentYear = parseInt(args[1]);
+
+    console.log(`🔄 Starting monthly summary calculation for ${currentMonth} ${currentYear}...`);
 
     // Get all classes
     const classes = await prisma.class.findMany({
@@ -22,6 +35,34 @@ async function calculateMonthlySummaries() {
 
     for (const classItem of classes) {
       console.log(`\n📚 Processing class: ${classItem.name}`);
+
+      // Get ALL subjects for this class (same as report page)
+      const whereClause: any = {
+        grade: classItem.grade,
+        isActive: true,
+      };
+
+      // For Grade 11 & 12, filter by track
+      const gradeNum = parseInt(classItem.grade);
+      if ((gradeNum === 11 || gradeNum === 12) && classItem.track) {
+        whereClause.OR = [
+          { track: classItem.track },
+          { track: null },
+          { track: "common" },
+        ];
+      }
+
+      const allSubjects = await prisma.subject.findMany({
+        where: whereClause,
+      });
+
+      // Calculate total coefficient for this class from ALL subjects
+      const totalCoefficientForClass = allSubjects.reduce(
+        (sum, s) => sum + (s.coefficient || 1),
+        0
+      );
+
+      console.log(`   📊 Total coefficient for class ${classItem.name}: ${totalCoefficientForClass} (${allSubjects.length} subjects)`);
 
       for (const student of classItem.students) {
         // Get all grades for this student in current month
@@ -45,13 +86,10 @@ async function calculateMonthlySummaries() {
         const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
         const totalMaxScore = grades.reduce((sum, g) => sum + g.maxScore, 0);
 
-        // ✅ FIXED: Calculate total coefficient
-        const totalCoefficient = grades.reduce(
-          (sum, g) => sum + (g.subject.coefficient || 1),
-          0
-        );
+        // ✅ FIXED: Use total coefficient from ALL subjects (not just graded ones)
+        const totalCoefficient = totalCoefficientForClass;
 
-        // ✅ FIXED: Average = totalScore / totalCoefficient (same as report page)
+        // ✅ FIXED: Average = totalScore / totalCoefficientForClass (same as report page)
         const average = totalCoefficient > 0
           ? (totalScore / totalCoefficient)
           : 0;
@@ -62,17 +100,18 @@ async function calculateMonthlySummaries() {
           0
         );
 
-        // Determine grade level
-        let gradeLevel = "E";
-        if (average >= 80) gradeLevel = "A";
-        else if (average >= 70) gradeLevel = "B";
-        else if (average >= 60) gradeLevel = "C";
-        else if (average >= 50) gradeLevel = "D";
+        // Determine grade level (same as report page)
+        let gradeLevel = "F";
+        if (average >= 45) gradeLevel = "A";
+        else if (average >= 40) gradeLevel = "B";
+        else if (average >= 35) gradeLevel = "C";
+        else if (average >= 30) gradeLevel = "D";
+        else if (average >= 25) gradeLevel = "E";
 
         // Get month number
         const monthNames = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
+          "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
+          "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
         ];
         const monthNumber = monthNames.indexOf(currentMonth) + 1;
 
