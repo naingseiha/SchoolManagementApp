@@ -31,6 +31,9 @@ export interface StudentTrackingBookData {
     studentName: string;
     gender: string;
     dateOfBirth: string;
+    fatherName?: string;
+    motherName?: string;
+    parentOccupation?: string;
     subjectScores: {
       [subjectId: string]: {
         score: number | null;

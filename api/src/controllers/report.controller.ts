@@ -237,7 +237,7 @@ export class ReportController {
         else if (average >= 25) gradeLevel = "E";
 
         return {
-          studentId: student.id,
+          studentId: student.studentId || student.id, // ✅ Use studentId field, fallback to id
           studentName:
             student.khmerName || `${student.lastName} ${student.firstName}`,
           gender: student.gender,
@@ -468,7 +468,7 @@ export class ReportController {
         else if (average >= 25) gradeLevel = "E";
 
         return {
-          studentId: student.id,
+          studentId: student.studentId || student.id, // ✅ Use studentId field, fallback to id
           studentName:
             student.khmerName || `${student.lastName} ${student.firstName}`,
           className: student.className,
@@ -896,13 +896,16 @@ export class ReportController {
         };
 
         return {
-          studentId: student.id,
+          studentId: student.studentId || student.id, // ✅ Use studentId field, fallback to id
           studentName:
             student.khmerName || `${student.lastName} ${student.firstName}`,
           gender: student.gender,
           dateOfBirth: student.dateOfBirth
             ? new Date(student.dateOfBirth).toLocaleDateString("km-KH")
             : "",
+          fatherName: student.fatherName || "",
+          motherName: student.motherName || "",
+          parentOccupation: student.parentOccupation || "",
           subjectScores,
           totalScore: totalScore.toFixed(0),
           averageScore: averageScore.toFixed(2),
