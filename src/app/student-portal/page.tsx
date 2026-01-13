@@ -90,6 +90,10 @@ export default function StudentPortalPage() {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [hasUnsavedProfileChanges, setHasUnsavedProfileChanges] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingTab, setPendingTab] = useState<TabType | null>(null);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -266,6 +270,7 @@ export default function StudentPortalPage() {
       await updateMyProfile(data);
       setMessage({ type: "success", text: "កែប្រែព័ត៌មានបានជោគជ័យ" });
       setIsEditingProfile(false);
+      setHasUnsavedProfileChanges(false);
       await loadProfile(); // Reload profile data
     } catch (error: any) {
       setMessage({
@@ -276,14 +281,45 @@ export default function StudentPortalPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadProfile]);
 
   const handleLogout = useCallback(() => {
     logout();
   }, [logout]);
 
   const handleTabChange = useCallback((tab: TabType) => {
+    // If editing profile with unsaved changes, show warning
+    if (isEditingProfile && hasUnsavedProfileChanges && tab !== activeTab) {
+      setPendingTab(tab);
+      setShowUnsavedWarning(true);
+      return;
+    }
     setActiveTab(tab);
+  }, [isEditingProfile, hasUnsavedProfileChanges, activeTab]);
+
+  // Warning dialog handlers for tab navigation
+  const handleDiscardAndNavigate = useCallback(() => {
+    setShowUnsavedWarning(false);
+    setHasUnsavedProfileChanges(false);
+    setIsEditingProfile(false);
+    
+    // Handle tab navigation
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+    
+    // Handle cancel action
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  }, [pendingTab, pendingAction]);
+
+  const handleCancelNavigation = useCallback(() => {
+    setShowUnsavedWarning(false);
+    setPendingTab(null);
+    setPendingAction(null);
   }, []);
 
   const studentName = useMemo(() => {
@@ -1161,7 +1197,15 @@ export default function StudentPortalPage() {
                 <StudentProfileEditForm
                   profile={profile}
                   onSave={handleUpdateProfile}
-                  onCancel={() => setIsEditingProfile(false)}
+                  onCancel={() => {
+                    if (hasUnsavedProfileChanges) {
+                      setPendingAction(() => () => setIsEditingProfile(false));
+                      setShowUnsavedWarning(true);
+                    } else {
+                      setIsEditingProfile(false);
+                    }
+                  }}
+                  onUnsavedChanges={setHasUnsavedProfileChanges}
                   isSubmitting={loading}
                 />
               ) : (
@@ -1355,7 +1399,7 @@ export default function StudentPortalPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl max-w-md mx-auto">
           <div className="grid grid-cols-4 gap-0 p-2">
             <button
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => handleTabChange("dashboard")}
               className={`flex flex-col items-center justify-center py-3 px-2 text-xs font-bold transition-all rounded-xl ${
                 activeTab === "dashboard"
                   ? "text-indigo-600 bg-indigo-50"
@@ -1366,7 +1410,7 @@ export default function StudentPortalPage() {
               <span>ទំព័រដើម</span>
             </button>
             <button
-              onClick={() => setActiveTab("grades")}
+              onClick={() => handleTabChange("grades")}
               className={`flex flex-col items-center justify-center py-3 px-2 text-xs font-bold transition-all rounded-xl ${
                 activeTab === "grades"
                   ? "text-indigo-600 bg-indigo-50"
@@ -1377,7 +1421,7 @@ export default function StudentPortalPage() {
               <span>ពិន្ទុ</span>
             </button>
             <button
-              onClick={() => setActiveTab("attendance")}
+              onClick={() => handleTabChange("attendance")}
               className={`flex flex-col items-center justify-center py-3 px-2 text-xs font-bold transition-all rounded-xl ${
                 activeTab === "attendance"
                   ? "text-indigo-600 bg-indigo-50"
@@ -1388,7 +1432,7 @@ export default function StudentPortalPage() {
               <span>អវត្តមាន</span>
             </button>
             <button
-              onClick={() => setActiveTab("profile")}
+              onClick={() => handleTabChange("profile")}
               className={`flex flex-col items-center justify-center py-3 px-2 text-xs font-bold transition-all rounded-xl ${
                 activeTab === "profile"
                   ? "text-indigo-600 bg-indigo-50"
@@ -1535,6 +1579,51 @@ export default function StudentPortalPage() {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unsaved Changes Warning Dialog for Tab Navigation */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-7 h-7 text-orange-600" />
+              </div>
+              <div>
+                <h1 className="font-koulen text-xl text-gray-900">
+                  មានការផ្លាស់ប្តូរមិនទាន់រក្សាទុក
+                </h1>
+                <p className="text-sm text-gray-600 font-battambang">
+                  Unsaved Changes
+                </p>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6 font-battambang leading-relaxed">
+              អ្នកមានព័ត៌មានដែលមិនទាន់រក្សាទុក។ តើអ្នកចង់បោះបង់ការផ្លាស់ប្តូរទេ?
+              <br />
+              <span className="text-gray-500">
+                You have unsaved information. Do you want to discard changes?
+              </span>
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleDiscardAndNavigate}
+                className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-battambang font-bold py-3.5 px-6 rounded-xl shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <X className="w-5 h-5" />
+                បោះបង់ • Discard
+              </button>
+              <button
+                onClick={handleCancelNavigation}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-battambang font-bold py-3.5 px-6 rounded-xl active:scale-[0.98] transition-all"
+              >
+                ត្រឡប់ក្រោយ • Cancel
+              </button>
             </div>
           </div>
         </div>

@@ -183,14 +183,14 @@ export default function TrackingBookPage() {
           // ✅ Wrap in studentData object
           studentId: student.studentId,
           studentName: student.studentName,
-          studentNumber: `${String(
-            sortedTrackingData.students.indexOf(student) + 1
-          ).padStart(4, "0")}`,
+          studentNumber: student.studentId, // ✅ Use actual studentId instead of index
           dateOfBirth: student.dateOfBirth || "01-01-2010",
           placeOfBirth: "សៀមរាប",
           gender: student.gender,
-          fatherName: "ឪពុក",
-          motherName: "ម្តាយ",
+          fatherName: student.fatherName || "ឪពុក",
+          fatherOccupation: student.parentOccupation || "",
+          motherName: student.motherName || "ម្តាយ",
+          motherOccupation: student.parentOccupation || "",
           address: "សៀមរាប",
           className: sortedTrackingData.className,
           grade: sortedTrackingData.grade,
@@ -244,7 +244,7 @@ export default function TrackingBookPage() {
 
     const rows = sortedTrackingData.students.map((student, index) => {
       const row = [
-        (index + 1).toString(),
+        student.studentId, // ✅ Use actual studentId instead of index + 1
         student.studentName,
         student.gender?.toUpperCase() === "MALE" || student.gender === "male" ? "ប្រុស" : "ស្រី",
         ...sortedTrackingData.subjects.map((subject) => {
