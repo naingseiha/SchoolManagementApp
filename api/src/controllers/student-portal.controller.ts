@@ -147,11 +147,19 @@ export const getMyGrades = async (req: Request, res: Response) => {
     });
 
     // Calculate statistics
+    // ✅ FIXED: Calculate average properly (totalScore / totalCoefficient)
     const totalGrades = grades.length;
+    
+    // Calculate total score and total coefficient
+    const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
+    const totalCoefficient = grades.reduce(
+      (sum, g) => sum + (g.subject.coefficient || 1),
+      0
+    );
+    
+    // ✅ Average = totalScore / totalCoefficient (same as report page)
     const averageScore =
-      totalGrades > 0
-        ? grades.reduce((sum, g) => sum + (g.percentage || 0), 0) / totalGrades
-        : 0;
+      totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
 
     res.json({
       success: true,

@@ -33,6 +33,7 @@ import {
   type GradesResponse,
   type AttendanceResponse,
 } from "@/lib/api/student-portal";
+import { subjectsApi, type Subject } from "@/lib/api/subjects";
 import { getCurrentAcademicYear } from "@/utils/academicYear";
 import StudentProfileEditForm from "@/components/mobile/student-portal/StudentProfileEditForm";
 
@@ -62,6 +63,16 @@ const getCurrentKhmerMonth = () => {
   const monthNumber = new Date().getMonth() + 1;
   const month = MONTHS.find((m) => m.number === monthNumber);
   return month?.value || "មករា";
+};
+
+// Helper function to calculate letter grade based on percentage
+const getLetterGrade = (percentage: number): { grade: string; color: string } => {
+  if (percentage >= 80) return { grade: "A", color: "text-green-600" };
+  if (percentage >= 70) return { grade: "B", color: "text-blue-600" };
+  if (percentage >= 60) return { grade: "C", color: "text-yellow-600" };
+  if (percentage >= 50) return { grade: "D", color: "text-orange-600" };
+  if (percentage >= 40) return { grade: "E", color: "text-amber-600" };
+  return { grade: "F", color: "text-red-600" };
 };
 
 type TabType = "dashboard" | "grades" | "attendance" | "profile";
@@ -99,6 +110,7 @@ export default function StudentPortalPage() {
   const [attendanceData, setAttendanceData] =
     useState<AttendanceResponse | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
 
   // Filter state
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
@@ -112,6 +124,15 @@ export default function StudentPortalPage() {
     try {
       const data = await getMyProfile();
       setProfile(data);
+      
+      // Load subjects for the student's class
+      if (data.student?.class?.grade) {
+        const subjects = await subjectsApi.getByGrade(
+          data.student.class.grade,
+          data.student.class.track || undefined
+        );
+        setAllSubjects(subjects);
+      }
     } catch (error) {
       console.error("Error loading profile:", error);
     }
@@ -562,10 +583,10 @@ export default function StudentPortalPage() {
                   <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
                   <p className="text-gray-600 text-sm">កំពុងផ្ទុក...</p>
                 </div>
-              ) : gradesData && gradesData.grades.length > 0 ? (
+              ) : allSubjects.length > 0 ? (
                 <div className="space-y-4">
                   {/* Summary Card - JavaScript-based Sticky */}
-                  {gradesData.summaries && gradesData.summaries.length > 0 && (
+                  {gradesData?.summaries && gradesData.summaries.length > 0 && (
                     <>
                       {/* Placeholder div to maintain layout when fixed */}
                       {isHeaderSticky && <div className="h-[200px]"></div>}
@@ -636,98 +657,154 @@ export default function StudentPortalPage() {
 
                   {/* Grades List */}
                   <div className="space-y-3">
-                    {gradesData.grades.map((grade) => {
-                      const percentage =
-                        grade.percentage ||
-                        (grade.score / grade.maxScore) * 100;
+                    {allSubjects.map((subject) => {
+                      // Find if there's a grade for this subject
+                      const grade = gradesData?.grades.find(
+                        (g) => g.subject.id === subject.id
+                      );
+                      
+                      const percentage = grade
+                        ? grade.percentage || (grade.score / grade.maxScore) * 100
+                        : 0;
                       const isPass = percentage >= 50;
+                      const hasScore = !!grade;
+                      const letterGrade = hasScore ? getLetterGrade(percentage) : null;
 
                       return (
                         <div
-                          key={grade.id}
-                          className="bg-white rounded-2xl shadow-md border-2 border-gray-100 overflow-hidden hover:shadow-lg transition-all"
+                          key={subject.id}
+                          className={`bg-white rounded-2xl shadow-md border-2 overflow-hidden hover:shadow-lg transition-all ${
+                            hasScore ? "border-gray-100" : "border-dashed border-gray-300"
+                          }`}
                         >
                           {/* Top Section - Subject and Score */}
                           <div className="p-4 pb-3">
                             <div className="flex items-start justify-between gap-3 mb-3">
                               <div className="flex-1">
-                                <h1 className="font-bold text-gray-900 text-base leading-tight mb-1">
-                                  {grade.subject.nameKh}
-                                </h1>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h1 className="font-bold text-gray-900 text-base leading-tight">
+                                    {subject.nameKh}
+                                  </h1>
+                                  {letterGrade && (
+                                    <span 
+                                      className={`text-xs font-black px-2.5 py-1 rounded-lg ${
+                                        letterGrade.grade === "A" ? "bg-green-100 text-green-700" :
+                                        letterGrade.grade === "B" ? "bg-blue-100 text-blue-700" :
+                                        letterGrade.grade === "C" ? "bg-yellow-100 text-yellow-700" :
+                                        letterGrade.grade === "D" ? "bg-orange-100 text-orange-700" :
+                                        letterGrade.grade === "E" ? "bg-amber-100 text-amber-700" :
+                                        "bg-red-100 text-red-700"
+                                      }`}
+                                    >
+                                      {letterGrade.grade}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-xs text-gray-500">
-                                  {grade.subject.code} • មេគុណពិន្ទុ:{" "}
-                                  {grade.subject.coefficient}
+                                  {subject.code} • មេគុណពិន្ទុ: {subject.coefficient}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <div
-                                  className={`inline-flex items-baseline gap-1 px-3 py-1 rounded-xl ${
-                                    isPass ? "bg-green-50" : "bg-red-50"
-                                  }`}
-                                >
-                                  <span
-                                    className={`text-2xl font-bold ${
-                                      isPass ? "text-green-600" : "text-red-600"
+                                {hasScore ? (
+                                  <div
+                                    className={`inline-flex items-baseline gap-1 px-3 py-1 rounded-xl ${
+                                      isPass ? "bg-green-50" : "bg-red-50"
                                     }`}
                                   >
-                                    {grade.score?.toFixed(1) || "0"}
-                                  </span>
-                                  <span className="text-sm text-gray-600 font-medium">
-                                    /{grade.maxScore}
-                                  </span>
-                                </div>
+                                    <span
+                                      className={`text-2xl font-bold ${
+                                        isPass ? "text-green-600" : "text-red-600"
+                                      }`}
+                                    >
+                                      {grade!.score?.toFixed(1) || "0"}
+                                    </span>
+                                    <span className="text-sm text-gray-600 font-medium">
+                                      /{grade!.maxScore}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-gray-100">
+                                    <Clock className="w-4 h-4 text-gray-400" />
+                                    <span className="text-xs text-gray-500 font-medium">
+                                      /{subject.maxScore}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
-                            {/* Progress Bar */}
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-600 font-medium">
-                                  ភាគរយសម្រេច
-                                </span>
-                                <span
-                                  className={`font-bold ${
-                                    isPass ? "text-green-600" : "text-red-600"
-                                  }`}
-                                >
-                                  {percentage.toFixed(1)}%
-                                </span>
+                            {/* Progress Bar or Waiting Status */}
+                            {hasScore ? (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-600 font-medium">
+                                    ភាគរយសម្រេច
+                                  </span>
+                                  <span
+                                    className={`font-bold ${
+                                      isPass ? "text-green-600" : "text-red-600"
+                                    }`}
+                                  >
+                                    {percentage.toFixed(1)}%
+                                  </span>
+                                </div>
+                                <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div
+                                    className={`absolute top-0 left-0 h-full rounded-full transition-all ${
+                                      isPass
+                                        ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                                        : "bg-gradient-to-r from-red-500 to-rose-500"
+                                    }`}
+                                    style={{
+                                      width: `${Math.min(percentage, 100)}%`,
+                                    }}
+                                  ></div>
+                                </div>
                               </div>
-                              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                  className={`absolute top-0 left-0 h-full rounded-full transition-all ${
-                                    isPass
-                                      ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                                      : "bg-gradient-to-r from-red-500 to-rose-500"
-                                  }`}
-                                  style={{
-                                    width: `${Math.min(percentage, 100)}%`,
-                                  }}
-                                ></div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>កំពុងរង់ចាំការបញ្ចូលពិន្ទុ...</span>
                               </div>
-                            </div>
+                            )}
                           </div>
 
                           {/* Bottom Section - Status Badge */}
                           <div
                             className={`px-4 py-2 ${
-                              isPass
-                                ? "bg-gradient-to-r from-green-50 to-emerald-50 border-t border-green-100"
-                                : "bg-gradient-to-r from-red-50 to-rose-50 border-t border-red-100"
+                              hasScore
+                                ? isPass
+                                  ? "bg-gradient-to-r from-green-50 to-emerald-50 border-t border-green-100"
+                                  : "bg-gradient-to-r from-red-50 to-rose-50 border-t border-red-100"
+                                : "bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200"
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span
-                                className={`text-xs font-bold ${
-                                  isPass ? "text-green-700" : "text-red-700"
-                                }`}
-                              >
-                                {isPass ? "✓ ជាប់" : "✗ ធ្លាក់"}
-                              </span>
-                              <div className="flex items-center gap-4 text-xs text-gray-600">
-                                <span>ខែ: {grade.month}</span>
-                                <span>ឆ្នាំ: {grade.year}</span>
-                              </div>
+                              {hasScore ? (
+                                <>
+                                  <span
+                                    className={`text-xs font-bold ${
+                                      isPass ? "text-green-700" : "text-red-700"
+                                    }`}
+                                  >
+                                    {isPass ? "✓ ជាប់" : "✗ ធ្លាក់"}
+                                  </span>
+                                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                                    <span>ខែ: {grade!.month}</span>
+                                    <span>ឆ្នាំ: {grade!.year}</span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-xs font-bold text-gray-500">
+                                    ⏳ មិនទាន់មានពិន្ទុ
+                                  </span>
+                                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    <span>ខែ: {selectedMonth}</span>
+                                    <span>ឆ្នាំ: {selectedYear}</span>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
