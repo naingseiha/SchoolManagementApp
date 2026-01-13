@@ -6,14 +6,9 @@ async function calculateMonthlySummaries() {
   try {
     console.log("🔄 Starting monthly summary calculation...");
 
-    const currentYear = new Date().getFullYear();
-
-    // Get Khmer month name (grades are stored in Khmer)
-    const monthNames = [
-      "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា",
-      "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"
-    ];
-    const currentMonth = monthNames[new Date().getMonth()];
+    // ✅ HARDCODED: Process មករា 2025 to recalculate existing data
+    const currentYear = 2025;
+    const currentMonth = "មករា";
 
     // Get all classes
     const classes = await prisma.class.findMany({
@@ -50,28 +45,22 @@ async function calculateMonthlySummaries() {
         const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
         const totalMaxScore = grades.reduce((sum, g) => sum + g.maxScore, 0);
 
-        // Calculate weighted percentage average (normalize each score to percentage first)
-        const totalWeightedPercentage = grades.reduce(
-          (sum, g) => {
-            const percentage = g.maxScore > 0 ? ((g.score || 0) / g.maxScore) * 100 : 0;
-            return sum + percentage * (g.subject.coefficient || 1);
-          },
-          0
-        );
+        // ✅ FIXED: Calculate total coefficient
         const totalCoefficient = grades.reduce(
           (sum, g) => sum + (g.subject.coefficient || 1),
           0
         );
 
-        // Keep totalWeightedScore for storage (but use percentage for average)
+        // ✅ FIXED: Average = totalScore / totalCoefficient (same as report page)
+        const average = totalCoefficient > 0
+          ? (totalScore / totalCoefficient)
+          : 0;
+
+        // Keep totalWeightedScore for storage (legacy field)
         const totalWeightedScore = grades.reduce(
           (sum, g) => sum + (g.score || 0) * (g.subject.coefficient || 1),
           0
         );
-
-        const average = totalCoefficient > 0
-          ? (totalWeightedPercentage / totalCoefficient)
-          : 0;
 
         // Determine grade level
         let gradeLevel = "E";
