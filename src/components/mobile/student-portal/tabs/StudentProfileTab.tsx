@@ -136,45 +136,64 @@ export default function StudentProfileTab({
 
   // Fetch monthly statistics for the academic year
   useEffect(() => {
+    let isMounted = true; // Track if component is still mounted
+
     const fetchMonthlyStats = async () => {
+      // Reset state before fetching
       setLoadingStats(true);
+      setMonthlyStats([]);
+      
       const academicMonths = getAcademicYearMonths(currentAcademicYear);
-      const stats: MonthlyStats[] = [];
 
       // Only fetch data for past months (including current month)
       const monthsToFetch = academicMonths.filter(
         (m) => m.isPast || m.isCurrent
       );
 
-      for (const month of monthsToFetch) {
+      // Parallelize API calls for faster loading
+      const statsPromises = monthsToFetch.map(async (month) => {
         try {
           const data = await getMyGrades({
             year: month.year,
             month: month.value,
           });
 
-          stats.push({
+          return {
             month: month.label,
             averageScore: data.statistics?.averageScore || null,
             hasData: data.grades && data.grades.length > 0,
-          });
+          };
         } catch (error) {
           console.error(`Error fetching stats for ${month.name}:`, error);
-          stats.push({
+          return {
             month: month.label,
             averageScore: null,
             hasData: false,
-          });
+          };
         }
-      }
+      });
 
-      setMonthlyStats(stats);
-      setLoadingStats(false);
+      const stats = await Promise.all(statsPromises);
+      
+      // Only update state if component is still mounted
+      if (isMounted) {
+        setMonthlyStats(stats);
+        setLoadingStats(false);
+      }
     };
 
     if (!isEditingProfile) {
       fetchMonthlyStats();
+    } else {
+      // Clear stats when entering edit mode
+      setMonthlyStats([]);
+      setLoadingStats(false);
     }
+
+    // Cleanup function to prevent state updates on unmounted component
+    return () => {
+      isMounted = false;
+    };
   }, [isEditingProfile, currentAcademicYear]);
 
   if (isEditingProfile) {
