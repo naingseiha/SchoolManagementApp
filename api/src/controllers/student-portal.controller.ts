@@ -587,3 +587,174 @@ export const updateMyProfile = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Get monthly grade summaries for the academic year (optimized endpoint)
+export const getMonthlySummaries = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+    const { year } = req.query;
+
+    console.log(`\n🎯 ========== GET MONTHLY SUMMARIES ==========`);
+    console.log(`User ID: ${userId}, Year: ${year}`);
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { 
+        student: {
+          include: {
+            class: true
+          }
+        } 
+      },
+    });
+
+    if (!user || user.role !== "STUDENT" || !user.student) {
+      console.log(`❌ Access denied for user ${userId}`);
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    const studentId = user.student.id;
+    const academicYear = year ? parseInt(year as string) : new Date().getFullYear();
+
+    console.log(`👤 Student: ${user.student.khmerName} (${studentId})`);
+    console.log(`📅 Academic Year: ${academicYear}-${academicYear + 1}`);
+
+    // Get all subjects for the student's class/grade
+    let allSubjects: any[] = [];
+    let totalCoefficient = 0;
+
+    if (user.student.classId && user.student.class) {
+      const studentClass = user.student.class;
+      const whereClause: any = {
+        grade: studentClass.grade,
+        isActive: true,
+      };
+
+      // For Grade 11 & 12, filter by track
+      const gradeNum = parseInt(studentClass.grade);
+      if ((gradeNum === 11 || gradeNum === 12) && studentClass.track) {
+        whereClause.OR = [
+          { track: studentClass.track },
+          { track: null },
+          { track: "common" },
+        ];
+      }
+
+      allSubjects = await prisma.subject.findMany({
+        where: whereClause,
+      });
+
+      totalCoefficient = allSubjects.reduce((sum, s) => sum + (s.coefficient || 1), 0);
+    }
+
+    // Define Khmer months
+    const khmerMonths = [
+      "តុលា", "វិច្ឆិកា", "ធ្នូ", 
+      "មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា", 
+      "កក្កដា", "សីហា", "កញ្ញា"
+    ];
+
+    // Fetch all grades for the academic year in one query
+    // Note: Some grades might have NULL monthNumber, so we also filter by month name
+    const grades = await prisma.grade.findMany({
+      where: {
+        studentId,
+        OR: [
+          // Oct-Dec of academic year (by monthNumber)
+          { year: academicYear, monthNumber: { gte: 10 } },
+          // Jan-Sep of next year (by monthNumber)
+          { year: academicYear + 1, monthNumber: { lte: 9 } },
+          // Oct-Dec of academic year (by month name, for grades with NULL monthNumber)
+          { 
+            year: academicYear, 
+            month: { in: ['តុលា', 'វិច្ឆិកា', 'ធ្នូ'] } 
+          },
+          // Jan-Sep of next year (by month name, for grades with NULL monthNumber)
+          { 
+            year: academicYear + 1, 
+            month: { in: ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា'] } 
+          },
+        ],
+      },
+      include: {
+        subject: {
+          select: {
+            coefficient: true,
+          },
+        },
+      },
+    });
+
+    console.log(`\n📊 Found ${grades.length} grades for student ${studentId}`);
+    console.log(`📚 Total coefficient: ${totalCoefficient}, All subjects count: ${allSubjects.length}`);
+    
+    // Log grades by month
+    const gradesByMonth = new Map<string, number>();
+    grades.forEach(g => {
+      gradesByMonth.set(g.month, (gradesByMonth.get(g.month) || 0) + 1);
+    });
+    console.log(`📋 Grades count by month:`, Array.from(gradesByMonth.entries()));
+
+    // Group grades by month
+    const monthlyData = new Map<string, { totalScore: number; count: number }>();
+
+    for (const grade of grades) {
+      const monthKey = grade.month;
+      if (!monthlyData.has(monthKey)) {
+        monthlyData.set(monthKey, { totalScore: 0, count: 0 });
+      }
+      const data = monthlyData.get(monthKey)!;
+      data.totalScore += grade.score || 0;
+      data.count += 1;
+    }
+
+    console.log(`📈 Monthly data:`, Array.from(monthlyData.entries()));
+
+    // Build monthly summaries
+    const summaries = khmerMonths.map((month) => {
+      const data = monthlyData.get(month);
+      const hasData = data && data.count > 0;
+      
+      // Calculate average: totalScore / totalCoefficient (coefficient of ALL subjects)
+      const averageScore = hasData && totalCoefficient > 0
+        ? data.totalScore / totalCoefficient
+        : null;
+
+      console.log(`Month ${month}: hasData=${hasData}, totalScore=${data?.totalScore || 0}, coefficient=${totalCoefficient}, average=${averageScore}`);
+
+      return {
+        month,
+        averageScore: averageScore ? parseFloat(averageScore.toFixed(2)) : null,
+        hasData: !!hasData,
+      };
+    });
+
+    console.log(`✅ Returning ${summaries.length} summaries`);
+    console.log(`========================================\n`);
+
+    res.json({
+      success: true,
+      data: {
+        summaries,
+        academicYear,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error getting monthly summaries:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get monthly summaries",
+      error: error.message,
+    });
+  }
+};

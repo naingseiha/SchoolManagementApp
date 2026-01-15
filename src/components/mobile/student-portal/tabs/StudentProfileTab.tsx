@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   User,
   Calendar,
@@ -31,7 +31,7 @@ import {
   StudentProfile,
   GradesResponse,
   AttendanceResponse,
-  getMyGrades,
+  getMonthlySummaries,
 } from "@/lib/api/student-portal";
 import StudentProfileEditForm from "../StudentProfileEditForm";
 import { getCurrentAcademicYear } from "@/utils/academicYear";
@@ -132,73 +132,59 @@ export default function StudentProfileTab({
 }: StudentProfileTabProps) {
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [showAllMonths, setShowAllMonths] = useState(false);
   const currentAcademicYear = getCurrentAcademicYear();
 
-  // Fetch monthly statistics for the academic year
+  // Fetch monthly statistics for the academic year - OPTIMIZED VERSION
   useEffect(() => {
-    let isMounted = true; // Track if component is still mounted
+    let isMounted = true;
 
     const fetchMonthlyStats = async () => {
-      // Reset state before fetching
       setLoadingStats(true);
-      setMonthlyStats([]);
       
-      const academicMonths = getAcademicYearMonths(currentAcademicYear);
+      try {
+        console.log(`🚀 Fetching monthly summaries for ${currentAcademicYear}`);
+        
+        // Single API call to get all monthly summaries
+        const data = await getMonthlySummaries({
+          year: currentAcademicYear,
+        });
 
-      // Only fetch data for past months (including current month)
-      const monthsToFetch = academicMonths.filter(
-        (m) => m.isPast || m.isCurrent
-      );
-
-      // Parallelize API calls for faster loading
-      const statsPromises = monthsToFetch.map(async (month) => {
-        try {
-          console.log(`🔍 Fetching ${month.name} (${month.value}) ${month.year}`);
-          const data = await getMyGrades({
-            year: month.year,
-            month: month.value,
-          });
-
-          const hasGrades = data.grades && data.grades.length > 0;
-          const avgScore = data.statistics?.averageScore || null;
-          
-          console.log(`📊 ${month.name}: hasGrades=${hasGrades}, gradesCount=${data.grades?.length || 0}, avgScore=${avgScore}`);
-
+        console.log(`✅ API Response:`, data);
+        console.log(`✅ Received ${data.summaries.length} monthly summaries:`, data.summaries);
+        
+        // Map to the format expected by the component
+        const stats: MonthlyStats[] = data.summaries.map((summary) => {
+          console.log(`📊 Month ${summary.month}: hasData=${summary.hasData}, avgScore=${summary.averageScore}`);
           return {
-            month: month.label,
-            averageScore: avgScore,
-            hasData: hasGrades,
+            month: summary.month,
+            averageScore: summary.averageScore,
+            hasData: summary.hasData,
           };
-        } catch (error) {
-          console.error(`❌ Error fetching stats for ${month.name}:`, error);
-          return {
-            month: month.label,
-            averageScore: null,
-            hasData: false,
-          };
+        });
+
+        console.log(`📈 Final stats array:`, stats);
+
+        if (isMounted) {
+          setMonthlyStats(stats);
+          setLoadingStats(false);
         }
-      });
-
-      const stats = await Promise.all(statsPromises);
-      
-      console.log("📈 Final monthly stats:", stats);
-      
-      // Only update state if component is still mounted
-      if (isMounted) {
-        setMonthlyStats(stats);
-        setLoadingStats(false);
+      } catch (error) {
+        console.error(`❌ Error fetching monthly summaries:`, error);
+        if (isMounted) {
+          setMonthlyStats([]);
+          setLoadingStats(false);
+        }
       }
     };
 
     if (!isEditingProfile) {
       fetchMonthlyStats();
     } else {
-      // Clear stats when entering edit mode
       setMonthlyStats([]);
       setLoadingStats(false);
     }
 
-    // Cleanup function to prevent state updates on unmounted component
     return () => {
       isMounted = false;
     };
@@ -546,67 +532,89 @@ export default function StudentProfileTab({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {monthlyStats.map((stat, index) => {
-                    const hasScore = stat.hasData && stat.averageScore !== null;
-                    const scoreColor = hasScore
-                      ? stat.averageScore! >= 40
-                        ? "text-green-600"
-                        : stat.averageScore! >= 35
-                        ? "text-blue-600"
-                        : stat.averageScore! >= 30
-                        ? "text-yellow-600"
-                        : "text-orange-600"
-                      : "text-gray-400";
+                  {monthlyStats
+                    .slice(0, showAllMonths ? monthlyStats.length : 5)
+                    .map((stat, index) => {
+                      const hasScore = stat.hasData && stat.averageScore !== null;
+                      const scoreColor = hasScore
+                        ? stat.averageScore! >= 40
+                          ? "text-green-600"
+                          : stat.averageScore! >= 35
+                          ? "text-blue-600"
+                          : stat.averageScore! >= 30
+                          ? "text-yellow-600"
+                          : "text-orange-600"
+                        : "text-gray-400";
 
-                    const bgColor = hasScore
-                      ? stat.averageScore! >= 40
-                        ? "bg-green-50 border-green-200"
-                        : stat.averageScore! >= 35
-                        ? "bg-blue-50 border-blue-200"
-                        : stat.averageScore! >= 30
-                        ? "bg-yellow-50 border-yellow-200"
-                        : "bg-orange-50 border-orange-200"
-                      : "bg-gray-50 border-gray-200";
+                      const bgColor = hasScore
+                        ? stat.averageScore! >= 40
+                          ? "bg-green-50 border-green-200"
+                          : stat.averageScore! >= 35
+                          ? "bg-blue-50 border-blue-200"
+                          : stat.averageScore! >= 30
+                          ? "bg-yellow-50 border-yellow-200"
+                          : "bg-orange-50 border-orange-200"
+                        : "bg-gray-50 border-gray-200";
 
-                    return (
-                      <div
-                        key={index}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${bgColor}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              hasScore ? "bg-white shadow-sm" : "bg-gray-100"
-                            }`}
-                          >
-                            {hasScore ? (
-                              <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
-                            ) : (
-                              <span className="text-gray-400 text-xs">—</span>
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${bgColor}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                hasScore ? "bg-white shadow-sm" : "bg-gray-100"
+                              }`}
+                            >
+                              {hasScore ? (
+                                <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-gray-900">
+                                {stat.month}
+                              </p>
+                              <p className="text-xs text-gray-500 font-medium">
+                                {hasScore ? "Score Available" : "No data yet"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-lg font-black ${scoreColor}`}>
+                              {hasScore ? stat.averageScore!.toFixed(1) : "—"}
+                            </p>
+                            {hasScore && (
+                              <p className="text-xs text-gray-500 font-medium">
+                                /50
+                              </p>
                             )}
                           </div>
-                          <div>
-                            <p className="text-xs font-black text-gray-900">
-                              {stat.month}
-                            </p>
-                            <p className="text-xs text-gray-500 font-medium">
-                              {hasScore ? "Score Available" : "No data yet"}
-                            </p>
-                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`text-lg font-black ${scoreColor}`}>
-                            {hasScore ? stat.averageScore!.toFixed(1) : "—"}
-                          </p>
-                          {hasScore && (
-                            <p className="text-xs text-gray-500 font-medium">
-                              /50
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  
+                  {/* Show More / Show Less Button */}
+                  {monthlyStats.length > 5 && (
+                    <button
+                      onClick={() => setShowAllMonths(!showAllMonths)}
+                      className="w-full mt-3 py-2.5 px-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl text-indigo-700 font-bold text-sm hover:from-indigo-100 hover:to-purple-100 transition-all flex items-center justify-center gap-2"
+                    >
+                      {showAllMonths ? (
+                        <>
+                          <span>បង្ហាញតិច • Show Less</span>
+                          <span className="text-lg">↑</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>បង្ហាញច្រើន • Show More</span>
+                          <span className="text-lg">↓</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
