@@ -309,7 +309,7 @@ export default function StudentProfileTab({
             </div>
           </div>
 
-          {/* Academic Highlights - Monthly Progress */}
+          {/* Academic Highlights - Achievements First */}
           <div className="pt-4 border-t border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-sm font-black text-gray-900">លទ្ធផលសិក្សា</h1>
@@ -318,103 +318,7 @@ export default function StudentProfileTab({
               </span>
             </div>
 
-            {/* Academic Year Statistics */}
-            <div className="mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-4 border border-indigo-200">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-indigo-600" />
-                  <h4 className="text-sm font-black text-gray-900">
-                    ឆ្នាំសិក្សា {currentAcademicYear}-{currentAcademicYear + 1}
-                  </h4>
-                </div>
-                <span className="text-xs text-indigo-600 font-bold">
-                  Academic Year
-                </span>
-              </div>
-
-              {loadingStats ? (
-                <div className="text-center py-6">
-                  <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-xs text-gray-500">កំពុងផ្ទុក...</p>
-                </div>
-              ) : monthlyStats.length === 0 ? (
-                <div className="text-center py-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl">📊</span>
-                  </div>
-                  <p className="text-sm font-bold text-gray-700 mb-1">
-                    មិនទាន់មានទិន្នន័យ
-                  </p>
-                  <p className="text-xs text-gray-500">No data available yet</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {monthlyStats.map((stat, index) => {
-                    const hasScore = stat.hasData && stat.averageScore !== null;
-                    const scoreColor = hasScore
-                      ? stat.averageScore! >= 40
-                        ? "text-green-600"
-                        : stat.averageScore! >= 35
-                        ? "text-blue-600"
-                        : stat.averageScore! >= 30
-                        ? "text-yellow-600"
-                        : "text-orange-600"
-                      : "text-gray-400";
-
-                    const bgColor = hasScore
-                      ? stat.averageScore! >= 40
-                        ? "bg-green-50 border-green-200"
-                        : stat.averageScore! >= 35
-                        ? "bg-blue-50 border-blue-200"
-                        : stat.averageScore! >= 30
-                        ? "bg-yellow-50 border-yellow-200"
-                        : "bg-orange-50 border-orange-200"
-                      : "bg-gray-50 border-gray-200";
-
-                    return (
-                      <div
-                        key={index}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${bgColor}`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              hasScore ? "bg-white shadow-sm" : "bg-gray-100"
-                            }`}
-                          >
-                            {hasScore ? (
-                              <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
-                            ) : (
-                              <span className="text-gray-400 text-xs">—</span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-gray-900">
-                              {stat.month}
-                            </p>
-                            <p className="text-xs text-gray-500 font-medium">
-                              {hasScore ? "Score Available" : "No data yet"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-lg font-black ${scoreColor}`}>
-                            {hasScore ? stat.averageScore!.toFixed(1) : "—"}
-                          </p>
-                          {hasScore && (
-                            <p className="text-xs text-gray-500 font-medium">
-                              /50
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Achievement Badges */}
+            {/* Achievement Badges - Show First */}
             {(() => {
               // Calculate overall statistics from monthly data
               const monthsWithData = monthlyStats.filter(
@@ -462,10 +366,18 @@ export default function StudentProfileTab({
               }
 
               return (
-                <div>
-                  <h4 className="text-sm font-black text-gray-900 mb-3">
-                    សមិទ្ធផល • Achievements
-                  </h4>
+                <div className="mb-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl p-4 border border-amber-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-600" />
+                      <h4 className="text-sm font-koulen font-black text-gray-900">
+                        សមិទ្ធផល
+                      </h4>
+                    </div>
+                    <span className="text-xs text-amber-600 font-bold">
+                      Achievements
+                    </span>
+                  </div>
                   <div className="grid grid-cols-1 gap-2.5">
                     {hasHighScore && (
                       <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-200 px-4 py-3 rounded-xl shadow-sm">
@@ -575,6 +487,102 @@ export default function StudentProfileTab({
                 </div>
               );
             })()}
+
+            {/* Academic Year Statistics - Show After Achievements */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-4 border border-indigo-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                  <h4 className="text-sm font-koulen font-black text-gray-900">
+                    ឆ្នាំសិក្សា {currentAcademicYear}-{currentAcademicYear + 1}
+                  </h4>
+                </div>
+                <span className="text-xs text-indigo-600 font-bold">
+                  Academic Year
+                </span>
+              </div>
+
+              {loadingStats ? (
+                <div className="text-center py-6">
+                  <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-xs text-gray-500">កំពុងផ្ទុក...</p>
+                </div>
+              ) : monthlyStats.length === 0 ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">📊</span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-700 mb-1">
+                    មិនទាន់មានទិន្នន័យ
+                  </p>
+                  <p className="text-xs text-gray-500">No data available yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {monthlyStats.map((stat, index) => {
+                    const hasScore = stat.hasData && stat.averageScore !== null;
+                    const scoreColor = hasScore
+                      ? stat.averageScore! >= 40
+                        ? "text-green-600"
+                        : stat.averageScore! >= 35
+                        ? "text-blue-600"
+                        : stat.averageScore! >= 30
+                        ? "text-yellow-600"
+                        : "text-orange-600"
+                      : "text-gray-400";
+
+                    const bgColor = hasScore
+                      ? stat.averageScore! >= 40
+                        ? "bg-green-50 border-green-200"
+                        : stat.averageScore! >= 35
+                        ? "bg-blue-50 border-blue-200"
+                        : stat.averageScore! >= 30
+                        ? "bg-yellow-50 border-yellow-200"
+                        : "bg-orange-50 border-orange-200"
+                      : "bg-gray-50 border-gray-200";
+
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border ${bgColor}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              hasScore ? "bg-white shadow-sm" : "bg-gray-100"
+                            }`}
+                          >
+                            {hasScore ? (
+                              <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
+                            ) : (
+                              <span className="text-gray-400 text-xs">—</span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-gray-900">
+                              {stat.month}
+                            </p>
+                            <p className="text-xs text-gray-500 font-medium">
+                              {hasScore ? "Score Available" : "No data yet"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-lg font-black ${scoreColor}`}>
+                            {hasScore ? stat.averageScore!.toFixed(1) : "—"}
+                          </p>
+                          {hasScore && (
+                            <p className="text-xs text-gray-500 font-medium">
+                              /50
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -619,7 +627,7 @@ export default function StudentProfileTab({
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
               <MapPin className="w-5 h-5 text-white" />
             </div>
-            <p className="text-xs text-gray-600 font-bold mb-1">កំណើត</p>
+            <p className="text-xs text-gray-600 font-bold mb-1">ទីកន្លែង</p>
             <p className="text-xs font-black text-gray-900 leading-tight">
               {profile.student.placeOfBirth || "N/A"}
             </p>
@@ -669,9 +677,9 @@ export default function StudentProfileTab({
               <User className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-black text-white text-base">
+              <h1 className="font-black text-white text-base">
                 ព័ត៌មានផ្ទាល់ខ្លួន
-              </h2>
+              </h1>
               <p className="text-xs text-white/80 font-medium">
                 Personal Information
               </p>
@@ -740,9 +748,9 @@ export default function StudentProfileTab({
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base">
+                <h1 className="font-black text-white text-base">
                   ព័ត៌មានគ្រួសារ
-                </h2>
+                </h1>
                 <p className="text-xs text-white/80 font-medium">
                   Family Information
                 </p>
@@ -828,9 +836,9 @@ export default function StudentProfileTab({
                 <School className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base">
+                <h1 className="font-black text-white text-base">
                   ប្រវត្តិសិក្សា
-                </h2>
+                </h1>
                 <p className="text-xs text-white/80 font-medium">
                   Academic History
                 </p>
@@ -916,9 +924,9 @@ export default function StudentProfileTab({
                 <Award className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base">
+                <h1 className="font-black text-white text-base">
                   ប្រឡងថ្នាក់ទី៩
-                </h2>
+                </h1>
                 <p className="text-xs text-white/80 font-medium">
                   Grade 9 Examination
                 </p>
@@ -1039,9 +1047,9 @@ export default function StudentProfileTab({
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base">
+                <h1 className="font-black text-white text-base">
                   ប្រឡងបាក់ឌុប
-                </h2>
+                </h1>
                 <p className="text-xs text-white/80 font-medium">
                   Grade 12 Examination
                 </p>
@@ -1175,9 +1183,9 @@ export default function StudentProfileTab({
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base">
+                <h1 className="font-black text-white text-base">
                   កំណត់សម្គាល់
-                </h2>
+                </h1>
                 <p className="text-xs text-white/80 font-medium">Remarks</p>
               </div>
             </div>
