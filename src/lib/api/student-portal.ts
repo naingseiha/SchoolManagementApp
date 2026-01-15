@@ -111,7 +111,7 @@ export interface GradesResponse {
 }
 
 export interface AttendanceResponse {
-  attendance: Attendance[];
+  records: Attendance[];
   statistics: {
     totalDays: number;
     presentCount: number;
@@ -119,13 +119,40 @@ export interface AttendanceResponse {
     permissionCount: number;
     lateCount: number;
     attendanceRate: number;
+    totalPresent?: number;
   };
+}
+
+export interface MonthlySummaryResponse {
+  summaries: Array<{
+    month: string;
+    averageScore: number | null;
+    hasData: boolean;
+    subjectCount: number;
+    totalSubjects: number;
+    isComplete: boolean;
+  }>;
+  academicYear: number;
 }
 
 // Get student's own profile
 export const getMyProfile = async (): Promise<StudentProfile> => {
   const response = await apiClient.get("/student-portal/profile");
   // apiClient.get already unwraps the response
+  return response;
+};
+
+// Get monthly summaries for the academic year (optimized)
+export const getMonthlySummaries = async (filters?: {
+  year?: number;
+}): Promise<MonthlySummaryResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.year) params.append("year", filters.year.toString());
+
+  const response = await apiClient.get(
+    `/student-portal/monthly-summaries${params.toString() ? `?${params.toString()}` : ""}`
+  );
+  
   return response;
 };
 

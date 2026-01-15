@@ -74,10 +74,10 @@ export default function DashboardPage() {
       console.log("⚠️ Not authenticated, redirecting to login...");
       router.push("/login");
     }
-    // Redirect students to their portal
+    // Redirect students to their portal immediately with replace
     if (!isLoading && isAuthenticated && currentUser?.role === "STUDENT") {
       console.log("📍 Student detected, redirecting to student portal...");
-      router.push("/student-portal");
+      router.replace("/student-portal"); // Use replace to prevent back button issues
     }
   }, [isAuthenticated, isLoading, currentUser, router]);
 
@@ -123,6 +123,11 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) {
+    return null;
+  }
+
+  // ✅ Prevent rendering for students - they should be redirected
+  if (currentUser?.role === "STUDENT") {
     return null;
   }
 

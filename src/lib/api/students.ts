@@ -30,6 +30,42 @@ export interface Student {
     grade: string;
     section?: string;
   };
+
+  // Parent Information
+  fatherName?: string;
+  motherName?: string;
+  parentPhone?: string;
+  parentOccupation?: string;
+
+  // Academic History
+  previousGrade?: string;
+  previousSchool?: string;
+  repeatingGrade?: string;
+  transferredFrom?: string;
+
+  // Grade 9 Exam
+  grade9ExamSession?: string;
+  grade9ExamCenter?: string;
+  grade9ExamRoom?: string;
+  grade9ExamDesk?: string;
+  grade9PassStatus?: string;
+
+  // Grade 12 Exam
+  grade12ExamSession?: string;
+  grade12ExamCenter?: string;
+  grade12ExamRoom?: string;
+  grade12ExamDesk?: string;
+  grade12PassStatus?: string;
+  grade12Track?: string;
+
+  // Student Role & Status
+  studentRole?: "GENERAL" | "CLASS_LEADER" | "VICE_LEADER_1" | "VICE_LEADER_2";
+  isAccountActive?: boolean;
+
+  // General
+  remarks?: string;
+  photoUrl?: string;
+
   createdAt?: string;
   updatedAt?: string;
 }
