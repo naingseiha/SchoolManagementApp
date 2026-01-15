@@ -291,6 +291,23 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              {/* Student Login Link */}
+              {loginMode === "teacher" && (
+                <div className="text-center pt-4 border-t border-gray-200">
+                  <p className="font-khmer-body text-sm text-gray-600 mb-2">
+                    តើអ្នកជាសិស្សទេ?
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = "/student-login"}
+                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-khmer-body font-semibold"
+                  >
+                    <GraduationCap className="w-5 h-5" />
+                    <span>ចូលសម្រាប់សិស្ស</span>
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>

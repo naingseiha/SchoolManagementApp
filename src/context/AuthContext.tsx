@@ -221,15 +221,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("📍 Redirecting based on role:", result.user.role);
 
-      // ✅ Role-based redirect
+      // ✅ Role-based redirect with replace to prevent back button issues
       if (result.user.role === "STUDENT") {
         console.log("→ Redirecting student to student portal");
         router.prefetch("/student-portal");
-        router.push("/student-portal");
+        router.replace("/student-portal"); // Use replace instead of push
       } else {
         console.log("→ Redirecting to dashboard");
         router.prefetch("/");
-        router.push("/");
+        router.replace("/"); // Use replace instead of push
       }
 
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
