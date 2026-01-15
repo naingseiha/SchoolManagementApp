@@ -346,19 +346,16 @@ export default function StudentProfileTab({
 
             {/* Achievement Badges - Show First */}
             {(() => {
-              // Calculate overall statistics from monthly data
+              // Calculate highest average from monthly data
               const monthsWithData = monthlyStats.filter(
                 (s) => s.hasData && s.averageScore !== null
               );
-              const overallAverage =
+              const highestAverage =
                 monthsWithData.length > 0
-                  ? monthsWithData.reduce(
-                      (sum, s) => sum + (s.averageScore || 0),
-                      0
-                    ) / monthsWithData.length
+                  ? Math.max(...monthsWithData.map((s) => s.averageScore || 0))
                   : 0;
 
-              const hasHighScore = overallAverage >= 40;
+              const hasHighScore = highestAverage >= 40;
               const hasPerfectAttendance =
                 attendanceData?.statistics?.attendanceRate &&
                 attendanceData.statistics.attendanceRate >= 95;
@@ -415,7 +412,7 @@ export default function StudentProfileTab({
                             ពិន្ទុខ្ពស់
                           </p>
                           <p className="text-xs text-yellow-700 font-medium">
-                            High Achiever • Avg: {overallAverage.toFixed(1)}
+                            High Achiever • Avg: {highestAverage.toFixed(1)}
                           </p>
                         </div>
                         <div className="w-8 h-8 bg-yellow-200 rounded-lg flex items-center justify-center">
