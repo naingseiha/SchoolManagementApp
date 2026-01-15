@@ -153,18 +153,24 @@ export default function StudentProfileTab({
       // Parallelize API calls for faster loading
       const statsPromises = monthsToFetch.map(async (month) => {
         try {
+          console.log(`🔍 Fetching ${month.name} (${month.value}) ${month.year}`);
           const data = await getMyGrades({
             year: month.year,
             month: month.value,
           });
 
+          const hasGrades = data.grades && data.grades.length > 0;
+          const avgScore = data.statistics?.averageScore || null;
+          
+          console.log(`📊 ${month.name}: hasGrades=${hasGrades}, gradesCount=${data.grades?.length || 0}, avgScore=${avgScore}`);
+
           return {
             month: month.label,
-            averageScore: data.statistics?.averageScore || null,
-            hasData: data.grades && data.grades.length > 0,
+            averageScore: avgScore,
+            hasData: hasGrades,
           };
         } catch (error) {
-          console.error(`Error fetching stats for ${month.name}:`, error);
+          console.error(`❌ Error fetching stats for ${month.name}:`, error);
           return {
             month: month.label,
             averageScore: null,
@@ -174,6 +180,8 @@ export default function StudentProfileTab({
       });
 
       const stats = await Promise.all(statsPromises);
+      
+      console.log("📈 Final monthly stats:", stats);
       
       // Only update state if component is still mounted
       if (isMounted) {
