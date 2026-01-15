@@ -218,7 +218,7 @@ export default function StudentProfileTab({
   return (
     <div className="space-y-4">
       {/* Instagram-Style Profile Header */}
-      <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100">
+      <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
         {/* Cover/Banner */}
         <div className="relative h-24 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
           <div className="absolute inset-0 opacity-20">
@@ -230,8 +230,8 @@ export default function StudentProfileTab({
             <div
               className={`px-3 py-1 rounded-full flex items-center gap-1.5 ${
                 profile.student.isAccountActive
-                  ? "bg-green-400 bg-opacity-90"
-                  : "bg-red-400 bg-opacity-90"
+                  ? "bg-green-400"
+                  : "bg-red-400"
               }`}
             >
               <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
@@ -247,12 +247,12 @@ export default function StudentProfileTab({
           {/* Avatar - Overlapping cover - Center Aligned */}
           <div className="flex flex-col items-center -mt-16 mb-4">
             <div className="relative mb-4">
-              <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full p-1 shadow-xl">
+              <div className="w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full p-1">
                 <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
                   <User className="w-16 h-16 text-indigo-600" />
                 </div>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-400 rounded-full border-4 border-white shadow-lg flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-400 rounded-full border-4 border-white flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-white" />
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function StudentProfileTab({
           <div className="grid grid-cols-3 gap-3 py-4 border-t border-gray-100">
             <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-3.5 border border-indigo-100">
               <div className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-2">
                   <Award className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-md font-black text-gray-900 mb-0.5">
@@ -310,7 +310,7 @@ export default function StudentProfileTab({
 
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-3.5 border border-green-100">
               <div className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2">
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-md font-black text-gray-900 mb-0.5">
@@ -324,7 +324,7 @@ export default function StudentProfileTab({
 
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-3.5 border border-blue-100">
               <div className="flex flex-col items-center">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 <div className="text-md font-black text-gray-900 mb-0.5">
@@ -403,7 +403,7 @@ export default function StudentProfileTab({
                   </div>
                   <div className="grid grid-cols-1 gap-2.5">
                     {hasHighScore && (
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-200 px-4 py-3 rounded-xl">
                         <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <Award className="w-5 h-5 text-yellow-600" />
                         </div>
@@ -424,7 +424,7 @@ export default function StudentProfileTab({
                     )}
 
                     {hasPerfectAttendance && (
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 px-4 py-3 rounded-xl">
                         <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <CheckCircle className="w-5 h-5 text-green-600" />
                         </div>
@@ -445,7 +445,7 @@ export default function StudentProfileTab({
                     )}
 
                     {isLeader && (
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 border-2 border-blue-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 border-2 border-blue-200 px-4 py-3 rounded-xl">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <Users className="w-5 h-5 text-blue-600" />
                         </div>
@@ -466,7 +466,7 @@ export default function StudentProfileTab({
                     )}
 
                     {hasGrade9Pass && (
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 border-2 border-purple-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 border-2 border-purple-200 px-4 py-3 rounded-xl">
                         <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <GraduationCap className="w-5 h-5 text-purple-600" />
                         </div>
@@ -487,7 +487,7 @@ export default function StudentProfileTab({
                     )}
 
                     {hasGrade12Pass && (
-                      <div className="flex items-center gap-3 bg-gradient-to-r from-rose-50 via-red-50 to-rose-50 border-2 border-rose-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-3 bg-gradient-to-r from-rose-50 via-red-50 to-rose-50 border-2 border-rose-200 px-4 py-3 rounded-xl">
                         <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <Award className="w-5 h-5 text-rose-600" />
                         </div>
@@ -582,7 +582,7 @@ export default function StudentProfileTab({
                             <div
                               className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                                 hasAnyData
-                                  ? "bg-white shadow-sm"
+                                  ? "bg-white border border-gray-200"
                                   : "bg-gray-100"
                               }`}
                             >
@@ -661,9 +661,9 @@ export default function StudentProfileTab({
 
       {/* Quick Info Grid - Improved Design */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 border border-blue-200 shadow-sm">
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 border border-blue-200">
           <div className="flex flex-col items-center text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2">
               <Calendar className="w-5 h-5 text-white" />
             </div>
             <p className="text-xs text-gray-600 font-bold mb-1">ថ្ងៃកំណើត</p>
@@ -682,9 +682,9 @@ export default function StudentProfileTab({
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-200 shadow-sm">
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 border border-purple-200">
           <div className="flex flex-col items-center text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-2">
               <UserCircle className="w-5 h-5 text-white" />
             </div>
             <p className="text-xs text-gray-600 font-bold mb-1">ភេទ</p>
@@ -694,9 +694,9 @@ export default function StudentProfileTab({
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 shadow-sm">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200">
           <div className="flex flex-col items-center text-center">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2">
               <MapPin className="w-5 h-5 text-white" />
             </div>
             <p className="text-xs text-gray-600 font-bold mb-1">ទីកន្លែង</p>
@@ -708,7 +708,7 @@ export default function StudentProfileTab({
       </div>
 
       {/* Edit Profile Button - Under Quick Info */}
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+      <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
         <button
           onClick={onEdit}
           className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-3.5 px-4 transition-colors flex items-center justify-center gap-2"
@@ -720,29 +720,29 @@ export default function StudentProfileTab({
 
       {/* Action Buttons - Draft, Follow, Share, Change Profile Picture */}
       <div className="grid grid-cols-2 gap-3">
-        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl shadow-sm p-4 hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-indigo-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
           <Save className="w-5 h-5 text-indigo-600" />
           <span className="font-bold text-sm">Draft</span>
         </button>
 
-        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl shadow-sm p-4 hover:border-blue-300 hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-blue-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
           <UserPlus className="w-5 h-5 text-blue-600" />
           <span className="font-bold text-sm">Follow</span>
         </button>
 
-        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl shadow-sm p-4 hover:border-green-300 hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-green-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
           <Share2 className="w-5 h-5 text-green-600" />
           <span className="font-bold text-sm">Share</span>
         </button>
 
-        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl shadow-sm p-4 hover:border-purple-300 hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+        <button className="bg-white border-2 border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-purple-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
           <Camera className="w-5 h-5 text-purple-600" />
           <span className="font-bold text-sm">Change Photo</span>
         </button>
       </div>
 
       {/* Personal Information Section - Improved Design */}
-      <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-200">
+      <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -761,7 +761,7 @@ export default function StudentProfileTab({
         <div className="p-5 space-y-3">
           {profile.email && (
             <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
-              <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+              <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Mail className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
@@ -777,7 +777,7 @@ export default function StudentProfileTab({
 
           {(profile.phone || profile.student.phoneNumber) && (
             <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100">
-              <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+              <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Phone className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -793,7 +793,7 @@ export default function StudentProfileTab({
 
           {profile.student.currentAddress && (
             <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-orange-100">
-              <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+              <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Home className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -813,7 +813,7 @@ export default function StudentProfileTab({
       {(profile.student.fatherName ||
         profile.student.motherName ||
         profile.student.parentPhone) && (
-        <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-pink-500 to-rose-600 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -832,7 +832,7 @@ export default function StudentProfileTab({
           <div className="p-5 space-y-3">
             {profile.student.fatherName && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -848,7 +848,7 @@ export default function StudentProfileTab({
 
             {profile.student.motherName && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-2xl border border-pink-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -864,7 +864,7 @@ export default function StudentProfileTab({
 
             {profile.student.parentPhone && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Phone className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -880,7 +880,7 @@ export default function StudentProfileTab({
 
             {profile.student.parentOccupation && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Briefcase className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -901,7 +901,7 @@ export default function StudentProfileTab({
       {(profile.student.previousSchool ||
         profile.student.previousGrade ||
         profile.student.transferredFrom) && (
-        <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-blue-500 to-cyan-600 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -920,7 +920,7 @@ export default function StudentProfileTab({
           <div className="p-5 space-y-3">
             {profile.student.previousSchool && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -936,7 +936,7 @@ export default function StudentProfileTab({
 
             {profile.student.previousGrade && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -952,7 +952,7 @@ export default function StudentProfileTab({
 
             {profile.student.transferredFrom && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-2xl border border-cyan-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <School className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -968,7 +968,7 @@ export default function StudentProfileTab({
 
             {profile.student.repeatingGrade && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-orange-200">
-                <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -989,7 +989,7 @@ export default function StudentProfileTab({
       {(profile.student.grade9ExamSession ||
         profile.student.grade9ExamCenter ||
         profile.student.grade9PassStatus) && (
-        <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -1008,7 +1008,7 @@ export default function StudentProfileTab({
           <div className="p-5 space-y-3">
             {profile.student.grade9ExamSession && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -1024,7 +1024,7 @@ export default function StudentProfileTab({
 
             {profile.student.grade9ExamCenter && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -1068,7 +1068,7 @@ export default function StudentProfileTab({
 
             {profile.student.grade9PassStatus && (
               <div
-                className={`flex items-center gap-3 p-4 rounded-2xl border shadow-sm ${
+                className={`flex items-center gap-3 p-4 rounded-2xl border ${
                   profile.student.grade9PassStatus
                     .toLowerCase()
                     .includes("pass") ||
@@ -1080,7 +1080,7 @@ export default function StudentProfileTab({
                 }`}
               >
                 <div
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     profile.student.grade9PassStatus
                       .toLowerCase()
                       .includes("pass") ||
@@ -1112,7 +1112,7 @@ export default function StudentProfileTab({
         profile.student.grade12ExamCenter ||
         profile.student.grade12Track ||
         profile.student.grade12PassStatus) && (
-        <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -1131,7 +1131,7 @@ export default function StudentProfileTab({
           <div className="p-5 space-y-3">
             {profile.student.grade12Track && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200">
-                <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -1147,7 +1147,7 @@ export default function StudentProfileTab({
 
             {profile.student.grade12ExamSession && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -1163,7 +1163,7 @@ export default function StudentProfileTab({
 
             {profile.student.grade12ExamCenter && (
               <div className="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100">
-                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
                   <MapPin className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -1207,7 +1207,7 @@ export default function StudentProfileTab({
 
             {profile.student.grade12PassStatus && (
               <div
-                className={`flex items-center gap-3 p-4 rounded-2xl border shadow-sm ${
+                className={`flex items-center gap-3 p-4 rounded-2xl border ${
                   profile.student.grade12PassStatus
                     .toLowerCase()
                     .includes("pass") ||
@@ -1219,7 +1219,7 @@ export default function StudentProfileTab({
                 }`}
               >
                 <div
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
                     profile.student.grade12PassStatus
                       .toLowerCase()
                       .includes("pass") ||
@@ -1248,7 +1248,7 @@ export default function StudentProfileTab({
 
       {/* Remarks Section - Improved Design */}
       {profile.student.remarks && (
-        <div className="bg-white rounded-3xl shadow-md overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-3xl overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-gray-600 to-slate-700 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -1276,7 +1276,7 @@ export default function StudentProfileTab({
       <div className="pt-2">
         <button
           onClick={onChangePassword}
-          className="w-full bg-white border-2 border-gray-200 text-gray-700 rounded-2xl shadow-sm p-5 hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+          className="w-full bg-white border-2 border-gray-200 text-gray-700 rounded-2xl p-5 hover:border-indigo-300 transition-all active:scale-[0.98] flex items-center justify-center gap-3"
         >
           <Lock className="w-6 h-6" />
           <span className="font-bold text-lg">ផ្លាស់ប្តូរពាក្យសម្ងាត់</span>
