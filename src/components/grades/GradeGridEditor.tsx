@@ -95,7 +95,6 @@ export default function GradeGridEditor({
     sortedStudents,
     gridData.subjects,
     cells,
-    totalCoefficientForClass,
     attendanceSummary
   );
 
