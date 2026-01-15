@@ -143,14 +143,14 @@ export default function StudentProfileTab({
             </div>
           </div>
 
-          {/* Stats Grid - Improved Design */}
+          {/* Stats Grid - Compact & Improved Design */}
           <div className="grid grid-cols-3 gap-3 py-4 border-t border-gray-100">
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-4 border border-indigo-100">
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-3.5 border border-indigo-100">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-2 shadow-lg">
-                  <Award className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                  <Award className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-2xl font-black text-gray-900 mb-1">
+                <div className="text-xl font-black text-gray-900 mb-0.5">
                   {gradesData?.statistics?.averageScore?.toFixed(1) || "0.0"}
                 </div>
                 <div className="text-xs text-gray-600 font-bold">មធ្យមភាគ</div>
@@ -158,12 +158,12 @@ export default function StudentProfileTab({
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-3.5 border border-green-100">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-lg">
-                  <CheckCircle className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                  <CheckCircle className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-2xl font-black text-gray-900 mb-1">
+                <div className="text-xl font-black text-gray-900 mb-0.5">
                   {attendanceData?.statistics?.attendanceRate?.toFixed(0) || "0"}%
                 </div>
                 <div className="text-xs text-gray-600 font-bold">វត្តមាន</div>
@@ -171,12 +171,12 @@ export default function StudentProfileTab({
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 border border-blue-100">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-3.5 border border-blue-100">
               <div className="flex flex-col items-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2 shadow-lg">
-                  <BookOpen className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2 shadow-md">
+                  <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <div className="text-2xl font-black text-gray-900 mb-1">
+                <div className="text-xl font-black text-gray-900 mb-0.5">
                   {gradesData?.grades?.length || "0"}
                 </div>
                 <div className="text-xs text-gray-600 font-bold">មុខវិជ្ជា</div>
@@ -194,106 +194,115 @@ export default function StudentProfileTab({
               <span className="text-xs text-gray-500 font-medium">Academic Highlights</span>
             </div>
             
-            {/* Performance Badges - Grid Layout */}
-            <div className="grid grid-cols-1 gap-2.5">
-              {gradesData?.statistics?.averageScore && gradesData.statistics.averageScore >= 80 && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-200 px-4 py-3 rounded-xl shadow-sm">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Award className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-yellow-900">ពិន្ទុខ្ពស់</p>
-                    <p className="text-xs text-yellow-700 font-medium">High Achiever</p>
-                  </div>
-                  <div className="w-8 h-8 bg-yellow-200 rounded-lg flex items-center justify-center">
-                    <span className="text-yellow-700 font-black text-xs">🏆</span>
-                  </div>
-                </div>
-              )}
-              
-              {attendanceData?.statistics?.attendanceRate && attendanceData.statistics.attendanceRate >= 95 && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 px-4 py-3 rounded-xl shadow-sm">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-green-900">វត្តមានល្អ</p>
-                    <p className="text-xs text-green-700 font-medium">Perfect Attendance</p>
-                  </div>
-                  <div className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center">
-                    <span className="text-green-700 font-black text-xs">✓</span>
-                  </div>
-                </div>
-              )}
-
-              {profile.student?.studentRole !== "GENERAL" && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 border-2 border-blue-200 px-4 py-3 rounded-xl shadow-sm">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-blue-900">អ្នកដឹកនាំថ្នាក់</p>
-                    <p className="text-xs text-blue-700 font-medium">Class Leader</p>
-                  </div>
-                  <div className="w-8 h-8 bg-blue-200 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-700 font-black text-xs">★</span>
-                  </div>
-                </div>
-              )}
-
-              {(profile.student.grade9PassStatus && 
+            {/* Check if student has any achievements */}
+            {(() => {
+              const hasHighScore = gradesData?.statistics?.averageScore && gradesData.statistics.averageScore >= 80;
+              const hasPerfectAttendance = attendanceData?.statistics?.attendanceRate && attendanceData.statistics.attendanceRate >= 95;
+              const isLeader = profile.student?.studentRole !== "GENERAL";
+              const hasGrade9Pass = profile.student.grade9PassStatus && 
                 (profile.student.grade9PassStatus.toLowerCase().includes("pass") || 
-                 profile.student.grade9PassStatus.toLowerCase().includes("ជាប់"))) && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 border-2 border-purple-200 px-4 py-3 rounded-xl shadow-sm">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <GraduationCap className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-purple-900">ជាប់ថ្នាក់៩</p>
-                    <p className="text-xs text-purple-700 font-medium">Grade 9 Pass</p>
-                  </div>
-                  <div className="w-8 h-8 bg-purple-200 rounded-lg flex items-center justify-center">
-                    <span className="text-purple-700 font-black text-xs">9</span>
-                  </div>
-                </div>
-              )}
-
-              {(profile.student.grade12PassStatus && 
+                 profile.student.grade9PassStatus.toLowerCase().includes("ជាប់"));
+              const hasGrade12Pass = profile.student.grade12PassStatus && 
                 (profile.student.grade12PassStatus.toLowerCase().includes("pass") || 
-                 profile.student.grade12PassStatus.toLowerCase().includes("ជាប់"))) && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-rose-50 via-red-50 to-rose-50 border-2 border-rose-200 px-4 py-3 rounded-xl shadow-sm">
-                  <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Award className="w-5 h-5 text-rose-600" />
+                 profile.student.grade12PassStatus.toLowerCase().includes("ជាប់"));
+              
+              const hasAnyAchievement = hasHighScore || hasPerfectAttendance || isLeader || hasGrade9Pass || hasGrade12Pass;
+              
+              if (!hasAnyAchievement) {
+                return (
+                  <div className="text-center py-8 px-4">
+                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                      <span className="text-4xl">🌟</span>
+                    </div>
+                    <p className="text-base font-bold text-gray-700 mb-2">
+                      មិនទាន់មានបុណ្យសិក្សា
+                    </p>
+                    <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+                      Keep working hard to earn achievement badges! Study well and attend regularly.
+                    </p>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-rose-900">បាក់ឌុប</p>
-                    <p className="text-xs text-rose-700 font-medium">Grade 12 Pass</p>
-                  </div>
-                  <div className="w-8 h-8 bg-rose-200 rounded-lg flex items-center justify-center">
-                    <span className="text-rose-700 font-black text-xs">🎓</span>
-                  </div>
-                </div>
-              )}
-            </div>
+                );
+              }
+              
+              return (
+                <div className="grid grid-cols-1 gap-2.5">
+                  {hasHighScore && (
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 border-2 border-yellow-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Award className="w-5 h-5 text-yellow-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-black text-yellow-900">ពិន្ទុខ្ពស់</p>
+                        <p className="text-xs text-yellow-700 font-medium">High Achiever</p>
+                      </div>
+                      <div className="w-8 h-8 bg-yellow-200 rounded-lg flex items-center justify-center">
+                        <span className="text-yellow-700 font-black text-xs">🏆</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {hasPerfectAttendance && (
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-black text-green-900">វត្តមានល្អ</p>
+                        <p className="text-xs text-green-700 font-medium">Perfect Attendance</p>
+                      </div>
+                      <div className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center">
+                        <span className="text-green-700 font-black text-xs">✓</span>
+                      </div>
+                    </div>
+                  )}
 
-            {/* Show message if no achievements yet */}
-            {(!gradesData?.statistics?.averageScore || gradesData.statistics.averageScore < 80) &&
-             (!attendanceData?.statistics?.attendanceRate || attendanceData.statistics.attendanceRate < 95) &&
-             profile.student?.studentRole === "GENERAL" &&
-             !profile.student.grade9PassStatus &&
-             !profile.student.grade12PassStatus && (
-              <div className="text-center py-6 px-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-3xl">🌟</span>
+                  {isLeader && (
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 via-cyan-50 to-blue-50 border-2 border-blue-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Users className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-black text-blue-900">អ្នកដឹកនាំថ្នាក់</p>
+                        <p className="text-xs text-blue-700 font-medium">Class Leader</p>
+                      </div>
+                      <div className="w-8 h-8 bg-blue-200 rounded-lg flex items-center justify-center">
+                        <span className="text-blue-700 font-black text-xs">★</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {hasGrade9Pass && (
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 border-2 border-purple-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <GraduationCap className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-black text-purple-900">ជាប់ថ្នាក់៩</p>
+                        <p className="text-xs text-purple-700 font-medium">Grade 9 Pass</p>
+                      </div>
+                      <div className="w-8 h-8 bg-purple-200 rounded-lg flex items-center justify-center">
+                        <span className="text-purple-700 font-black text-xs">9</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {hasGrade12Pass && (
+                    <div className="flex items-center gap-3 bg-gradient-to-r from-rose-50 via-red-50 to-rose-50 border-2 border-rose-200 px-4 py-3 rounded-xl shadow-sm">
+                      <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Award className="w-5 h-5 text-rose-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-black text-rose-900">បាក់ឌុប</p>
+                        <p className="text-xs text-rose-700 font-medium">Grade 12 Pass</p>
+                      </div>
+                      <div className="w-8 h-8 bg-rose-200 rounded-lg flex items-center justify-center">
+                        <span className="text-rose-700 font-black text-xs">🎓</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm font-bold text-gray-600 mb-1">
-                  មិនទាន់មានបុណ្យសិក្សា
-                </p>
-                <p className="text-xs text-gray-500">
-                  Keep working hard to earn achievement badges!
-                </p>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       </div>
