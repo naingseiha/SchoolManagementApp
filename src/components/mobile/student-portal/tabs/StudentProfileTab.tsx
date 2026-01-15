@@ -26,6 +26,8 @@ import {
   Save,
   TrendingUp,
   BarChart3,
+  Clock,
+  Loader2,
 } from "lucide-react";
 import {
   StudentProfile,
@@ -101,6 +103,9 @@ interface MonthlyStats {
   month: string;
   averageScore: number | null;
   hasData: boolean;
+  subjectCount: number;
+  totalSubjects: number;
+  isComplete: boolean;
 }
 
 interface StudentProfileTabProps {
@@ -141,25 +146,33 @@ export default function StudentProfileTab({
 
     const fetchMonthlyStats = async () => {
       setLoadingStats(true);
-      
+
       try {
         console.log(`🚀 Fetching monthly summaries for ${currentAcademicYear}`);
-        
+
         // Single API call to get all monthly summaries
         const data = await getMonthlySummaries({
           year: currentAcademicYear,
         });
 
         console.log(`✅ API Response:`, data);
-        console.log(`✅ Received ${data.summaries.length} monthly summaries:`, data.summaries);
-        
+        console.log(
+          `✅ Received ${data.summaries.length} monthly summaries:`,
+          data.summaries
+        );
+
         // Map to the format expected by the component
         const stats: MonthlyStats[] = data.summaries.map((summary) => {
-          console.log(`📊 Month ${summary.month}: hasData=${summary.hasData}, avgScore=${summary.averageScore}`);
+          console.log(
+            `📊 Month ${summary.month}: hasData=${summary.hasData}, avgScore=${summary.averageScore}, complete=${summary.isComplete}, ${summary.subjectCount}/${summary.totalSubjects}`
+          );
           return {
             month: summary.month,
             averageScore: summary.averageScore,
             hasData: summary.hasData,
+            subjectCount: summary.subjectCount,
+            totalSubjects: summary.totalSubjects,
+            isComplete: summary.isComplete,
           };
         });
 
@@ -535,7 +548,10 @@ export default function StudentProfileTab({
                   {monthlyStats
                     .slice(0, showAllMonths ? monthlyStats.length : 5)
                     .map((stat, index) => {
-                      const hasScore = stat.hasData && stat.averageScore !== null;
+                      const hasScore =
+                        stat.hasData && stat.averageScore !== null;
+                      const inProgress = stat.hasData && !stat.isComplete;
+                      const hasAnyData = stat.hasData; // Show progress even if averageScore is null
                       const scoreColor = hasScore
                         ? stat.averageScore! >= 40
                           ? "text-green-600"
@@ -546,14 +562,18 @@ export default function StudentProfileTab({
                           : "text-orange-600"
                         : "text-gray-400";
 
-                      const bgColor = hasScore
-                        ? stat.averageScore! >= 40
+                      const bgColor = hasAnyData
+                        ? inProgress
+                          ? "bg-amber-50 border-amber-300"
+                          : hasScore && stat.averageScore! >= 40
                           ? "bg-green-50 border-green-200"
-                          : stat.averageScore! >= 35
+                          : hasScore && stat.averageScore! >= 35
                           ? "bg-blue-50 border-blue-200"
-                          : stat.averageScore! >= 30
+                          : hasScore && stat.averageScore! >= 30
                           ? "bg-yellow-50 border-yellow-200"
-                          : "bg-orange-50 border-orange-200"
+                          : hasScore
+                          ? "bg-orange-50 border-orange-200"
+                          : "bg-amber-50 border-amber-300"
                         : "bg-gray-50 border-gray-200";
 
                       return (
@@ -564,11 +584,19 @@ export default function StudentProfileTab({
                           <div className="flex items-center gap-3">
                             <div
                               className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                hasScore ? "bg-white shadow-sm" : "bg-gray-100"
+                                hasAnyData
+                                  ? "bg-white shadow-sm"
+                                  : "bg-gray-100"
                               }`}
                             >
-                              {hasScore ? (
-                                <TrendingUp className={`w-4 h-4 ${scoreColor}`} />
+                              {hasAnyData ? (
+                                inProgress ? (
+                                  <Loader2 className="w-4 h-4 text-amber-600 animate-spin" />
+                                ) : (
+                                  <TrendingUp
+                                    className={`w-4 h-4 ${scoreColor}`}
+                                  />
+                                )
                               ) : (
                                 <span className="text-gray-400 text-xs">—</span>
                               )}
@@ -578,15 +606,27 @@ export default function StudentProfileTab({
                                 {stat.month}
                               </p>
                               <p className="text-xs text-gray-500 font-medium">
-                                {hasScore ? "Score Available" : "No data yet"}
+                                {hasAnyData
+                                  ? inProgress
+                                    ? `In Progress • ${stat.subjectCount}/${stat.totalSubjects}`
+                                    : "Score Available"
+                                  : "No data yet"}
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className={`text-lg font-black ${scoreColor}`}>
-                              {hasScore ? stat.averageScore!.toFixed(1) : "—"}
+                            <p
+                              className={`text-lg font-black ${
+                                inProgress ? "text-amber-600" : scoreColor
+                              }`}
+                            >
+                              {hasScore
+                                ? stat.averageScore!.toFixed(1)
+                                : hasAnyData
+                                ? "—"
+                                : "—"}
                             </p>
-                            {hasScore && (
+                            {hasAnyData && (
                               <p className="text-xs text-gray-500 font-medium">
                                 /50
                               </p>
@@ -595,7 +635,7 @@ export default function StudentProfileTab({
                         </div>
                       );
                     })}
-                  
+
                   {/* Show More / Show Less Button */}
                   {monthlyStats.length > 5 && (
                     <button

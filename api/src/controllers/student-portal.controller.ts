@@ -666,6 +666,7 @@ export const getMonthlySummaries = async (req: Request, res: Response) => {
 
     // Fetch all grades for the academic year in one query
     // Note: Some grades might have NULL monthNumber, so we also filter by month name
+    // FIXED: Handle both cases - year can be academic year (2025) OR calendar year (2026) for Jan-Sep
     const grades = await prisma.grade.findMany({
       where: {
         studentId,
@@ -682,6 +683,11 @@ export const getMonthlySummaries = async (req: Request, res: Response) => {
           // Jan-Sep of next year (by month name, for grades with NULL monthNumber)
           { 
             year: academicYear + 1, 
+            month: { in: ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា'] } 
+          },
+          // FIXED: Jan-Sep with academic year (when imported with academic year instead of calendar year)
+          { 
+            year: academicYear, 
             month: { in: ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា'] } 
           },
         ],
@@ -724,18 +730,23 @@ export const getMonthlySummaries = async (req: Request, res: Response) => {
     const summaries = khmerMonths.map((month) => {
       const data = monthlyData.get(month);
       const hasData = data && data.count > 0;
+      const subjectCount = data?.count || 0;
+      const isComplete = subjectCount >= allSubjects.length && allSubjects.length > 0;
       
       // Calculate average: totalScore / totalCoefficient (coefficient of ALL subjects)
       const averageScore = hasData && totalCoefficient > 0
         ? data.totalScore / totalCoefficient
         : null;
 
-      console.log(`Month ${month}: hasData=${hasData}, totalScore=${data?.totalScore || 0}, coefficient=${totalCoefficient}, average=${averageScore}`);
+      console.log(`Month ${month}: hasData=${hasData}, totalScore=${data?.totalScore || 0}, coefficient=${totalCoefficient}, average=${averageScore}, subjects=${subjectCount}/${allSubjects.length}, complete=${isComplete}`);
 
       return {
         month,
         averageScore: averageScore ? parseFloat(averageScore.toFixed(2)) : null,
         hasData: !!hasData,
+        subjectCount,
+        totalSubjects: allSubjects.length,
+        isComplete,
       };
     });
 

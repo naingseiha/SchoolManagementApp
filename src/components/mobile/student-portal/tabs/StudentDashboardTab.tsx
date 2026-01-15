@@ -246,7 +246,7 @@ export default function StudentDashboardTab({
                 ? `${attendanceData.statistics.attendanceRate.toFixed(0)}%`
                 : "0%"}
             </p>
-            <p className="text-xs text-green-100 mt-1">អត្រាវត្តមាន</p>
+            <p className="text-xs text-green-100 mt-1">អត្រាមករៀន</p>
           </div>
 
           {/* Total Subjects Card */}
@@ -294,13 +294,13 @@ export default function StudentDashboardTab({
                 <Calendar className="w-5 h-5 text-white" />
               </div>
               <span className="text-xs text-orange-100 font-medium">
-                វត្តមាន
+                អវត្តមាន
               </span>
             </div>
             <p className="text-3xl font-bold text-white">
               {attendanceData?.statistics?.totalPresent || "0"}
             </p>
-            <p className="text-xs text-orange-100 mt-1">ថ្ងៃវត្តមាន</p>
+            <p className="text-xs text-orange-100 mt-1">អត្រាឈប់</p>
           </div>
         </div>
       </div>

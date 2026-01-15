@@ -128,6 +128,9 @@ export interface MonthlySummaryResponse {
     month: string;
     averageScore: number | null;
     hasData: boolean;
+    subjectCount: number;
+    totalSubjects: number;
+    isComplete: boolean;
   }>;
   academicYear: number;
 }
