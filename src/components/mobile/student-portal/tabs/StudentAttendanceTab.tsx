@@ -63,9 +63,7 @@ export default function StudentAttendanceTab({
     }
   };
 
-  useEffect(() => {
-    loadAttendance();
-  }, [selectedYear, selectedMonth]);
+  // Removed auto-load on filter change - user must click load button
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -164,34 +162,29 @@ export default function StudentAttendanceTab({
         </div>
       </div>
 
-      {/* Load Button */}
-      {!attendanceData && !dataLoading && (
+      {/* Load Button - Always show when not loading */}
+      {!dataLoading && (
         <button
           onClick={loadAttendance}
           className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
         >
           <Calendar className="w-6 h-6" />
-          <span className="font-bold text-lg">ផ្ទុកទិន្នន័យការចូលរៀន</span>
+          <span className="font-bold text-lg">
+            {attendanceData ? "ផ្ទុកទិន្នន័យឡើងវិញ" : "ផ្ទុកទិន្នន័យការចូលរៀន"}
+          </span>
         </button>
       )}
 
-      {/* Initial Loading State */}
-      {!attendanceData && dataLoading && (
+      {/* Loading State */}
+      {dataLoading && (
         <div className="text-center py-12">
           <Loader2 className="w-12 h-12 animate-spin text-green-600 mx-auto mb-3" />
           <p className="text-gray-700 font-medium">កំពុងផ្ទុកទិន្នន័យ...</p>
         </div>
       )}
 
-      {attendanceData ? (
+      {attendanceData && !dataLoading ? (
         <div className="space-y-4 relative">
-          {/* Loading Overlay */}
-          {dataLoading && (
-            <div className="absolute inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-2xl min-h-[400px]">
-              <Loader2 className="w-12 h-12 animate-spin text-green-600 mb-3" />
-              <p className="text-gray-700 font-medium">កំពុងផ្ទុកការចូលរៀន...</p>
-            </div>
-          )}
 
           {/* Enhanced Statistics Summary */}
           <div className="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 rounded-3xl shadow-xl p-6 text-white overflow-hidden relative">

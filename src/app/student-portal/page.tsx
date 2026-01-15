@@ -338,6 +338,8 @@ export default function StudentPortalPage() {
           {activeTab === "profile" && profile && (
             <StudentProfileTab
               profile={profile}
+              gradesData={gradesData}
+              attendanceData={attendanceData}
               isEditingProfile={isEditingProfile}
               hasUnsavedProfileChanges={hasUnsavedProfileChanges}
               loading={loading}

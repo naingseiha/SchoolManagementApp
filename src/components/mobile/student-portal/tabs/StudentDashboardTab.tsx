@@ -9,6 +9,8 @@ import {
   CheckCircle,
   RefreshCw,
   LogOut,
+  AlertCircle,
+  BarChart3,
 } from "lucide-react";
 import { StudentProfile, GradesResponse, AttendanceResponse } from "@/lib/api/student-portal";
 
@@ -80,23 +82,103 @@ export default function StudentDashboardTab({
       <div>
         <h1 className="text-base font-bold text-gray-900 mb-3 px-1">ស្ថិតិទូទៅ</h1>
 
-        {/* Check if no grades imported yet */}
-        {gradesData && gradesData.grades && gradesData.grades.length === 0 ? (
-          <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl shadow-sm p-6 border-2 border-yellow-200">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mb-3">
-                <Clock className="w-8 h-8 text-yellow-600" />
+        {/* Info Banner - Show when no grades are available */}
+        {gradesData && gradesData.grades && gradesData.grades.length === 0 && (
+          <>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-sm p-4 border-2 border-blue-200 mb-3">
+              <div className="flex items-start gap-3">
+                <div className="bg-blue-100 p-2 rounded-xl shrink-0">
+                  <AlertCircle className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-sm font-bold text-blue-900 mb-1">
+                    កំពុងរង់ចាំការបញ្ចូលពិន្ទុ
+                  </h2>
+                  <p className="text-xs text-blue-700 leading-relaxed">
+                    គ្រូមិនទាន់បញ្ចូលពិន្ទុសម្រាប់ខែនេះទេ។ សូមត្រឡប់មកមើលនៅពេលក្រោយ។
+                  </p>
+                </div>
               </div>
-              <h2 className="text-lg font-bold text-yellow-900 mb-2">មិនទាន់មានពិន្ទុ</h2>
-              <p className="text-sm text-yellow-700">
-                គ្រូមិនទាន់បញ្ចូលពិន្ទុសម្រាប់ឆមាសនេះទេ។
+            </div>
+
+            {/* Score Import Progress Indicator */}
+            <div className="bg-white rounded-2xl shadow-sm p-4 border-2 border-gray-200 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="bg-indigo-100 p-2 rounded-xl">
+                  <BarChart3 className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-gray-900">ស្ថានភាពការបញ្ចូលពិន្ទុ</h3>
+                  <p className="text-xs text-gray-600">Score Import Status</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600">ចំនួនមុខវិជ្ជាដែលបានបញ្ចូល</span>
+                  <span className="font-bold text-indigo-600">0 មុខវិជ្ជា</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: "0%" }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 text-center pt-1">
+                  សូមរង់ចាំគ្រូបញ្ចូលពិន្ទុ...
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Show progress when some but not all grades are imported */}
+        {gradesData && gradesData.grades && gradesData.grades.length > 0 && gradesData.statistics.totalGrades > 0 && (
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-sm p-4 border-2 border-green-200 mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-green-100 p-2 rounded-xl">
+                <BarChart3 className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-green-900">ការបញ្ចូលពិន្ទុបច្ចុប្បន្ន</h3>
+                <p className="text-xs text-green-700">Current Import Progress</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-green-700">ចំនួនមុខវិជ្ជាដែលបានបញ្ចូល</span>
+                <span className="font-bold text-green-600">
+                  {gradesData.grades.length} មុខវិជ្ជា
+                </span>
+              </div>
+              <div className="w-full bg-green-200 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                  style={{ 
+                    width: `${Math.min(100, (gradesData.grades.length / Math.max(gradesData.grades.length, 1)) * 100)}%` 
+                  }}
+                ></div>
+              </div>
+              <p className="text-xs text-green-700 text-center pt-1">
+                ✓ ពិន្ទុកំពុងត្រូវបានបញ្ចូល
               </p>
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
+        )}
+
+        {/* Stats Grid - Always show with indicators */}
+        <div className="grid grid-cols-2 gap-3">
             {/* Average Score Card */}
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-4">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-4 relative overflow-hidden">
+              {gradesData && gradesData.grades && gradesData.grades.length === 0 && (
+                <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="bg-white bg-opacity-90 rounded-lg px-3 py-1.5">
+                    <p className="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      កំពុងរង់ចាំ
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2 mb-2">
                 <div className="bg-white bg-opacity-20 p-2 rounded-xl">
                   <TrendingUp className="w-5 h-5 text-white" />
@@ -110,7 +192,17 @@ export default function StudentDashboardTab({
             </div>
 
             {/* Attendance Rate Card */}
-            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-4">
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg p-4 relative overflow-hidden">
+              {attendanceData?.statistics?.totalDays === 0 && (
+                <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="bg-white bg-opacity-90 rounded-lg px-3 py-1.5">
+                    <p className="text-xs font-bold text-green-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      កំពុងរង់ចាំ
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2 mb-2">
                 <div className="bg-white bg-opacity-20 p-2 rounded-xl">
                   <CheckCircle className="w-5 h-5 text-white" />
@@ -126,7 +218,17 @@ export default function StudentDashboardTab({
             </div>
 
             {/* Total Subjects Card */}
-            <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg p-4">
+            <div className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-lg p-4 relative overflow-hidden">
+              {gradesData && gradesData.grades && gradesData.grades.length === 0 && (
+                <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="bg-white bg-opacity-90 rounded-lg px-3 py-1.5">
+                    <p className="text-xs font-bold text-blue-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      កំពុងរង់ចាំ
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2 mb-2">
                 <div className="bg-white bg-opacity-20 p-2 rounded-xl">
                   <BookOpen className="w-5 h-5 text-white" />
@@ -140,7 +242,17 @@ export default function StudentDashboardTab({
             </div>
 
             {/* Total Days Card */}
-            <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg p-4">
+            <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg p-4 relative overflow-hidden">
+              {attendanceData?.statistics?.totalDays === 0 && (
+                <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-[2px] flex items-center justify-center">
+                  <div className="bg-white bg-opacity-90 rounded-lg px-3 py-1.5">
+                    <p className="text-xs font-bold text-orange-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      កំពុងរង់ចាំ
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-2 mb-2">
                 <div className="bg-white bg-opacity-20 p-2 rounded-xl">
                   <Calendar className="w-5 h-5 text-white" />
@@ -153,7 +265,6 @@ export default function StudentDashboardTab({
               <p className="text-xs text-orange-100 mt-1">ថ្ងៃវត្តមាន</p>
             </div>
           </div>
-        )}
       </div>
 
       {/* Quick Actions */}

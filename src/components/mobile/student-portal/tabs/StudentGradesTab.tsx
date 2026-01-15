@@ -70,9 +70,7 @@ export default function StudentGradesTab({
     }
   };
 
-  useEffect(() => {
-    loadGrades();
-  }, [selectedYear, selectedMonth]);
+  // Removed auto-load on filter change - user must click load button
 
   // Scroll listener for sticky header
   useEffect(() => {
@@ -131,34 +129,29 @@ export default function StudentGradesTab({
         </div>
       </div>
 
-      {/* Load Button */}
-      {!gradesData && !dataLoading && (
+      {/* Load Button - Always show when not loading */}
+      {!dataLoading && (
         <button
           onClick={loadGrades}
           className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg p-5 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
         >
           <BookOpen className="w-6 h-6" />
-          <span className="font-bold text-lg">ផ្ទុកទិន្នន័យពិន្ទុ</span>
+          <span className="font-bold text-lg">
+            {gradesData ? "ផ្ទុកទិន្នន័យឡើងវិញ" : "ផ្ទុកទិន្នន័យពិន្ទុ"}
+          </span>
         </button>
       )}
 
-      {/* Initial Loading State */}
-      {!gradesData && dataLoading && allSubjects.length === 0 && (
+      {/* Loading State */}
+      {dataLoading && (
         <div className="text-center py-12">
           <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-3" />
           <p className="text-gray-700 font-medium">កំពុងផ្ទុកទិន្នន័យ...</p>
         </div>
       )}
 
-      {allSubjects.length > 0 ? (
+      {allSubjects.length > 0 && gradesData && !dataLoading ? (
         <div className="space-y-4 relative">
-          {/* Loading Overlay */}
-          {dataLoading && (
-            <div className="absolute inset-0 bg-white bg-opacity-90 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-2xl">
-              <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mb-3" />
-              <p className="text-gray-700 font-medium">កំពុងផ្ទុកពិន្ទុ...</p>
-            </div>
-          )}
 
           {/* Summary Card - Sticky Header */}
           {gradesData?.statistics && (

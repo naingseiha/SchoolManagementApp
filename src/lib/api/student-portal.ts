@@ -111,7 +111,7 @@ export interface GradesResponse {
 }
 
 export interface AttendanceResponse {
-  attendance: Attendance[];
+  records: Attendance[];
   statistics: {
     totalDays: number;
     presentCount: number;
@@ -119,6 +119,7 @@ export interface AttendanceResponse {
     permissionCount: number;
     lateCount: number;
     attendanceRate: number;
+    totalPresent?: number;
   };
 }
 
