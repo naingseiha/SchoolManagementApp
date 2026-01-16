@@ -273,6 +273,7 @@ class GradeController {
                 const studentGrades = {};
                 let totalScore = 0;
                 let totalMaxScore = 0;
+                let studentCoefficient = 0; // ✅ Track coefficient for entered subjects
                 sortedSubjects.forEach((subject) => {
                     const grade = existingGrades.find((g) => g.studentId === student.id && g.subjectId === subject.id);
                     // Use proper null check - don't treat 0 as falsy!
@@ -281,6 +282,7 @@ class GradeController {
                     if (score !== null) {
                         totalScore += score;
                         totalMaxScore += subject.maxScore;
+                        studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
                     }
                     studentGrades[subject.id] = {
                         id: grade?.id || null,
@@ -290,8 +292,8 @@ class GradeController {
                         isSaved: !!grade,
                     };
                 });
-                const average = totalCoefficientForClass > 0
-                    ? totalScore / totalCoefficientForClass
+                const average = studentCoefficient > 0
+                    ? totalScore / studentCoefficient
                     : 0;
                 let gradeLevel = "F";
                 if (average >= 90)
@@ -313,7 +315,7 @@ class GradeController {
                     grades: studentGrades,
                     totalScore: totalScore.toFixed(2),
                     totalMaxScore,
-                    totalCoefficient: totalCoefficientForClass.toFixed(2),
+                    totalCoefficient: studentCoefficient.toFixed(2), // ✅ Use student's actual coefficient
                     average: average.toFixed(2),
                     gradeLevel,
                     absent: 0,

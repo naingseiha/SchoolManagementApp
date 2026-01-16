@@ -86,12 +86,15 @@ async function calculateMonthlySummaries() {
         const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
         const totalMaxScore = grades.reduce((sum, g) => sum + g.maxScore, 0);
 
-        // ✅ FIXED: Use total coefficient from ALL subjects (not just graded ones)
-        const totalCoefficient = totalCoefficientForClass;
+        // ✅ Calculate coefficient only for subjects with grades entered
+        const studentCoefficient = grades.reduce(
+          (sum, g) => sum + (g.subject.coefficient || 1),
+          0
+        );
 
-        // ✅ FIXED: Average = totalScore / totalCoefficientForClass (same as report page)
-        const average = totalCoefficient > 0
-          ? (totalScore / totalCoefficient)
+        // ✅ Average = totalScore / studentCoefficient (only entered subjects)
+        const average = studentCoefficient > 0
+          ? (totalScore / studentCoefficient)
           : 0;
 
         // Keep totalWeightedScore for storage (legacy field)
@@ -134,7 +137,7 @@ async function calculateMonthlySummaries() {
             totalScore,
             totalMaxScore,
             totalWeightedScore,
-            totalCoefficient,
+            totalCoefficient: studentCoefficient,
             average,
             gradeLevel,
           },
@@ -142,7 +145,7 @@ async function calculateMonthlySummaries() {
             totalScore,
             totalMaxScore,
             totalWeightedScore,
-            totalCoefficient,
+            totalCoefficient: studentCoefficient,
             average,
             gradeLevel,
           },

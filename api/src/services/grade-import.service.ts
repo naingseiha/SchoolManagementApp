@@ -641,19 +641,21 @@ export class GradeImportService {
         };
 
         let totalScore = 0;
+        let studentCoefficient = 0; // ✅ Track coefficient for entered subjects
 
         subjects.forEach((subject) => {
           const grade = grades.find(
             (g) => g.studentId === student.id && g.subjectId === subject.id
           );
           rowData[subject.code] = grade?.score ?? "";
-          if (grade?.score) {
+          if (grade?.score !== null && grade?.score !== undefined) {
             totalScore += grade.score;
+            studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
           }
         });
 
         const average =
-          totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+          studentCoefficient > 0 ? totalScore / studentCoefficient : 0;
 
         let gradeLevel = "F";
         if (average >= 45) gradeLevel = "A";

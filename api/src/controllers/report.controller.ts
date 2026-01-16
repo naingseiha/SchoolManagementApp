@@ -208,6 +208,7 @@ export class ReportController {
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
         let gradeCount = 0;
+        let studentCoefficient = 0; // ✅ Track coefficient per student
 
         subjects.forEach((subject) => {
           const grade = grades.find(
@@ -218,15 +219,16 @@ export class ReportController {
             studentGrades[subject.id] = grade.score;
             totalScore += grade.score;
             gradeCount++;
+            studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
           } else {
             studentGrades[subject.id] = null;
           }
         });
 
-        // ✅ Average = totalScore / totalCoefficientForClass
+        // ✅ Average = totalScore / studentCoefficient (only entered subjects)
         const average =
-          totalCoefficientForClass > 0
-            ? totalScore / totalCoefficientForClass
+          studentCoefficient > 0
+            ? totalScore / studentCoefficient
             : 0;
 
         let gradeLevel = "F";
@@ -440,6 +442,7 @@ export class ReportController {
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
         let gradeCount = 0;
+        let actualCoefficient = 0; // ✅ Track coefficient for entered subjects only
 
         studentSubjects.forEach((subject) => {
           const grade = grades.find(
@@ -450,14 +453,15 @@ export class ReportController {
             studentGrades[subject.id] = grade.score;
             totalScore += grade.score;
             gradeCount++;
+            actualCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
           } else {
             studentGrades[subject.id] = null;
           }
         });
 
         const average =
-          totalCoefficientForStudent > 0
-            ? totalScore / totalCoefficientForStudent
+          actualCoefficient > 0
+            ? totalScore / actualCoefficient
             : 0;
 
         let gradeLevel = "F";
@@ -849,6 +853,7 @@ export class ReportController {
 
         let totalScore = 0;
         let subjectsWithScores = 0;
+        let studentCoefficient = 0; // ✅ Track coefficient for entered subjects
 
         subjects.forEach((subject) => {
           const grade = grades.find(
@@ -869,13 +874,14 @@ export class ReportController {
           if (score !== null) {
             totalScore += score;
             subjectsWithScores++;
+            studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
           }
         });
 
-        // ✅ Average = totalScore / totalCoefficientForClass
+        // ✅ Average = totalScore / studentCoefficient (only entered subjects)
         const averageScore =
-          totalCoefficientForClass > 0
-            ? totalScore / totalCoefficientForClass
+          studentCoefficient > 0
+            ? totalScore / studentCoefficient
             : 0;
 
         // ✅ Grade level thresholds
@@ -1171,6 +1177,7 @@ export class ReportController {
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
         let gradeCount = 0;
+        let studentCoefficient = 0; // ✅ Track coefficient for entered subjects
 
         // Calculate student's total score and overall average
         subjects.forEach((subject) => {
@@ -1184,6 +1191,7 @@ export class ReportController {
           if (score !== null) {
             totalScore += score;
             gradeCount++;
+            studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
 
             // ✅ Calculate subject grade level
             const subjectGradeInfo = getSubjectGradeLevel(
@@ -1218,9 +1226,9 @@ export class ReportController {
           }
         });
 
-        // ✅ Calculate student's overall average
+        // ✅ Calculate student's overall average (only entered subjects)
         const average =
-          totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+          studentCoefficient > 0 ? totalScore / studentCoefficient : 0;
 
         // ✅ FIXED: Use correct grade level thresholds
         let overallGradeLevel = "F";

@@ -1181,14 +1181,20 @@ export class DashboardController {
             // ✅ Calculate total score
             const totalScore = studentGrades.reduce((sum, g) => sum + (g.score || 0), 0);
 
-            // ✅ Calculate average = totalScore / totalCoefficient
-            const average = totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+            // ✅ Calculate coefficient only for subjects with grades entered
+            const studentCoefficient = studentGrades.reduce((sum, g) => {
+              const subject = classSubjects.find(s => s.id === g.subjectId);
+              return sum + (subject?.coefficient || 0);
+            }, 0);
+
+            // ✅ Calculate average = totalScore / studentCoefficient (only entered subjects)
+            const average = studentCoefficient > 0 ? totalScore / studentCoefficient : 0;
 
             studentDataMap.set(student.id, {
               studentId: student.id,
               classId: cls.id,
               totalScore,
-              totalCoefficient,
+              totalCoefficient: studentCoefficient,
               average,
               gender: student.gender || "MALE",
             });

@@ -165,14 +165,12 @@ export const getMyGrades = async (req: Request, res: Response) => {
     // Calculate total score from grades that exist
     const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
 
-    // Calculate total coefficient from ALL subjects (not just graded ones)
-    const totalCoefficient = allSubjects.length > 0
-      ? allSubjects.reduce((sum, s) => sum + (s.coefficient || 1), 0)
-      : grades.reduce((sum, g) => sum + (g.subject.coefficient || 1), 0);
+    // ✅ Calculate coefficient only for subjects with grades entered
+    const studentCoefficient = grades.reduce((sum, g) => sum + (g.subject.coefficient || 1), 0);
 
-    // ✅ Average = totalScore / totalCoefficient (same as report page)
+    // ✅ Average = totalScore / studentCoefficient (only entered subjects)
     const averageScore =
-      totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+      studentCoefficient > 0 ? totalScore / studentCoefficient : 0;
 
     // ✅ Calculate class rank dynamically (like report page does)
     let classRank = null;
@@ -200,8 +198,12 @@ export const getMyGrades = async (req: Request, res: Response) => {
             (sum, g) => sum + (g.score || 0),
             0
           );
+          const studentCoefficient = studentGrades.reduce(
+            (sum, g) => sum + (g.subject.coefficient || 1),
+            0
+          );
           const studentAvg =
-            totalCoefficient > 0 ? studentScore / totalCoefficient : 0;
+            studentCoefficient > 0 ? studentScore / studentCoefficient : 0;
 
           return {
             studentId: student.id,
@@ -712,16 +714,17 @@ export const getMonthlySummaries = async (req: Request, res: Response) => {
     console.log(`📋 Grades count by month:`, Array.from(gradesByMonth.entries()));
 
     // Group grades by month
-    const monthlyData = new Map<string, { totalScore: number; count: number }>();
+    const monthlyData = new Map<string, { totalScore: number; count: number; coefficient: number }>();
 
     for (const grade of grades) {
       const monthKey = grade.month;
       if (!monthlyData.has(monthKey)) {
-        monthlyData.set(monthKey, { totalScore: 0, count: 0 });
+        monthlyData.set(monthKey, { totalScore: 0, count: 0, coefficient: 0 });
       }
       const data = monthlyData.get(monthKey)!;
       data.totalScore += grade.score || 0;
       data.count += 1;
+      data.coefficient += grade.subject.coefficient || 1; // ✅ Track coefficient for entered subjects
     }
 
     console.log(`📈 Monthly data:`, Array.from(monthlyData.entries()));
@@ -733,12 +736,12 @@ export const getMonthlySummaries = async (req: Request, res: Response) => {
       const subjectCount = data?.count || 0;
       const isComplete = subjectCount >= allSubjects.length && allSubjects.length > 0;
       
-      // Calculate average: totalScore / totalCoefficient (coefficient of ALL subjects)
-      const averageScore = hasData && totalCoefficient > 0
-        ? data.totalScore / totalCoefficient
+      // ✅ Calculate average: totalScore / studentCoefficient (only entered subjects)
+      const averageScore = hasData && data.coefficient > 0
+        ? data.totalScore / data.coefficient
         : null;
 
-      console.log(`Month ${month}: hasData=${hasData}, totalScore=${data?.totalScore || 0}, coefficient=${totalCoefficient}, average=${averageScore}, subjects=${subjectCount}/${allSubjects.length}, complete=${isComplete}`);
+      console.log(`Month ${month}: hasData=${hasData}, totalScore=${data?.totalScore || 0}, coefficient=${data?.coefficient || 0}, average=${averageScore}, subjects=${subjectCount}/${allSubjects.length}, complete=${isComplete}`);
 
       return {
         month,
