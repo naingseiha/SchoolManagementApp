@@ -237,9 +237,22 @@ export const login = async (req: Request, res: Response) => {
       failedAttempts: 0,
     };
 
-    if (usingDefaultPassword && user.isDefaultPassword === null) {
-      passwordSecurityUpdate.isDefaultPassword = true;
-      passwordSecurityUpdate.passwordExpiresAt = calculatePasswordExpiry(7);
+    // Update password security status based on ACTUAL password check
+    if (usingDefaultPassword) {
+      // User IS using default password
+      if (user.isDefaultPassword === null) {
+        passwordSecurityUpdate.isDefaultPassword = true;
+      }
+      // Always set expiration if not set or if user still has default password
+      if (!user.passwordExpiresAt || user.isDefaultPassword) {
+        passwordSecurityUpdate.passwordExpiresAt = calculatePasswordExpiry(7);
+      }
+    } else {
+      // User is NOT using default password - clear the flag and expiration
+      if (user.isDefaultPassword === true || user.isDefaultPassword === null) {
+        passwordSecurityUpdate.isDefaultPassword = false;
+        passwordSecurityUpdate.passwordExpiresAt = null;
+      }
     }
 
     // Check if password has expired (only for teachers with default passwords)
@@ -529,6 +542,7 @@ export const getPasswordStatus = async (req: Request, res: Response) => {
         passwordExpiresAt: true,
         passwordChangedAt: true,
         phone: true,
+        password: true, // Need to check actual password
         teacher: {
           select: {
             phone: true,
@@ -544,21 +558,43 @@ export const getPasswordStatus = async (req: Request, res: Response) => {
       });
     }
 
+    // Actually check if the current password is the default (phone number)
     const phoneNumber = user.phone || user.teacher?.phone;
-    const timeRemaining = getTimeRemaining(user.passwordExpiresAt);
-    const alertLevel = getAlertLevel(user.passwordExpiresAt);
+    const actuallyUsingDefaultPassword = phoneNumber
+      ? await isDefaultPassword(user.password, phoneNumber)
+      : false;
+
+    // If the actual check differs from the database field, update it
+    if (actuallyUsingDefaultPassword !== user.isDefaultPassword) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          isDefaultPassword: actuallyUsingDefaultPassword,
+          passwordExpiresAt: actuallyUsingDefaultPassword 
+            ? (user.passwordExpiresAt || calculatePasswordExpiry(7))
+            : null,
+        },
+      });
+    }
+
+    const timeRemaining = getTimeRemaining(
+      actuallyUsingDefaultPassword ? user.passwordExpiresAt : null
+    );
+    const alertLevel = getAlertLevel(
+      actuallyUsingDefaultPassword ? user.passwordExpiresAt : null
+    );
 
     res.json({
       success: true,
       data: {
-        isDefaultPassword: user.isDefaultPassword || false,
-        passwordExpiresAt: user.passwordExpiresAt,
+        isDefaultPassword: actuallyUsingDefaultPassword,
+        passwordExpiresAt: actuallyUsingDefaultPassword ? user.passwordExpiresAt : null,
         passwordChangedAt: user.passwordChangedAt,
         daysRemaining: timeRemaining.daysRemaining,
         hoursRemaining: timeRemaining.hoursRemaining,
         isExpired: timeRemaining.isExpired,
-        alertLevel,
-        canExtend: timeRemaining.daysRemaining > 0 && timeRemaining.daysRemaining <= 7,
+        alertLevel: actuallyUsingDefaultPassword ? alertLevel : 'none',
+        canExtend: actuallyUsingDefaultPassword && timeRemaining.daysRemaining > 0 && timeRemaining.daysRemaining <= 7,
       },
     });
   } catch (error: any) {

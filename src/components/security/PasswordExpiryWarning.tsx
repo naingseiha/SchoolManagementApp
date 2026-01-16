@@ -22,7 +22,8 @@ export default function PasswordExpiryWarning({
   onDismiss,
   canDismiss = true,
 }: PasswordExpiryWarningProps) {
-  if (!isDefaultPassword || alertLevel === "none") {
+  // Show warning for all default passwords, not just when alertLevel is active
+  if (!isDefaultPassword) {
     return null;
   }
 
@@ -73,20 +74,27 @@ export default function PasswordExpiryWarning({
 
     if (daysRemaining === 0) {
       return {
-        title: "ចាំបាច់ប្តូរពាក្យសម្ងាត់ភ្លាមៗ! | Change Password Urgently!",
+        title: "ចាំបាច់ប្តូរពាក្យសម្ងាត់ភ្លាមៗ!",
         message: `នៅសល់តែ ${hoursRemaining} ម៉ោងទៀត | Only ${hoursRemaining} hours remaining`,
       };
     }
 
     if (daysRemaining === 1) {
       return {
-        title: "ចាំបាច់ប្តូរពាក្យសម្ងាត់! | Change Password Required!",
-        message: `នៅសល់ 1 ថ្ងៃទៀត | 1 day remaining`,
+        title: "ចាំបាច់ប្តូរពាក្យសម្ងាត់!",
+        message: `នៅសល់ 1 ថ្ងៃទៀត`,
+      };
+    }
+
+    if (daysRemaining >= 7) {
+      return {
+        title: "អ្នកកំពុងប្រើពាក្យសម្ងាត់លំនាំដើម",
+        message: `សូមប្តូរពាក្យសម្ងាត់ដើម្បីសុវត្ថិភាព | Please change for security (${daysRemaining} days remaining)`,
       };
     }
 
     return {
-      title: "សូមប្តូរពាក្យសម្ងាត់ | Please Change Password",
+      title: "សូមប្តូរពាក្យសម្ងាត់",
       message: `នៅសល់ ${daysRemaining} ថ្ងៃទៀត | ${daysRemaining} days remaining`,
     };
   };
@@ -99,7 +107,7 @@ export default function PasswordExpiryWarning({
     <div
       className={`
         ${styles.bg} ${styles.border} ${styles.text}
-        border rounded-lg p-4 mb-4 
+        border-2 rounded-xl p-5 mb-6 shadow-sm
         transition-all duration-300
         ${shouldAnimate ? "animate-pulse" : ""}
       `}
@@ -107,39 +115,51 @@ export default function PasswordExpiryWarning({
     >
       <div className="flex items-start gap-4">
         {/* Icon */}
-        <div className={`flex-shrink-0 ${styles.icon}`}>
+        <div className={`flex-shrink-0 ${styles.icon} mt-1`}>
           {alertLevel === "danger" ? (
-            <AlertTriangle className="w-6 h-6" />
+            <AlertTriangle className="w-7 h-7" />
           ) : (
-            <Lock className="w-6 h-6" />
+            <Lock className="w-7 h-7" />
           )}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1">
-              <h3 className="font-bold text-lg mb-1">{title}</h3>
-              <p className="text-sm mb-3">{message}</p>
+              <h4 className="font-bold font-koulen text-xl mb-2">{title}</h4>
               
-              {/* Time Display */}
-              <div className="flex items-center gap-2 text-sm mb-3">
+              {/* Time remaining badge */}
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-3 ${
+                alertLevel === "danger" 
+                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" 
+                  : alertLevel === "warning"
+                  ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+              }`}>
                 <Clock className="w-4 h-4" />
-                <span>
-                  អ្នកកំពុងប្រើពាក្យសម្ងាត់លំនាំដើម (លេខទូរសព្ទ)
-                </span>
+                <span>{message}</span>
               </div>
 
-              <p className="text-xs opacity-80">
-                You are using the default password (your phone number). Please change it to a secure password.
-              </p>
+              <div className="text-sm space-y-2 mb-4">
+                <p className="flex items-start gap-2">
+                  <span className="text-lg">🔒</span>
+                  <span>
+                    <strong>អ្នកកំពុងប្រើពាក្យសម្ងាត់លំនាំដើម</strong>
+                    <br />
+                    <span className="text-xs opacity-80">
+                      ពាក្យសម្ងាត់លំនាំដើមមិនមានសុវត្ថិភាព។ អ្នកដទៃអាចទាយបានដោយងាយ។
+                    </span>
+                  </span>
+                </p>
+              </div>
             </div>
 
             {/* Dismiss Button */}
             {canDismiss && onDismiss && alertLevel !== "danger" && (
               <button
                 onClick={onDismiss}
-                className="flex-shrink-0 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded"
+                className="flex-shrink-0 p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="w-5 h-5" />
@@ -152,12 +172,15 @@ export default function PasswordExpiryWarning({
             onClick={onChangePassword}
             className={`
               ${styles.button}
-              px-6 py-2 rounded-lg font-medium
-              transition-colors duration-200
+              w-full px-6 py-3 rounded-xl font-bold text-base
+              transition-all duration-200
               focus:outline-none focus:ring-2 focus:ring-offset-2
+              shadow-md hover:shadow-lg
+              flex items-center justify-center gap-2
             `}
           >
-            ប្តូរពាក្យសម្ងាត់ឥឡូវនេះ | Change Password Now
+            <Lock className="w-5 h-5" />
+            <span>ប្តូរពាក្យសម្ងាត់ឥឡូវនេះ</span>
           </button>
         </div>
       </div>

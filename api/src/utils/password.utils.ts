@@ -46,7 +46,8 @@ export function getTimeRemaining(expiresAt: Date | null): {
   isExpired: boolean;
 } {
   if (!expiresAt) {
-    return { daysRemaining: 0, hoursRemaining: 0, isExpired: false };
+    // If no expiration date set, default to 7 days (default grace period)
+    return { daysRemaining: 7, hoursRemaining: 0, isExpired: false };
   }
   
   const now = new Date();

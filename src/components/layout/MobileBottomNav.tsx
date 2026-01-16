@@ -144,7 +144,7 @@ export default function MobileBottomNav({ onNavigate }: MobileBottomNavProps = {
 
               {/* Label */}
               <span
-                className={`text-[10px] mt-0.5 font-battambang transition-all duration-200 ${
+                className={`text-[10px] mt-0.5 font-koulen transition-all duration-200 ${
                   isActive
                     ? "font-black text-transparent bg-clip-text bg-gradient-to-r " + item.color
                     : "font-medium text-gray-500 group-hover:text-gray-700"

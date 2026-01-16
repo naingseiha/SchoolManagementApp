@@ -42,15 +42,19 @@ import { usePasswordStatus } from "@/hooks/usePasswordStatus";
 // Lazy load heavy components
 const TeacherProfileEditModal = dynamic(
   () => import("@/components/mobile/teacher-portal/TeacherProfileEditModal"),
-  { ssr: false }
+  { ssr: false },
 );
 const TeacherPasswordModal = dynamic(
   () => import("@/components/mobile/teacher-portal/TeacherPasswordModal"),
-  { ssr: false }
+  { ssr: false },
 );
 const PasswordExpiryWarning = dynamic(
   () => import("@/components/security/PasswordExpiryWarning"),
-  { ssr: false }
+  { ssr: false },
+);
+const FirstLoginModal = dynamic(
+  () => import("@/components/security/FirstLoginModal"),
+  { ssr: false },
 );
 
 const ROLE_LABELS = {
@@ -84,8 +88,20 @@ export default function TeacherPortalPage() {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { status: passwordStatus, refetch: refetchPasswordStatus } = usePasswordStatus();
+  const { status: passwordStatus, refetch: refetchPasswordStatus } =
+    usePasswordStatus();
   const [dismissedWarning, setDismissedWarning] = useState(false);
+  const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
+
+  // Check if this is first time seeing the warning
+  useEffect(() => {
+    if (passwordStatus?.isDefaultPassword) {
+      const hasSeenWarning = localStorage.getItem("hasSeenPasswordWarning");
+      if (!hasSeenWarning) {
+        setShowFirstLoginModal(true);
+      }
+    }
+  }, [passwordStatus]);
 
   // Memoize computed values
   const studentCount = useMemo(() => {
@@ -94,7 +110,7 @@ export default function TeacherPortalPage() {
       profile.homeroomClass?._count?.students ||
       profile.teachingClasses?.reduce(
         (acc, c) => acc + (c._count?.students || 0),
-        0
+        0,
       ) ||
       "53"
     );
@@ -130,7 +146,7 @@ export default function TeacherPortalPage() {
   useEffect(() => {
     if (currentUser?.id) {
       const savedPhoto = localStorage.getItem(
-        `teacher_photo_${currentUser.id}`
+        `teacher_photo_${currentUser.id}`,
       );
       if (savedPhoto) {
         setProfilePhoto(savedPhoto);
@@ -346,11 +362,29 @@ export default function TeacherPortalPage() {
 
       {/* Password Modal */}
       {showPasswordModal && (
-        <TeacherPasswordModal onClose={() => {
-          setShowPasswordModal(false);
-          refetchPasswordStatus(); // Refetch status after password change
-          setDismissedWarning(false); // Reset dismissal
-        }} />
+        <TeacherPasswordModal
+          onClose={() => {
+            setShowPasswordModal(false);
+            refetchPasswordStatus(); // Refetch status after password change
+            setDismissedWarning(false); // Reset dismissal
+          }}
+        />
+      )}
+
+      {/* First Login Modal */}
+      {showFirstLoginModal && passwordStatus && (
+        <FirstLoginModal
+          daysRemaining={passwordStatus.daysRemaining}
+          onChangeNow={() => {
+            setShowFirstLoginModal(false);
+            localStorage.setItem("hasSeenPasswordWarning", "true");
+            setShowPasswordModal(true);
+          }}
+          onRemindLater={() => {
+            setShowFirstLoginModal(false);
+            localStorage.setItem("hasSeenPasswordWarning", "true");
+          }}
+        />
       )}
     </MobileLayout>
   );
@@ -464,7 +498,7 @@ const HeroSection = memo(
         </div>
       </div>
     </div>
-  )
+  ),
 );
 
 HeroSection.displayName = "HeroSection";
@@ -756,9 +790,9 @@ const PhotoUploadModal = memo(
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-6"></div>
-        <h2 className="text-xl font-black text-gray-900 mb-4 text-center">
+        <h4 className="text-xl font-koulen font-black text-gray-900 mb-4 text-center">
           ជ្រើសរើសរូបភាព
-        </h2>
+        </h4>
         <div className="space-y-3">
           <button
             onClick={onChoosePhoto}
@@ -809,7 +843,7 @@ const PhotoUploadModal = memo(
         </div>
       </div>
     </div>
-  )
+  ),
 );
 
 PhotoUploadModal.displayName = "PhotoUploadModal";
