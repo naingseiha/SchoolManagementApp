@@ -110,7 +110,8 @@ export default function MobileResultsPage() {
 
   const loadClasses = async () => {
     try {
-      const data = await classesApi.getAllLightweight();
+      const response = await classesApi.getAllLightweight();
+      const data = response.success && Array.isArray(response.data) ? response.data : [];
       setClasses(data);
     } catch (error) {
       console.error("Error loading classes:", error);

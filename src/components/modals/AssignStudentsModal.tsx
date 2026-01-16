@@ -66,26 +66,36 @@ export default function AssignStudentsModal({
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const data = await studentsApi.getAllLightweight();
-      setStudents(data);
-      console.log(`⚡ Loaded ${data.length} students (lightweight)`);
+      const response = await studentsApi.getAllLightweight();
+      // Extract data array from response object
+      if (response.success && Array.isArray(response.data)) {
+        setStudents(response.data);
+        console.log(`⚡ Loaded ${response.data.length} students (lightweight)`);
+      } else {
+        console.error("❌ API returned non-array data:", response);
+        setStudents([]);
+        showError("មិនអាចផ្ទុកបញ្ជីសិស្ស • Failed to load students");
+      }
     } catch (error) {
       console.error("❌ Error fetching students:", error);
+      setStudents([]);
       showError("មិនអាចផ្ទុកបញ្ជីសិស្ស • Failed to load students");
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter students based on mode
-  const availableStudents = showAllStudents
-    ? students.filter((student) => student.classId !== classData.id)
-    : students.filter((student) => !student.classId);
+  // Filter students based on mode (with safety check)
+  const availableStudents = Array.isArray(students)
+    ? showAllStudents
+      ? students.filter((student) => student.classId !== classData.id)
+      : students.filter((student) => !student.classId)
+    : [];
 
-  // Get students already in this class
-  const currentStudents = students.filter(
-    (student) => student.classId === classData.id
-  );
+  // Get students already in this class (with safety check)
+  const currentStudents = Array.isArray(students)
+    ? students.filter((student) => student.classId === classData.id)
+    : [];
 
   // Apply search filter
   const filteredStudents = availableStudents.filter((student) => {
@@ -265,7 +275,7 @@ export default function AssignStudentsModal({
                 placeholder="ស្វែងរកតាមឈ្មោះ, លេខសម្គាល់, ឬអ៊ីមែល..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3. 5 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm"
+                className="w-full pl-12 pr-4 py-3.5 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm"
               />
             </div>
 

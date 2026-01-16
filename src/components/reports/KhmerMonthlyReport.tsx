@@ -412,7 +412,7 @@ export default function KhmerMonthlyReport({
                   >
                     {/* ល.រ */}
                     <td
-                      className="px-2 py-1. 5 text-center relative"
+                      className="px-2 py-1.5 text-center relative"
                       style={{ border: "1px solid black" }}
                     >
                       {isPassed ? (
@@ -438,7 +438,7 @@ export default function KhmerMonthlyReport({
                     {/* ថ្នាក់ (for grade-wide only) */}
                     {isGradeWide && showClassName && (
                       <td
-                        className="px-2 py-1. 5 text-center font-semibold bg-blue-50"
+                        className="px-2 py-1.5 text-center font-semibold bg-blue-50"
                         style={{ border: "1px solid black" }}
                       >
                         {report.student.className}
@@ -516,7 +516,7 @@ export default function KhmerMonthlyReport({
                     )}
                     {showGradeLevel && (
                       <td
-                        className="px-2 py-1. 5 text-center font-bold bg-yellow-50"
+                        className="px-2 py-1.5 text-center font-bold bg-yellow-50"
                         style={{ border: "1px solid black" }}
                       >
                         {report.letterGrade}
