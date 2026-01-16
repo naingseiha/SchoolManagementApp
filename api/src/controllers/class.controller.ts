@@ -397,47 +397,71 @@ export const assignStudentsToClass = async (req: Request, res: Response) => {
 
     // ✅ FIX: Transfer grades to new class for each student
     for (const student of studentsWithOldClass) {
+      // Get all grades for this student (both from old class and unassigned)
+      let gradesToTransfer = [];
+
       if (student.classId && student.classId !== id) {
         // Student is changing from another class
         console.log(
           `📚 Transferring grades for student ${student.id} from class ${student.classId} to ${id}`
         );
 
-        // Get all grades for this student in their old class
-        const oldGrades = await prisma.grade.findMany({
+        gradesToTransfer = await prisma.grade.findMany({
           where: {
             studentId: student.id,
             classId: student.classId,
           },
         });
+      } else if (!student.classId) {
+        // ✅ NEW: Student has no class but may have unassigned grades
+        console.log(
+          `📚 Transferring unassigned grades for student ${student.id} to ${id}`
+        );
 
-        // Check if grades already exist in the new class
-        for (const grade of oldGrades) {
-          const existingGrade = await prisma.grade.findUnique({
-            where: {
-              studentId_subjectId_classId_month_year: {
-                studentId: student.id,
-                subjectId: grade.subjectId,
-                classId: id,
-                month: grade.month || "",
-                year: grade.year || 0,
-              },
+        gradesToTransfer = await prisma.grade.findMany({
+          where: {
+            studentId: student.id,
+            classId: null,
+          },
+        });
+      }
+
+      // Transfer the grades
+      for (const grade of gradesToTransfer) {
+        const existingGrade = await prisma.grade.findUnique({
+          where: {
+            studentId_subjectId_classId_month_year: {
+              studentId: student.id,
+              subjectId: grade.subjectId,
+              classId: id,
+              month: grade.month || "",
+              year: grade.year || 0,
             },
-          });
+          },
+        });
 
-          if (existingGrade) {
-            // Grade already exists in new class, delete the old one
-            await prisma.grade.delete({
-              where: { id: grade.id },
-            });
-          } else {
-            // No conflict, update the classId
-            await prisma.grade.update({
-              where: { id: grade.id },
-              data: { classId: id },
-            });
-          }
+        if (existingGrade) {
+          // Grade already exists in new class, delete the old one
+          await prisma.grade.delete({
+            where: { id: grade.id },
+          });
+          console.log(
+            `  ⚠️  Duplicate grade found, keeping existing grade for ${grade.subjectId}`
+          );
+        } else {
+          // No conflict, update the classId
+          await prisma.grade.update({
+            where: { id: grade.id },
+            data: { classId: id },
+          });
+          console.log(`  ✅ Transferred grade for ${grade.subjectId}`);
         }
+      }
+
+      if (gradesToTransfer.length > 0) {
+        console.log(
+          `  📊 Total grades transferred: ${gradesToTransfer.length}`
+        );
       }
     }
 
@@ -472,6 +496,44 @@ export const removeStudentFromClass = async (req: Request, res: Response) => {
 
     console.log("🔓 REMOVE STUDENT FROM CLASS:", { id, studentId });
 
+    // ✅ First, get the student's current class to verify
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: { id: true, classId: true, khmerName: true, firstName: true },
+    });
+
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    if (student.classId !== id) {
+      return res.status(400).json({
+        success: false,
+        message: "Student is not in this class",
+      });
+    }
+
+    // ✅ Handle grades: Set classId to null so grades "follow" the student
+    // When student joins a new class later, the assignStudents function
+    // will find these unassigned grades and transfer them
+    const gradesUpdated = await prisma.grade.updateMany({
+      where: {
+        studentId: studentId,
+        classId: id,
+      },
+      data: {
+        classId: null,
+      },
+    });
+
+    console.log(
+      `📚 Set ${gradesUpdated.count} grade(s) to unassigned for student ${student.khmerName || student.firstName}`
+    );
+
+    // Remove student from class
     await prisma.student.update({
       where: { id: studentId },
       data: {
@@ -479,10 +541,11 @@ export const removeStudentFromClass = async (req: Request, res: Response) => {
       },
     });
 
-    console.log("✅ Student removed");
+    console.log("✅ Student removed from class");
     res.json({
       success: true,
-      message: "Student removed from class",
+      message: "Student removed from class successfully",
+      gradesHandled: gradesUpdated.count,
     });
   } catch (error: any) {
     console.error("❌ Error removing student:", error);
