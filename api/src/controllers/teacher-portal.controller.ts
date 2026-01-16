@@ -326,15 +326,22 @@ export const changeMyPassword = async (req: Request, res: Response) => {
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
+    // Update password with security fields
     await prisma.user.update({
       where: { id: userId },
-      data: { password: hashedPassword },
+      data: { 
+        password: hashedPassword,
+        isDefaultPassword: false,
+        passwordChangedAt: new Date(),
+        passwordExpiresAt: null,
+      },
     });
 
     res.json({
       success: true,
       message: "Password changed successfully",
+      isDefaultPassword: false,
+      passwordChangedAt: new Date(),
     });
   } catch (error: any) {
     console.error("Error changing teacher password:", error);

@@ -14,6 +14,7 @@ import { errorHandler, notFound } from "./middleware/errorHandler";
 // Import Routes
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
+import adminSecurityRoutes from "./routes/admin-security.routes";
 import studentRoutes from "./routes/student.routes";
 import studentPortalRoutes from "./routes/student-portal.routes";
 import teacherRoutes from "./routes/teacher.routes";
@@ -110,6 +111,7 @@ app.get("/api/health", (req: Request, res: Response) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/security", adminSecurityRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/student-portal", studentPortalRoutes);

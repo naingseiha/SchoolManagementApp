@@ -37,6 +37,7 @@ import {
 import MobileLayout from "@/components/layout/MobileLayout";
 import dynamic from "next/dynamic";
 import { useToast } from "@/hooks/useToast";
+import { usePasswordStatus } from "@/hooks/usePasswordStatus";
 
 // Lazy load heavy components
 const TeacherProfileEditModal = dynamic(
@@ -45,6 +46,10 @@ const TeacherProfileEditModal = dynamic(
 );
 const TeacherPasswordModal = dynamic(
   () => import("@/components/mobile/teacher-portal/TeacherPasswordModal"),
+  { ssr: false }
+);
+const PasswordExpiryWarning = dynamic(
+  () => import("@/components/security/PasswordExpiryWarning"),
   { ssr: false }
 );
 
@@ -79,6 +84,8 @@ export default function TeacherPortalPage() {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { status: passwordStatus, refetch: refetchPasswordStatus } = usePasswordStatus();
+  const [dismissedWarning, setDismissedWarning] = useState(false);
 
   // Memoize computed values
   const studentCount = useMemo(() => {
@@ -258,6 +265,21 @@ export default function TeacherPortalPage() {
           onPassword={() => setShowPasswordModal(true)}
         />
 
+        {/* Password Expiry Warning */}
+        {passwordStatus && !dismissedWarning && (
+          <div className="px-4 mt-4">
+            <PasswordExpiryWarning
+              isDefaultPassword={passwordStatus.isDefaultPassword}
+              daysRemaining={passwordStatus.daysRemaining}
+              hoursRemaining={passwordStatus.hoursRemaining}
+              alertLevel={passwordStatus.alertLevel}
+              onChangePassword={() => setShowPasswordModal(true)}
+              onDismiss={() => setDismissedWarning(true)}
+              canDismiss={passwordStatus.alertLevel !== "danger"}
+            />
+          </div>
+        )}
+
         {/* Main Content Area */}
         <div className="px-4 space-y-4 pb-8">
           {/* Achievement Badges */}
@@ -324,7 +346,11 @@ export default function TeacherPortalPage() {
 
       {/* Password Modal */}
       {showPasswordModal && (
-        <TeacherPasswordModal onClose={() => setShowPasswordModal(false)} />
+        <TeacherPasswordModal onClose={() => {
+          setShowPasswordModal(false);
+          refetchPasswordStatus(); // Refetch status after password change
+          setDismissedWarning(false); // Reset dismissal
+        }} />
       )}
     </MobileLayout>
   );
