@@ -105,9 +105,10 @@ export class GradeCalculationService {
       });
     }
 
-    // Calculate average
+    // ✅ Calculate average using correct formula (as per AVERAGE_CALCULATION_IMPLEMENTATION.md)
+    // AVERAGE = Total Score of ENTERED subjects / Sum of coefficients for ENTERED subjects
     const average =
-      totalCoefficient > 0 ? totalWeightedScore / totalCoefficient : 0;
+      totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
 
     // Determine grade level
     const gradeLevel = this.determineGradeLevel(average);
