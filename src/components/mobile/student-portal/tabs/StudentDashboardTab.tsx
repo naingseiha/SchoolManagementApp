@@ -218,7 +218,7 @@ export default function StudentDashboardTab({
             <p className="text-3xl font-bold text-white">
               {gradesData?.statistics?.averageScore?.toFixed(1) || "0.0"}
             </p>
-            <p className="text-xs text-indigo-100 mt-1">ពិន្ទុមធ្យម</p>
+            <p className="text-xs text-indigo-100 mt-1">មធ្យមភាគបច្ចុប្បន្ន</p>
           </div>
 
           {/* Attendance Rate Card */}
@@ -274,7 +274,7 @@ export default function StudentDashboardTab({
             <p className="text-3xl font-bold text-white">
               {gradesData?.grades?.length || "0"}
             </p>
-            <p className="text-xs text-blue-100 mt-1">ចំនួនមុខវិជ្ជា</p>
+            <p className="text-xs text-blue-100 mt-1">មុខវិជ្ជាបញ្ចូលរួច</p>
           </div>
 
           {/* Total Days Card */}
