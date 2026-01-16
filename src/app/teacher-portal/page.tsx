@@ -302,13 +302,22 @@ export default function TeacherPortalPage() {
           profile={profile}
           onClose={() => setIsEditingProfile(false)}
           onSave={async (data) => {
-            const updated = await teacherPortalApi.updateMyProfile(data);
-            if (currentUser?.id) {
-              profileCache[currentUser.id] = updated;
-              cacheTimeRef.current = Date.now();
+            try {
+              const updated = await teacherPortalApi.updateMyProfile(data);
+              if (currentUser?.id) {
+                profileCache[currentUser.id] = updated;
+                cacheTimeRef.current = Date.now();
+              }
+              setProfile(updated);
+              setIsEditingProfile(false);
+              // Show success toast after modal closes
+              setTimeout(() => {
+                success("ព័ត៌មានត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ");
+              }, 100);
+            } catch (error: any) {
+              showErrorToast(error.message || "មិនអាចធ្វើបច្ចុប្បន្នភាពបានទេ");
+              throw error;
             }
-            setProfile(updated);
-            setIsEditingProfile(false);
           }}
         />
       )}

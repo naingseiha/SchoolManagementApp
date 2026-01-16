@@ -82,7 +82,7 @@ export default function TeacherProfileEditModal({
         position: formData.position.trim() || undefined,
       };
       await onSave(submitData);
-      success("ព័ត៌មានត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ");
+      // Success toast is now shown in parent component
     } catch (error: any) {
       showError(error.message || "មិនអាចធ្វើបច្ចុប្បន្នភាពបានទេ");
     } finally {
