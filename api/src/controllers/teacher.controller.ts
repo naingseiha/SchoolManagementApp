@@ -36,6 +36,13 @@ export const getTeachersLightweight = async (req: Request, res: Response) => {
           select: {
             id: true,
             name: true,
+            grade: true,
+            section: true,
+            _count: {
+              select: {
+                students: true,
+              },
+            },
           },
         },
         // Get IDs only for assignments (no full data)
@@ -58,6 +65,13 @@ export const getTeachersLightweight = async (req: Request, res: Response) => {
               select: {
                 id: true,
                 name: true,
+                grade: true,
+                section: true,
+                _count: {
+                  select: {
+                    students: true,
+                  },
+                },
               },
             },
           },
@@ -75,6 +89,7 @@ export const getTeachersLightweight = async (req: Request, res: Response) => {
       teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
       subjects: teacher.subjectTeachers.map((sa) => sa.subject),
       teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
+      teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
     }));
 
     console.log(
@@ -180,6 +195,7 @@ export const getAllTeachers = async (req: Request, res: Response) => {
       // Flatten nested data
       subjects: teacher.subjectTeachers.map((sa) => sa.subject),
       teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
+      teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
 
       // Create subject string for display
       subject: teacher.subjectTeachers
