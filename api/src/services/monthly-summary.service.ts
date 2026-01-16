@@ -82,9 +82,15 @@ export class MonthlySummaryService {
         0
       );
 
-      // ✅ Average = totalScore / totalCoefficientForClass
-      const average = totalCoefficientForClass > 0
-        ? totalScore / totalCoefficientForClass
+      // ✅ Calculate coefficient only for subjects with grades entered
+      const studentCoefficient = grades.reduce(
+        (sum, g) => sum + (g.subject.coefficient || 1),
+        0
+      );
+
+      // ✅ Average = totalScore / studentCoefficient (only entered subjects)
+      const average = studentCoefficient > 0
+        ? totalScore / studentCoefficient
         : 0;
 
       // Determine grade level
@@ -121,7 +127,7 @@ export class MonthlySummaryService {
           totalScore,
           totalMaxScore,
           totalWeightedScore,
-          totalCoefficient: totalCoefficientForClass,
+          totalCoefficient: studentCoefficient,
           average,
           gradeLevel,
         },
@@ -129,7 +135,7 @@ export class MonthlySummaryService {
           totalScore,
           totalMaxScore,
           totalWeightedScore,
-          totalCoefficient: totalCoefficientForClass,
+          totalCoefficient: studentCoefficient,
           average,
           gradeLevel,
         },

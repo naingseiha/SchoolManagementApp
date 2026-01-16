@@ -5,13 +5,13 @@ export function useGradeCalculations(
   students: any[],
   subjects: any[],
   cells: { [key: string]: CellState },
-  totalCoefficient: number,
   attendanceSummary: { [key: string]: { absent: number; permission: number } }
 ) {
   const calculatedStudents = useMemo(() => {
     return students.map((student) => {
       let totalScore = 0;
       let totalMaxScore = 0;
+      let studentCoefficient = 0;
 
       subjects.forEach((subject) => {
         const cellKey = `${student.studentId}_${subject.id}`;
@@ -23,11 +23,12 @@ export function useGradeCalculations(
             // Include ALL scores (including 0) in calculations
             totalScore += score;
             totalMaxScore += subject.maxScore;
+            studentCoefficient += subject.coefficient;
           }
         }
       });
 
-      const average = totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+      const average = studentCoefficient > 0 ? totalScore / studentCoefficient : 0;
 
       let gradeLevel = "F";
       if (average >= 45) gradeLevel = "A";
@@ -40,12 +41,12 @@ export function useGradeCalculations(
         ...student,
         totalScore: totalScore.toFixed(2),
         totalMaxScore,
-        totalCoefficient: totalCoefficient.toFixed(2),
+        totalCoefficient: studentCoefficient.toFixed(2),
         average: average.toFixed(2),
         gradeLevel,
       };
     });
-  }, [cells, students, subjects, totalCoefficient]);
+  }, [cells, students, subjects]);
 
   const rankedStudents = useMemo(() => {
     const sorted = [...calculatedStudents]

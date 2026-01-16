@@ -229,9 +229,7 @@ export default function StudentProfileTab({
           <div className="absolute top-3 right-3">
             <div
               className={`px-3 py-1 rounded-full flex items-center gap-1.5 ${
-                profile.student.isAccountActive
-                  ? "bg-green-400"
-                  : "bg-red-400"
+                profile.student.isAccountActive ? "bg-green-400" : "bg-red-400"
               }`}
             >
               <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
@@ -409,7 +407,7 @@ export default function StudentProfileTab({
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-black text-yellow-900">
-                            ពិន្ទុខ្ពស់
+                            មធ្យមភាគល្អបំផុត
                           </p>
                           <p className="text-xs text-yellow-700 font-medium">
                             High Achiever • Avg: {highestAverage.toFixed(1)}
@@ -430,7 +428,7 @@ export default function StudentProfileTab({
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-black text-green-900">
-                            វត្តមានល្អ
+                            អត្ត្រាមករៀនល្អ
                           </p>
                           <p className="text-xs text-green-700 font-medium">
                             Perfect Attendance
@@ -941,7 +939,7 @@ export default function StudentProfileTab({
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-600 font-bold mb-1">
-                    ថ្នាក់មុន • Previous Grade
+                    ឡើងពីថ្នាក់ • Previous Grade
                   </p>
                   <p className="text-sm font-bold text-gray-900">
                     {profile.student.previousGrade}
@@ -1013,7 +1011,7 @@ export default function StudentProfileTab({
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-600 font-bold mb-1">
-                    វគ្គប្រឡង • Session
+                    សម័យប្រឡង • Session
                   </p>
                   <p className="text-sm font-bold text-gray-900">
                     {profile.student.grade9ExamSession}
@@ -1029,7 +1027,7 @@ export default function StudentProfileTab({
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-600 font-bold mb-1">
-                    មជ្ឈមណ្ឌល • Center
+                    មណ្ឌលប្រឡង • Center
                   </p>
                   <p className="text-sm font-bold text-gray-900">
                     {profile.student.grade9ExamCenter}
