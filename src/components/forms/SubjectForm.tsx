@@ -265,7 +265,7 @@ export default function SubjectForm({
                 onClick={() =>
                   setFormData({ ...formData, coefficient: preset.value })
                 }
-                className={`text-xs px-3 py-1. 5 rounded-lg border-2 transition-all font-medium ${
+                className={`text-xs px-3 py-1.5 rounded-lg border-2 transition-all font-medium ${
                   formData.coefficient === preset.value
                     ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
                     : "bg-white border-gray-300 hover:border-blue-400 hover:shadow-sm"

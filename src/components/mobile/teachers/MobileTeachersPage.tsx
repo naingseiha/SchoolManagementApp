@@ -59,7 +59,8 @@ export default function MobileTeachersPage() {
       }
       abortControllerRef.current = new AbortController();
 
-      const data = await teachersApi.getAllLightweight();
+      const response = await teachersApi.getAllLightweight();
+      const data = response.success && Array.isArray(response.data) ? response.data : [];
       setTeachers(data);
     } catch (error: any) {
       if (error.name !== "AbortError") {

@@ -334,7 +334,19 @@ const assignStudentsToClass = async (req, res) => {
                 message: "Class not found",
             });
         }
-        // Update students
+        // ✅ FIX: Get students' old class IDs before updating
+        const studentsWithOldClass = await prisma.student.findMany({
+            where: {
+                id: {
+                    in: studentIds,
+                },
+            },
+            select: {
+                id: true,
+                classId: true,
+            },
+        });
+        // Update students to new class
         await prisma.student.updateMany({
             where: {
                 id: {
@@ -345,6 +357,47 @@ const assignStudentsToClass = async (req, res) => {
                 classId: id,
             },
         });
+        // ✅ FIX: Transfer grades to new class for each student
+        for (const student of studentsWithOldClass) {
+            if (student.classId && student.classId !== id) {
+                // Student is changing from another class
+                console.log(`📚 Transferring grades for student ${student.id} from class ${student.classId} to ${id}`);
+                // Get all grades for this student in their old class
+                const oldGrades = await prisma.grade.findMany({
+                    where: {
+                        studentId: student.id,
+                        classId: student.classId,
+                    },
+                });
+                // Check if grades already exist in the new class
+                for (const grade of oldGrades) {
+                    const existingGrade = await prisma.grade.findUnique({
+                        where: {
+                            studentId_subjectId_classId_month_year: {
+                                studentId: student.id,
+                                subjectId: grade.subjectId,
+                                classId: id,
+                                month: grade.month || "",
+                                year: grade.year || 0,
+                            },
+                        },
+                    });
+                    if (existingGrade) {
+                        // Grade already exists in new class, delete the old one
+                        await prisma.grade.delete({
+                            where: { id: grade.id },
+                        });
+                    }
+                    else {
+                        // No conflict, update the classId
+                        await prisma.grade.update({
+                            where: { id: grade.id },
+                            data: { classId: id },
+                        });
+                    }
+                }
+            }
+        }
         const updatedClass = await prisma.class.findUnique({
             where: { id },
             include: {
@@ -356,7 +409,7 @@ const assignStudentsToClass = async (req, res) => {
                 },
             },
         });
-        console.log("✅ Students assigned");
+        console.log("✅ Students assigned and grades transferred");
         res.json(updatedClass);
     }
     catch (error) {

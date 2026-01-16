@@ -17,6 +17,8 @@ import {
   Sparkles,
   ArrowRight,
   Filter,
+  GraduationCap,
+  BookOpen,
 } from "lucide-react";
 import type { Class } from "@/lib/api/classes";
 
@@ -51,41 +53,91 @@ export default function AssignStudentsModal({
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAllStudents, setShowAllStudents] = useState(false);
+  
+  // ✅ NEW: Advanced filtering options
+  const [filterMode, setFilterMode] = useState<"unassigned" | "all" | "byClass" | "byGrade">("unassigned");
+  const [selectedFilterClass, setSelectedFilterClass] = useState<string>("all");
+  const [selectedFilterGrade, setSelectedFilterGrade] = useState<string>("all");
+  const [allClasses, setAllClasses] = useState<any[]>([]);
 
   // Fetch students when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchStudents();
+      fetchClasses();
       setSelectedStudentIds([]);
       setSearchTerm("");
-      setShowAllStudents(false);
+      setFilterMode("unassigned");
+      setSelectedFilterClass("all");
+      setSelectedFilterGrade("all");
     }
   }, [isOpen]);
 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const data = await studentsApi.getAllLightweight();
-      setStudents(data);
-      console.log(`⚡ Loaded ${data.length} students (lightweight)`);
+      // ✅ Load ALL students (set high limit)
+      const response = await studentsApi.getAllLightweight(1, 10000); // Load up to 10,000 students
+      // Extract data array from response object
+      if (response.success && Array.isArray(response.data)) {
+        setStudents(response.data);
+        console.log(`⚡ Loaded ${response.data.length} students (all)`);
+      } else {
+        console.error("❌ API returned non-array data:", response);
+        setStudents([]);
+        showError("មិនអាចផ្ទុកបញ្ជីសិស្ស • Failed to load students");
+      }
     } catch (error) {
       console.error("❌ Error fetching students:", error);
+      setStudents([]);
       showError("មិនអាចផ្ទុកបញ្ជីសិស្ស • Failed to load students");
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter students based on mode
-  const availableStudents = showAllStudents
-    ? students.filter((student) => student.classId !== classData.id)
-    : students.filter((student) => !student.classId);
+  // ✅ NEW: Fetch classes for filtering
+  const fetchClasses = async () => {
+    try {
+      const { classesApi } = await import("@/lib/api/classes");
+      const response = await classesApi.getAllLightweight();
+      if (response.success && Array.isArray(response.data)) {
+        setAllClasses(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+    }
+  };
 
-  // Get students already in this class
-  const currentStudents = students.filter(
-    (student) => student.classId === classData.id
-  );
+  // ✅ IMPROVED: Advanced filtering logic
+  const availableStudents = Array.isArray(students)
+    ? students.filter((student) => {
+        // Exclude students already in this class
+        if (student.classId === classData.id) return false;
+
+        // Apply filter mode
+        if (filterMode === "unassigned") {
+          return !student.classId;
+        } else if (filterMode === "all") {
+          return true;
+        } else if (filterMode === "byClass") {
+          if (selectedFilterClass === "all") return true;
+          if (selectedFilterClass === "none") return !student.classId;
+          return student.classId === selectedFilterClass;
+        } else if (filterMode === "byGrade") {
+          if (selectedFilterGrade === "all") return true;
+          // Get student's grade from their class
+          const studentClass = allClasses.find(c => c.id === student.classId);
+          return studentClass?.grade === selectedFilterGrade;
+        }
+        return true;
+      })
+    : [];
+
+  // Get students already in this class (with safety check)
+  const currentStudents = Array.isArray(students)
+    ? students.filter((student) => student.classId === classData.id)
+    : [];
 
   // Apply search filter
   const filteredStudents = availableStudents.filter((student) => {
@@ -133,7 +185,7 @@ export default function AssignStudentsModal({
       );
       setSelectedStudentIds([]);
       setSearchTerm("");
-      setShowAllStudents(false);
+      setFilterMode("unassigned");
       onClose();
     } catch (error: any) {
       showError("❌ " + (error.message || "Failed to assign students"));
@@ -218,43 +270,162 @@ export default function AssignStudentsModal({
               </div>
             </div>
 
-            {/* Filter Mode Toggle */}
-            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="bg-purple-100 p-2 rounded-lg">
+            {/* ✅ NEW: Advanced Filter Options */}
+            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 py-4 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="bg-purple-100 p-2.5 rounded-xl">
                     <Filter className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">
-                      {showAllStudents
-                        ? "បង្ហាញសិស្សទាំងអស់"
-                        : "បង្ហាញតែសិស្សគ្មានថ្នាក់"}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      {showAllStudents
-                        ? "អាចផ្ទេរសិស្សពីថ្នាក់ផ្សេង • Can transfer from other classes"
-                        : "បង្ហាញតែសិស្សដែលមិនទាន់មានថ្នាក់ • Unassigned only"}
-                    </p>
+                    <h3 className="font-bold text-gray-900">ច្រោះសិស្ស</h3>
+                    <p className="text-xs text-gray-600">Filter Students</p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAllStudents(!showAllStudents);
-                    setSelectedStudentIds([]);
-                  }}
-                  className={`px-5 py-2.5 rounded-xl font-bold transition-all transform hover:scale-105 shadow-md ${
-                    showAllStudents
-                      ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg"
-                      : "bg-white text-purple-600 border-2 border-purple-600 hover:bg-purple-50"
-                  }`}
-                >
-                  {showAllStudents ? "តែគ្មានថ្នាក់" : "ទាំងអស់"}
-                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Filter Mode Selector */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    របៀបច្រោះ • Filter Mode
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterMode("unassigned");
+                        setSelectedStudentIds([]);
+                      }}
+                      className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                        filterMode === "unassigned"
+                          ? "bg-purple-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        <span>គ្មានថ្នាក់</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterMode("all");
+                        setSelectedStudentIds([]);
+                      }}
+                      className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                        filterMode === "all"
+                          ? "bg-purple-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span>សិស្សទាំងអស់</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterMode("byClass");
+                        setSelectedStudentIds([]);
+                      }}
+                      className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                        filterMode === "byClass"
+                          ? "bg-purple-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        <span>តាមថ្នាក់</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFilterMode("byGrade");
+                        setSelectedStudentIds([]);
+                      }}
+                      className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
+                        filterMode === "byGrade"
+                          ? "bg-purple-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <GraduationCap className="w-4 h-4" />
+                        <span>តាមថ្នាក់ទី</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* By Class Dropdown */}
+                {filterMode === "byClass" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ជ្រើសរើសថ្នាក់ • Select Class
+                    </label>
+                    <select
+                      value={selectedFilterClass}
+                      onChange={(e) => {
+                        setSelectedFilterClass(e.target.value);
+                        setSelectedStudentIds([]);
+                      }}
+                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium"
+                    >
+                      <option value="all">ថ្នាក់ទាំងអស់ • All Classes</option>
+                      <option value="none">គ្មានថ្នាក់ • No Class</option>
+                      {allClasses.map((cls) => (
+                        <option key={cls.id} value={cls.id}>
+                          {cls.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* By Grade Dropdown */}
+                {filterMode === "byGrade" && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ជ្រើសរើសថ្នាក់ទី • Select Grade
+                    </label>
+                    <select
+                      value={selectedFilterGrade}
+                      onChange={(e) => {
+                        setSelectedFilterGrade(e.target.value);
+                        setSelectedStudentIds([]);
+                      }}
+                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium"
+                    >
+                      <option value="all">ថ្នាក់ទីទាំងអស់ • All Grades</option>
+                      {[7, 8, 9, 10, 11, 12].map((grade) => (
+                        <option key={grade} value={grade.toString()}>
+                          ថ្នាក់ទី {grade} • Grade {grade}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Results Count */}
+                <div className="bg-blue-50 px-4 py-3 rounded-xl border border-blue-200">
+                  <p className="text-sm font-semibold text-blue-900">
+                    រកឃើញសិស្ស{" "}
+                    <span className="text-lg font-bold text-blue-600">
+                      {availableStudents.length}
+                    </span>{" "}
+                    នាក់
+                  </p>
+                </div>
               </div>
             </div>
-
             {/* Search Bar */}
             <div className="relative">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -265,7 +436,7 @@ export default function AssignStudentsModal({
                 placeholder="ស្វែងរកតាមឈ្មោះ, លេខសម្គាល់, ឬអ៊ីមែល..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3. 5 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm"
+                className="w-full pl-12 pr-4 py-3.5 text-base border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all shadow-sm"
               />
             </div>
 
@@ -310,9 +481,9 @@ export default function AssignStudentsModal({
                     <p className="text-gray-600 text-sm">
                       {searchTerm
                         ? "សូមព្យាយាមស្វែងរកដោយពាក្យគន្លឹះផ្សេង"
-                        : showAllStudents
-                        ? "សិស្សទាំងអស់នៅក្នុងថ្នាក់នេះរួចហើយ"
-                        : "សិស្សទាំងអស់មានថ្នាក់រួចហើយ"}
+                        : filterMode === "unassigned"
+                        ? "សិស្សទាំងអស់មានថ្នាក់រួចហើយ"
+                        : "សិស្សទាំងអស់នៅក្នុងថ្នាក់នេះរួចហើយ"}
                     </p>
                   </div>
                 ) : (

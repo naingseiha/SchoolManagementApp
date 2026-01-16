@@ -131,7 +131,7 @@ export default function MonthlyReportViewer({
               return (
                 <tr key={student.studentId} className={rowBg}>
                   <td
-                    className={`${rowBg} px-3 py-2. 5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
+                    className={`${rowBg} px-3 py-2.5 text-center text-sm font-semibold text-gray-700 border-b border-r border-gray-200`}
                   >
                     {index + 1}
                   </td>

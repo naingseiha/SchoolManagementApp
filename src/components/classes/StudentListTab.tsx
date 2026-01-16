@@ -225,7 +225,7 @@ export default function StudentListTab({
                 placeholder="ស្វែងរកតាមឈ្មោះ, លេខសម្គាល់, ឬអ៊ីមែល..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2. 5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
             </div>
 
@@ -233,7 +233,7 @@ export default function StudentListTab({
             <select
               value={genderFilter}
               onChange={(e) => setGenderFilter(e.target.value as any)}
-              className="px-4 py-2. 5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none bg-white cursor-pointer font-medium"
+              className="px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none bg-white cursor-pointer font-medium"
             >
               <option value="all">ភេទទាំងអស់ • All Genders</option>
               <option value="MALE">👨‍🎓 ប្រុស • Male</option>
@@ -362,7 +362,7 @@ export default function StudentListTab({
                       {/* Gender */}
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex items-center gap-1 px-3 py-1. 5 rounded-full text-xs font-black shadow-sm ${
+                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-black shadow-sm ${
                             student.gender === "MALE"
                               ? "bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-2 border-blue-300"
                               : "bg-gradient-to-r from-pink-100 to-rose-100 text-pink-800 border-2 border-pink-300"
