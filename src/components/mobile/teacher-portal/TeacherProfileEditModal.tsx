@@ -16,6 +16,7 @@ import {
   TeacherProfile,
   UpdateTeacherProfileData,
 } from "@/lib/api/teacher-portal";
+import { useToast } from "@/hooks/useToast";
 
 interface TeacherProfileEditModalProps {
   profile: TeacherProfile;
@@ -28,6 +29,7 @@ export default function TeacherProfileEditModal({
   onClose,
   onSave,
 }: TeacherProfileEditModalProps) {
+  const { success, error: showError, ToastContainer } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: profile.firstName || "",
@@ -56,12 +58,12 @@ export default function TeacherProfileEditModal({
     e.preventDefault();
 
     if (!formData.khmerName.trim()) {
-      alert("សូមបញ្ចូលគោត្តនាមនិងនាមជាអក្សរខ្មែរ");
+      showError("សូមបញ្ចូលគោត្តនាមនិងនាមជាអក្សរខ្មែរ");
       return;
     }
 
     if (!formData.email.trim()) {
-      alert("សូមបញ្ចូលអ៊ីមែល");
+      showError("សូមបញ្ចូលអ៊ីមែល");
       return;
     }
 
@@ -80,17 +82,19 @@ export default function TeacherProfileEditModal({
         position: formData.position.trim() || undefined,
       };
       await onSave(submitData);
-      alert("✅ ព័ត៌មានត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ");
+      success("ព័ត៌មានត្រូវបានធ្វើបច្ចុប្បន្នភាពដោយជោគជ័យ");
     } catch (error: any) {
-      alert(`❌ ${error.message || "មិនអាចធ្វើបច្ចុប្បន្នភាពបានទេ"}`);
+      showError(error.message || "មិនអាចធ្វើបច្ចុប្បន្នភាពបានទេ");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center max-w-md mx-auto backdrop-blur-sm">
-      <div className="w-full h-[95vh] bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col">
+    <>
+      <ToastContainer />
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center max-w-md mx-auto backdrop-blur-sm">
+        <div className="w-full h-[95vh] bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
@@ -272,6 +276,7 @@ export default function TeacherProfileEditModal({
         </div>
       </div>
     </div>
+    </>
   );
 }
 

@@ -36,6 +36,7 @@ import {
 } from "@/lib/api/teacher-portal";
 import MobileLayout from "@/components/layout/MobileLayout";
 import dynamic from "next/dynamic";
+import { useToast } from "@/hooks/useToast";
 
 // Lazy load heavy components
 const TeacherProfileEditModal = dynamic(
@@ -62,6 +63,7 @@ export default function TeacherPortalPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cacheTimeRef = useRef<number>(0);
+  const { success, error: showErrorToast, ToastContainer } = useToast();
 
   // State management
   const [profile, setProfile] = useState<TeacherProfile | null>(() => {
@@ -170,7 +172,7 @@ export default function TeacherPortalPage() {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        alert("ទំហំរូបភាពធំពេក។ សូមជ្រើសរើសរូបភាពតូចជាង 5MB");
+        showErrorToast("ទំហំរូបភាពធំពេក។ សូមជ្រើសរើសរូបភាពតូចជាង 5MB");
         return;
       }
 
@@ -184,7 +186,7 @@ export default function TeacherPortalPage() {
           });
         }
         setShowPhotoOptions(false);
-        alert("✅ រូបភាពត្រូវបានដាក់ដោយជោគជ័យ");
+        success("រូបភាពត្រូវបានដាក់ដោយជោគជ័យ");
       };
       reader.readAsDataURL(file);
     }
@@ -198,7 +200,7 @@ export default function TeacherPortalPage() {
       });
     }
     setShowPhotoOptions(false);
-    alert("✅ រូបភាពត្រូវបានលុបដោយជោគជ័យ");
+    success("រូបភាពត្រូវបានលុបដោយជោគជ័យ");
   };
 
   // Show skeleton loading
@@ -237,6 +239,7 @@ export default function TeacherPortalPage() {
 
   return (
     <MobileLayout title="ព័ត៌មានរបស់ខ្ញុំ">
+      <ToastContainer />
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
         {/* Hero Section - Optimized */}
         <HeroSection
@@ -459,14 +462,14 @@ const ActionButtons = memo(({ onEdit, onPassword }: any) => (
         className="flex items-center justify-center gap-2 bg-white rounded-2xl px-6 py-4 shadow-xl hover:shadow-2xl border border-gray-200 hover:border-indigo-300 transition-all active:scale-95 group"
       >
         <Edit3 className="w-5 h-5 text-indigo-600 group-hover:scale-110 transition-transform" />
-        <span className="font-bold text-gray-900">កែប្រែ</span>
+        <span className="font-bold font-koulen text-gray-900">កែប្រែ</span>
       </button>
       <button
         onClick={onPassword}
         className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl px-6 py-4 shadow-xl hover:shadow-2xl transition-all active:scale-95 group"
       >
         <Lock className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-        <span className="font-bold text-white">ពាក្យសម្ងាត់</span>
+        <span className="font-bold font-koulen text-white">ពាក្យសម្ងាត់</span>
       </button>
     </div>
   </div>
