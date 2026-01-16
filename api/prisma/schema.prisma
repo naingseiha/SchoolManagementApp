@@ -28,23 +28,23 @@ model Attendance {
 }
 
 model Class {
-  id                        String                   @id @default(cuid())
-  classId                   String?                  @unique
-  name                      String
-  grade                     String
-  section                   String?
-  academicYear              String                   @default("2024-2025")
-  capacity                  Int?
-  createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime                 @updatedAt
-  track                     String?
-  homeroomTeacherId         String?                  @unique
-  attendance                Attendance[]
-  grades                    Grade[]
-  studentMonthlySummaries   StudentMonthlySummary[]
-  students                  Student[]
-  teacherClasses            TeacherClass[]
-  homeroomTeacher           Teacher?
+  id                      String                  @id @default(cuid())
+  classId                 String?                 @unique
+  name                    String
+  grade                   String
+  section                 String?
+  academicYear            String                  @default("2024-2025")
+  capacity                Int?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  track                   String?
+  homeroomTeacherId       String?                 @unique
+  attendance              Attendance[]
+  grades                  Grade[]
+  studentMonthlySummaries StudentMonthlySummary[]
+  students                Student[]
+  teacherClasses          TeacherClass[]
+  homeroomTeacher         Teacher?
 
   @@index([grade])
   @@map("classes")
@@ -121,51 +121,51 @@ model StudentMonthlySummary {
 }
 
 model Student {
-  id                        String                   @id @default(cuid())
-  studentId                 String?                  @unique
-  firstName                 String
-  lastName                  String
-  khmerName                 String
-  dateOfBirth               String
-  gender                    Gender
-  englishName               String?
-  email                     String?                  @unique
-  placeOfBirth              String?                  @default("ភ្នំពេញ")
-  currentAddress            String?                  @default("ភ្នំពេញ")
-  phoneNumber               String?
-  classId                   String?
-  fatherName                String?                  @default("ឪពុក")
-  motherName                String?                  @default("ម្តាយ")
-  parentPhone               String?
-  parentOccupation          String?                  @default("កសិករ")
-  previousGrade             String?
-  remarks                   String?
-  photoUrl                  String?
-  createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime                 @updatedAt
-  grade12ExamCenter         String?
-  grade12ExamDesk           String?
-  grade12ExamRoom           String?
-  grade12ExamSession        String?
-  grade12PassStatus         String?
-  grade12Track              String?
-  grade9ExamCenter          String?
-  grade9ExamDesk            String?
-  grade9ExamRoom            String?
-  grade9ExamSession         String?
-  grade9PassStatus          String?
-  previousSchool            String?
-  repeatingGrade            String?
-  transferredFrom           String?
-  studentRole               StudentRole              @default(GENERAL)
-  isAccountActive           Boolean                  @default(true)
-  accountDeactivatedAt      DateTime?
-  deactivationReason        String?
-  attendance                Attendance[]
-  grades                    Grade[]
-  monthlySummaries          StudentMonthlySummary[]
-  class                     Class?                   @relation(fields: [classId], references: [id])
-  user                      User?
+  id                   String                  @id @default(cuid())
+  studentId            String?                 @unique
+  firstName            String
+  lastName             String
+  khmerName            String
+  dateOfBirth          String
+  gender               Gender
+  englishName          String?
+  email                String?                 @unique
+  placeOfBirth         String?                 @default("ភ្នំពេញ")
+  currentAddress       String?                 @default("ភ្នំពេញ")
+  phoneNumber          String?
+  classId              String?
+  fatherName           String?                 @default("ឪពុក")
+  motherName           String?                 @default("ម្តាយ")
+  parentPhone          String?
+  parentOccupation     String?                 @default("កសិករ")
+  previousGrade        String?
+  remarks              String?
+  photoUrl             String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  grade12ExamCenter    String?
+  grade12ExamDesk      String?
+  grade12ExamRoom      String?
+  grade12ExamSession   String?
+  grade12PassStatus    String?
+  grade12Track         String?
+  grade9ExamCenter     String?
+  grade9ExamDesk       String?
+  grade9ExamRoom       String?
+  grade9ExamSession    String?
+  grade9PassStatus     String?
+  previousSchool       String?
+  repeatingGrade       String?
+  transferredFrom      String?
+  studentRole          StudentRole             @default(GENERAL)
+  isAccountActive      Boolean                 @default(true)
+  accountDeactivatedAt DateTime?
+  deactivationReason   String?
+  attendance           Attendance[]
+  grades               Grade[]
+  monthlySummaries     StudentMonthlySummary[]
+  class                Class?                  @relation(fields: [classId], references: [id])
+  user                 User?
 
   @@index([classId]) // ✅ OPTIMIZED PHASE 5: For class-based student queries
   @@index([grade12PassStatus]) // ✅ OPTIMIZED PHASE 5: For filtering by pass status
@@ -265,30 +265,42 @@ model Teacher {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  email              String?             @unique
-  password           String
-  firstName          String
-  lastName           String
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  failedAttempts     Int                 @default(0)
-  isActive           Boolean             @default(true)
-  lastLogin          DateTime?
-  lockedUntil        DateTime?
-  loginCount         Int                 @default(0)
-  permissions        Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
-  phone              String?             @unique
-  studentId          String?             @unique
-  teacherId          String?             @unique
-  role               UserRole            @default(TEACHER)
-  gradeConfirmations GradeConfirmation[]
-  student            Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher            Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  id                  String              @id @default(cuid())
+  email               String?             @unique
+  password            String
+  firstName           String
+  lastName            String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  failedAttempts      Int                 @default(0)
+  isActive            Boolean             @default(true)
+  lastLogin           DateTime?
+  lockedUntil         DateTime?
+  loginCount          Int                 @default(0)
+  permissions         Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone               String?             @unique
+  studentId           String?             @unique
+  teacherId           String?             @unique
+  role                UserRole            @default(TEACHER)
+  isDefaultPassword   Boolean             @default(true)
+  passwordExpiresAt   DateTime?
+  passwordChangedAt   DateTime?
+  passwordResetToken  String?             @unique
+  passwordResetExpiry DateTime?
+  accountSuspendedAt  DateTime?
+  suspensionReason    String?
+  lastPasswordHashes  String[]
+  gradeConfirmations  GradeConfirmation[]
+  student             Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher             Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  adminAuditLogs      AuditLog[]          @relation("AuditLogAdmin")
+  teacherAuditLogs    AuditLog[]          @relation("AuditLogTeacher")
 
   @@index([email, isActive])
   @@index([phone, isActive])
   @@index([studentId, isActive])
+  @@index([isDefaultPassword])
+  @@index([passwordExpiresAt])
   @@map("users")
 }
 
@@ -345,4 +357,21 @@ enum StudentRole {
   CLASS_LEADER
   VICE_LEADER_1
   VICE_LEADER_2
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  teacherId String
+  action    String
+  reason    String?
+  details   Json?
+  createdAt DateTime @default(now())
+  admin     User     @relation("AuditLogAdmin", fields: [adminId], references: [id])
+  teacher   User     @relation("AuditLogTeacher", fields: [teacherId], references: [id])
+
+  @@index([adminId])
+  @@index([teacherId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

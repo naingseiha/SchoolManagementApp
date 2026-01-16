@@ -19,6 +19,9 @@ import {
   School,
   User,
   Calendar,
+  Award,
+  CreditCard,
+  BookOpen,
 } from "lucide-react";
 import { teachersApi, Teacher } from "@/lib/api/teachers";
 import MobileLayout from "@/components/layout/MobileLayout";
@@ -59,9 +62,8 @@ export default function MobileTeachersPage() {
       }
       abortControllerRef.current = new AbortController();
 
-      const response = await teachersApi.getAllLightweight();
-      const data = response.success && Array.isArray(response.data) ? response.data : [];
-      setTeachers(data);
+      const data = await teachersApi.getAllLightweight();
+      setTeachers(Array.isArray(data) ? data : []);
     } catch (error: any) {
       if (error.name !== "AbortError") {
         setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យគ្រូ");
@@ -351,216 +353,360 @@ export default function MobileTeachersPage() {
         )}
       </div>
 
-      {/* Teacher Details Modal */}
+      {/* Teacher Details Modal - Social Media Style */}
       {selectedTeacher && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end"
           onClick={closeTeacherDetails}
         >
           <div
-            className="bg-white w-full rounded-t-3xl shadow-2xl max-h-[85vh] overflow-y-auto animate-slide-up"
+            className="bg-white w-full rounded-t-3xl shadow-2xl max-h-[90vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
-              <h1 className="font-koulen text-lg text-gray-900">
-                ព័ត៌មានលម្អិត
-              </h1>
-              <button
-                onClick={closeTeacherDetails}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
+            {/* Close Button - Floating */}
+            <button
+              onClick={closeTeacherDetails}
+              className="absolute top-4 right-4 z-10 p-2 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-lg transition-all"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
 
-            {/* Content */}
-            <div className="p-5 space-y-4">
-              {/* Profile */}
-              <div className="flex items-center gap-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-4">
+            {/* Cover/Banner */}
+            <div className="relative h-24 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
+              </div>
+              {/* Role Badge */}
+              <div className="absolute top-3 left-3">
                 <div
-                  className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${
+                  className={`px-3 py-1 rounded-full flex items-center gap-1.5 ${
                     selectedTeacher.role === "INSTRUCTOR"
-                      ? "bg-gradient-to-br from-purple-500 to-pink-600"
-                      : "bg-gradient-to-br from-blue-500 to-indigo-600"
+                      ? "bg-purple-400"
+                      : "bg-blue-400"
                   }`}
                 >
-                  <User className="w-8 h-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-battambang text-base font-bold text-gray-900 mb-1">
-                    {selectedTeacher.khmerName ||
-                      `${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
-                  </h3>
-                  <p className="font-battambang text-xs text-gray-600">
-                    {selectedTeacher.firstName} {selectedTeacher.lastName}
-                  </p>
+                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                  <span className="text-white text-xs font-bold font-battambang">
+                    {selectedTeacher.role === "INSTRUCTOR"
+                      ? "គ្រូថ្នាក់"
+                      : "គ្រូបង្រៀន"}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              {/* Details */}
-              <div className="space-y-3">
-                {/* Teacher ID */}
-                {selectedTeacher.teacherId && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-1">
-                      លេខកូដ
-                    </p>
-                    <p className="font-battambang text-sm font-semibold text-gray-900">
-                      {selectedTeacher.teacherId}
-                    </p>
-                  </div>
-                )}
-
-                {/* Role */}
-                <div className="bg-gray-50 rounded-xl p-3">
-                  <p className="font-battambang text-xs text-gray-500 mb-1">
-                    តួនាទី
-                  </p>
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-battambang font-semibold ${
+            {/* Profile Info Section - Center Aligned */}
+            <div className="px-5 pb-24">
+              {/* Avatar - Overlapping cover - Center Aligned */}
+              <div className="flex flex-col items-center -mt-16 mb-4">
+                <div className="relative mb-4">
+                  <div
+                    className={`w-32 h-32 rounded-full p-1 ${
                       selectedTeacher.role === "INSTRUCTOR"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-blue-100 text-blue-700"
+                        ? "bg-gradient-to-br from-purple-500 to-pink-600"
+                        : "bg-gradient-to-br from-blue-500 to-indigo-600"
+                    }`}
+                  >
+                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+                      <User
+                        className={`w-16 h-16 ${
+                          selectedTeacher.role === "INSTRUCTOR"
+                            ? "text-purple-600"
+                            : "text-indigo-600"
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-4 border-white flex items-center justify-center ${
+                      selectedTeacher.role === "INSTRUCTOR"
+                        ? "bg-purple-400"
+                        : "bg-blue-400"
                     }`}
                   >
                     {selectedTeacher.role === "INSTRUCTOR" ? (
-                      <>
-                        <GraduationCap className="w-4 h-4" />
-                        គ្រូថ្នាក់
-                      </>
+                      <GraduationCap className="w-5 h-5 text-white" />
                     ) : (
+                      <School className="w-5 h-5 text-white" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Name & Bio - Center Aligned */}
+                <div className="text-center mb-4">
+                  <h1 className="text-xl font-black text-gray-900 mb-1 font-battambang">
+                    {selectedTeacher.khmerName ||
+                      `${selectedTeacher.firstName} ${selectedTeacher.lastName}`}
+                  </h1>
+                  <p className="text-sm text-gray-600 mb-2 font-battambang">
+                    {selectedTeacher.firstName} {selectedTeacher.lastName}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    {selectedTeacher.teacherId && (
                       <>
-                        <School className="w-4 h-4" />
-                        គ្រូបង្រៀន
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <CreditCard className="w-3.5 h-3.5" />
+                          <span className="font-medium font-battambang">
+                            {selectedTeacher.teacherId}
+                          </span>
+                        </div>
+                        {selectedTeacher.homeroomClass && (
+                          <span className="text-gray-300">•</span>
+                        )}
                       </>
                     )}
+                    {selectedTeacher.homeroomClass && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Briefcase className="w-3.5 h-3.5" />
+                        <span className="font-medium font-battambang">
+                          {selectedTeacher.homeroomClass.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Position Badge */}
+                  {selectedTeacher.position && (
+                    <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-3 py-1.5 rounded-full">
+                      <Award className="w-3.5 h-3.5 text-indigo-600" />
+                      <span className="text-xs font-bold text-indigo-700 font-battambang">
+                        {selectedTeacher.position}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stats Grid - Compact & Improved Design */}
+              <div className="grid grid-cols-3 gap-3 py-4 border-t border-gray-100 mb-4">
+                {/* Subjects Count */}
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-3.5 border border-indigo-100">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mb-2">
+                      <BookOpen className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-md font-black text-gray-900 mb-0.5">
+                      {selectedTeacher.subjects?.length || 0}
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold font-battambang">
+                      មុខវិជ្ជា
+                    </div>
+                  </div>
+                </div>
+
+                {/* Teaching Classes Count */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-3.5 border border-green-100">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-2">
+                      <School className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-md font-black text-gray-900 mb-0.5">
+                      {selectedTeacher.teachingClasses?.length || 0}
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold font-battambang">
+                      ថ្នាក់រៀន
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Students */}
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-3.5 border border-blue-100">
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-2">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-md font-black text-gray-900 mb-0.5">
+                      {(selectedTeacher.homeroomClass?._count?.students || 0) +
+                        (selectedTeacher.teachingClasses?.reduce(
+                          (sum, cls) => sum + (cls._count?.students || 0),
+                          0
+                        ) || 0)}
+                    </div>
+                    <div className="text-xs text-gray-600 font-bold font-battambang">
+                      សិស្ស
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-100">
+                  <h2 className="text-sm font-black text-gray-900 font-battambang">
+                    ព័ត៌មានទំនាក់ទំនង
+                  </h2>
+                  <span className="text-xs text-gray-500 font-medium">
+                    Contact Info
                   </span>
                 </div>
 
                 {/* Email */}
                 {selectedTeacher.email && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-1">
-                      អ៊ីមែល
-                    </p>
-                    <a
-                      href={`mailto:${selectedTeacher.email}`}
-                      className="font-battambang text-sm text-indigo-600 font-semibold"
-                    >
-                      {selectedTeacher.email}
-                    </a>
-                  </div>
+                  <a
+                    href={`mailto:${selectedTeacher.email}`}
+                    className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 px-4 py-3 rounded-xl active:scale-98 transition-all"
+                  >
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-0.5 font-battambang">
+                        អ៊ីមែល
+                      </p>
+                      <p className="text-sm font-bold text-indigo-600 truncate font-battambang">
+                        {selectedTeacher.email}
+                      </p>
+                    </div>
+                  </a>
                 )}
 
                 {/* Phone */}
                 {(selectedTeacher.phone || selectedTeacher.phoneNumber) && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-1">
-                      លេខទូរស័ព្ទ
-                    </p>
-                    <a
-                      href={`tel:${
-                        selectedTeacher.phone || selectedTeacher.phoneNumber
-                      }`}
-                      className="font-battambang text-sm text-indigo-600 font-semibold"
-                    >
-                      {selectedTeacher.phone || selectedTeacher.phoneNumber}
-                    </a>
-                  </div>
-                )}
-
-                {/* Homeroom Class */}
-                {selectedTeacher.homeroomClass && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-1">
-                      ថ្នាក់ទទួលបន្ទុក
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span className="font-battambang text-sm font-semibold text-gray-900">
-                        {selectedTeacher.homeroomClass.name}
-                      </span>
-                      {selectedTeacher.homeroomClass._count && (
-                        <span className="font-battambang text-xs text-gray-500">
-                          ({selectedTeacher.homeroomClass._count.students}{" "}
-                          សិស្ស)
-                        </span>
-                      )}
+                  <a
+                    href={`tel:${
+                      selectedTeacher.phone || selectedTeacher.phoneNumber
+                    }`}
+                    className="flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 px-4 py-3 rounded-xl active:scale-98 transition-all"
+                  >
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-5 h-5 text-green-600" />
                     </div>
-                  </div>
-                )}
-
-                {/* Subjects */}
-                {selectedTeacher.subjects &&
-                  selectedTeacher.subjects.length > 0 && (
-                    <div className="bg-gray-50 rounded-xl p-3">
-                      <p className="font-battambang text-xs text-gray-500 mb-2">
-                        មុខវិជ្ជាបង្រៀន
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-0.5 font-battambang">
+                        លេខទូរស័ព្ទ
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedTeacher.subjects.map((subject) => (
-                          <span
-                            key={subject.id}
-                            className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-battambang text-xs text-gray-700"
-                          >
-                            {subject.nameKh || subject.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                {/* Teaching Classes */}
-                {selectedTeacher.teachingClasses &&
-                  selectedTeacher.teachingClasses.length > 0 && (
-                    <div className="bg-gray-50 rounded-xl p-3">
-                      <p className="font-battambang text-xs text-gray-500 mb-2">
-                        ថ្នាក់បង្រៀន
+                      <p className="text-sm font-bold text-green-600 font-battambang">
+                        {selectedTeacher.phone || selectedTeacher.phoneNumber}
                       </p>
-                      <div className="space-y-1.5">
-                        {selectedTeacher.teachingClasses.map((cls) => (
-                          <div
-                            key={cls.id}
-                            className="flex items-center justify-between bg-white rounded-lg p-2 border border-gray-200"
-                          >
-                            <span className="font-battambang text-xs font-semibold text-gray-900">
-                              {cls.name}
-                            </span>
-                            {cls._count && (
-                              <span className="font-battambang text-xs text-gray-500">
-                                {cls._count.students} សិស្ស
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                  )}
+                  </a>
+                )}
 
                 {/* Address */}
                 {selectedTeacher.address && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-1">
-                      អាសយដ្ឋាន
-                    </p>
-                    <p className="font-battambang text-sm text-gray-900">
-                      {selectedTeacher.address}
-                    </p>
-                  </div>
-                )}
-
-                {/* Position */}
-                {selectedTeacher.position && (
-                  <div className="bg-gray-50 rounded-xl p-3">
-                    <p className="font-battambang text-xs text-gray-500 mb-1">
-                      តំណែង
-                    </p>
-                    <p className="font-battambang text-sm font-semibold text-gray-900">
-                      {selectedTeacher.position}
-                    </p>
+                  <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 px-4 py-3 rounded-xl">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-5 h-5 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 mb-0.5 font-battambang">
+                        អាសយដ្ឋាន
+                      </p>
+                      <p className="text-sm font-bold text-gray-900 font-battambang">
+                        {selectedTeacher.address}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
+
+              {/* Subjects - Beautiful Cards */}
+              {selectedTeacher.subjects &&
+                selectedTeacher.subjects.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-100">
+                      <h2 className="text-sm font-black text-gray-900 font-battambang">
+                        មុខវិជ្ជាបង្រៀន
+                      </h2>
+                      <span className="text-xs text-gray-500 font-medium">
+                        Subjects
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {selectedTeacher.subjects.map((subject) => (
+                        <div
+                          key={subject.id}
+                          className="flex items-center gap-2 bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200 px-3 py-2.5 rounded-xl"
+                        >
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <BookOpen className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <p className="text-xs font-bold text-gray-900 font-battambang truncate">
+                            {subject.nameKh || subject.name}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Teaching Classes */}
+              {selectedTeacher.teachingClasses &&
+                selectedTeacher.teachingClasses.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-100">
+                      <h2 className="text-sm font-black text-gray-900 font-battambang">
+                        ថ្នាក់បង្រៀន
+                      </h2>
+                      <span className="text-xs text-gray-500 font-medium">
+                        Teaching Classes
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {selectedTeacher.teachingClasses.map((cls) => (
+                        <div
+                          key={cls.id}
+                          className="flex items-center gap-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 px-4 py-3 rounded-xl"
+                        >
+                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <School className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-gray-900 font-battambang">
+                              {cls.name}
+                            </p>
+                            {cls._count && (
+                              <p className="text-xs text-gray-600 font-battambang">
+                                {cls._count.students} សិស្ស
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Homeroom Class - Highlighted */}
+              {selectedTeacher.homeroomClass && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-3 pt-3 border-t border-gray-100">
+                    <h2 className="text-sm font-black text-gray-900 font-battambang">
+                      ថ្នាក់ទទួលបន្ទុក
+                    </h2>
+                    <span className="text-xs text-gray-500 font-medium">
+                      Homeroom
+                    </span>
+                  </div>
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Briefcase className="w-6 h-6 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-base font-black text-gray-900 font-battambang mb-1">
+                          {selectedTeacher.homeroomClass.name}
+                        </p>
+                        {selectedTeacher.homeroomClass._count && (
+                          <div className="flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5 text-gray-500" />
+                            <p className="text-xs text-gray-600 font-battambang">
+                              {selectedTeacher.homeroomClass._count.students}{" "}
+                              សិស្ស
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="w-8 h-8 bg-amber-200 rounded-lg flex items-center justify-center">
+                        <span className="text-amber-700 font-black text-xs">
+                          ★
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

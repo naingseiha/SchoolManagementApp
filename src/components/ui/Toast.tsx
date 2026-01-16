@@ -29,34 +29,34 @@ export default function Toast({
   const config = {
     success: {
       icon: CheckCircle,
-      bgGradient: "from-green-500 to-emerald-500",
-      bgLight: "bg-green-50",
-      borderColor: "border-green-200",
-      textColor: "text-green-800",
+      bgGradient: "from-green-500 to-emerald-600",
+      bgLight: "bg-green-50/95",
+      borderColor: "border-green-300",
+      iconBg: "bg-green-100",
       iconColor: "text-green-600",
     },
     error: {
       icon: AlertCircle,
-      bgGradient: "from-red-500 to-rose-500",
-      bgLight: "bg-red-50",
-      borderColor: "border-red-200",
-      textColor: "text-red-800",
+      bgGradient: "from-red-500 to-rose-600",
+      bgLight: "bg-red-50/95",
+      borderColor: "border-red-300",
+      iconBg: "bg-red-100",
       iconColor: "text-red-600",
     },
     warning: {
       icon: AlertTriangle,
-      bgGradient: "from-amber-500 to-orange-500",
-      bgLight: "bg-amber-50",
-      borderColor: "border-amber-200",
-      textColor: "text-amber-800",
+      bgGradient: "from-amber-500 to-orange-600",
+      bgLight: "bg-amber-50/95",
+      borderColor: "border-amber-300",
+      iconBg: "bg-amber-100",
       iconColor: "text-amber-600",
     },
     info: {
       icon: Info,
-      bgGradient: "from-blue-500 to-indigo-500",
-      bgLight: "bg-blue-50",
-      borderColor: "border-blue-200",
-      textColor: "text-blue-800",
+      bgGradient: "from-blue-500 to-indigo-600",
+      bgLight: "bg-blue-50/95",
+      borderColor: "border-blue-300",
+      iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
     },
   };
@@ -67,27 +67,23 @@ export default function Toast({
   return (
     <div className="animate-in slide-in-from-top-5 fade-in duration-300 ease-out">
       <div
-        className={`${style.bgLight} ${style.borderColor} border rounded-xl shadow-lg overflow-hidden w-full backdrop-blur-sm bg-opacity-95`}
+        className={`${style.bgLight} ${style.borderColor} border-2 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-sm`}
       >
         {/* Gradient Top Bar */}
-        <div
-          className={`h-1 bg-gradient-to-r ${style.bgGradient}`}
-        />
+        <div className={`h-1 bg-gradient-to-r ${style.bgGradient}`} />
 
         {/* Content */}
-        <div className="p-3 flex items-center gap-3">
+        <div className="p-4 flex items-center gap-3">
           {/* Icon */}
           <div
-            className={`flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br ${style.bgGradient} flex items-center justify-center shadow-sm`}
+            className={`flex-shrink-0 w-10 h-10 ${style.iconBg} rounded-xl flex items-center justify-center shadow-sm`}
           >
-            <Icon className="w-4 h-4 text-white" />
+            <Icon className={`w-5 h-5 ${style.iconColor}`} />
           </div>
 
           {/* Message */}
           <div className="flex-1">
-            <p
-              className={`${style.textColor} font-medium text-sm leading-snug`}
-            >
+            <p className="text-gray-800 font-bold text-sm leading-snug">
               {message}
             </p>
           </div>
@@ -95,7 +91,7 @@ export default function Toast({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className={`flex-shrink-0 ${style.iconColor} hover:bg-gray-200 p-1 rounded transition-colors duration-150`}
+            className="flex-shrink-0 text-gray-500 hover:bg-gray-200 p-1.5 rounded-lg transition-colors duration-150 active:scale-95"
             aria-label="Close"
           >
             <X className="w-4 h-4" />

@@ -38,6 +38,13 @@ const getTeachersLightweight = async (req, res) => {
                     select: {
                         id: true,
                         name: true,
+                        grade: true,
+                        section: true,
+                        _count: {
+                            select: {
+                                students: true,
+                            },
+                        },
                     },
                 },
                 // Get IDs only for assignments (no full data)
@@ -60,6 +67,13 @@ const getTeachersLightweight = async (req, res) => {
                             select: {
                                 id: true,
                                 name: true,
+                                grade: true,
+                                section: true,
+                                _count: {
+                                    select: {
+                                        students: true,
+                                    },
+                                },
                             },
                         },
                     },
@@ -76,6 +90,7 @@ const getTeachersLightweight = async (req, res) => {
             teachingClassIds: teacher.teacherClasses.map((tc) => tc.classId),
             subjects: teacher.subjectTeachers.map((sa) => sa.subject),
             teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
+            teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
         }));
         console.log(`⚡ Fetched ${transformedTeachers.length} teachers (lightweight)`);
         res.json({
@@ -175,6 +190,7 @@ const getAllTeachers = async (req, res) => {
             // Flatten nested data
             subjects: teacher.subjectTeachers.map((sa) => sa.subject),
             teacherClasses: teacher.teacherClasses.map((tc) => tc.class),
+            teachingClasses: teacher.teacherClasses.map((tc) => tc.class),
             // Create subject string for display
             subject: teacher.subjectTeachers
                 .map((sa) => sa.subject.nameKh || sa.subject.name)

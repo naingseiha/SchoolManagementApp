@@ -17,6 +17,20 @@ const config: Config = {
         'poppins': ['"Poppins"', 'sans-serif'],
         'inter': ['"Inter"', 'system-ui', 'sans-serif'],
       },
+      animation: {
+        'slide-in-down': 'slide-in-down 0.3s ease-out',
+        'toast-progress': 'toast-progress linear forwards',
+      },
+      keyframes: {
+        'slide-in-down': {
+          '0%': { transform: 'translate(-50%, -100%)', opacity: '0' },
+          '100%': { transform: 'translate(-50%, 0)', opacity: '1' },
+        },
+        'toast-progress': {
+          '0%': { width: '100%' },
+          '100%': { width: '0%' },
+        },
+      },
     },
   },
   plugins: [],

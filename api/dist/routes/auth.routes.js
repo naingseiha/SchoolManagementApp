@@ -20,9 +20,14 @@ router.get("/me", (req, res, next) => {
     console.log("📥 GET /api/auth/me called");
     next();
 }, auth_middleware_1.authMiddleware, auth_controller_1.getCurrentUser);
+router.get("/password-status", (req, res, next) => {
+    console.log("📥 GET /api/auth/password-status called");
+    next();
+}, auth_middleware_1.authMiddleware, auth_controller_1.getPasswordStatus);
 console.log("✅ Auth routes registered:");
 console.log("  - POST /api/auth/login");
 console.log("  - POST /api/auth/refresh");
 console.log("  - GET  /api/auth/me");
+console.log("  - GET  /api/auth/password-status");
 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 exports.default = router;

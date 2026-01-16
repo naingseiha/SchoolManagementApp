@@ -2,6 +2,12 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/database";
+import {
+  isDefaultPassword,
+  calculatePasswordExpiry,
+  getAlertLevel,
+  getTimeRemaining
+} from "../utils/password.utils";
 
 /**
  * ✅ REGISTER - បង្កើតគណនីថ្មី
@@ -173,6 +179,7 @@ export const login = async (req: Request, res: Response) => {
             khmerName: true,
             position: true,
             homeroomClassId: true,
+            phone: true,
           },
         },
       },
@@ -217,13 +224,52 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // ✅ Password Security: Check if using default password
+    const phoneNumber = user.phone || user.teacher?.phone;
+    const usingDefaultPassword = phoneNumber 
+      ? await isDefaultPassword(user.password, phoneNumber)
+      : false;
+
+    // Set default password flag and expiration on first detection
+    let passwordSecurityUpdate: any = {
+      lastLogin: new Date(),
+      loginCount: user.loginCount + 1,
+      failedAttempts: 0,
+    };
+
+    // Update password security status based on ACTUAL password check
+    if (usingDefaultPassword) {
+      // User IS using default password
+      if (user.isDefaultPassword === null) {
+        passwordSecurityUpdate.isDefaultPassword = true;
+      }
+      // Always set expiration if not set or if user still has default password
+      if (!user.passwordExpiresAt || user.isDefaultPassword) {
+        passwordSecurityUpdate.passwordExpiresAt = calculatePasswordExpiry(7);
+      }
+    } else {
+      // User is NOT using default password - clear the flag and expiration
+      if (user.isDefaultPassword === true || user.isDefaultPassword === null) {
+        passwordSecurityUpdate.isDefaultPassword = false;
+        passwordSecurityUpdate.passwordExpiresAt = null;
+      }
+    }
+
+    // Check if password has expired (only for teachers with default passwords)
+    if (user.role === "TEACHER" && user.isDefaultPassword && user.passwordExpiresAt) {
+      const now = new Date();
+      if (user.passwordExpiresAt < now) {
+        return res.status(403).json({
+          success: false,
+          message: "ពាក្យសម្ងាត់របស់អ្នកផុតកំណត់\nYour password has expired. Please contact admin.",
+          passwordExpired: true,
+        });
+      }
+    }
+
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        lastLogin: new Date(),
-        loginCount: user.loginCount + 1,
-        failedAttempts: 0,
-      },
+      data: passwordSecurityUpdate,
     });
 
     // ✅ FIXED: Proper JWT signing with 365 days expiration
@@ -243,6 +289,14 @@ export const login = async (req: Request, res: Response) => {
 
     console.log("✅ Login successful:", user.id, "Role:", user.role);
 
+    // Calculate password security status
+    const passwordStatus = {
+      isDefaultPassword: usingDefaultPassword || user.isDefaultPassword || false,
+      passwordExpiresAt: user.passwordExpiresAt,
+      alertLevel: getAlertLevel(user.passwordExpiresAt),
+      ...getTimeRemaining(user.passwordExpiresAt),
+    };
+
     res.json({
       success: true,
       message: "ចូលប្រើប្រាស់បានជោគជ័យ\nLogin successful",
@@ -259,6 +313,7 @@ export const login = async (req: Request, res: Response) => {
         },
         token,
         expiresIn: process.env.JWT_EXPIRES_IN || "365d",
+        passwordStatus,
       },
     });
   } catch (error: any) {
@@ -460,6 +515,93 @@ export const logout = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Logout failed",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * ✅ GET PASSWORD STATUS - ពិនិត្យស្ថានភាពពាក្យសម្ងាត់
+ */
+export const getPasswordStatus = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        isDefaultPassword: true,
+        passwordExpiresAt: true,
+        passwordChangedAt: true,
+        phone: true,
+        password: true, // Need to check actual password
+        teacher: {
+          select: {
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Actually check if the current password is the default (phone number)
+    const phoneNumber = user.phone || user.teacher?.phone;
+    const actuallyUsingDefaultPassword = phoneNumber
+      ? await isDefaultPassword(user.password, phoneNumber)
+      : false;
+
+    // If the actual check differs from the database field, update it
+    if (actuallyUsingDefaultPassword !== user.isDefaultPassword) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          isDefaultPassword: actuallyUsingDefaultPassword,
+          passwordExpiresAt: actuallyUsingDefaultPassword 
+            ? (user.passwordExpiresAt || calculatePasswordExpiry(7))
+            : null,
+        },
+      });
+    }
+
+    const timeRemaining = getTimeRemaining(
+      actuallyUsingDefaultPassword ? user.passwordExpiresAt : null
+    );
+    const alertLevel = getAlertLevel(
+      actuallyUsingDefaultPassword ? user.passwordExpiresAt : null
+    );
+
+    res.json({
+      success: true,
+      data: {
+        isDefaultPassword: actuallyUsingDefaultPassword,
+        passwordExpiresAt: actuallyUsingDefaultPassword ? user.passwordExpiresAt : null,
+        passwordChangedAt: user.passwordChangedAt,
+        daysRemaining: timeRemaining.daysRemaining,
+        hoursRemaining: timeRemaining.hoursRemaining,
+        isExpired: timeRemaining.isExpired,
+        alertLevel: actuallyUsingDefaultPassword ? alertLevel : 'none',
+        canExtend: actuallyUsingDefaultPassword && timeRemaining.daysRemaining > 0 && timeRemaining.daysRemaining <= 7,
+      },
+    });
+  } catch (error: any) {
+    console.error("❌ Get password status error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get password status",
       error: error.message,
     });
   }

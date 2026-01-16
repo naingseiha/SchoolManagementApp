@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getCurrentUser = exports.refreshToken = exports.login = exports.register = void 0;
+exports.getPasswordStatus = exports.logout = exports.getCurrentUser = exports.refreshToken = exports.login = exports.register = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = require("../config/database");
+const password_utils_1 = require("../utils/password.utils");
 /**
  * ✅ REGISTER - បង្កើតគណនីថ្មី
  */
@@ -158,6 +159,7 @@ const login = async (req, res) => {
                         khmerName: true,
                         position: true,
                         homeroomClassId: true,
+                        phone: true,
                     },
                 },
             },
@@ -195,13 +197,35 @@ const login = async (req, res) => {
                 deactivationReason: user.student.deactivationReason,
             });
         }
+        // ✅ Password Security: Check if using default password
+        const phoneNumber = user.phone || user.teacher?.phone;
+        const usingDefaultPassword = phoneNumber
+            ? await (0, password_utils_1.isDefaultPassword)(user.password, phoneNumber)
+            : false;
+        // Set default password flag and expiration on first detection
+        let passwordSecurityUpdate = {
+            lastLogin: new Date(),
+            loginCount: user.loginCount + 1,
+            failedAttempts: 0,
+        };
+        if (usingDefaultPassword && user.isDefaultPassword === null) {
+            passwordSecurityUpdate.isDefaultPassword = true;
+            passwordSecurityUpdate.passwordExpiresAt = (0, password_utils_1.calculatePasswordExpiry)(7);
+        }
+        // Check if password has expired (only for teachers with default passwords)
+        if (user.role === "TEACHER" && user.isDefaultPassword && user.passwordExpiresAt) {
+            const now = new Date();
+            if (user.passwordExpiresAt < now) {
+                return res.status(403).json({
+                    success: false,
+                    message: "ពាក្យសម្ងាត់របស់អ្នកផុតកំណត់\nYour password has expired. Please contact admin.",
+                    passwordExpired: true,
+                });
+            }
+        }
         await database_1.prisma.user.update({
             where: { id: user.id },
-            data: {
-                lastLogin: new Date(),
-                loginCount: user.loginCount + 1,
-                failedAttempts: 0,
-            },
+            data: passwordSecurityUpdate,
         });
         // ✅ FIXED: Proper JWT signing with 365 days expiration
         const jwtSecret = process.env.JWT_SECRET || "fallback-secret-key";
@@ -214,6 +238,13 @@ const login = async (req, res) => {
             teacherId: user.teacher?.id || null,
         }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "365d" });
         console.log("✅ Login successful:", user.id, "Role:", user.role);
+        // Calculate password security status
+        const passwordStatus = {
+            isDefaultPassword: usingDefaultPassword || user.isDefaultPassword || false,
+            passwordExpiresAt: user.passwordExpiresAt,
+            alertLevel: (0, password_utils_1.getAlertLevel)(user.passwordExpiresAt),
+            ...(0, password_utils_1.getTimeRemaining)(user.passwordExpiresAt),
+        };
         res.json({
             success: true,
             message: "ចូលប្រើប្រាស់បានជោគជ័យ\nLogin successful",
@@ -230,6 +261,7 @@ const login = async (req, res) => {
                 },
                 token,
                 expiresIn: process.env.JWT_EXPIRES_IN || "365d",
+                passwordStatus,
             },
         });
     }
@@ -421,3 +453,63 @@ const logout = async (req, res) => {
     }
 };
 exports.logout = logout;
+/**
+ * ✅ GET PASSWORD STATUS - ពិនិត្យស្ថានភាពពាក្យសម្ងាត់
+ */
+const getPasswordStatus = async (req, res) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+        const user = await database_1.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                isDefaultPassword: true,
+                passwordExpiresAt: true,
+                passwordChangedAt: true,
+                phone: true,
+                teacher: {
+                    select: {
+                        phone: true,
+                    },
+                },
+            },
+        });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+        const phoneNumber = user.phone || user.teacher?.phone;
+        const timeRemaining = (0, password_utils_1.getTimeRemaining)(user.passwordExpiresAt);
+        const alertLevel = (0, password_utils_1.getAlertLevel)(user.passwordExpiresAt);
+        res.json({
+            success: true,
+            data: {
+                isDefaultPassword: user.isDefaultPassword || false,
+                passwordExpiresAt: user.passwordExpiresAt,
+                passwordChangedAt: user.passwordChangedAt,
+                daysRemaining: timeRemaining.daysRemaining,
+                hoursRemaining: timeRemaining.hoursRemaining,
+                isExpired: timeRemaining.isExpired,
+                alertLevel,
+                canExtend: timeRemaining.daysRemaining > 0 && timeRemaining.daysRemaining <= 7,
+            },
+        });
+    }
+    catch (error) {
+        console.error("❌ Get password status error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to get password status",
+            error: error.message,
+        });
+    }
+};
+exports.getPasswordStatus = getPasswordStatus;

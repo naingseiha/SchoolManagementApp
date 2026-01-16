@@ -3,11 +3,12 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard,
-  ClipboardList,
-  CalendarCheck,
-  Users,
-  FileText,
+  Home,
+  PenTool,
+  Calendar,
+  GraduationCap,
+  BarChart3,
+  UserCircle2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { LucideIcon } from "lucide-react";
@@ -19,6 +20,7 @@ interface NavItem {
   icon: LucideIcon;
   href: string;
   roles?: string[];
+  color: string; // Gradient color for active state
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -26,41 +28,55 @@ const NAV_ITEMS: NavItem[] = [
     id: "dashboard",
     label: "Dashboard",
     labelKh: "ផ្ទាំង",
-    icon: LayoutDashboard,
+    icon: Home,
     href: "/",
     roles: ["ADMIN", "TEACHER"],
+    color: "from-blue-500 to-cyan-500",
   },
   {
     id: "grade-entry",
     label: "Grade Entry",
     labelKh: "បញ្ចូលពិន្ទុ",
-    icon: ClipboardList,
+    icon: PenTool,
     href: "/grade-entry",
     roles: ["ADMIN", "TEACHER"],
+    color: "from-purple-500 to-pink-500",
   },
   {
     id: "attendance",
     label: "Attendance",
     labelKh: "វត្តមាន",
-    icon: CalendarCheck,
+    icon: Calendar,
     href: "/attendance",
     roles: ["ADMIN", "TEACHER"],
+    color: "from-green-500 to-emerald-500",
   },
   {
     id: "students",
     label: "Students",
     labelKh: "សិស្ស",
-    icon: Users,
+    icon: GraduationCap,
     href: "/students",
     roles: ["ADMIN"],
+    color: "from-orange-500 to-amber-500",
   },
   {
     id: "reports",
     label: "Reports",
     labelKh: "របាយការណ៍",
-    icon: FileText,
+    icon: BarChart3,
     href: "/reports/mobile",
     roles: ["ADMIN", "TEACHER"],
+    color: "from-indigo-500 to-purple-500",
+  },
+  {
+    id: "profile",
+    label: "Profile",
+    labelKh: "ខ្ញុំ",
+    icon: UserCircle2,
+    href: "/teacher-portal",
+    roles: ["ADMIN", "TEACHER"],
+    color: "from-pink-500 to-rose-500",
   },
 ];
 
@@ -86,8 +102,8 @@ export default function MobileBottomNav({ onNavigate }: MobileBottomNavProps = {
       : "grid-cols-5";
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-bottom">
-      <div className={`grid ${gridCols} h-16`}>
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-200/50 z-50 safe-bottom shadow-lg">
+      <div className={`grid ${gridCols} px-2 py-1.5`}>
         {filteredItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -105,21 +121,42 @@ export default function MobileBottomNav({ onNavigate }: MobileBottomNavProps = {
               key={item.id}
               href={item.href}
               onClick={handleClick}
-              className={`flex flex-col items-center justify-center touch-feedback transition-all ${
-                isActive
-                  ? "text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className="flex flex-col items-center justify-center py-2 px-1 touch-feedback transition-all duration-300 ease-out group relative"
               aria-label={item.label}
             >
-              <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
+              {/* Active indicator - floating pill background */}
+              {isActive && (
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-10 rounded-2xl scale-95 animate-in fade-in zoom-in duration-300`}></div>
+              )}
+
+              {/* Icon with gradient background when active */}
+              <div className="relative">
+                {isActive ? (
+                  <div className={`w-11 h-11 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-lg transform transition-all duration-300 ease-out group-active:scale-95`}>
+                    <Icon className="w-6 h-6 text-white" strokeWidth={2.5} />
+                  </div>
+                ) : (
+                  <div className="w-11 h-11 flex items-center justify-center rounded-2xl transition-all duration-300 ease-out group-hover:bg-gray-100 group-active:scale-95">
+                    <Icon className="w-6 h-6 text-gray-500 group-hover:text-gray-700 transition-colors duration-200" strokeWidth={2} />
+                  </div>
+                )}
+              </div>
+
+              {/* Label */}
               <span
-                className={`text-xs mt-1 font-battambang ${
-                  isActive ? "font-bold" : "font-medium"
+                className={`text-[10px] mt-0.5 font-koulen transition-all duration-200 ${
+                  isActive
+                    ? "font-black text-transparent bg-clip-text bg-gradient-to-r " + item.color
+                    : "font-medium text-gray-500 group-hover:text-gray-700"
                 }`}
               >
                 {item.labelKh}
               </span>
+
+              {/* Active indicator dot */}
+              {isActive && (
+                <div className={`absolute -bottom-0.5 w-1 h-1 bg-gradient-to-r ${item.color} rounded-full animate-pulse`}></div>
+              )}
             </Link>
           );
         })}

@@ -187,6 +187,55 @@ class ApiClient {
     return data;
   }
 
+  async patch<T = any>(endpoint: string, body?: any): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    console.log("📤 PATCH:", url);
+
+    const headers = this.getHeaders();
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      console.log("📥 Response status:", response.status);
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({
+          message: `HTTP ${response.status}: ${response.statusText}`,
+        }));
+        console.error("❌ PATCH Error:", error);
+        throw new Error(error.message || "Request failed");
+      }
+
+      const data: ApiResponse<T> = await response.json();
+      console.log("✅ PATCH Success");
+      
+      // ✅ Check if wrapped in {success, data}
+      if (data && typeof data === "object" && "data" in data) {
+        return data.data;
+      }
+
+      // ✅ Otherwise return direct object
+      return data as T;
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error("❌ Request timeout");
+        throw new Error("Request timeout. Please check your connection and try again.");
+      }
+      console.error("❌ PATCH Failed:", error);
+      throw error;
+    }
+  }
+
   async delete<T = any>(endpoint: string): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
 

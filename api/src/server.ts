@@ -14,9 +14,11 @@ import { errorHandler, notFound } from "./middleware/errorHandler";
 // Import Routes
 import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
+import adminSecurityRoutes from "./routes/admin-security.routes";
 import studentRoutes from "./routes/student.routes";
 import studentPortalRoutes from "./routes/student-portal.routes";
 import teacherRoutes from "./routes/teacher.routes";
+import teacherPortalRoutes from "./routes/teacher-portal.routes";
 import classRoutes from "./routes/class.routes";
 import subjectRoutes from "./routes/subject.routes";
 import gradeRoutes from "./routes/grade.routes";
@@ -109,10 +111,12 @@ app.get("/api/health", (req: Request, res: Response) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/security", adminSecurityRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/student-portal", studentPortalRoutes);
 app.use("/api/teachers", teacherRoutes);
+app.use("/api/teacher-portal", teacherPortalRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/grades", gradeRoutes);

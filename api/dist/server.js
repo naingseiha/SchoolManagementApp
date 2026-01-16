@@ -13,9 +13,11 @@ const errorHandler_1 = require("./middleware/errorHandler");
 // Import Routes
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
+const admin_security_routes_1 = __importDefault(require("./routes/admin-security.routes"));
 const student_routes_1 = __importDefault(require("./routes/student.routes"));
 const student_portal_routes_1 = __importDefault(require("./routes/student-portal.routes"));
 const teacher_routes_1 = __importDefault(require("./routes/teacher.routes"));
+const teacher_portal_routes_1 = __importDefault(require("./routes/teacher-portal.routes"));
 const class_routes_1 = __importDefault(require("./routes/class.routes"));
 const subject_routes_1 = __importDefault(require("./routes/subject.routes"));
 const grade_routes_1 = __importDefault(require("./routes/grade.routes"));
@@ -94,10 +96,12 @@ app.get("/api/health", (req, res) => {
 // API Routes
 app.use("/api/auth", auth_routes_1.default);
 app.use("/api/admin", admin_routes_1.default);
+app.use("/api/admin/security", admin_security_routes_1.default);
 app.use("/api/dashboard", dashboard_routes_1.default);
 app.use("/api/students", student_routes_1.default);
 app.use("/api/student-portal", student_portal_routes_1.default);
 app.use("/api/teachers", teacher_routes_1.default);
+app.use("/api/teacher-portal", teacher_portal_routes_1.default);
 app.use("/api/classes", class_routes_1.default);
 app.use("/api/subjects", subject_routes_1.default);
 app.use("/api/grades", grade_routes_1.default);
