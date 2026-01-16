@@ -626,7 +626,17 @@ export const getMonthlySummaries = async (req: Request, res: Response) => {
     }
 
     const studentId = user.student.id;
-    const academicYear = year ? parseInt(year as string) : new Date().getFullYear();
+
+    // ✅ Calculate current academic year correctly
+    // Academic year runs from October to September
+    // Oct-Dec → academic year = current year
+    // Jan-Sep → academic year = current year - 1
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentCalendarYear = now.getFullYear();
+    const currentAcademicYear = currentMonth >= 10 ? currentCalendarYear : currentCalendarYear - 1;
+
+    const academicYear = year ? parseInt(year as string) : currentAcademicYear;
 
     console.log(`👤 Student: ${user.student.khmerName} (${studentId})`);
     console.log(`📅 Academic Year: ${academicYear}-${academicYear + 1}`);
