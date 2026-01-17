@@ -49,9 +49,9 @@ export default function PasswordExpiryWarning({
         return {
           bg: "bg-blue-50 dark:bg-blue-900/20",
           border: "border-blue-200 dark:border-blue-800",
-          text: "text-blue-800 dark:text-blue-200",
+          text: "text-blue-900 dark:text-blue-100",
           button: "bg-blue-600 hover:bg-blue-700 text-white",
-          icon: "text-blue-600 dark:text-blue-400",
+          icon: "text-blue-700 dark:text-blue-300",
         };
       default:
         return {
@@ -132,10 +132,10 @@ export default function PasswordExpiryWarning({
               {/* Time remaining badge */}
               <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium mb-3 ${
                 alertLevel === "danger" 
-                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300" 
+                  ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-100" 
                   : alertLevel === "warning"
-                  ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
-                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                  ? "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-100"
+                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-100"
               }`}>
                 <Clock className="w-4 h-4" />
                 <span>{message}</span>
