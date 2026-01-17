@@ -95,10 +95,10 @@ export default function MobileGradeEntry({
 
   const [selectedClass, setSelectedClass] = useState(initialClassId);
   const [selectedMonth, setSelectedMonth] = useState(
-    propMonth || getCurrentKhmerMonth()
+    propMonth || getCurrentKhmerMonth(),
   ); // ✅ Auto-select current month
   const [selectedYear, setSelectedYear] = useState(
-    propYear || getCurrentAcademicYear()
+    propYear || getCurrentAcademicYear(),
   );
   const [selectedSubject, setSelectedSubject] = useState("");
 
@@ -126,7 +126,7 @@ export default function MobileGradeEntry({
     Set<string>
   >(new Set());
   const [incompleteScores, setIncompleteScores] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [incompleteCount, setIncompleteCount] = useState(0);
 
@@ -261,7 +261,7 @@ export default function MobileGradeEntry({
       const data = await gradeApi.getGradesGrid(
         selectedClass,
         selectedMonth,
-        selectedYear
+        selectedYear,
       );
 
       if (currentUser.role === "ADMIN") {
@@ -289,7 +289,7 @@ export default function MobileGradeEntry({
 
       if (editableSubjects.length === 0) {
         setError(
-          "អ្នកមិនមានសិទ្ធិបញ្ចូលពិន្ទុសម្រាប់ថ្នាក់នេះទេ • You don't have permission to enter grades for this class"
+          "អ្នកមិនមានសិទ្ធិបញ្ចូលពិន្ទុសម្រាប់ថ្នាក់នេះទេ • You don't have permission to enter grades for this class",
         );
         setLoading(false);
         return;
@@ -308,7 +308,7 @@ export default function MobileGradeEntry({
         const confirmationsData = await gradeApi.getConfirmations(
           selectedClass,
           selectedMonth,
-          selectedYear
+          selectedYear,
         );
 
         // Convert array to Map for quick lookup
@@ -320,7 +320,7 @@ export default function MobileGradeEntry({
               confirmedBy: conf.confirmedBy,
               confirmedAt: conf.confirmedAt,
             },
-          ])
+          ]),
         );
 
         setConfirmations(confirmationMap);
@@ -420,7 +420,7 @@ export default function MobileGradeEntry({
         selectedClass,
         selectedMonth,
         selectedYear,
-        gradesToSave
+        gradesToSave,
       );
 
       // Success!
@@ -474,8 +474,8 @@ export default function MobileGradeEntry({
       // Update local state immediately
       setStudents((prev) =>
         prev.map((student) =>
-          student.studentId === studentId ? { ...student, score } : student
-        )
+          student.studentId === studentId ? { ...student, score } : student,
+        ),
       );
 
       // ✅ Mark as unsaved (NO AUTO-SAVE)
@@ -493,7 +493,7 @@ export default function MobileGradeEntry({
         });
       }
     },
-    [selectedSubject]
+    [selectedSubject],
   );
 
   // ✅ No auto-save on blur - user must click Save All button
@@ -520,7 +520,7 @@ export default function MobileGradeEntry({
       const freshData = await gradeApi.getGradesGrid(
         selectedClass,
         selectedMonth,
-        selectedYear
+        selectedYear,
       );
 
       const discrepancies = new Set<string>();
@@ -530,7 +530,7 @@ export default function MobileGradeEntry({
       // Compare fresh data with current state
       students.forEach((currentStudent) => {
         const freshStudent = freshData.students.find(
-          (s) => s.studentId === currentStudent.studentId
+          (s) => s.studentId === currentStudent.studentId,
         );
 
         if (freshStudent) {
@@ -572,7 +572,7 @@ export default function MobileGradeEntry({
                   : null,
               maxScore: subject.maxScore,
             };
-          }
+          },
         );
 
         setStudents(verifiedStudents);
@@ -608,9 +608,7 @@ export default function MobileGradeEntry({
   const handleConfirmScores = useCallback(async () => {
     // Check if there are any unsaved changes
     if (hasUnsavedChanges || saving) {
-      alert(
-        "សូមរក្សាទុកការផ្លាស់ប្តូរសិន • Please save changes first"
-      );
+      alert("សូមរក្សាទុកការផ្លាស់ប្តូរសិន • Please save changes first");
       return;
     }
 
@@ -618,7 +616,7 @@ export default function MobileGradeEntry({
     const emptyScores = students.filter((s) => s.score === null);
     if (emptyScores.length > 0) {
       const proceed = confirm(
-        `មានសិស្ស ${emptyScores.length} នាក់ មិនទាន់បញ្ចូលពិន្ទុ។ តើអ្នកចង់បន្តយ៉ាងណា?\n\nThere are ${emptyScores.length} students without scores. Do you want to continue anyway?`
+        `មានសិស្ស ${emptyScores.length} នាក់ មិនទាន់បញ្ចូលពិន្ទុ។ តើអ្នកចង់បន្តយ៉ាងណា?\n\nThere are ${emptyScores.length} students without scores. Do you want to continue anyway?`,
       );
       if (!proceed) {
         return;
@@ -645,7 +643,7 @@ export default function MobileGradeEntry({
         selectedSubject,
         selectedMonth,
         selectedYear,
-        currentUser.id
+        currentUser.id,
       );
 
       // ✅ Update confirmations Map
@@ -673,7 +671,7 @@ export default function MobileGradeEntry({
       setIsVerifying(false);
       console.error("Confirmation error:", error);
       alert(
-        `មានបញ្ហាក្នុងការបញ្ជាក់ពិន្ទុ • Error confirming scores:\n${error.message}`
+        `មានបញ្ហាក្នុងការបញ្ជាក់ពិន្ទុ • Error confirming scores:\n${error.message}`,
       );
     }
   }, [
@@ -773,7 +771,7 @@ export default function MobileGradeEntry({
       // Fallback: Download PDF
       pdf.save(fileName);
       alert(
-        `✓ PDF រក្សាទុករួច (${fileSizeKB}KB, ${page} ទំព័រ)\nPDF saved successfully (${fileSizeKB}KB, ${page} page(s))!`
+        `✓ PDF រក្សាទុករួច (${fileSizeKB}KB, ${page} ទំព័រ)\nPDF saved successfully (${fileSizeKB}KB, ${page} page(s))!`,
       );
       setIsExporting(false);
     } catch (error: any) {
@@ -926,21 +924,27 @@ export default function MobileGradeEntry({
   }
 
   // ✅ Handle navigation from tab bar
-  const handleNavigate = useCallback((href: string) => {
-    // If has unsaved changes and trying to navigate away
-    if (hasUnsavedChanges && href !== pathname) {
-      setPendingAction(() => () => {
-        // Navigate after user confirms
-        router.push(href);
-      });
-      setShowUnsavedWarning(true);
-      return false; // Prevent navigation
-    }
-    return true; // Allow navigation
-  }, [hasUnsavedChanges, pathname, router]);
+  const handleNavigate = useCallback(
+    (href: string) => {
+      // If has unsaved changes and trying to navigate away
+      if (hasUnsavedChanges && href !== pathname) {
+        setPendingAction(() => () => {
+          // Navigate after user confirms
+          router.push(href);
+        });
+        setShowUnsavedWarning(true);
+        return false; // Prevent navigation
+      }
+      return true; // Allow navigation
+    },
+    [hasUnsavedChanges, pathname, router],
+  );
 
   return (
-    <MobileLayout title="Grade Entry • បញ្ចូលពិន្ទុ" onNavigate={handleNavigate}>
+    <MobileLayout
+      title="Grade Entry • បញ្ចូលពិន្ទុ"
+      onNavigate={handleNavigate}
+    >
       {/* Clean Modern Header */}
       <div className="bg-white px-5 pt-6 pb-5 shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-3 mb-4">
@@ -1082,8 +1086,8 @@ export default function MobileGradeEntry({
             <select
               value={selectedSubject}
               onChange={(e) => handleSubjectChange(e.target.value)}
-              className="w-full h-13 px-4 font-battambang bg-white border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm transition-all"
-              style={{ fontSize: "16px" }}
+              className="w-full h-16 px-4 py-3 font-battambang bg-white border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm transition-all"
+              style={{ fontSize: "16px", minHeight: "64px" }}
             >
               <option value="">-- ជ្រើសរើសមុខវិជ្ជា --</option>
               {subjects.map((subject) => (
@@ -1099,7 +1103,9 @@ export default function MobileGradeEntry({
                     <div className="w-6 h-6 bg-blue-200 rounded-lg flex items-center justify-center">
                       🏠
                     </div>
-                    អ្នកគឺជា INSTRUCTOR - អាចបញ្ចូលពិន្ទុតែមុខវិជ្ជាដែលអ្នកបង្រៀនប៉ុណ្ណោះ • You are INSTRUCTOR - can only input scores for subjects you teach
+                    អ្នកគឺជា INSTRUCTOR -
+                    អាចបញ្ចូលពិន្ទុតែមុខវិជ្ជាដែលអ្នកបង្រៀនប៉ុណ្ណោះ • You are
+                    INSTRUCTOR - can only input scores for subjects you teach
                   </p>
                 </div>
               )}
@@ -1180,16 +1186,18 @@ export default function MobileGradeEntry({
                     </button>
 
                     {/* Confirm Button - Only show when saved and not confirmed */}
-                    {!hasUnsavedChanges && !isConfirmed && students.some((s) => s.score !== null) && (
-                      <button
-                        onClick={() => setShowReviewModal(true)}
-                        disabled={saving}
-                        className="px-4 py-2 rounded-xl font-battambang font-semibold text-xs flex items-center justify-center gap-1.5 bg-orange-500/90 hover:bg-orange-600 text-white shadow-md active:scale-[0.95] transition-all whitespace-nowrap"
-                      >
-                        <Shield className="w-3.5 h-3.5" />
-                        <span>បញ្ជាក់</span>
-                      </button>
-                    )}
+                    {!hasUnsavedChanges &&
+                      !isConfirmed &&
+                      students.some((s) => s.score !== null) && (
+                        <button
+                          onClick={() => setShowReviewModal(true)}
+                          disabled={saving}
+                          className="px-4 py-2 rounded-xl font-battambang font-semibold text-xs flex items-center justify-center gap-1.5 bg-orange-500/90 hover:bg-orange-600 text-white shadow-md active:scale-[0.95] transition-all whitespace-nowrap"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          <span>បញ្ជាក់</span>
+                        </button>
+                      )}
 
                     {/* Confirmed Badge */}
                     {isConfirmed && (
@@ -1269,8 +1277,8 @@ export default function MobileGradeEntry({
                     នាំចេញរបាយការណ៍ជា PDF
                   </p>
                   <p className="font-battambang text-xs text-gray-600 mb-3">
-                    ផ្ញើ PDF ទៅសិស្សដើម្បីពិនិត្យពិន្ទុមុនពេលបញ្ជាក់ • Share PDF with
-                    students to verify before confirming
+                    ផ្ញើ PDF ទៅសិស្សដើម្បីពិនិត្យពិន្ទុមុនពេលបញ្ជាក់ • Share PDF
+                    with students to verify before confirming
                   </p>
                   <button
                     onClick={exportAsPDF}
@@ -1300,7 +1308,7 @@ export default function MobileGradeEntry({
             <div className="space-y-2.5">
               {students.map((student, index) => {
                 const hasDiscrepancy = verificationDiscrepancies.has(
-                  student.studentId
+                  student.studentId,
                 );
                 const isIncomplete = incompleteScores.has(student.studentId);
 
@@ -1489,8 +1497,8 @@ export default function MobileGradeEntry({
 
         {/* ✅ NEW: Review & Confirm Modal */}
         {showReviewModal && currentSubject && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <div className="bg-white w-full h-[90vh] sm:h-auto sm:max-h-[80vh] sm:max-w-2xl sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-20 sm:pb-4">
+            <div className="bg-white w-full max-h-[85vh] sm:h-auto sm:max-h-[80vh] sm:max-w-2xl sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300">
               {/* Modal Header */}
               <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 sm:rounded-t-3xl rounded-t-3xl flex-shrink-0">
                 <div className="flex items-center justify-between mb-4">
@@ -1499,9 +1507,9 @@ export default function MobileGradeEntry({
                       <Shield className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="font-koulen text-xl text-white">
+                      <h4 className="font-koulen text-xl text-white">
                         ពិនិត្យពិន្ទុ
-                      </h2>
+                      </h4>
                       <p className="font-battambang text-xs text-purple-100">
                         Review & Confirm Scores
                       </p>
@@ -1572,12 +1580,12 @@ export default function MobileGradeEntry({
                         isEmpty
                           ? "bg-yellow-50 border-yellow-300"
                           : isZero
-                          ? "bg-red-50 border-red-300"
-                          : isLow
-                          ? "bg-orange-50 border-orange-200"
-                          : isPerfect
-                          ? "bg-green-50 border-green-300"
-                          : "bg-gray-50 border-gray-200"
+                            ? "bg-red-50 border-red-300"
+                            : isLow
+                              ? "bg-orange-50 border-orange-200"
+                              : isPerfect
+                                ? "bg-green-50 border-green-300"
+                                : "bg-gray-50 border-gray-200"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -1608,10 +1616,10 @@ export default function MobileGradeEntry({
                                   isZero
                                     ? "text-red-600"
                                     : isLow
-                                    ? "text-orange-600"
-                                    : isPerfect
-                                    ? "text-green-600"
-                                    : "text-gray-900"
+                                      ? "text-orange-600"
+                                      : isPerfect
+                                        ? "text-green-600"
+                                        : "text-gray-900"
                                 }`}
                               >
                                 {student.score}
@@ -1650,7 +1658,7 @@ export default function MobileGradeEntry({
               )}
 
               {/* Action Buttons */}
-              <div className="p-4 border-t border-gray-200 flex-shrink-0 space-y-2">
+              <div className="p-4 pb-6 border-t border-gray-200 flex-shrink-0 space-y-4 bg-white">
                 <button
                   onClick={handleConfirmScores}
                   disabled={saving || hasUnsavedChanges}
@@ -1669,7 +1677,7 @@ export default function MobileGradeEntry({
                   ) : (
                     <>
                       <CheckCircle className="w-5 h-5" />
-                      បញ្ជាក់ថាពិន្ទុត្រឹមត្រូវ • Confirm All Scores
+                      បញ្ជាក់ថាពិន្ទុត្រឹមត្រូវ
                     </>
                   )}
                 </button>
@@ -1677,7 +1685,7 @@ export default function MobileGradeEntry({
                   onClick={() => setShowReviewModal(false)}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-battambang font-semibold text-sm py-3 px-6 rounded-xl active:scale-[0.98] transition-all"
                 >
-                  ត្រឡប់ទៅកែសម្រួល • Back to Edit
+                  ត្រឡប់ទៅកែសម្រួល
                 </button>
               </div>
             </div>
@@ -1707,8 +1715,8 @@ export default function MobileGradeEntry({
                       currentUser?.teacher?.lastName || ""
                     }`.trim() || "N/A"
                   : currentUser?.role === "ADMIN"
-                  ? "Administrator"
-                  : "N/A"
+                    ? "Administrator"
+                    : "N/A"
               }
             />
           </div>
