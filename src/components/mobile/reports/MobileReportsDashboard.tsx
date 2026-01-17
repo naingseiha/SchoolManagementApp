@@ -22,6 +22,7 @@ import {
   Target,
   Calendar,
   TrendingUp,
+  Shield,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useData } from "@/context/DataContext";
@@ -52,6 +53,16 @@ interface SubjectStatus {
   completionRate: number;
   isComplete: boolean;
   studentGrades: StudentGrade[];
+  // ✅ NEW: Confirmation status
+  isConfirmed: boolean;
+  confirmedBy?: string;
+  confirmedAt?: Date;
+  confirmedByUser?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
 }
 
 const MONTHS = [
@@ -79,6 +90,20 @@ export default function MobileReportsDashboard() {
   const { classes, isLoadingClasses, refreshClasses } = useData();
   const router = useRouter();
 
+  // ✅ Hide scrollbar globally for this component
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .mobile-reports-container::-webkit-scrollbar {
+        display: none;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
@@ -105,10 +130,44 @@ export default function MobileReportsDashboard() {
         throw new Error("Class not found");
       }
 
-      const response = await gradeApi.getGradesGrid(
-        selectedClass,
-        selectedMonth,
-        selectedYear
+      // ✅ Fetch both grades and confirmations in parallel
+      const [response, confirmationsData] = await Promise.all([
+        gradeApi.getGradesGrid(
+          selectedClass,
+          selectedMonth,
+          selectedYear
+        ),
+        gradeApi.getConfirmations(
+          selectedClass,
+          selectedMonth,
+          selectedYear
+        ).catch((error) => {
+          console.error("Failed to fetch confirmations:", error);
+          return []; // Return empty array if fails
+        }),
+      ]);
+
+      // ✅ Create a map of confirmations by subjectId
+      const confirmationsMap = new Map<string, {
+        id: string;
+        confirmedBy: string;
+        confirmedAt: Date;
+        user: {
+          firstName: string;
+          lastName: string;
+          email: string;
+          role: string;
+        };
+      }>(
+        confirmationsData.map((conf: any) => [
+          conf.subjectId,
+          {
+            id: conf.id,
+            confirmedBy: conf.confirmedBy,
+            confirmedAt: new Date(conf.confirmedAt),
+            user: conf.user,
+          },
+        ])
       );
 
       const subjectStatuses: SubjectStatus[] = response.subjects.map(
@@ -149,6 +208,10 @@ export default function MobileReportsDashboard() {
             return sg;
           });
 
+          // ✅ Get confirmation status
+          const confirmation = confirmationsMap.get(subject.id);
+          const isConfirmed = !!confirmation;
+
           return {
             subjectId: subject.code,
             subjectName: subject.nameEn,
@@ -161,6 +224,11 @@ export default function MobileReportsDashboard() {
             completionRate,
             isComplete: studentsWithGrades === totalStudents,
             studentGrades: updatedStudentGrades,
+            // ✅ NEW: Add confirmation data
+            isConfirmed,
+            confirmedBy: confirmation?.confirmedBy,
+            confirmedAt: confirmation?.confirmedAt,
+            confirmedByUser: confirmation?.user,
           };
         }
       );
@@ -182,6 +250,7 @@ export default function MobileReportsDashboard() {
 
   const totalSubjects = subjects.length;
   const completedSubjects = subjects.filter((s) => s.isComplete).length;
+  const confirmedSubjects = subjects.filter((s) => s.isConfirmed).length;
   const overallCompletion =
     totalSubjects > 0
       ? Math.round((completedSubjects / totalSubjects) * 100)
@@ -202,51 +271,162 @@ export default function MobileReportsDashboard() {
 
   // ✅ Subject Detail Modal
   if (selectedSubject) {
+    const isVerified = selectedSubject.isConfirmed;
+
     return (
       <MobileLayout title="ព័ត៌មានលម្អិត">
-        <div className="flex flex-col min-h-full bg-gradient-to-br from-slate-50 to-gray-100">
+        <div className={`mobile-reports-container flex flex-col min-h-full ${
+          isVerified
+            ? "bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50"
+            : "bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50"
+        }`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {/* Header */}
-          <div className="bg-white px-4 pt-6 pb-4 shadow-sm">
+          <div className={`px-4 pt-6 pb-4 shadow-lg relative overflow-hidden ${
+            isVerified
+              ? "bg-gradient-to-br from-green-500 to-emerald-600"
+              : "bg-gradient-to-br from-orange-500 to-amber-600"
+          }`}>
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+
             <button
               onClick={() => setSelectedSubject(null)}
-              className="flex items-center gap-2 text-indigo-600 font-battambang font-semibold mb-4 active:scale-95 transition-transform"
+              className="flex items-center gap-2 text-white font-battambang font-semibold mb-4 active:scale-95 transition-transform relative z-10 bg-white/20 backdrop-blur-sm px-3 py-2 rounded-xl"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>ត្រឡប់ក្រោយ</span>
             </button>
-            <h1 className="font-koulen text-xl text-gray-900 mb-1">
-              {selectedSubject.subjectNameKh}
-            </h1>
-            <p className="font-battambang text-sm text-gray-600">
-              Max: {selectedSubject.maxScore}
-            </p>
+
+            <div className="relative z-10">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex-1">
+                  <h1 className="font-koulen text-2xl text-white mb-2 drop-shadow-sm">
+                    {selectedSubject.subjectNameKh}
+                  </h1>
+                  <div className="flex items-center gap-2">
+                    <span className="font-battambang text-sm text-white/90 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg">
+                      {selectedSubject.subjectCode}
+                    </span>
+                    <span className="font-battambang text-sm text-white/90">
+                      •
+                    </span>
+                    <span className="font-battambang text-sm text-white/90">
+                      Max: {selectedSubject.maxScore} ពិន្ទុ
+                    </span>
+                  </div>
+                </div>
+                {/* ✅ Confirmation Badge */}
+                {isVerified ? (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white shadow-lg">
+                    <Shield className="w-5 h-5 text-green-600" />
+                    <span className="font-battambang text-sm font-bold text-green-700">
+                      បានបញ្ជាក់ ✓
+                    </span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white shadow-lg animate-pulse">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                    <span className="font-battambang text-sm font-bold text-orange-700">
+                      មិនទាន់បញ្ជាក់
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* ✅ Show confirmation details if confirmed */}
+              {isVerified && selectedSubject.confirmedAt && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-6 h-6 bg-white/30 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="font-battambang text-xs text-white font-semibold">
+                      បញ្ជាក់ដោយ:{" "}
+                      {selectedSubject.confirmedByUser
+                        ? `${selectedSubject.confirmedByUser.firstName} ${selectedSubject.confirmedByUser.lastName}`
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <p className="font-battambang text-[10px] text-white/80 ml-8">
+                    {new Date(selectedSubject.confirmedAt).toLocaleString(
+                      "km-KH",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stats */}
           <div className="px-4 pt-4 pb-2">
-            <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+            <div className={`rounded-2xl shadow-lg p-4 border-2 ${
+              isVerified
+                ? "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200"
+                : "bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200"
+            }`}>
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center">
-                  <p className="font-koulen text-xs text-gray-500 mb-1">
-                    សិស្ស
+                  <div className={`w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center ${
+                    isVerified
+                      ? "bg-green-100"
+                      : "bg-orange-100"
+                  }`}>
+                    <Users className={`w-5 h-5 ${
+                      isVerified ? "text-green-600" : "text-orange-600"
+                    }`} />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 mb-1 font-semibold">
+                    សិស្សសរុប
                   </p>
-                  <p className="font-koulen text-2xl text-gray-900">
+                  <p className={`font-koulen text-2xl ${
+                    isVerified ? "text-green-700" : "text-orange-700"
+                  }`}>
                     {selectedSubject.totalStudents}
                   </p>
                 </div>
-                <div className="text-center border-x border-gray-200">
-                  <p className="font-koulen text-xs text-gray-500 mb-1">
+                <div className="text-center border-x-2 border-gray-200">
+                  <div className={`w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center ${
+                    isVerified
+                      ? "bg-green-100"
+                      : "bg-orange-100"
+                  }`}>
+                    <CheckCircle2 className={`w-5 h-5 ${
+                      isVerified ? "text-green-600" : "text-orange-600"
+                    }`} />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 mb-1 font-semibold">
                     បានបញ្ចូល
                   </p>
-                  <p className="font-koulen text-2xl text-green-600">
+                  <p className={`font-koulen text-2xl ${
+                    isVerified ? "text-green-700" : "text-orange-700"
+                  }`}>
                     {selectedSubject.studentsWithGrades}
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="font-koulen text-xs text-gray-500 mb-1">
+                  <div className={`w-10 h-10 mx-auto mb-2 rounded-xl flex items-center justify-center ${
+                    isVerified
+                      ? "bg-green-100"
+                      : "bg-orange-100"
+                  }`}>
+                    <TrendingUp className={`w-5 h-5 ${
+                      isVerified ? "text-green-600" : "text-orange-600"
+                    }`} />
+                  </div>
+                  <p className="font-battambang text-[10px] text-gray-600 mb-1 font-semibold">
                     ភាគរយ
                   </p>
-                  <p className="font-koulen text-2xl text-indigo-600">
+                  <p className={`font-koulen text-2xl ${
+                    isVerified ? "text-green-700" : "text-orange-700"
+                  }`}>
                     {selectedSubject.completionRate}%
                   </p>
                 </div>
@@ -308,7 +488,7 @@ export default function MobileReportsDashboard() {
   // ✅ Main Dashboard View - Modern Style
   return (
     <MobileLayout title="របាយការណ៍ • Reports">
-      <div className="flex flex-col min-h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      <div className="mobile-reports-container flex flex-col min-h-full bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {/* Clean Modern Header */}
         <div className="bg-white px-5 pt-6 pb-5 shadow-sm">
           {/* Top Bar */}
@@ -482,43 +662,92 @@ export default function MobileReportsDashboard() {
                       </div>
                     )}
 
-                  {/* Progress */}
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
-                      <p className="font-battambang text-[10px] text-gray-600 font-semibold mb-1">
-                        ភាពពេញលេញ
-                      </p>
-                      <p className="font-koulen text-3xl text-orange-600">
-                        {overallCompletion}%
-                      </p>
+                  {/* Progress - Modern Grid */}
+                  <div className="space-y-3 mb-3">
+                    {/* Completion Progress */}
+                    <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-4 shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-battambang text-xs text-white/90 font-semibold">
+                          ភាពពេញលេញ • Completion
+                        </p>
+                        <div className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                          <p className="font-koulen text-2xl text-white">
+                            {overallCompletion}%
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-white rounded-full transition-all duration-500"
+                          style={{ width: `${overallCompletion}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border border-gray-200/50">
-                      <p className="font-battambang text-[10px] text-gray-600 font-semibold mb-1">
-                        បានបញ្ចូល
-                      </p>
-                      <div className="flex items-baseline gap-1">
-                        <p className="font-koulen text-3xl text-green-600">
-                          {completedSubjects}
-                        </p>
-                        <p className="font-battambang text-sm text-gray-400">
-                          /{totalSubjects}
-                        </p>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Imported */}
+                      <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 border-2 border-green-200 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          </div>
+                          <p className="font-battambang text-[10px] text-gray-600 font-semibold">
+                            បានបញ្ចូល
+                          </p>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <p className="font-koulen text-3xl text-green-600">
+                            {completedSubjects}
+                          </p>
+                          <p className="font-battambang text-sm text-gray-400">
+                            /{totalSubjects}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Verified */}
+                      <div className={`bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-sm ${
+                        confirmedSubjects === totalSubjects
+                          ? "border-2 border-blue-200"
+                          : "border-2 border-orange-200"
+                      }`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            confirmedSubjects === totalSubjects
+                              ? "bg-blue-100"
+                              : "bg-orange-100"
+                          }`}>
+                            <Shield className={`w-4 h-4 ${
+                              confirmedSubjects === totalSubjects
+                                ? "text-blue-600"
+                                : "text-orange-600"
+                            }`} />
+                          </div>
+                          <p className="font-battambang text-[10px] text-gray-600 font-semibold">
+                            បានបញ្ជាក់
+                          </p>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <p className={`font-koulen text-3xl ${
+                            confirmedSubjects === totalSubjects
+                              ? "text-blue-600"
+                              : "text-orange-600"
+                          }`}>
+                            {confirmedSubjects}
+                          </p>
+                          <p className="font-battambang text-sm text-gray-400">
+                            /{totalSubjects}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
-                    <div
-                      className="h-full bg-gradient-to-r from-orange-500 to-pink-500 rounded-full transition-all duration-500"
-                      style={{ width: `${overallCompletion}%` }}
-                    />
-                  </div>
-
                   {/* Student Count */}
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-500" />
-                    <span className="font-battambang text-xs text-gray-600 font-semibold">
+                  <div className="flex items-center gap-2 bg-white/50 rounded-xl px-3 py-2">
+                    <Users className="w-4 h-4 text-indigo-600" />
+                    <span className="font-battambang text-xs text-gray-700 font-semibold">
                       សិស្សសរុប: {subjects[0]?.totalStudents || 0} នាក់
                     </span>
                   </div>
@@ -536,71 +765,109 @@ export default function MobileReportsDashboard() {
                   const isComplete = subject.isComplete;
                   const isPartial =
                     subject.studentsWithGrades > 0 && !isComplete;
+                  const isVerified = subject.isConfirmed;
 
                   return (
                     <button
                       key={subject.subjectId}
                       onClick={() => setSelectedSubject(subject)}
-                      className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-all active:scale-[0.98] flex items-center gap-3"
+                      className={`w-full rounded-2xl shadow-md p-4 hover:shadow-lg transition-all active:scale-[0.98] flex items-center gap-3 relative overflow-hidden ${
+                        isVerified
+                          ? "bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200"
+                          : "bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200"
+                      }`}
                     >
+                      {/* Verification Status Indicator */}
+                      <div className={`absolute top-0 right-0 w-16 h-16 ${
+                        isVerified
+                          ? "bg-gradient-to-br from-green-200/30 to-emerald-300/30"
+                          : "bg-gradient-to-br from-orange-200/30 to-amber-300/30"
+                      } rounded-bl-full`} />
+
                       {/* Number Badge */}
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md ${
-                          isComplete
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md relative z-10 ${
+                          isVerified
                             ? "bg-gradient-to-br from-green-500 to-emerald-600"
-                            : isPartial
-                            ? "bg-gradient-to-br from-yellow-500 to-orange-600"
-                            : "bg-gradient-to-br from-gray-400 to-gray-500"
+                            : "bg-gradient-to-br from-orange-500 to-amber-600"
                         }`}
                       >
-                        <span className="text-white font-bold text-sm">
+                        <span className="text-white font-bold text-base">
                           {index + 1}
                         </span>
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 text-left">
-                        <h4 className="font-battambang text-sm font-bold text-gray-900 mb-1">
-                          {subject.subjectNameKh}
-                        </h4>
+                      <div className="flex-1 text-left relative z-10">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-battambang text-sm font-bold text-gray-900">
+                            {subject.subjectNameKh}
+                          </h4>
+                          {/* ✅ Verification Badge */}
+                          {isVerified ? (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500 text-white shadow-sm">
+                              <Shield className="w-3 h-3" />
+                              <span className="font-battambang text-[10px] font-bold">
+                                ✓
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500 text-white shadow-sm animate-pulse">
+                              <AlertCircle className="w-3 h-3" />
+                              <span className="font-battambang text-[10px] font-bold">
+                                !
+                              </span>
+                            </div>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="font-battambang text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                          <span className={`font-battambang text-xs px-2 py-0.5 rounded font-semibold ${
+                            isVerified
+                              ? "bg-green-200/50 text-green-800"
+                              : "bg-orange-200/50 text-orange-800"
+                          }`}>
                             {subject.subjectCode}
                           </span>
                           <span className="font-battambang text-xs text-gray-500">
                             •
                           </span>
-                          <span className="font-battambang text-xs text-indigo-600 font-semibold">
+                          <span className="font-battambang text-xs text-indigo-700 font-semibold">
                             {subject.maxScore} ពិន្ទុ
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div className={`flex-1 h-2 rounded-full overflow-hidden ${
+                            isVerified ? "bg-green-200" : "bg-orange-200"
+                          }`}>
                             <div
-                              className={`h-full rounded-full transition-all ${
-                                isComplete
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isVerified
                                   ? "bg-gradient-to-r from-green-500 to-emerald-600"
-                                  : isPartial
-                                  ? "bg-gradient-to-r from-yellow-500 to-orange-600"
-                                  : "bg-gray-300"
+                                  : "bg-gradient-to-r from-orange-500 to-amber-600"
                               }`}
                               style={{ width: `${subject.completionRate}%` }}
                             />
                           </div>
-                          <span className="font-battambang text-xs text-gray-600 font-bold min-w-[45px] text-right">
+                          <span className={`font-koulen text-sm font-bold min-w-[45px] text-right ${
+                            isVerified ? "text-green-700" : "text-orange-700"
+                          }`}>
                             {subject.completionRate}%
                           </span>
                         </div>
                       </div>
 
                       {/* Status Icon */}
-                      <div>
+                      <div className="relative z-10">
                         {isComplete ? (
-                          <CheckCircle2 className="w-6 h-6 text-green-600" />
+                          <CheckCircle2 className={`w-7 h-7 ${
+                            isVerified ? "text-green-600" : "text-orange-600"
+                          }`} />
                         ) : isPartial ? (
-                          <AlertCircle className="w-6 h-6 text-yellow-600" />
+                          <AlertCircle className={`w-7 h-7 ${
+                            isVerified ? "text-green-500" : "text-orange-500"
+                          }`} />
                         ) : (
-                          <XCircle className="w-6 h-6 text-gray-400" />
+                          <XCircle className="w-7 h-7 text-gray-400" />
                         )}
                       </div>
                     </button>
