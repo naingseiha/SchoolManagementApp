@@ -7,7 +7,7 @@ import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { Shield, UserCog, ShieldCheck, ArrowRight, TrendingUp } from "lucide-react";
+import { Shield, UserCog, ShieldCheck, ArrowRight, TrendingUp, Users } from "lucide-react";
 import { adminSecurityApi } from "@/lib/api/admin-security";
 
 interface SettingsCard {
@@ -62,24 +62,24 @@ export default function SettingsPage() {
 
   const settingsCards: SettingsCard[] = [
     {
-      id: "accounts",
-      title: "គ្រប់គ្រងគណនី",
-      subtitle: "Account Management",
-      icon: Shield,
+      id: "students",
+      title: "គ្រប់គ្រងសិស្ស",
+      subtitle: "Student Management",
+      icon: UserCog,
       gradient: "from-blue-500 to-cyan-500",
-      href: "/admin/accounts",
-      count: stats?.totalTeachers,
-      countLabel: "គណនី",
+      href: "/admin/students",
+      count: stats?.totalStudents,
+      countLabel: "សិស្ស",
     },
     {
-      id: "roles",
-      title: "គ្រប់គ្រងតួនាទី",
-      subtitle: "Role Management",
-      icon: UserCog,
+      id: "teachers",
+      title: "គ្រប់គ្រងគ្រូបង្រៀន",
+      subtitle: "Teacher Management",
+      icon: Shield,
       gradient: "from-green-500 to-emerald-500",
-      href: "/admin/students",
-      count: undefined,
-      countLabel: "តួនាទី",
+      href: "/admin/teachers",
+      count: stats?.totalTeachers,
+      countLabel: "គ្រូបង្រៀន",
     },
     {
       id: "security",
