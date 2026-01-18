@@ -72,9 +72,12 @@ export const getAccountStatistics = async (req: Request, res: Response) => {
       const cls = classes.find((c) => c.id === item.classId);
       if (cls) {
         gradeStats[cls.grade].active += item._count;
-        gradeStats[cls.grade].inactive =
-          gradeStats[cls.grade].total - gradeStats[cls.grade].active;
       }
+    }
+
+    // 🔥 FIX: Calculate inactive counts for ALL grades (not just those with active students)
+    for (const grade in gradeStats) {
+      gradeStats[grade].inactive = gradeStats[grade].total - gradeStats[grade].active;
     }
 
     res.json({

@@ -164,9 +164,9 @@ export default function AdminStudentsPage() {
               <div>
                 <div className="flex items-center gap-3 mb-2">
                   <UserCog className="w-8 h-8 text-indigo-600" />
-                  <h1 className="font-khmer-title text-4xl text-gray-900">គ្រប់គ្រងសិស្ស និងតួនាទី</h1>
+                  <h1 className="font-khmer-title text-4xl text-gray-900">គ្រប់គ្រងសិស្ស</h1>
                 </div>
-                <p className="font-khmer-body text-gray-600 ml-11">គ្រប់គ្រងតួនាទី និងគណនីសិស្ស</p>
+                <p className="font-khmer-body text-gray-600 ml-11">គ្រប់គ្រងគណនី តួនាទី និងសិទ្ធិសិស្ស</p>
               </div>
               <button
                 onClick={loadStudents}

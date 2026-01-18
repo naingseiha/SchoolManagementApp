@@ -3,6 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useDeviceType } from "@/lib/utils/deviceDetection";
+import Sidebar from "@/components/layout/Sidebar";
+import Header from "@/components/layout/Header";
+import MobileLayout from "@/components/layout/MobileLayout";
 import {
   Shield,
   AlertTriangle,
@@ -25,8 +29,9 @@ import ExtendExpirationModal from "@/components/admin/modals/ExtendExpirationMod
 import SuspendAccountModal from "@/components/admin/modals/SuspendAccountModal";
 
 export default function AdminSecurityPage() {
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const deviceType = useDeviceType();
   const [dashboard, setDashboard] = useState<SecurityDashboard | null>(null);
   const [teachers, setTeachers] = useState<TeacherSecurity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +43,16 @@ export default function AdminSecurityPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+      return;
+    }
     if (currentUser?.role !== "ADMIN") {
       router.push("/");
       return;
     }
     loadData();
-  }, [currentUser, filter, page]);
+  }, [currentUser, filter, page, isAuthenticated, authLoading]);
 
   const loadData = async () => {
     try {
@@ -66,17 +75,106 @@ export default function AdminSecurityPage() {
     loadData();
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   if (loading && !dashboard) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
-          <p className="text-gray-600">Loading security dashboard...</p>
+      <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header />
+          <main className="flex-1 overflow-y-auto">
+            <div className="min-h-screen flex items-center justify-center">
+              <div className="text-center">
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-indigo-600" />
+                <p className="text-gray-600">Loading security dashboard...</p>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
   }
 
+  // Mobile Layout
+  if (deviceType === "mobile") {
+    return (
+      <MobileLayout>
+        <SecurityDashboardContent
+          dashboard={dashboard}
+          teachers={teachers}
+          filter={filter}
+          setFilter={setFilter}
+          search={search}
+          setSearch={setSearch}
+          page={page}
+          setPage={setPage}
+          totalPages={totalPages}
+          handleRefresh={handleRefresh}
+          loadData={loadData}
+        />
+      </MobileLayout>
+    );
+  }
+
+  // Desktop Layout
+  return (
+    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto">
+          <SecurityDashboardContent
+            dashboard={dashboard}
+            teachers={teachers}
+            filter={filter}
+            setFilter={setFilter}
+            search={search}
+            setSearch={setSearch}
+            page={page}
+            setPage={setPage}
+            totalPages={totalPages}
+            handleRefresh={handleRefresh}
+            loadData={loadData}
+          />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// Separate component for the dashboard content
+function SecurityDashboardContent({
+  dashboard,
+  teachers,
+  filter,
+  setFilter,
+  search,
+  setSearch,
+  page,
+  setPage,
+  totalPages,
+  handleRefresh,
+  loadData,
+}: {
+  dashboard: SecurityDashboard | null;
+  teachers: TeacherSecurity[];
+  filter: "all" | "default" | "expired" | "expiring" | "suspended";
+  setFilter: (filter: "all" | "default" | "expired" | "expiring" | "suspended") => void;
+  search: string;
+  setSearch: (search: string) => void;
+  page: number;
+  setPage: (page: number) => void;
+  totalPages: number;
+  handleRefresh: () => void;
+  loadData: () => void;
+}) {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       {/* Header */}

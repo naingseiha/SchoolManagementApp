@@ -20,8 +20,6 @@ import {
   UserCheck,
   Sparkles,
   Loader2,
-  Shield,
-  UserCog,
 } from "lucide-react";
 
 function Sidebar() {
@@ -70,20 +68,6 @@ function Sidebar() {
       href: "/subjects",
       roles: ["ADMIN"],
       gradient: "from-indigo-500 to-purple-500",
-    },
-    {
-      icon: Shield,
-      label: "គ្រប់គ្រងគណនី",
-      href: "/admin/accounts",
-      roles: ["ADMIN"],
-      gradient: "from-red-500 to-orange-500",
-    },
-    {
-      icon: UserCog,
-      label: "គ្រប់គ្រងតួនាទី",
-      href: "/admin/students",
-      roles: ["ADMIN"],
-      gradient: "from-blue-500 to-indigo-500",
     },
     {
       icon: ClipboardList,

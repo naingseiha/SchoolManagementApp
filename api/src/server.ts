@@ -10,6 +10,9 @@ import {
   disconnectDatabase,
 } from "./config/database";
 import { errorHandler, notFound } from "./middleware/errorHandler";
+import { startPasswordExpirationJob } from "./jobs/password-expiration.job";
+import { startNotificationJob } from "./jobs/notification.job";
+import { emailService } from "./services/email.service";
 
 // Import Routes
 import authRoutes from "./routes/auth.routes";
@@ -199,6 +202,22 @@ const startServer = async () => {
     console.log("✅ Database connected successfully");
 
     startKeepAlive();
+
+    // Start background jobs
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("📋 Starting background jobs...");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    
+    // Test email service connection
+    if (emailService.isReady()) {
+      await emailService.testConnection();
+    }
+    
+    // Start cron jobs
+    startPasswordExpirationJob();
+    startNotificationJob();
+    
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const server = app.listen(PORT, () => {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
