@@ -109,7 +109,8 @@
       "Bash(node fix-koulen-correct.js:*)",
       "Bash(file:*)",
       "Bash(node:*)",
-      "Bash(timeout 5 tail:*)"
+      "Bash(timeout 5 tail:*)",
+      "Bash(tree:*)"
     ]
   }
 }
