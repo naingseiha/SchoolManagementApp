@@ -208,9 +208,23 @@ const login = async (req, res) => {
             loginCount: user.loginCount + 1,
             failedAttempts: 0,
         };
-        if (usingDefaultPassword && user.isDefaultPassword === null) {
-            passwordSecurityUpdate.isDefaultPassword = true;
-            passwordSecurityUpdate.passwordExpiresAt = (0, password_utils_1.calculatePasswordExpiry)(7);
+        // Update password security status based on ACTUAL password check
+        if (usingDefaultPassword) {
+            // User IS using default password
+            if (user.isDefaultPassword === null) {
+                passwordSecurityUpdate.isDefaultPassword = true;
+            }
+            // Always set expiration if not set or if user still has default password
+            if (!user.passwordExpiresAt || user.isDefaultPassword) {
+                passwordSecurityUpdate.passwordExpiresAt = (0, password_utils_1.calculatePasswordExpiry)(7);
+            }
+        }
+        else {
+            // User is NOT using default password - clear the flag and expiration
+            if (user.isDefaultPassword === true || user.isDefaultPassword === null) {
+                passwordSecurityUpdate.isDefaultPassword = false;
+                passwordSecurityUpdate.passwordExpiresAt = null;
+            }
         }
         // Check if password has expired (only for teachers with default passwords)
         if (user.role === "TEACHER" && user.isDefaultPassword && user.passwordExpiresAt) {
@@ -473,6 +487,7 @@ const getPasswordStatus = async (req, res) => {
                 passwordExpiresAt: true,
                 passwordChangedAt: true,
                 phone: true,
+                password: true, // Need to check actual password
                 teacher: {
                     select: {
                         phone: true,
@@ -486,20 +501,36 @@ const getPasswordStatus = async (req, res) => {
                 message: "User not found",
             });
         }
+        // Actually check if the current password is the default (phone number)
         const phoneNumber = user.phone || user.teacher?.phone;
-        const timeRemaining = (0, password_utils_1.getTimeRemaining)(user.passwordExpiresAt);
-        const alertLevel = (0, password_utils_1.getAlertLevel)(user.passwordExpiresAt);
+        const actuallyUsingDefaultPassword = phoneNumber
+            ? await (0, password_utils_1.isDefaultPassword)(user.password, phoneNumber)
+            : false;
+        // If the actual check differs from the database field, update it
+        if (actuallyUsingDefaultPassword !== user.isDefaultPassword) {
+            await database_1.prisma.user.update({
+                where: { id: userId },
+                data: {
+                    isDefaultPassword: actuallyUsingDefaultPassword,
+                    passwordExpiresAt: actuallyUsingDefaultPassword
+                        ? (user.passwordExpiresAt || (0, password_utils_1.calculatePasswordExpiry)(7))
+                        : null,
+                },
+            });
+        }
+        const timeRemaining = (0, password_utils_1.getTimeRemaining)(actuallyUsingDefaultPassword ? user.passwordExpiresAt : null);
+        const alertLevel = (0, password_utils_1.getAlertLevel)(actuallyUsingDefaultPassword ? user.passwordExpiresAt : null);
         res.json({
             success: true,
             data: {
-                isDefaultPassword: user.isDefaultPassword || false,
-                passwordExpiresAt: user.passwordExpiresAt,
+                isDefaultPassword: actuallyUsingDefaultPassword,
+                passwordExpiresAt: actuallyUsingDefaultPassword ? user.passwordExpiresAt : null,
                 passwordChangedAt: user.passwordChangedAt,
                 daysRemaining: timeRemaining.daysRemaining,
                 hoursRemaining: timeRemaining.hoursRemaining,
                 isExpired: timeRemaining.isExpired,
-                alertLevel,
-                canExtend: timeRemaining.daysRemaining > 0 && timeRemaining.daysRemaining <= 7,
+                alertLevel: actuallyUsingDefaultPassword ? alertLevel : 'none',
+                canExtend: actuallyUsingDefaultPassword && timeRemaining.daysRemaining > 0 && timeRemaining.daysRemaining <= 7,
             },
         });
     }

@@ -10,6 +10,9 @@ const compression_1 = __importDefault(require("compression")); // ✅ OPTIMIZED:
 const dotenv_1 = __importDefault(require("dotenv"));
 const database_1 = require("./config/database");
 const errorHandler_1 = require("./middleware/errorHandler");
+const password_expiration_job_1 = require("./jobs/password-expiration.job");
+const notification_job_1 = require("./jobs/notification.job");
+const email_service_1 = require("./services/email.service");
 // Import Routes
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
@@ -180,6 +183,18 @@ const startServer = async () => {
         await (0, database_1.connectDatabase)();
         console.log("✅ Database connected successfully");
         (0, database_1.startKeepAlive)();
+        // Start background jobs
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.log("📋 Starting background jobs...");
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        // Test email service connection
+        if (email_service_1.emailService.isReady()) {
+            await email_service_1.emailService.testConnection();
+        }
+        // Start cron jobs
+        (0, password_expiration_job_1.startPasswordExpirationJob)();
+        (0, notification_job_1.startNotificationJob)();
+        console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         const server = app.listen(PORT, () => {
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             console.log(`🚀 Server running on port ${PORT}`);

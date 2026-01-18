@@ -51,6 +51,8 @@ const getStudentsLightweight = async (req, res) => {
                 currentAddress: true,
                 phoneNumber: true,
                 classId: true,
+                isAccountActive: true, // ✅ Added for account status display
+                studentRole: true, // ✅ Added for role display
                 // Only essential class info
                 class: {
                     select: {
