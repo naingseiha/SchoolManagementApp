@@ -87,15 +87,25 @@ export default function EnhancedAccountsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [stats, studentsData] = await Promise.all([
+      const [stats] = await Promise.all([
         adminApi.getAccountStatistics(),
-        studentsApi.getAllLightweight(1, 1000) // Load all students
       ]);
       setStatistics(stats);
-      console.log("📊 Loaded students:", studentsData.data.length);
-      console.log("📊 Sample student data:", studentsData.data[0]);
-      setStudents(studentsData.data || []);
-      setFilteredStudents(studentsData.data || []);
+      
+      // Load ALL students (not just 1000)
+      let allStudents: Student[] = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const studentsData = await studentsApi.getAllLightweight(page, 500);
+        allStudents = [...allStudents, ...(studentsData.data || [])];
+        hasMore = studentsData.pagination?.hasMore || false;
+        page++;
+      }
+      
+      setStudents(allStudents);
+      setFilteredStudents(allStudents);
     } catch (error: any) {
       console.error("Failed to load data:", error);
       setMessage({ type: 'error', text: error.message || 'Failed to load data' });
@@ -124,9 +134,13 @@ export default function EnhancedAccountsPage() {
 
     // Status filter
     if (filters.status !== "all") {
-      filtered = filtered.filter(student => 
-        filters.status === "active" ? student.isAccountActive : !student.isAccountActive
-      );
+      filtered = filtered.filter(student => {
+        const isActive = student.isAccountActive;
+        // Treat undefined/null as inactive (no account created yet)
+        return filters.status === "active" 
+          ? isActive === true 
+          : (isActive === false || isActive === undefined || isActive === null);
+      });
     }
 
     // Gender filter
