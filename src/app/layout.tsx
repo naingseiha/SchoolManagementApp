@@ -251,6 +251,9 @@ export default function RootLayout({
         {/* MS Tile */}
         <meta name="msapplication-TileColor" content="#6366f1" />
         <meta name="msapplication-config" content="/browserconfig.xml" />
+
+        {/* ✅ iOS FIX: Aggressive service worker update for installed PWAs */}
+        <script src="/sw-register.js" defer></script>
       </head>
       <body className={inter.className}>
         <AuthProvider>
