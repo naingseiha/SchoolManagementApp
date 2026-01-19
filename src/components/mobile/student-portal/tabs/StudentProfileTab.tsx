@@ -104,14 +104,14 @@ export default function StudentProfileTab({
   const [activities, setActivities] = useState<ActivityType[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cacheTimeRef = useRef<{[key: string]: number}>({});
+  const cacheTimeRef = useRef<{ [key: string]: number }>({});
   const currentAcademicYear = getCurrentAcademicYear();
 
   // Load profile photo from localStorage immediately
   useEffect(() => {
     if (profile?.student?.id) {
       const savedPhoto = localStorage.getItem(
-        `student_photo_${profile.student.id}`
+        `student_photo_${profile.student.id}`,
       );
       if (savedPhoto) {
         setProfilePhoto(savedPhoto);
@@ -216,7 +216,10 @@ export default function StudentProfileTab({
         console.error(`❌ Error fetching activities:`, error);
         // Generate sample activities based on grades data
         if (isMounted && gradesData?.grades && gradesData.grades.length > 0) {
-          const sampleActivities = generateSampleActivities(gradesData, attendanceData);
+          const sampleActivities = generateSampleActivities(
+            gradesData,
+            attendanceData,
+          );
           setActivities(sampleActivities);
         }
       } finally {
@@ -236,97 +239,112 @@ export default function StudentProfileTab({
   }, [isEditingProfile, profile?.student?.id, gradesData, attendanceData]);
 
   // Generate sample activities from real data (fallback when API not available)
-  const generateSampleActivities = useCallback((grades?: GradesResponse | null, attendance?: AttendanceResponse | null): ActivityType[] => {
-    const activities: ActivityType[] = [];
+  const generateSampleActivities = useCallback(
+    (
+      grades?: GradesResponse | null,
+      attendance?: AttendanceResponse | null,
+    ): ActivityType[] => {
+      const activities: ActivityType[] = [];
 
-    // From grades
-    if (grades?.grades && grades.grades.length > 0) {
-      const recentGrade = grades.grades[0];
-      if (recentGrade.score >= 45) {
-        activities.push({
-          id: `grade_${recentGrade.id}`,
-          type: 'ACHIEVEMENT_EARNED',
-          title: 'ទទួលបានពិន្ទុខ្ពស់',
-          description: `${recentGrade.subject.nameKh}: ${recentGrade.score}/${recentGrade.maxScore}`,
-          icon: 'Award',
-          color: 'from-yellow-500 to-orange-600',
-          timestamp: new Date().toISOString(),
-          metadata: {
-            score: recentGrade.score,
-            maxScore: recentGrade.maxScore,
-            subject: recentGrade.subject.nameKh,
-          },
-        });
-      } else {
-        activities.push({
-          id: `grade_${recentGrade.id}`,
-          type: 'GRADE_ADDED',
-          title: 'ទទួលបានពិន្ទុថ្មី',
-          description: `${recentGrade.subject.nameKh}: ${recentGrade.score}/${recentGrade.maxScore}`,
-          icon: 'CheckCircle',
-          color: 'from-green-500 to-emerald-600',
-          timestamp: new Date().toISOString(),
-          metadata: {
-            score: recentGrade.score,
-            maxScore: recentGrade.maxScore,
-            subject: recentGrade.subject.nameKh,
-          },
-        });
-      }
-    }
-
-    // From attendance
-    if (attendance?.statistics && attendance.statistics.attendanceRate >= 95) {
-      activities.push({
-        id: 'attendance_achievement',
-        type: 'ACHIEVEMENT_EARNED',
-        title: 'វត្តមានល្អប្រសើរ',
-        description: `អត្ត្រាមករៀន ${attendance.statistics.attendanceRate.toFixed(0)}%`,
-        icon: 'Target',
-        color: 'from-blue-500 to-indigo-600',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // From average score
-    if (grades?.statistics && grades.statistics.averageScore >= 40) {
-      activities.push({
-        id: 'average_achievement',
-        type: 'ACHIEVEMENT_EARNED',
-        title: 'សមិទ្ធផលល្អប្រសើរ',
-        description: `មធ្យមភាគ ${grades.statistics.averageScore.toFixed(1)}/50`,
-        icon: 'TrendingUp',
-        color: 'from-purple-500 to-pink-600',
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    return activities.slice(0, 5);
-  }, []);
-
-  // Handle photo upload
-  const handlePhotoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("ទំហំរូបភាពធំពេក។ សូមជ្រើសរើសរូបភាពតូចជាង 5MB");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const photoUrl = reader.result as string;
-        setProfilePhoto(photoUrl);
-        if (profile?.student?.id) {
-          requestIdleCallback(() => {
-            localStorage.setItem(`student_photo_${profile.student.id}`, photoUrl);
+      // From grades
+      if (grades?.grades && grades.grades.length > 0) {
+        const recentGrade = grades.grades[0];
+        if (recentGrade.score >= 45) {
+          activities.push({
+            id: `grade_${recentGrade.id}`,
+            type: "ACHIEVEMENT_EARNED",
+            title: "ទទួលបានពិន្ទុខ្ពស់",
+            description: `${recentGrade.subject.nameKh}: ${recentGrade.score}/${recentGrade.maxScore}`,
+            icon: "Award",
+            color: "from-yellow-500 to-orange-600",
+            timestamp: new Date().toISOString(),
+            metadata: {
+              score: recentGrade.score,
+              maxScore: recentGrade.maxScore,
+              subject: recentGrade.subject.nameKh,
+            },
+          });
+        } else {
+          activities.push({
+            id: `grade_${recentGrade.id}`,
+            type: "GRADE_ADDED",
+            title: "ទទួលបានពិន្ទុថ្មី",
+            description: `${recentGrade.subject.nameKh}: ${recentGrade.score}/${recentGrade.maxScore}`,
+            icon: "CheckCircle",
+            color: "from-green-500 to-emerald-600",
+            timestamp: new Date().toISOString(),
+            metadata: {
+              score: recentGrade.score,
+              maxScore: recentGrade.maxScore,
+              subject: recentGrade.subject.nameKh,
+            },
           });
         }
-        setShowPhotoOptions(false);
-      };
-      reader.readAsDataURL(file);
-    }
-  }, [profile?.student?.id]);
+      }
+
+      // From attendance
+      if (
+        attendance?.statistics &&
+        attendance.statistics.attendanceRate >= 95
+      ) {
+        activities.push({
+          id: "attendance_achievement",
+          type: "ACHIEVEMENT_EARNED",
+          title: "វត្តមានល្អប្រសើរ",
+          description: `អត្ត្រាមករៀន ${attendance.statistics.attendanceRate.toFixed(0)}%`,
+          icon: "Target",
+          color: "from-blue-500 to-indigo-600",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // From average score
+      if (grades?.statistics && grades.statistics.averageScore >= 40) {
+        activities.push({
+          id: "average_achievement",
+          type: "ACHIEVEMENT_EARNED",
+          title: "សមិទ្ធផលល្អប្រសើរ",
+          description: `មធ្យមភាគ ${grades.statistics.averageScore.toFixed(1)}/50`,
+          icon: "TrendingUp",
+          color: "from-purple-500 to-pink-600",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return activities.slice(0, 5);
+    },
+    [],
+  );
+
+  // Handle photo upload
+  const handlePhotoUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert("ទំហំរូបភាពធំពេក។ សូមជ្រើសរើសរូបភាពតូចជាង 5MB");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const photoUrl = reader.result as string;
+          setProfilePhoto(photoUrl);
+          if (profile?.student?.id) {
+            requestIdleCallback(() => {
+              localStorage.setItem(
+                `student_photo_${profile.student.id}`,
+                photoUrl,
+              );
+            });
+          }
+          setShowPhotoOptions(false);
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+    [profile?.student?.id],
+  );
 
   const handleRemovePhoto = useCallback(() => {
     setProfilePhoto(null);
@@ -341,7 +359,7 @@ export default function StudentProfileTab({
   // Memoized computed values
   const highestAverage = useMemo(() => {
     const monthsWithData = monthlyStats.filter(
-      (s) => s.hasData && s.averageScore !== null
+      (s) => s.hasData && s.averageScore !== null,
     );
     return monthsWithData.length > 0
       ? Math.max(...monthsWithData.map((s) => s.averageScore || 0))
@@ -406,9 +424,7 @@ export default function StudentProfileTab({
       {/* Family Information */}
       {(profile.student.fatherName ||
         profile.student.motherName ||
-        profile.student.parentPhone) && (
-        <FamilyInformation profile={profile} />
-      )}
+        profile.student.parentPhone) && <FamilyInformation profile={profile} />}
 
       {/* Academic History */}
       {(profile.student.previousSchool ||
@@ -463,7 +479,13 @@ export default function StudentProfileTab({
 
 // Memoized Hero Section Component
 const HeroSection = memo(
-  ({ profile, profilePhoto, gradesData, attendanceData, onCameraClick }: any) => (
+  ({
+    profile,
+    profilePhoto,
+    gradesData,
+    attendanceData,
+    onCameraClick,
+  }: any) => (
     <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-lg">
       {/* Cover Banner */}
       <div className="relative h-32 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
@@ -577,7 +599,7 @@ const HeroSection = memo(
         </div>
       </div>
     </div>
-  )
+  ),
 );
 
 HeroSection.displayName = "HeroSection";
@@ -665,7 +687,7 @@ const AcademicHighlights = memo(
     return (
       <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-black text-gray-900 flex items-center gap-2">
+          <h4 className="text-lg font-koulen font-black text-gray-900 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-yellow-500" />
             <span>សមិទ្ធផល • Achievements</span>
           </h4>
@@ -724,7 +746,7 @@ const AcademicHighlights = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 AcademicHighlights.displayName = "AcademicHighlights";
@@ -733,10 +755,13 @@ AcademicHighlights.displayName = "AcademicHighlights";
 const AchievementBadge = memo(
   ({ icon: Icon, title, subtitle, emoji, color }: any) => {
     const colorClasses = {
-      yellow: "from-yellow-50 via-amber-50 to-yellow-50 border-yellow-200 text-yellow-900 bg-yellow-100 text-yellow-600 bg-yellow-200 text-yellow-700",
-      green: "from-green-50 via-emerald-50 to-green-50 border-green-200 text-green-900 bg-green-100 text-green-600 bg-green-200 text-green-700",
+      yellow:
+        "from-yellow-50 via-amber-50 to-yellow-50 border-yellow-200 text-yellow-900 bg-yellow-100 text-yellow-600 bg-yellow-200 text-yellow-700",
+      green:
+        "from-green-50 via-emerald-50 to-green-50 border-green-200 text-green-900 bg-green-100 text-green-600 bg-green-200 text-green-700",
       blue: "from-blue-50 via-cyan-50 to-blue-50 border-blue-200 text-blue-900 bg-blue-100 text-blue-600 bg-blue-200 text-blue-700",
-      purple: "from-purple-50 via-pink-50 to-purple-50 border-purple-200 text-purple-900 bg-purple-100 text-purple-600 bg-purple-200 text-purple-700",
+      purple:
+        "from-purple-50 via-pink-50 to-purple-50 border-purple-200 text-purple-900 bg-purple-100 text-purple-600 bg-purple-200 text-purple-700",
       rose: "from-rose-50 via-red-50 to-rose-50 border-rose-200 text-rose-900 bg-rose-100 text-rose-600 bg-rose-200 text-rose-700",
     };
 
@@ -763,19 +788,25 @@ const AchievementBadge = memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 AchievementBadge.displayName = "AchievementBadge";
 
 // Academic Year Stats Component - Remains mostly the same but with memoization
 const AcademicYearStats = memo(
-  ({ monthlyStats, loadingStats, showAllMonths, onToggleShowAll, currentAcademicYear }: any) => (
+  ({
+    monthlyStats,
+    loadingStats,
+    showAllMonths,
+    onToggleShowAll,
+    currentAcademicYear,
+  }: any) => (
     <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-indigo-600" />
-          <h4 className="text-sm font-black text-gray-900">
+          <h4 className="text-sm font-koulen font-black text-gray-900">
             ឆ្នាំសិក្សា {currentAcademicYear}-{currentAcademicYear + 1}
           </h4>
         </div>
@@ -792,7 +823,9 @@ const AcademicYearStats = memo(
           <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">📊</span>
           </div>
-          <p className="text-sm font-bold text-gray-700 mb-1">មិនទាន់មានទិន្នន័យ</p>
+          <p className="text-sm font-bold text-gray-700 mb-1">
+            មិនទាន់មានទិន្នន័យ
+          </p>
           <p className="text-xs text-gray-500">No data available yet</p>
         </div>
       ) : (
@@ -809,7 +842,9 @@ const AcademicYearStats = memo(
               className="w-full mt-3 py-3 px-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-xl text-indigo-700 font-bold text-sm hover:from-indigo-100 hover:to-purple-100 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-98"
             >
               <span>
-                {showAllMonths ? "បង្ហាញតិច • Show Less" : "បង្ហាញច្រើន • Show More"}
+                {showAllMonths
+                  ? "បង្ហាញតិច • Show Less"
+                  : "បង្ហាញច្រើន • Show More"}
               </span>
               <span className="text-lg">{showAllMonths ? "↑" : "↓"}</span>
             </button>
@@ -817,7 +852,7 @@ const AcademicYearStats = memo(
         </div>
       )}
     </div>
-  )
+  ),
 );
 
 AcademicYearStats.displayName = "AcademicYearStats";
@@ -832,24 +867,24 @@ const MonthStatRow = memo(({ stat }: { stat: MonthlyStats }) => {
     ? stat.averageScore! >= 40
       ? "text-green-600"
       : stat.averageScore! >= 35
-      ? "text-blue-600"
-      : stat.averageScore! >= 30
-      ? "text-yellow-600"
-      : "text-orange-600"
+        ? "text-blue-600"
+        : stat.averageScore! >= 30
+          ? "text-yellow-600"
+          : "text-orange-600"
     : "text-gray-400";
 
   const bgColor = hasAnyData
     ? inProgress
       ? "bg-amber-50 border-amber-300"
       : hasScore && stat.averageScore! >= 40
-      ? "bg-green-50 border-green-200"
-      : hasScore && stat.averageScore! >= 35
-      ? "bg-blue-50 border-blue-200"
-      : hasScore && stat.averageScore! >= 30
-      ? "bg-yellow-50 border-yellow-200"
-      : hasScore
-      ? "bg-orange-50 border-orange-200"
-      : "bg-amber-50 border-amber-300"
+        ? "bg-green-50 border-green-200"
+        : hasScore && stat.averageScore! >= 35
+          ? "bg-blue-50 border-blue-200"
+          : hasScore && stat.averageScore! >= 30
+            ? "bg-yellow-50 border-yellow-200"
+            : hasScore
+              ? "bg-orange-50 border-orange-200"
+              : "bg-amber-50 border-amber-300"
     : "bg-gray-50 border-gray-200";
 
   return (
@@ -891,9 +926,7 @@ const MonthStatRow = memo(({ stat }: { stat: MonthlyStats }) => {
         >
           {hasScore ? stat.averageScore!.toFixed(1) : hasAnyData ? "—" : "—"}
         </p>
-        {hasAnyData && (
-          <p className="text-xs text-gray-500 font-medium">/50</p>
-        )}
+        {hasAnyData && <p className="text-xs text-gray-500 font-medium">/50</p>}
       </div>
     </div>
   );
@@ -902,76 +935,89 @@ const MonthStatRow = memo(({ stat }: { stat: MonthlyStats }) => {
 MonthStatRow.displayName = "MonthStatRow";
 
 // Activity Feed Component - Real Data
-const ActivityFeed = memo(({ activities, loading }: { activities: ActivityType[]; loading: boolean }) => {
-  if (loading) {
+const ActivityFeed = memo(
+  ({
+    activities,
+    loading,
+  }: {
+    activities: ActivityType[];
+    loading: boolean;
+  }) => {
+    if (loading) {
+      return (
+        <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
+            <h4 className="text-lg font-black text-gray-900">
+              សកម្មភាពថ្មីៗ • Recent Activity
+            </h4>
+          </div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl animate-pulse"
+              >
+                <div className="w-11 h-11 bg-gray-200 rounded-xl"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (activities.length === 0) {
+      return (
+        <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
+            <h4 className="text-lg font-black text-gray-900">
+              សកម្មភាពថ្មីៗ • Recent Activity
+            </h4>
+          </div>
+          <div className="text-center py-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl">📋</span>
+            </div>
+            <p className="text-sm font-bold text-gray-700 mb-1">
+              មិនទាន់មានសកម្មភាព
+            </p>
+            <p className="text-xs text-gray-500">No activities yet</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
-            <Activity className="w-5 h-5 text-white" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
+            <h4 className="text-lg font-black text-gray-900">
+              សកម្មភាពថ្មីៗ • Recent Activity
+            </h4>
           </div>
-          <h4 className="text-lg font-black text-gray-900">
-            សកម្មភាពថ្មីៗ • Recent Activity
-          </h4>
+          <TrendingUp className="w-5 h-5 text-green-500" />
         </div>
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl animate-pulse">
-              <div className="w-11 h-11 bg-gray-200 rounded-xl"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
+          {activities.map((activity) => (
+            <ActivityRow key={activity.id} activity={activity} />
           ))}
         </div>
       </div>
     );
-  }
-
-  if (activities.length === 0) {
-    return (
-      <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
-            <Activity className="w-5 h-5 text-white" />
-          </div>
-          <h4 className="text-lg font-black text-gray-900">
-            សកម្មភាពថ្មីៗ • Recent Activity
-          </h4>
-        </div>
-        <div className="text-center py-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">📋</span>
-          </div>
-          <p className="text-sm font-bold text-gray-700 mb-1">មិនទាន់មានសកម្មភាព</p>
-          <p className="text-xs text-gray-500">No activities yet</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
-            <Activity className="w-5 h-5 text-white" />
-          </div>
-          <h4 className="text-lg font-black text-gray-900">
-            សកម្មភាពថ្មីៗ • Recent Activity
-          </h4>
-        </div>
-        <TrendingUp className="w-5 h-5 text-green-500" />
-      </div>
-      <div className="space-y-3">
-        {activities.map((activity) => (
-          <ActivityRow key={activity.id} activity={activity} />
-        ))}
-      </div>
-    </div>
-  );
-});
+  },
+);
 
 ActivityFeed.displayName = "ActivityFeed";
 
@@ -981,7 +1027,9 @@ const ActivityRow = memo(({ activity }: { activity: ActivityType }) => {
 
   return (
     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors">
-      <div className={`p-2.5 bg-gradient-to-br ${activity.color} rounded-xl shadow-md`}>
+      <div
+        className={`p-2.5 bg-gradient-to-br ${activity.color} rounded-xl shadow-md`}
+      >
         <IconComponent className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1">
@@ -1044,7 +1092,9 @@ QuickInfoGrid.displayName = "QuickInfoGrid";
 
 // Quick Info Card Component
 const QuickInfoCard = memo(({ icon: Icon, label, value, color }: any) => (
-  <div className={`bg-gradient-to-br ${color} rounded-2xl p-4 border-2 shadow-sm`}>
+  <div
+    className={`bg-gradient-to-br ${color} rounded-2xl p-4 border-2 shadow-sm`}
+  >
     <div className="flex flex-col items-center text-center">
       <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center mb-2 shadow-sm">
         <Icon className="w-6 h-6 text-gray-700" />
@@ -1081,8 +1131,12 @@ const PersonalInformation = memo(({ profile }: any) => (
           <User className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="font-black text-white text-base">ព័ត៌មានផ្ទាល់ខ្លួន</h1>
-          <p className="text-xs text-white/80 font-medium">Personal Information</p>
+          <h1 className="font-black text-white text-base">
+            ព័ត៌មានផ្ទាល់ខ្លួន
+          </h1>
+          <p className="text-xs text-white/80 font-medium">
+            Personal Information
+          </p>
         </div>
       </div>
     </div>
@@ -1129,7 +1183,9 @@ const FamilyInformation = memo(({ profile }: any) => (
         </div>
         <div>
           <h1 className="font-black text-white text-base">ព័ត៌មានគ្រួសារ</h1>
-          <p className="text-xs text-white/80 font-medium">Family Information</p>
+          <p className="text-xs text-white/80 font-medium">
+            Family Information
+          </p>
         </div>
       </div>
     </div>
@@ -1241,7 +1297,9 @@ const Grade9ExamInfo = memo(({ profile }: any) => (
         </div>
         <div>
           <h1 className="font-black text-white text-base">ប្រឡងថ្នាក់ទី៩</h1>
-          <p className="text-xs text-white/80 font-medium">Grade 9 Examination</p>
+          <p className="text-xs text-white/80 font-medium">
+            Grade 9 Examination
+          </p>
         </div>
       </div>
     </div>
@@ -1268,7 +1326,9 @@ const Grade9ExamInfo = memo(({ profile }: any) => (
         {profile.student.grade9ExamRoom && (
           <div className="flex items-center gap-2 p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200">
             <div className="flex-1">
-              <p className="text-xs text-gray-600 font-bold mb-0.5">បន្ទប់ • Room</p>
+              <p className="text-xs text-gray-600 font-bold mb-0.5">
+                បន្ទប់ • Room
+              </p>
               <p className="text-sm font-black text-gray-900">
                 {profile.student.grade9ExamRoom}
               </p>
@@ -1279,7 +1339,9 @@ const Grade9ExamInfo = memo(({ profile }: any) => (
         {profile.student.grade9ExamDesk && (
           <div className="flex items-center gap-2 p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200">
             <div className="flex-1">
-              <p className="text-xs text-gray-600 font-bold mb-0.5">តុ • Desk</p>
+              <p className="text-xs text-gray-600 font-bold mb-0.5">
+                តុ • Desk
+              </p>
               <p className="text-sm font-black text-gray-900">
                 {profile.student.grade9ExamDesk}
               </p>
@@ -1308,7 +1370,9 @@ const Grade9ExamInfo = memo(({ profile }: any) => (
             <CheckCircle className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-600 font-bold mb-1">លទ្ធផល • Result</p>
+            <p className="text-xs text-gray-600 font-bold mb-1">
+              លទ្ធផល • Result
+            </p>
             <p className="text-sm font-black text-gray-900">
               {profile.student.grade9PassStatus}
             </p>
@@ -1331,7 +1395,9 @@ const Grade12ExamInfo = memo(({ profile }: any) => (
         </div>
         <div>
           <h1 className="font-black text-white text-base">ប្រឡងបាក់ឌុប</h1>
-          <p className="text-xs text-white/80 font-medium">Grade 12 Examination</p>
+          <p className="text-xs text-white/80 font-medium">
+            Grade 12 Examination
+          </p>
         </div>
       </div>
     </div>
@@ -1367,7 +1433,9 @@ const Grade12ExamInfo = memo(({ profile }: any) => (
         {profile.student.grade12ExamRoom && (
           <div className="flex items-center gap-2 p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200">
             <div className="flex-1">
-              <p className="text-xs text-gray-600 font-bold mb-0.5">បន្ទប់ • Room</p>
+              <p className="text-xs text-gray-600 font-bold mb-0.5">
+                បន្ទប់ • Room
+              </p>
               <p className="text-sm font-black text-gray-900">
                 {profile.student.grade12ExamRoom}
               </p>
@@ -1378,7 +1446,9 @@ const Grade12ExamInfo = memo(({ profile }: any) => (
         {profile.student.grade12ExamDesk && (
           <div className="flex items-center gap-2 p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200">
             <div className="flex-1">
-              <p className="text-xs text-gray-600 font-bold mb-0.5">តុ • Desk</p>
+              <p className="text-xs text-gray-600 font-bold mb-0.5">
+                តុ • Desk
+              </p>
               <p className="text-sm font-black text-gray-900">
                 {profile.student.grade12ExamDesk}
               </p>
@@ -1398,7 +1468,9 @@ const Grade12ExamInfo = memo(({ profile }: any) => (
         >
           <div
             className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
-              profile.student.grade12PassStatus.toLowerCase().includes("pass") ||
+              profile.student.grade12PassStatus
+                .toLowerCase()
+                .includes("pass") ||
               profile.student.grade12PassStatus.toLowerCase().includes("ជាប់")
                 ? "bg-gradient-to-br from-green-500 to-emerald-600"
                 : "bg-gradient-to-br from-orange-500 to-amber-600"
@@ -1407,7 +1479,9 @@ const Grade12ExamInfo = memo(({ profile }: any) => (
             <Award className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-xs text-gray-600 font-bold mb-1">លទ្ធផល • Result</p>
+            <p className="text-xs text-gray-600 font-bold mb-1">
+              លទ្ធផល • Result
+            </p>
             <p className="text-sm font-black text-gray-900">
               {profile.student.grade12PassStatus}
             </p>
@@ -1518,7 +1592,9 @@ const PhotoUploadModal = memo(
             </div>
             <div className="text-left flex-1">
               <p className="font-bold text-gray-900">ជ្រើសពីរូបថត</p>
-              <p className="text-xs text-gray-600">ជ្រើសរូបភាពពីឧបករណ៍របស់អ្នក</p>
+              <p className="text-xs text-gray-600">
+                ជ្រើសរូបភាពពីឧបករណ៍របស់អ្នក
+              </p>
             </div>
           </button>
           <button
@@ -1556,7 +1632,7 @@ const PhotoUploadModal = memo(
         </div>
       </div>
     </div>
-  )
+  ),
 );
 
 PhotoUploadModal.displayName = "PhotoUploadModal";

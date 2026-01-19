@@ -696,7 +696,7 @@ const HeroSection = memo(
             </p>
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 px-4 py-2 rounded-full shadow-lg">
               <Award className="w-4 h-4 text-yellow-300" />
-              <span className="text-sm font-bold text-white">
+              <span className="text-sm font-koulen text-white">
                 {ROLE_LABELS[profile.role] || profile.role}
               </span>
             </div>
@@ -979,7 +979,7 @@ const AchievementBadges = memo(({ profile }: { profile: TeacherProfile }) => {
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-200 hover:border-gray-300 transition-colors">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="text-lg font-black text-gray-900 flex items-center gap-2">
+        <h4 className="text-lg font-koulen font-black text-gray-900 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-yellow-500" />
           <span>សមិទ្ធផល • Achievements</span>
         </h4>
@@ -1072,7 +1072,7 @@ const ActivityFeed = memo(
             <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <h4 className="text-lg font-black text-gray-900">
+            <h4 className="text-lg font-koulen font-black text-gray-900">
               សកម្មភាពថ្មីៗ • Recent Activity
             </h4>
           </div>
@@ -1101,7 +1101,7 @@ const ActivityFeed = memo(
             <div className="p-2.5 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-md">
               <Activity className="w-5 h-5 text-white" />
             </div>
-            <h4 className="text-lg font-black text-gray-900">
+            <h4 className="text-lg font-koulen font-black text-gray-900">
               សកម្មភាពថ្មីៗ • Recent Activity
             </h4>
           </div>
