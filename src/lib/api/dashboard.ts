@@ -319,7 +319,8 @@ export interface ScoreProgressParams {
 
 export const dashboardApi = {
   /**
-   * Get general dashboard statistics (cached for 2 minutes)
+   * Get general dashboard statistics (cached for 1 minute)
+   * ✅ OPTIMIZED: Reduced cache time for fresher data
    */
   getStats: async (): Promise<DashboardStats> => {
     return apiCache.getOrFetch(
@@ -329,7 +330,7 @@ export const dashboardApi = {
         const data = await apiClient.get("/dashboard/stats");
         return data;
       },
-      2 * 60 * 1000 // 2 minutes cache
+      60 * 1000 // 1 minute cache (reduced from 2 minutes)
     );
   },
 
@@ -405,7 +406,7 @@ export const dashboardApi = {
 
   /**
    * Get lightweight mobile dashboard stats (super fast for initial load)
-   * ✅ NEW: Optimized for mobile - loads 5x faster than comprehensive stats
+   * ✅ OPTIMIZED: Faster cache refresh for mobile users
    */
   getMobileStats: async (month?: string, year?: number): Promise<any> => {
     const cacheKey = `dashboard:mobile-stats:${month || 'current'}:${year || 'current'}`;
@@ -423,7 +424,7 @@ export const dashboardApi = {
         console.log("📱 Mobile Stats API: Lightweight data received:", data);
         return data;
       },
-      5 * 60 * 1000 // 5 minutes cache
+      2 * 60 * 1000 // 2 minutes cache (reduced from 5 minutes for fresher data)
     );
   },
 

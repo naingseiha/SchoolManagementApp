@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useAuth } from "@/context/AuthContext";
@@ -63,9 +63,32 @@ export default function DashboardPage() {
     isLoadingClasses,
   } = useData();
 
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
-    null
-  );
+  // ✅ OPTIMIZED: Calculate stats BEFORE any conditional returns (Rules of Hooks)
+  // Memoize expensive statistics calculations for desktop
+  const stats = useMemo(() => ({
+    totalStudents: students.length,
+    totalTeachers: teachers.length,
+    totalClasses: classes.length,
+    totalSubjects: subjects.length,
+    studentsWithClass: students.filter((s) => s.classId).length,
+    teachersWithClass: teachers.filter((t) => t.classes && t.classes.length > 0)
+      .length,
+    activeSubjects: subjects.filter((s) => s.isActive).length,
+  }), [students, teachers, classes, subjects]);
+
+  const completionRate = useMemo(() => ({
+    students:
+      stats.totalStudents > 0
+        ? (stats.studentsWithClass / stats.totalStudents) * 100
+        : 0,
+    teachers:
+      stats.totalTeachers > 0
+        ? (stats.teachersWithClass / stats.totalTeachers) * 100
+        : 0,
+  }), [stats]);
+
+  // ✅ FIX: Add missing state management for dashboard stats (desktop only)
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
 
@@ -81,28 +104,47 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, isLoading, currentUser, router]);
 
-  // Fetch dashboard statistics
+  // ✅ FIX: Load dashboard stats for desktop (only for authenticated non-students)
   useEffect(() => {
-    if (isAuthenticated && currentUser) {
-      fetchDashboardStats();
+    if (!isAuthenticated || isLoading || currentUser?.role === "STUDENT" || deviceType === "mobile") {
+      return; // Don't load stats for students, mobile, or unauthenticated users
     }
-  }, [isAuthenticated, currentUser]);
 
-  const fetchDashboardStats = async () => {
-    try {
-      setIsLoadingStats(true);
-      setStatsError(null);
-      const stats = await dashboardApi.getStats();
-      setDashboardStats(stats);
-    } catch (error: any) {
-      console.error("Error fetching dashboard stats:", error);
-      setStatsError(error.message || "Failed to load dashboard statistics");
-    } finally {
-      setIsLoadingStats(false);
-    }
-  };
+    const loadDashboardStats = async () => {
+      try {
+        setIsLoadingStats(true);
+        setStatsError(null);
 
-  if (isLoading || isLoadingStudents || isLoadingClasses) {
+        // ✅ OPTIMIZED: Add timeout to prevent stuck requests (reduced to 15s for faster feedback)
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Request timeout - please refresh the page")), 15000); // 15 second timeout
+        });
+
+        const dataPromise = dashboardApi.getStats();
+
+        // Race between data fetch and timeout
+        const data = await Promise.race([dataPromise, timeoutPromise]) as DashboardStats;
+
+        setDashboardStats(data);
+        console.log("✅ Desktop dashboard stats loaded successfully");
+      } catch (error: any) {
+        console.error("❌ Failed to load dashboard stats:", error);
+        setStatsError(error.message || "Failed to load statistics");
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    loadDashboardStats();
+  }, [isAuthenticated, isLoading, currentUser, deviceType]);
+
+  // ✅ OPTIMIZED: Mobile doesn't need DataContext loading states - it fetches its own data
+  // Desktop needs DataContext for displaying stats
+  const isWaitingForData = deviceType === "mobile" 
+    ? isLoading // Only wait for auth on mobile
+    : (isLoading || isLoadingStudents || isLoadingClasses); // Desktop waits for all data
+
+  if (isWaitingForData) {
     return deviceType === "mobile" ? (
       <MobileLayout title="ផ្ទាំង">
         <div className="p-4">
@@ -131,29 +173,6 @@ export default function DashboardPage() {
     return null;
   }
 
-  // Calculate statistics
-  const stats = {
-    totalStudents: students.length,
-    totalTeachers: teachers.length,
-    totalClasses: classes.length,
-    totalSubjects: subjects.length,
-    studentsWithClass: students.filter((s) => s.classId).length,
-    teachersWithClass: teachers.filter((t) => t.classes && t.classes.length > 0)
-      .length,
-    activeSubjects: subjects.filter((s) => s.isActive).length,
-  };
-
-  const completionRate = {
-    students:
-      stats.totalStudents > 0
-        ? (stats.studentsWithClass / stats.totalStudents) * 100
-        : 0,
-    teachers:
-      stats.totalTeachers > 0
-        ? (stats.teachersWithClass / stats.totalTeachers) * 100
-        : 0,
-  };
-
   // Mobile layout
   if (deviceType === "mobile") {
     return (
@@ -175,10 +194,9 @@ export default function DashboardPage() {
           <main className="p-8">
             {/* Welcome Section - Modern Design */}
             <div className="mb-8 relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-3xl shadow-2xl">
-              {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-              <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-700"></div>
-              <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-pink-400/20 rounded-full blur-3xl"></div>
+              {/* ✅ OPTIMIZED: Reduced decorative elements for better performance */}
+              <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-50"></div>
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-50"></div>
 
               <div className="relative z-10 p-10">
                 <div className="flex items-center gap-3 mb-3">
@@ -194,29 +212,29 @@ export default function DashboardPage() {
                   ទិដ្ឋភាពទូទៅនៃប្រព័ន្ធគ្រប់គ្រងសាលា
                 </p>
 
-                {/* Quick stats summary */}
+                {/* Quick stats summary - ✅ OPTIMIZED: Removed hover animations for better performance */}
                 <div className="grid grid-cols-3 gap-4 max-w-2xl">
-                  <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300 group">
+                  <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30">
                     <span className="font-khmer-body text-white/80 text-xs font-bold block mb-2">
                       សិស្សសរុប
                     </span>
-                    <div className="text-3xl font-moul text-white group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-moul text-white">
                       {stats.totalStudents}
                     </div>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300 group">
+                  <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30">
                     <span className="font-khmer-body text-white/80 text-xs font-bold block mb-2">
                       គ្រូបង្រៀនសរុប
                     </span>
-                    <div className="text-3xl font-moul text-white group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-moul text-white">
                       {stats.totalTeachers}
                     </div>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30 hover:bg-white/30 transition-all duration-300 group">
+                  <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30">
                     <span className="font-khmer-body text-white/80 text-xs font-bold block mb-2">
                       ថ្នាក់សកម្ម
                     </span>
-                    <div className="text-3xl font-moul text-white group-hover:scale-110 transition-transform">
+                    <div className="text-3xl font-moul text-white">
                       {stats.totalClasses}
                     </div>
                   </div>

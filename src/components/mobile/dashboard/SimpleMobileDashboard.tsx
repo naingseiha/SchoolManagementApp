@@ -142,22 +142,18 @@ export default function SimpleMobileDashboard({
 }: SimpleMobileDashboardProps) {
   const router = useRouter();
   const [gradeStats, setGradeStats] = useState<MobileGradeStats | null>(null);
-  // ✅ OPTIMIZED: Start with false to show skeleton instantly without delay
-  const [isLoading, setIsLoading] = useState(false);
+  // ✅ OPTIMIZED: Start with true to show skeleton immediately on first load
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const touchStartRef = useRef<number>(0);
   const touchMoveRef = useRef<number>(0);
-  const hasLoadedRef = useRef(false);
 
+  // ✅ OPTIMIZED: Load data immediately on mount without extra ref check
   useEffect(() => {
-    // ✅ OPTIMIZED: Load data immediately on mount
-    if (!hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      loadGradeStats();
-    }
+    loadGradeStats();
 
     return () => {
       if (abortControllerRef.current) {
@@ -168,11 +164,10 @@ export default function SimpleMobileDashboard({
 
   const loadGradeStats = useCallback(async (refresh = false) => {
     try {
-      // ✅ OPTIMIZED: Only show loading on refresh, not initial load (skeleton handles that)
+      // ✅ OPTIMIZED: Show appropriate loading state
       if (refresh) {
         setIsRefreshing(true);
-      } else if (!gradeStats) {
-        // Only set loading if we don't have data yet
+      } else {
         setIsLoading(true);
       }
       setError(null);
@@ -216,12 +211,20 @@ export default function SimpleMobileDashboard({
       const currentMonth = monthNames[new Date().getMonth()];
       const currentYear = getCurrentAcademicYear();
 
+      // ✅ OPTIMIZED: Add timeout to prevent stuck requests (reduced to 15s for faster feedback)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timeout - please pull down to refresh")), 15000); // 15 second timeout
+      });
+
       // ✅ OPTIMIZED: Use lightweight mobile-stats endpoint instead of comprehensive-stats
       // This endpoint is 50x smaller and 60% faster!
-      const data = await dashboardApi.getMobileStats(
+      const dataPromise = dashboardApi.getMobileStats(
         currentMonth,
         currentYear
       );
+
+      // Race between data fetch and timeout
+      const data = await Promise.race([dataPromise, timeoutPromise]) as any;
 
       if (!data || !data.grades) {
         setError("ទិន្នន័យមិនត្រឹមត្រូវ • Invalid data structure");
@@ -231,15 +234,17 @@ export default function SimpleMobileDashboard({
       }
 
       setGradeStats(data);
+      console.log("✅ Mobile dashboard data loaded successfully");
     } catch (error: any) {
       if (error.name !== "AbortError") {
+        console.error("❌ Mobile dashboard error:", error);
         setError(error.message || "មានបញ្ហាក្នុងការទាញយកទិន្នន័យ");
       }
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [gradeStats]); // Add dependency for optimization check
+  }, []); // ✅ OPTIMIZED: Remove gradeStats dependency to prevent unnecessary recreations
 
   // Calculate overall statistics
   const totalStats = useMemo(
@@ -306,7 +311,7 @@ export default function SimpleMobileDashboard({
     touchMoveRef.current = 0;
   }, [isRefreshing, isLoading, loadGradeStats]);
 
-  // ✅ OPTIMIZED: Show skeleton immediately if loading and no data yet
+  // ✅ OPTIMIZED: Show skeleton immediately while loading first data
   if (isLoading && !gradeStats) {
     return <DashboardSkeleton />;
   }

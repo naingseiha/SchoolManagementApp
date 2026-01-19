@@ -148,7 +148,7 @@ self.addEventListener('activate', (event) => {
       if (isIOS()) {
         const cacheNames = await caches.keys();
         const oldCaches = cacheNames.filter(
-          (name) => name.startsWith('school-ms-') && !name.includes('-v2')
+          (name) => name.startsWith('school-ms-') && !name.includes('-v5')
         );
 
         await Promise.all(
