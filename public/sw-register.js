@@ -131,9 +131,9 @@
       const cacheNames = await caches.keys();
       console.log('[SW Register] Current caches:', cacheNames);
 
-      // ✅ UPDATED: Delete caches that don't match v4
+      // ✅ UPDATED: Delete caches that don't match v5
       const oldCaches = cacheNames.filter(
-        name => !name.includes('school-ms-v4') && name.startsWith('school-ms')
+        name => !name.includes('school-ms-v5') && name.startsWith('school-ms')
       );
 
       if (oldCaches.length > 0) {

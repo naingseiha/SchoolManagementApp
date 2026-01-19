@@ -110,7 +110,8 @@
       "Bash(file:*)",
       "Bash(node:*)",
       "Bash(timeout 5 tail:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(mkdir:*)"
     ]
   }
 }
