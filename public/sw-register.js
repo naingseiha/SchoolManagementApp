@@ -14,12 +14,22 @@
   console.log('[SW Register] iOS:', isIOS, 'Version:', iOS_VERSION);
 
   if ('serviceWorker' in navigator) {
+    // ✅ FIX: Skip service worker in development to prevent hot reload errors
+    const isDevelopment = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1';
+
     // Check if running as installed PWA
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
                       || window.navigator.standalone
                       || document.referrer.includes('android-app://');
 
     console.log('[SW Register] Running as installed PWA:', isStandalone);
+    console.log('[SW Register] Development mode:', isDevelopment);
+
+    // ✅ FIX: In development non-PWA mode, skip aggressive updates to prevent errors
+    if (isDevelopment && !isStandalone) {
+      console.log('[SW Register] Skipping aggressive SW updates in development mode');
+    }
 
     // Force update service worker on every page load for iOS PWAs
     // This is aggressive but necessary to fix stuck service workers
@@ -36,14 +46,18 @@
         console.log('[SW Register] Service worker registered:', registration.scope);
 
         // AGGRESSIVE UPDATE STRATEGY FOR iOS
-        if (isIOS) {
-          // Force update check immediately
-          registration.update();
+        if (isIOS && !isDevelopment) {
+          // Force update check immediately (skip in dev to prevent errors)
+          registration.update().catch(err => {
+            console.warn('[SW Register] Update check failed:', err.message);
+          });
 
           // Set up aggressive update checking for iOS
           setInterval(() => {
             console.log('[SW Register] Checking for iOS service worker updates...');
-            registration.update();
+            registration.update().catch(err => {
+              console.warn('[SW Register] Update check failed:', err.message);
+            });
           }, updateInterval || 60000);
 
           // Handle update found
@@ -94,10 +108,16 @@
         });
 
       } catch (error) {
+        // ✅ FIX: Suppress InvalidStateError in development during hot reloads
+        if (isDevelopment && error.name === 'InvalidStateError') {
+          console.log('[SW Register] InvalidStateError during development - this is expected during hot reloads');
+          return;
+        }
+
         console.error('[SW Register] Service worker registration failed:', error);
 
-        // If registration fails on iOS, try to recover
-        if (isIOS && isStandalone) {
+        // If registration fails on iOS (not in development), try to recover
+        if (isIOS && isStandalone && !isDevelopment) {
           console.log('[SW Register] Attempting to recover from failed registration...');
           await recoverFromFailedRegistration();
         }
@@ -111,9 +131,9 @@
       const cacheNames = await caches.keys();
       console.log('[SW Register] Current caches:', cacheNames);
 
-      // Delete caches that don't match current version
+      // ✅ UPDATED: Delete caches that don't match v4
       const oldCaches = cacheNames.filter(
-        name => !name.includes('school-ms-v3') && name.startsWith('school-ms')
+        name => !name.includes('school-ms-v4') && name.startsWith('school-ms')
       );
 
       if (oldCaches.length > 0) {

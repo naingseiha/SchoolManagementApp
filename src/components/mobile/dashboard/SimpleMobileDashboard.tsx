@@ -211,9 +211,9 @@ export default function SimpleMobileDashboard({
       const currentMonth = monthNames[new Date().getMonth()];
       const currentYear = getCurrentAcademicYear();
 
-      // ✅ OPTIMIZED: Add timeout to prevent stuck requests
+      // ✅ OPTIMIZED: Add timeout to prevent stuck requests (reduced to 15s for faster feedback)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout - please try again")), 30000); // 30 second timeout
+        setTimeout(() => reject(new Error("Request timeout - please pull down to refresh")), 15000); // 15 second timeout
       });
 
       // ✅ OPTIMIZED: Use lightweight mobile-stats endpoint instead of comprehensive-stats

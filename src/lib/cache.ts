@@ -97,7 +97,7 @@ class Cache {
 
   /**
    * Get or fetch pattern - fetch data only if not cached
-   * ✅ OPTIMIZED: Added request deduplication to prevent duplicate simultaneous requests
+   * ✅ OPTIMIZED: Added request deduplication with timeout to prevent stuck requests
    */
   async getOrFetch<T>(
     key: string,
@@ -115,24 +115,45 @@ class Cache {
     const pending = this.pendingRequests.get(key);
     if (pending) {
       console.log(`⏳ Request PENDING: ${key} - Waiting for existing request...`);
-      return pending.promise as Promise<T>;
+
+      // ✅ FIX: Add timeout to pending requests to prevent infinite waiting (reduced to 10s)
+      const pendingTimeout = new Promise<T>((_, reject) => {
+        setTimeout(() => {
+          console.log(`⏰ Pending request TIMEOUT: ${key} - Creating new request`);
+          this.pendingRequests.delete(key);
+          reject(new Error('Pending request timeout'));
+        }, 10000); // 10 second timeout for pending requests
+      });
+
+      try {
+        return await Promise.race([pending.promise as Promise<T>, pendingTimeout]);
+      } catch (error: any) {
+        // If timeout, fall through to create new request
+        if (error.message === 'Pending request timeout') {
+          console.log(`🔄 Creating new request after timeout: ${key}`);
+        } else {
+          throw error;
+        }
+      }
     }
 
     // Cache miss - fetch new data
     console.log(`🔄 Cache MISS: ${key} - Fetching...`);
-    
+
     // ✅ Create and store the promise to prevent duplicate requests
     const fetchPromise = fetchFn()
       .then((data) => {
         this.set(key, data, ttl);
         this.pendingRequests.delete(key);
+        console.log(`✅ Successfully fetched and cached: ${key}`);
         return data;
       })
       .catch((error) => {
         this.pendingRequests.delete(key);
+        console.error(`❌ Failed to fetch: ${key}`, error);
         throw error;
       });
-    
+
     this.pendingRequests.set(key, { promise: fetchPromise });
     return fetchPromise;
   }

@@ -115,9 +115,9 @@ export default function DashboardPage() {
         setIsLoadingStats(true);
         setStatsError(null);
 
-        // ✅ OPTIMIZED: Add timeout to prevent stuck requests
+        // ✅ OPTIMIZED: Add timeout to prevent stuck requests (reduced to 15s for faster feedback)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Request timeout - please refresh the page")), 30000); // 30 second timeout
+          setTimeout(() => reject(new Error("Request timeout - please refresh the page")), 15000); // 15 second timeout
         });
 
         const dataPromise = dashboardApi.getStats();
