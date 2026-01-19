@@ -22,8 +22,9 @@ import {
   Calendar,
 } from "lucide-react";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { classesApi, Class } from "@/lib/api/classes";
+import { Class } from "@/lib/api/classes";
 import { reportsApi, MonthlyReportData } from "@/lib/api/reports";
+import { useData } from "@/context/DataContext";
 import {
   getCurrentAcademicYear,
   getAcademicYearOptions,
@@ -60,7 +61,7 @@ type SortBy = "rank" | "name" | "average" | "total";
 export default function MobileResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [classes, setClasses] = useState<Class[]>([]);
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const [selectedGrade, setSelectedGrade] = useState<string | null>(
     searchParams?.get("grade") || null
   );
@@ -89,10 +90,13 @@ export default function MobileResultsPage() {
   const [visibleStudents, setVisibleStudents] = useState(15);
   const BATCH_SIZE = 15;
 
-  // Load all classes on mount
+  // ✅ Proactively refresh classes if empty
   useEffect(() => {
-    loadClasses();
-  }, []);
+    if (classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 [Mobile Results] Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [classes.length, isLoadingClasses, refreshClasses]);
 
   // ✅ Clear cache and reload when month/year changes
   useEffect(() => {
@@ -107,16 +111,6 @@ export default function MobileResultsPage() {
     setReportCache(new Map());
     setGradeCache(new Map());
   }, [selectedMonth, selectedYear]);
-
-  const loadClasses = async () => {
-    try {
-      const response = await classesApi.getAllLightweight();
-      const data = Array.isArray(response) ? response : [];
-      setClasses(data);
-    } catch (error) {
-      console.error("Error loading classes:", error);
-    }
-  };
 
   // Filter classes by selected grade
   const filteredClasses = useMemo(() => {

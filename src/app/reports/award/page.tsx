@@ -44,7 +44,7 @@ const monthNames = [
 
 export default function AwardReportPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
-  const { classes, isLoadingClasses } = useData();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const router = useRouter();
 
   // ✅ Filter classes based on role
@@ -140,6 +140,25 @@ export default function AwardReportPage() {
       router.push("/login");
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // ✅ Proactively refresh classes if empty
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !authLoading &&
+      classes.length === 0 &&
+      !isLoadingClasses
+    ) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [
+    isAuthenticated,
+    authLoading,
+    classes.length,
+    isLoadingClasses,
+    refreshClasses,
+  ]);
 
   useEffect(() => {
     if (classes.length > 0 && !selectedClassId && reportType === "class") {

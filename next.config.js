@@ -1,15 +1,30 @@
 const withPWA = require('@ducanh2912/next-pwa').default({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
+  // ✅ CRITICAL iOS FIX: Force service worker update on every page load
+  // This ensures problematic cached service workers are replaced
   register: true,
   skipWaiting: true,
   reloadOnOnline: true,
   swcMinify: true,
+  // ✅ iOS FIX: Aggressive cache invalidation
+  scope: '/',
   fallbacks: {
     document: '/offline',
+    // ✅ iOS FIX: Add fallback for failed API calls
+    data: '/offline',
   },
   workboxOptions: {
     disableDevLogs: true,
+    // ✅ CRITICAL iOS FIX: Change cache version to force complete cache refresh
+    // Increment this version whenever you need to force all users to update
+    cacheId: 'school-ms-v3',
+    // ✅ iOS FIX: Aggressively clean up old caches
+    cleanupOutdatedCaches: true,
+    // ✅ iOS FIX: Immediately take control of all pages
+    clientsClaim: true,
+    // ✅ iOS FIX: Skip waiting to activate immediately
+    skipWaiting: true,
     runtimeCaching: [
       // ✅ OPTIMIZED PHASE 2: Smart API caching for instant repeat visits
       // Dashboard stats - cached for 5 minutes with stale-while-revalidate
@@ -23,8 +38,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
             maxEntries: 10,
             maxAgeSeconds: 5 * 60, // 5 minutes
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -38,8 +54,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
             maxEntries: 10,
             maxAgeSeconds: 5 * 60, // 5 minutes
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -54,8 +71,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
             maxEntries: 20,
             maxAgeSeconds: 10 * 60, // 10 minutes
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -69,8 +87,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
             maxEntries: 20,
             maxAgeSeconds: 10 * 60, // 10 minutes
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -85,8 +104,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
             maxEntries: 5,
             maxAgeSeconds: 30, // 30 seconds - aligned with apiClient cache
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -100,8 +120,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
             maxEntries: 5,
             maxAgeSeconds: 30, // 30 seconds - aligned with apiClient cache
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -112,13 +133,15 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         method: 'GET',
         options: {
           cacheName: 'api-cache',
-          networkTimeoutSeconds: 10,
+          // ✅ iOS FIX: Increased timeout for slower iOS connections
+          networkTimeoutSeconds: 15,
           expiration: {
             maxEntries: 50,
             maxAgeSeconds: 5 * 60, // 5 minutes
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },
@@ -128,13 +151,15 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         method: 'GET',
         options: {
           cacheName: 'api-cache-prod',
-          networkTimeoutSeconds: 10,
+          // ✅ iOS FIX: Increased timeout for slower iOS connections
+          networkTimeoutSeconds: 15,
           expiration: {
             maxEntries: 50,
             maxAgeSeconds: 5 * 60, // 5 minutes
           },
+          // ✅ iOS FIX: Only cache successful responses (removed status 0)
           cacheableResponse: {
-            statuses: [0, 200],
+            statuses: [200],
           },
         },
       },

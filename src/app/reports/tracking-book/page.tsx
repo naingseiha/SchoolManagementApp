@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
@@ -42,7 +42,7 @@ const getCurrentKhmerMonth = (): string => {
 
 export default function TrackingBookPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { classes, subjects: allSubjects, isLoadingClasses } = useData();
+  const { classes, subjects: allSubjects, isLoadingClasses, refreshClasses } = useData();
   const router = useRouter();
 
   const [selectedClassId, setSelectedClassId] = useState("");
@@ -97,6 +97,32 @@ export default function TrackingBookPage() {
       subjects: sortedSubjects,
     };
   }, [trackingData]);
+
+  // ✅ Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // ✅ Proactively refresh classes if empty
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !authLoading &&
+      classes.length === 0 &&
+      !isLoadingClasses
+    ) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [
+    isAuthenticated,
+    authLoading,
+    classes.length,
+    isLoadingClasses,
+    refreshClasses,
+  ]);
 
   // ✅ Pass month parameter to API
   const fetchTrackingBook = async () => {
