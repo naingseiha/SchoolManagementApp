@@ -18,7 +18,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
     disableDevLogs: true,
     // ✅ CRITICAL iOS FIX: Change cache version to force complete cache refresh
     // Increment this version whenever you need to force all users to update
-    cacheId: 'school-ms-v3',
+    cacheId: 'school-ms-v4',
     // ✅ iOS FIX: Aggressively clean up old caches
     cleanupOutdatedCaches: true,
     // ✅ iOS FIX: Immediately take control of all pages

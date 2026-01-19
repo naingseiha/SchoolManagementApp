@@ -9,8 +9,14 @@ interface CacheEntry<T> {
   ttl: number;
 }
 
+// ✅ NEW: Track in-flight requests to prevent duplicate calls
+interface PendingRequest<T> {
+  promise: Promise<T>;
+}
+
 class Cache {
   private cache: Map<string, CacheEntry<any>> = new Map();
+  private pendingRequests: Map<string, PendingRequest<any>> = new Map();
   private defaultTTL: number = 5 * 60 * 1000; // 5 minutes default
 
   /**
@@ -66,6 +72,7 @@ class Cache {
    */
   clear(): void {
     this.cache.clear();
+    this.pendingRequests.clear();
   }
 
   /**
@@ -90,6 +97,7 @@ class Cache {
 
   /**
    * Get or fetch pattern - fetch data only if not cached
+   * ✅ OPTIMIZED: Added request deduplication to prevent duplicate simultaneous requests
    */
   async getOrFetch<T>(
     key: string,
@@ -103,11 +111,30 @@ class Cache {
       return cached;
     }
 
+    // ✅ Check if request is already in flight
+    const pending = this.pendingRequests.get(key);
+    if (pending) {
+      console.log(`⏳ Request PENDING: ${key} - Waiting for existing request...`);
+      return pending.promise as Promise<T>;
+    }
+
     // Cache miss - fetch new data
     console.log(`🔄 Cache MISS: ${key} - Fetching...`);
-    const data = await fetchFn();
-    this.set(key, data, ttl);
-    return data;
+    
+    // ✅ Create and store the promise to prevent duplicate requests
+    const fetchPromise = fetchFn()
+      .then((data) => {
+        this.set(key, data, ttl);
+        this.pendingRequests.delete(key);
+        return data;
+      })
+      .catch((error) => {
+        this.pendingRequests.delete(key);
+        throw error;
+      });
+    
+    this.pendingRequests.set(key, { promise: fetchPromise });
+    return fetchPromise;
   }
 }
 
