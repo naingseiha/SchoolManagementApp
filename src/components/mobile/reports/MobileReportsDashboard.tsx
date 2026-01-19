@@ -104,6 +104,14 @@ export default function MobileReportsDashboard() {
     };
   }, []);
 
+  // ✅ Proactively refresh classes if empty
+  useEffect(() => {
+    if (classes.length === 0 && !isLoadingClasses) {
+      console.log("📚 [Mobile Reports] Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [classes.length, isLoadingClasses, refreshClasses]);
+
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());

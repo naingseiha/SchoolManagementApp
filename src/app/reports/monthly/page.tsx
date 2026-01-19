@@ -41,7 +41,7 @@ import {
 
 export default function ReportsPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
-  const { classes, isLoadingClasses } = useData();
+  const { classes, isLoadingClasses, refreshClasses } = useData();
   const router = useRouter();
 
   // ✅ Filter classes based on role - Show both homeroom (INSTRUCTOR) and teaching classes (TEACHER)
@@ -193,6 +193,25 @@ export default function ReportsPage() {
       setLoading(false);
     }
   };
+
+  // ✅ Proactively refresh classes if empty
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      !authLoading &&
+      classes.length === 0 &&
+      !isLoadingClasses
+    ) {
+      console.log("📚 Classes array is empty, fetching classes...");
+      refreshClasses();
+    }
+  }, [
+    isAuthenticated,
+    authLoading,
+    classes.length,
+    isLoadingClasses,
+    refreshClasses,
+  ]);
 
   // Auto-update exam session when month/year changes
   useEffect(() => {
