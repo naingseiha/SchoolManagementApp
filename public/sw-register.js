@@ -114,6 +114,29 @@
           return;
         }
 
+        // ✅ FIX: Handle specific service worker errors gracefully
+        const errorMessage = error.message || error.toString();
+
+        // Check for common PWA errors that don't need recovery
+        if (errorMessage.includes('bad-precaching-response') ||
+            errorMessage.includes('404') ||
+            errorMessage.includes('Failed to update')) {
+          console.warn('[SW Register] Service worker precache error (non-critical):', errorMessage);
+
+          // Only recover if it's a persistent issue (check error count)
+          const errorCount = parseInt(sessionStorage.getItem('sw-error-count') || '0') + 1;
+          sessionStorage.setItem('sw-error-count', errorCount.toString());
+
+          if (errorCount >= 3) {
+            console.log('[SW Register] Multiple SW errors detected, attempting recovery...');
+            sessionStorage.removeItem('sw-error-count');
+            await recoverFromFailedRegistration();
+          } else {
+            console.log('[SW Register] Ignoring transient error (attempt ' + errorCount + '/3)');
+          }
+          return;
+        }
+
         console.error('[SW Register] Service worker registration failed:', error);
 
         // If registration fails on iOS (not in development), try to recover

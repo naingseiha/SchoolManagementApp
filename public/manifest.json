@@ -1,7 +1,7 @@
 {
   "name": "School Management System - ប្រព័ន្ធគ្រប់គ្រងសាលារៀន",
   "short_name": "School MS",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Complete school management system with student, teacher, and grade management",
   "start_url": "/",
   "display": "standalone",
