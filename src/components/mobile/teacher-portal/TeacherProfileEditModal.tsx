@@ -94,7 +94,7 @@ export default function TeacherProfileEditModal({
     <>
       <ToastContainer />
       <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center max-w-md mx-auto backdrop-blur-sm">
-        <div className="w-full h-[95vh] bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col">
+        <div className="w-full max-h-[92vh] bg-white rounded-t-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
@@ -115,7 +115,7 @@ export default function TeacherProfileEditModal({
         {/* Form Content */}
         <form
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-6 space-y-6"
+          className="flex-1 overflow-y-auto p-6 space-y-6 hide-scrollbar"
         >
           {/* Basic Info Section */}
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl p-5 border-2 border-indigo-100">

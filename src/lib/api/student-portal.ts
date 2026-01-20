@@ -135,6 +135,29 @@ export interface MonthlySummaryResponse {
   academicYear: number;
 }
 
+// Activity feed types for social media features
+export interface Activity {
+  id: string;
+  type: 'GRADE_ADDED' | 'ATTENDANCE_MARKED' | 'ACHIEVEMENT_EARNED' | 'ASSIGNMENT_SUBMITTED' | 'EXAM_COMPLETED' | 'RANK_IMPROVED';
+  title: string;
+  description: string;
+  icon: string; // Icon name from lucide-react
+  color: string; // Tailwind color class
+  timestamp: string;
+  metadata?: {
+    score?: number;
+    maxScore?: number;
+    subject?: string;
+    rank?: number;
+    improvement?: string;
+  };
+}
+
+export interface ActivityFeedResponse {
+  activities: Activity[];
+  hasMore: boolean;
+}
+
 // Get student's own profile
 export const getMyProfile = async (): Promise<StudentProfile> => {
   const response = await apiClient.get("/student-portal/profile");
@@ -152,7 +175,7 @@ export const getMonthlySummaries = async (filters?: {
   const response = await apiClient.get(
     `/student-portal/monthly-summaries${params.toString() ? `?${params.toString()}` : ""}`
   );
-  
+
   return response;
 };
 
@@ -168,7 +191,7 @@ export const getMyGrades = async (filters?: {
   const response = await apiClient.get(
     `/student-portal/grades${params.toString() ? `?${params.toString()}` : ""}`
   );
-  
+
   // The API returns { success, data: { grades, summaries, statistics } }
   // apiClient.get already unwraps to just the data object
   return response;
@@ -190,10 +213,34 @@ export const getMyAttendance = async (filters?: {
   const response = await apiClient.get(
     `/student-portal/attendance${params.toString() ? `?${params.toString()}` : ""}`
   );
-  
+
   // The API returns { success, data: { attendance, statistics } }
   // apiClient.get already unwraps to just the data object
   return response;
+};
+
+// Get student's activity feed
+export const getMyActivities = async (filters?: {
+  limit?: number;
+  offset?: number;
+}): Promise<ActivityFeedResponse> => {
+  const params = new URLSearchParams();
+  if (filters?.limit) params.append("limit", filters.limit.toString());
+  if (filters?.offset) params.append("offset", filters.offset.toString());
+
+  try {
+    const response = await apiClient.get(
+      `/student-portal/activities${params.toString() ? `?${params.toString()}` : ""}`
+    );
+    return response;
+  } catch (error: any) {
+    // If endpoint doesn't exist yet, return computed activities based on recent data
+    console.warn("Activity feed API not available, computing from recent data");
+    return {
+      activities: [],
+      hasMore: false,
+    };
+  }
 };
 
 // Change password

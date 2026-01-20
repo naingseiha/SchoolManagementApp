@@ -61,7 +61,7 @@ export default function TeacherProfileTab({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 hide-scrollbar">
       {/* Instagram-Style Profile Header */}
       <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
         {/* Cover/Banner */}
@@ -192,16 +192,18 @@ export default function TeacherProfileTab({
           <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
             <button
               onClick={onEdit}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-all"
+              aria-label="កែប្រែព័ត៌មាន / Edit profile"
+              className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl active:scale-95 transition-all min-h-[44px]"
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="w-5 h-5" />
               <span>កែប្រែ</span>
             </button>
             <button
               onClick={onChangePassword}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition-all"
+              aria-label="ប្តូរពាក្យសម្ងាត់ / Change password"
+              className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r from-gray-700 to-gray-900 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl active:scale-95 transition-all min-h-[44px]"
             >
-              <Lock className="w-4 h-4" />
+              <Lock className="w-5 h-5" />
               <span>ពាក្យសម្ងាត់</span>
             </button>
           </div>

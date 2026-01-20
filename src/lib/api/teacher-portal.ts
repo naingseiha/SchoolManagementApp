@@ -17,7 +17,7 @@ export interface TeacherProfile {
   hireDate?: string;
   address?: string;
   position?: string;
-  
+
   // Homeroom class (for INSTRUCTOR)
   homeroomClass?: {
     id: string;
@@ -74,6 +74,29 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 
+// Activity feed types for social media features
+export interface TeacherActivity {
+  id: string;
+  type: 'GRADE_ENTERED' | 'ATTENDANCE_MARKED' | 'CLASS_ASSIGNED' | 'ACHIEVEMENT_EARNED' | 'STUDENT_MILESTONE' | 'CLASS_EXCELLENCE';
+  title: string;
+  description: string;
+  icon: string; // Icon name from lucide-react
+  color: string; // Tailwind gradient color class
+  timestamp: string;
+  metadata?: {
+    className?: string;
+    studentCount?: number;
+    subject?: string;
+    achievement?: string;
+    averageScore?: number;
+  };
+}
+
+export interface TeacherActivityFeedResponse {
+  activities: TeacherActivity[];
+  hasMore: boolean;
+}
+
 export const teacherPortalApi = {
   /**
    * Get current teacher's profile
@@ -123,6 +146,32 @@ export const teacherPortalApi = {
     } catch (error) {
       console.error("❌ teacherPortalApi.changePassword error:", error);
       throw error;
+    }
+  },
+
+  /**
+   * Get teacher's activity feed
+   */
+  async getMyActivities(filters?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<TeacherActivityFeedResponse> {
+    const params = new URLSearchParams();
+    if (filters?.limit) params.append("limit", filters.limit.toString());
+    if (filters?.offset) params.append("offset", filters.offset.toString());
+
+    try {
+      const response = await apiClient.get<TeacherActivityFeedResponse>(
+        `/teacher-portal/activities${params.toString() ? `?${params.toString()}` : ""}`
+      );
+      return response;
+    } catch (error: any) {
+      // If endpoint doesn't exist yet, return empty activities
+      console.warn("Activity feed API not available, will compute from profile data");
+      return {
+        activities: [],
+        hasMore: false,
+      };
     }
   },
 };
