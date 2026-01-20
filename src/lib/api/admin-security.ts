@@ -2,11 +2,15 @@ import { apiClient } from "./client";
 
 export interface SecurityDashboard {
   totalTeachers: number;
+  activeTeachers: number;
   defaultPasswordCount: number;
   expiredCount: number;
   expiringInDay: number;
   expiringIn3Days: number;
   suspendedCount: number;
+  suspendedAccounts: number;
+  totalParents: number;
+  activeParents: number;
   securityScore: number;
 }
 

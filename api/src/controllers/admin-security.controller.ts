@@ -76,15 +76,45 @@ export const getSecurityDashboard = async (req: Request, res: Response) => {
       },
     });
 
+    // Get parent statistics
+    const totalParents = await prisma.parent.count();
+    const activeParents = await prisma.parent.count({
+      where: {
+        user: {
+          isActive: true,
+        },
+      },
+    });
+
+    // Get active teachers count
+    const activeTeachers = await prisma.user.count({
+      where: {
+        role: { in: ["TEACHER"] },
+        isActive: true,
+      },
+    });
+
+    // Get suspended accounts
+    const suspendedAccounts = await prisma.user.count({
+      where: {
+        isActive: false,
+        accountSuspendedAt: { not: null },
+      },
+    });
+
     res.json({
       success: true,
       data: {
         totalTeachers,
+        activeTeachers,
         defaultPasswordCount,
         expiredCount,
         expiringInDay,
         expiringIn3Days,
         suspendedCount,
+        suspendedAccounts,
+        totalParents,
+        activeParents,
         securityScore: Math.round(
           ((totalTeachers - defaultPasswordCount) / totalTeachers) * 100
         ),
