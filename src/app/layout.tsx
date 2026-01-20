@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { DataProvider } from "@/context/DataContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { NetworkStatus } from "@/components/NetworkStatus";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -260,6 +261,7 @@ export default function RootLayout({
           <DataProvider>
             {children}
             <PWAInstallPrompt />
+            <NetworkStatus />
           </DataProvider>
         </AuthProvider>
       </body>

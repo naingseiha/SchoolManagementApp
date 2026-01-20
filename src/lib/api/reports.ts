@@ -230,7 +230,7 @@ export const reportsApi = {
             url,
           });
 
-          const response = await fetch(url);
+          const response = await fetch(url, { credentials: "include" }); // ✅ iOS 16 FIX
           const data = await handleApiResponse<MonthlyReportData>(response);
 
           console.log("✅ Monthly report received:", data);
@@ -275,7 +275,7 @@ export const reportsApi = {
             url,
           });
 
-          const response = await fetch(url);
+          const response = await fetch(url, { credentials: "include" }); // ✅ iOS 16 FIX
           const data = await handleApiResponse<MonthlyReportData>(response);
 
           console.log("✅ Grade-wide report received:", data);
@@ -322,7 +322,7 @@ export const reportsApi = {
         url,
       });
 
-      const response = await fetch(url);
+      const response = await fetch(url, { credentials: "include" }); // ✅ iOS 16 FIX
       const data = await handleApiResponse<StudentTrackingBookData>(response);
 
       console.log("✅ Tracking book received:", data);
@@ -358,7 +358,7 @@ export const reportsApi = {
         url,
       });
 
-      const response = await fetch(url);
+      const response = await fetch(url, { credentials: "include" }); // ✅ iOS 16 FIX
       const data = await handleApiResponse<MonthlyStatisticsData>(response);
 
       console.log("✅ Monthly statistics received:", data);

@@ -133,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ token }),
+                credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
               }
             );
 

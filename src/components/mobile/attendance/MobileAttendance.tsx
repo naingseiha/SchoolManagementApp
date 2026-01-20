@@ -173,7 +173,10 @@ export default function MobileAttendance({
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`,
-          { signal: abortControllerRef.current.signal }
+          { 
+            signal: abortControllerRef.current.signal,
+            credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
+          }
         );
 
         if (!response.ok) {
@@ -325,6 +328,7 @@ export default function MobileAttendance({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           body: JSON.stringify({
             classId: selectedClass,
             month: selectedMonth,
