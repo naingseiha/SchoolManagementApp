@@ -199,6 +199,7 @@ class ApiClient {
           method: "GET",
           headers,
           cache: "no-store",
+          credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           signal: controller.signal,
         });
 
@@ -290,6 +291,7 @@ class ApiClient {
           headers,
           body: body ? JSON.stringify(body) : undefined,
           cache: "no-store",
+          credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           signal: controller.signal,
         });
 
@@ -362,6 +364,7 @@ class ApiClient {
           headers,
           body: body ? JSON.stringify(body) : undefined,
           cache: "no-store",
+          credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           signal: controller.signal,
         });
 
@@ -439,6 +442,7 @@ class ApiClient {
           headers,
           body: body ? JSON.stringify(body) : undefined,
           cache: "no-store",
+          credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           signal: controller.signal,
         });
 
@@ -516,6 +520,7 @@ class ApiClient {
           method: "DELETE",
           headers,
           cache: "no-store",
+          credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           signal: controller.signal,
         });
 

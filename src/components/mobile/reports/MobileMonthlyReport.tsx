@@ -203,7 +203,8 @@ export default function MobileMonthlyReport() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`
+        `${process.env.NEXT_PUBLIC_API_URL}/reports/monthly/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`,
+        { credentials: "include" } // ✅ iOS 16 FIX: Required for PWA mode
       );
 
       if (!response.ok) {

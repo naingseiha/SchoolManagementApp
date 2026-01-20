@@ -344,6 +344,7 @@ export const studentsApi = {
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
             cache: "no-store",
+            credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
           });
 
           if (!response.ok) {
