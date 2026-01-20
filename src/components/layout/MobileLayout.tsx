@@ -19,7 +19,7 @@ export default function MobileLayout({
   return (
     <div className="flex flex-col h-screen bg-gray-50 mobile-touch">
       <MobileHeader title={title} showMenu={showMenu} onMenuClick={onMenuClick} />
-      <main className="flex-1 overflow-y-auto pb-20 mobile-scroll">
+      <main className="flex-1 overflow-y-auto pb-20 mobile-scroll hide-scrollbar">
         {children}
       </main>
       <MobileBottomNav onNavigate={onNavigate} />

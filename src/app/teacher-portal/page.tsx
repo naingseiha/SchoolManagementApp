@@ -44,6 +44,12 @@ import MobileLayout from "@/components/layout/MobileLayout";
 import dynamic from "next/dynamic";
 import { useToast } from "@/hooks/useToast";
 import { usePasswordStatus } from "@/hooks/usePasswordStatus";
+import {
+  compressImage,
+  getBase64Size,
+  formatBytes,
+  isImageSizeAcceptable,
+} from "@/lib/utils/imageCompression";
 
 // Lazy load heavy components
 const TeacherProfileEditModal = dynamic(
@@ -179,12 +185,12 @@ export default function TeacherPortalPage() {
     }
   }, [isAuthenticated, currentUser?.id]);
 
-  // Fetch activity feed with caching
+  // Generate activity feed from profile data
   useEffect(() => {
     let isMounted = true;
 
-    const fetchActivities = async () => {
-      if (!currentUser?.id) return;
+    const loadActivities = () => {
+      if (!currentUser?.id || !profile) return;
 
       const cacheKey = `activities_${currentUser.id}`;
       const now = Date.now();
@@ -199,32 +205,22 @@ export default function TeacherPortalPage() {
 
       setLoadingActivities(true);
 
-      try {
-        const data = await teacherPortalApi.getMyActivities({ limit: 5 });
+      // Generate activities from profile data
+      // Note: Backend API endpoint not implemented yet, using computed activities
+      const computedActivities = generateSampleActivities(profile);
 
-        // Cache the data
-        activitiesCache[cacheKey] = data.activities;
-        cacheTimeRef.current[cacheKey] = now;
+      // Cache the data
+      activitiesCache[cacheKey] = computedActivities;
+      cacheTimeRef.current[cacheKey] = now;
 
-        if (isMounted) {
-          setActivities(data.activities);
-        }
-      } catch (error) {
-        console.error(`❌ Error fetching activities:`, error);
-        // Generate sample activities based on profile data
-        if (isMounted && profile) {
-          const sampleActivities = generateSampleActivities(profile);
-          setActivities(sampleActivities);
-        }
-      } finally {
-        if (isMounted) {
-          setLoadingActivities(false);
-        }
+      if (isMounted) {
+        setActivities(computedActivities);
+        setLoadingActivities(false);
       }
     };
 
     if (profile) {
-      fetchActivities();
+      loadActivities();
     }
 
     return () => {
@@ -232,7 +228,8 @@ export default function TeacherPortalPage() {
     };
   }, [currentUser?.id, profile]);
 
-  // Generate sample activities from profile data (fallback when API not available)
+  // Generate activities from profile data
+  // TODO: Replace with API call when backend endpoint /api/teacher-portal/activities is implemented
   const generateSampleActivities = useCallback(
     (profile: TeacherProfile): TeacherActivity[] => {
       const activities: TeacherActivity[] = [];
@@ -385,33 +382,80 @@ export default function TeacherPortalPage() {
   };
 
   const handlePhotoUpload = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-          showErrorToast("ទំហំរូបភាពធំពេក។ សូមជ្រើសរើសរូបភាពតូចជាង 5MB");
+      if (!file) return;
+
+      // Validate file size (max 5MB for original)
+      if (file.size > 5 * 1024 * 1024) {
+        showErrorToast("ទំហំរូបភាពធំពេក។ សូមជ្រើសរើសរូបភាពតូចជាង 5MB");
+        return;
+      }
+
+      try {
+        // Show loading state
+        const loadingToast = success("កំពុងដំណើរការរូបភាព...");
+
+        // Compress the image
+        const compressedDataUrl = await compressImage(file, {
+          maxWidth: 400,
+          maxHeight: 400,
+          quality: 0.85,
+          outputFormat: 'image/jpeg',
+        });
+
+        // Validate compressed size
+        const compressedSize = getBase64Size(compressedDataUrl);
+        if (!isImageSizeAcceptable(compressedDataUrl, 500 * 1024)) {
+          showErrorToast(
+            `រូបភាពធំពេកបន្ទាប់ពីបង្រួម (${formatBytes(compressedSize)}). សូមជ្រើសរើសរូបភាពតូចជាងនេះ`
+          );
           return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const photoUrl = reader.result as string;
-          setProfilePhoto(photoUrl);
-          if (currentUser?.id) {
-            requestIdleCallback(() => {
-              localStorage.setItem(`teacher_photo_${currentUser.id}`, photoUrl);
-            });
-          }
-          setShowPhotoOptions(false);
-          success("រូបភាពត្រូវបានដាក់ដោយជោគជ័យ");
-        };
-        reader.readAsDataURL(file);
+        // Set the compressed photo
+        setProfilePhoto(compressedDataUrl);
+
+        // Save to localStorage
+        if (currentUser?.id) {
+          requestIdleCallback(() => {
+            try {
+              localStorage.setItem(
+                `teacher_photo_${currentUser.id}`,
+                compressedDataUrl
+              );
+            } catch (e) {
+              console.error('Failed to save photo to localStorage:', e);
+              showErrorToast("មិនអាចរក្សាទុករូបភាពបានទេ (ទំហំផ្ទុកពេញ)");
+            }
+          });
+        }
+
+        setShowPhotoOptions(false);
+        success(
+          `រូបភាពត្រូវបានដាក់ដោយជោគជ័យ (${formatBytes(compressedSize)})`
+        );
+      } catch (error: any) {
+        console.error('Error compressing image:', error);
+        showErrorToast(error.message || "មិនអាចដំណើរការរូបភាពបានទេ");
       }
+
+      // Reset input
+      event.target.value = '';
     },
     [currentUser?.id, success, showErrorToast],
   );
 
   const handleRemovePhoto = useCallback(() => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "តើអ្នកប្រាកដថាចង់លុបរូបភាពនេះទេ?\nAre you sure you want to remove this photo?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setProfilePhoto(null);
     if (currentUser?.id) {
       requestIdleCallback(() => {
@@ -512,7 +556,7 @@ export default function TeacherPortalPage() {
           subjectCount={subjectCount}
         />
 
-        <div className="px-4 space-y-4 pt-4">
+        <div className="px-4 space-y-4 pt-4 hide-scrollbar">
           {/* Social Action Buttons */}
           <SocialActionButtons onAction={handleSocialAction} />
 
@@ -651,6 +695,7 @@ const HeroSection = memo(
       <div className="absolute top-4 right-4 z-10">
         <button
           onClick={onSettingsClick}
+          aria-label="កែប្រែព័ត៌មានគណនី / Edit profile settings"
           className="p-3 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/30 shadow-lg hover:bg-white/30 transition-all active:scale-95"
         >
           <Settings className="w-5 h-5 text-white" />
@@ -667,7 +712,7 @@ const HeroSection = memo(
               {profilePhoto ? (
                 <img
                   src={profilePhoto}
-                  alt="Profile"
+                  alt="រូបភាពគ្រូបង្រៀន / Teacher profile photo"
                   className="w-full h-full rounded-full object-cover"
                   loading="lazy"
                 />
@@ -679,6 +724,7 @@ const HeroSection = memo(
             </div>
             <button
               onClick={onCameraClick}
+              aria-label="ផ្លាស់ប្តូររូបភាព / Change profile photo"
               className="absolute bottom-0 right-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full border-4 border-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95"
             >
               <Camera className="w-5 h-5 text-white" />
@@ -789,6 +835,7 @@ const SocialActionButtons = memo(
       <div className="grid grid-cols-4 gap-3">
         <button
           onClick={() => handleAction("message")}
+          aria-label="ផ្ញើសារ / Send message"
           className="flex flex-col items-center gap-2 bg-white border border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-indigo-400 hover:bg-gray-50 transition-all active:scale-95 group"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -799,6 +846,7 @@ const SocialActionButtons = memo(
 
         <button
           onClick={() => handleAction("connect")}
+          aria-label="ភ្ជាប់ / Connect"
           className="flex flex-col items-center gap-2 bg-white border border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-blue-400 hover:bg-gray-50 transition-all active:scale-95 group"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -809,6 +857,7 @@ const SocialActionButtons = memo(
 
         <button
           onClick={() => handleAction("share")}
+          aria-label="ចែករំលែក / Share profile"
           className="flex flex-col items-center gap-2 bg-white border border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-green-400 hover:bg-gray-50 transition-all active:scale-95 group"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -819,6 +868,7 @@ const SocialActionButtons = memo(
 
         <button
           onClick={() => handleAction("notify")}
+          aria-label="ជូនដំណឹង / Enable notifications"
           className="flex flex-col items-center gap-2 bg-white border border-gray-200 text-gray-700 rounded-2xl p-4 hover:border-amber-400 hover:bg-gray-50 transition-all active:scale-95 group"
         >
           <div className="w-12 h-12 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -1008,46 +1058,90 @@ const AchievementBadge = memo(
     stats,
     color,
   }: any) => {
-    const colorClasses = {
-      yellow:
-        "from-yellow-50 via-amber-50 to-yellow-50 border-yellow-200 text-yellow-900 bg-yellow-100 text-yellow-800 bg-gradient-to-br from-yellow-500 to-orange-600",
-      green:
-        "from-green-50 via-emerald-50 to-green-50 border-green-200 text-green-900 bg-green-100 text-green-800 bg-gradient-to-br from-green-500 to-emerald-600",
-      blue: "from-blue-50 via-cyan-50 to-blue-50 border-blue-200 text-blue-900 bg-blue-100 text-blue-800 bg-gradient-to-br from-blue-500 to-cyan-600",
-      purple:
-        "from-purple-50 via-pink-50 to-purple-50 border-purple-200 text-purple-900 bg-purple-100 text-purple-800 bg-gradient-to-br from-purple-500 to-pink-600",
-      rose: "from-rose-50 via-red-50 to-rose-50 border-rose-200 text-rose-900 bg-rose-100 text-rose-800 bg-gradient-to-br from-rose-500 to-red-600",
-      indigo:
-        "from-indigo-50 via-purple-50 to-indigo-50 border-indigo-200 text-indigo-900 bg-indigo-100 text-indigo-800 bg-gradient-to-br from-indigo-500 to-purple-600",
+    const colorConfig: Record<string, {
+      bgGradient: string;
+      border: string;
+      textMain: string;
+      iconBg: string;
+      iconColor: string;
+      badgeGradient: string;
+    }> = {
+      yellow: {
+        bgGradient: "from-yellow-50 via-amber-50 to-yellow-50",
+        border: "border-yellow-200",
+        textMain: "text-yellow-900",
+        iconBg: "bg-yellow-50",
+        iconColor: "text-amber-600",
+        badgeGradient: "bg-gradient-to-br from-yellow-500 to-orange-600",
+      },
+      green: {
+        bgGradient: "from-green-50 via-emerald-50 to-green-50",
+        border: "border-green-200",
+        textMain: "text-green-900",
+        iconBg: "bg-green-50",
+        iconColor: "text-emerald-600",
+        badgeGradient: "bg-gradient-to-br from-green-500 to-emerald-600",
+      },
+      blue: {
+        bgGradient: "from-blue-50 via-cyan-50 to-blue-50",
+        border: "border-blue-200",
+        textMain: "text-blue-900",
+        iconBg: "bg-blue-50",
+        iconColor: "text-blue-600",
+        badgeGradient: "bg-gradient-to-br from-blue-500 to-cyan-600",
+      },
+      purple: {
+        bgGradient: "from-purple-50 via-pink-50 to-purple-50",
+        border: "border-purple-200",
+        textMain: "text-purple-900",
+        iconBg: "bg-purple-50",
+        iconColor: "text-purple-600",
+        badgeGradient: "bg-gradient-to-br from-purple-500 to-pink-600",
+      },
+      rose: {
+        bgGradient: "from-rose-50 via-red-50 to-rose-50",
+        border: "border-rose-200",
+        textMain: "text-rose-900",
+        iconBg: "bg-rose-50",
+        iconColor: "text-rose-600",
+        badgeGradient: "bg-gradient-to-br from-rose-500 to-red-600",
+      },
+      indigo: {
+        bgGradient: "from-indigo-50 via-purple-50 to-indigo-50",
+        border: "border-indigo-200",
+        textMain: "text-indigo-900",
+        iconBg: "bg-indigo-50",
+        iconColor: "text-indigo-600",
+        badgeGradient: "bg-gradient-to-br from-indigo-500 to-purple-600",
+      },
     };
 
-    const [bgGrad, border, textMain, bgIcon, iconColor, badgeGradient] =
-      colorClasses[color as keyof typeof colorClasses].split(" ");
+    const colors = colorConfig[color] || colorConfig.blue;
 
     return (
       <div
-        className={`flex items-center gap-3 bg-gradient-to-r ${bgGrad} border ${border} px-4 py-3.5 rounded-2xl hover:border-opacity-80 transition-all`}
+        className={`flex items-center gap-3 bg-gradient-to-r ${colors.bgGradient} border-2 ${colors.border} px-4 py-3.5 rounded-2xl hover:border-opacity-80 transition-all`}
       >
         <div
-          className={`w-12 h-12 ${bgIcon} rounded-xl flex items-center justify-center flex-shrink-0`}
+          className={`w-14 h-14 ${colors.iconBg} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm`}
         >
-          <Icon className={`w-6 h-6 ${iconColor}`} />
+          <Icon className={`w-8 h-8 ${colors.iconColor} stroke-[2.5]`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-black ${textMain} mb-0.5`}>{title}</p>
-          <p className={`text-xs ${iconColor} font-medium opacity-90`}>
+          <p className={`text-sm font-black ${colors.textMain} mb-0.5`}>{title}</p>
+          <p className={`text-xs ${colors.iconColor} font-semibold`}>
             {subtitle}
           </p>
           {stats && (
-            <p className="text-xs text-gray-700 font-bold mt-1 opacity-90">
+            <p className="text-xs text-gray-800 font-bold mt-1">
               {stats}
             </p>
           )}
         </div>
         <div
-          className={`w-10 h-10 ${badgeGradient} rounded-xl flex items-center justify-center flex-shrink-0`}
+          className={`w-11 h-11 ${colors.badgeGradient} rounded-xl flex items-center justify-center flex-shrink-0 shadow-md`}
         >
-          <BadgeIcon className="w-5 h-5 text-white" />
+          <BadgeIcon className="w-6 h-6 text-white" />
         </div>
       </div>
     );

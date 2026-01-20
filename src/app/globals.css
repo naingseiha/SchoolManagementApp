@@ -272,6 +272,16 @@
 }
 
 @layer utilities {
+  /* Hide scrollbar for mobile PWA while maintaining scroll functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+
   .no-print {
     @media print {
       display: none !important;
@@ -533,6 +543,21 @@
   .print-certificate {
     page-break-after: always;
   }
+}
+
+/* Hide scroll progress indicators */
+.scroll-progress,
+.scroll-indicator,
+[class*="scroll-progress"],
+[class*="scroll-indicator"],
+[id*="scroll-progress"],
+[id*="scroll-indicator"],
+/* Hide any fixed top bars that might be scroll indicators */
+body > div[style*="position: fixed"][style*="top: 0"]:not([class]):not([id]),
+body > div[style*="position:fixed"][style*="top:0"]:not([class]):not([id]) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 /* Enhanced Scrollbar Styling */
