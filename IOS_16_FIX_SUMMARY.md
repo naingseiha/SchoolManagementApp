@@ -11,7 +11,15 @@ iOS 16 users saw this error when using the PWA (installed app):
 
 ## ✅ What We Fixed
 
+### Phase 1: Network Credentials (v5)
 Added `credentials: "include"` to **14 fetch calls** in **6 files**.
+
+### Phase 2: Service Worker Cache Fix (v6) ⚠️ CRITICAL
+**Problem:** Service worker cached the error responses from Phase 1
+**Solution:**
+- Incremented cache version from v5 → v6
+- Added iOS 16-specific cache clearing that removes ALL caches on first load
+- Forces service worker to fetch fresh data with proper credentials
 
 ### Files Modified:
 1. ✅ `src/lib/api/client.ts` - 5 methods (GET, POST, PUT, PATCH, DELETE)
@@ -111,15 +119,30 @@ Send this message:
 
 ---
 
-**ជូនជ្រាបអ្នកប្រើប្រាស់ iOS 16 • For iOS 16 Users**
+**⚠️ CRITICAL UPDATE for iOS 16 Users**
+**ជូនជ្រាបអ្នកប្រើប្រាស់ iOS 16 (សំខាន់ណាស់!)**
 
-យើងបានដោះស្រាយបញ្ហាហើយ! សូមធ្វើដូចខាងក្រោម:
-We've fixed the issue! Please follow these steps:
+**If you see "Response served by service worker is an error":**
 
-1. លុបកម្មវិធីពីអេក្រង់ Home • Delete app from Home Screen
-2. Settings → Safari → Clear History and Website Data
-3. បើកគេហទំព័រនិងបញ្ចូល "Add to Home Screen" ម្តងទៀត
-   Open website and "Add to Home Screen" again
+យើងបានដោះស្រាយបញ្ហាហើយ! **MUST follow ALL steps:**
+We've fixed the issue! **MUST follow ALL steps in order:**
+
+1. **លុបកម្មវិធីពីអេក្រង់ Home** (Delete app completely)
+2. **Safari → Settings → Clear History and Website Data** (⚠️ MUST DO!)
+3. **បិទ Safari ទាំងស្រុង** (Close Safari app completely - swipe up)
+4. **បើក Safari ឡើងវិញ** (Reopen Safari)
+5. **ទៅកាន់គេហទំព័រ** (Go to website)
+6. **Add to Home Screen ម្តងទៀត** (Add to Home Screen again)
+7. **បើកកម្មវិធី** (Open app - it will clear caches automatically)
+
+**Why all these steps?**
+- Service worker cached old error responses
+- Must completely uninstall + clear + reinstall to fix
+- Simply clearing Safari data is NOT enough
+
+**If still showing errors:**
+- Make sure you did ALL 7 steps above
+- Contact support with screenshot
 
 ---
 
@@ -138,11 +161,42 @@ We've fixed the issue! Please follow these steps:
 
 ## 🔍 Troubleshooting
 
+### ⚠️ CRITICAL: "Response served by service worker is an error"
+
+**This is THE MOST COMMON ISSUE on iOS 16 after the fix!**
+
+**What happened:**
+- The service worker cached error responses BEFORE we added `credentials: "include"`
+- Even after clearing Safari data, the service worker keeps serving the old cached errors
+- The error message literally says "Response served by service worker is an error"
+
+**The FIX (v6 update):**
+1. We incremented cache version from v5 → v6
+2. Added iOS 16-specific cache clearing that removes ALL caches on first load
+3. This forces the service worker to fetch fresh data with the new credentials
+
+**What users need to do:**
+1. **Delete the app from home screen** (don't just close it)
+2. **Safari → Settings → Clear History and Website Data** (MUST do this!)
+3. **Close Safari completely** (swipe up to close)
+4. **Reopen Safari** and visit the website
+5. **Add to Home Screen** again
+6. Open the app - it will clear all caches automatically on first load
+
+**Why this happens:**
+- Service workers are VERY aggressive at caching
+- iOS 16 has stricter service worker caching rules
+- Simply "clearing Safari data" doesn't always clear service worker caches
+- The only way to guarantee cache clearing is to uninstall + clear data + reinstall
+
+**How to verify it's working:**
+1. After reinstalling, open the app
+2. Open Safari DevTools (if connected to Mac)
+3. Look for console logs: `[SW Register iOS 16] First run with v6, clearing ALL caches...`
+4. If you see this, the fix is working!
+
 ### "All tests pass but app still shows error"
-→ Clear service worker cache:
-1. Delete PWA
-2. Safari → Settings → Clear Data
-3. Reinstall
+→ See the critical fix above for service worker cache issues
 
 ### "API test fails with CORS error"
 → Check backend allowedOrigins:
@@ -154,9 +208,7 @@ const allowedOrigins = [
 ```
 
 ### "Works in browser but not PWA"
-→ Service worker issue:
-1. Reinstall PWA
-2. If still fails, check service worker in DevTools
+→ Service worker cache issue - see critical fix above
 
 ## 📞 Quick Support Checklist
 
@@ -233,6 +285,7 @@ Before deploying, confirm:
 
 **Commits:**
 ```
+[Latest] Fix iOS 16 service worker cache issue: Increment to v6 + nuclear cache clear
 01dc81a Add comprehensive safety guarantee documentation
 697d268 Add cross-platform compatibility testing and documentation
 8e28d6f Fix iOS 16 network error: Add credentials include to all fetch calls

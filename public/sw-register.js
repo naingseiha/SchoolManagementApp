@@ -90,6 +90,12 @@
             }
           });
 
+          // ✅ CRITICAL iOS 16 FIX: Force clear ALL caches on iOS 16 to remove cached errors
+          if (iOS_VERSION >= 16) {
+            console.log('[SW Register] iOS 16+ detected, force clearing ALL caches...');
+            await clearAllCachesForIOS16();
+          }
+
           // Clear old caches if iOS version < 14 (known issues)
           if (iOS_VERSION < 14) {
             console.log('[SW Register] iOS < 14 detected, clearing old caches...');
@@ -148,15 +154,50 @@
     });
   }
 
+  // ✅ CRITICAL iOS 16 FIX: Clear ALL caches to remove cached error responses
+  async function clearAllCachesForIOS16() {
+    try {
+      const cacheNames = await caches.keys();
+      console.log('[SW Register iOS 16] Current caches:', cacheNames);
+
+      // On first load after deployment, clear EVERYTHING
+      const hasClearedV6 = localStorage.getItem('sw-cleared-v6');
+
+      if (!hasClearedV6) {
+        console.log('[SW Register iOS 16] First run with v6, clearing ALL caches...');
+        await Promise.all(cacheNames.map(name => {
+          console.log('[SW Register iOS 16] Deleting cache:', name);
+          return caches.delete(name);
+        }));
+
+        // Mark as cleared
+        localStorage.setItem('sw-cleared-v6', 'true');
+        console.log('[SW Register iOS 16] All caches cleared successfully');
+      } else {
+        // Normal old cache cleanup
+        const oldCaches = cacheNames.filter(
+          name => !name.includes('school-ms-v6') && name.startsWith('school-ms')
+        );
+
+        if (oldCaches.length > 0) {
+          console.log('[SW Register iOS 16] Deleting old caches:', oldCaches);
+          await Promise.all(oldCaches.map(name => caches.delete(name)));
+        }
+      }
+    } catch (error) {
+      console.error('[SW Register iOS 16] Error clearing caches:', error);
+    }
+  }
+
   // Clear old caches from previous versions
   async function clearOldCaches() {
     try {
       const cacheNames = await caches.keys();
       console.log('[SW Register] Current caches:', cacheNames);
 
-      // ✅ UPDATED: Delete caches that don't match v5
+      // ✅ UPDATED: Delete caches that don't match v6 (including v5 which had cached errors)
       const oldCaches = cacheNames.filter(
-        name => !name.includes('school-ms-v5') && name.startsWith('school-ms')
+        name => !name.includes('school-ms-v6') && name.startsWith('school-ms')
       );
 
       if (oldCaches.length > 0) {

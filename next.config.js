@@ -16,9 +16,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   },
   workboxOptions: {
     disableDevLogs: true,
-    // ✅ CRITICAL iOS FIX: Increment cache version to v5 to force refresh on all devices
-    // This will clear old problematic service workers
-    cacheId: 'school-ms-v5',
+    // ✅ CRITICAL iOS FIX: Increment cache version to v6 to force refresh on all devices
+    // v5 had cached error responses, v6 forces complete cache refresh
+    cacheId: 'school-ms-v6',
     // ✅ iOS FIX: Aggressively clean up old caches
     cleanupOutdatedCaches: true,
     // ✅ iOS FIX: Immediately take control of all pages
