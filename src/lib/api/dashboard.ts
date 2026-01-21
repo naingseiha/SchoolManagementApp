@@ -480,35 +480,6 @@ export const dashboardApi = {
   },
 
   /**
-   * Get top performing students across all grades
-   * @param month - Filter by month
-   * @param year - Filter by year
-   * @param limit - Number of students to return (default: 10)
-   */
-  getTopStudents: async (month?: string, year?: number, limit: number = 10, grade?: string, classId?: string): Promise<any[]> => {
-    const cacheKey = `dashboard:top-students:${month || 'current'}:${year || 'current'}:${limit}:${grade || 'all'}:${classId || 'all'}`;
-    return apiCache.getOrFetch(
-      cacheKey,
-      async () => {
-        const params = new URLSearchParams();
-        if (month) params.append('month', month);
-        if (year) params.append('year', year.toString());
-        params.append('limit', limit.toString());
-        if (grade && grade !== 'all') params.append('grade', grade);
-        if (classId && classId !== 'all') params.append('classId', classId);
-
-        const queryString = params.toString();
-        const url = `/dashboard/top-students${queryString ? `?${queryString}` : ''}`;
-
-        const data = await apiClient.get(url);
-        console.log("🏆 Top Students API: Data received:", data);
-        return data;
-      },
-      5 * 60 * 1000
-    );
-  },
-
-  /**
    * Get comparison statistics between two months
    * @param month1 - First month to compare
    * @param month2 - Second month to compare

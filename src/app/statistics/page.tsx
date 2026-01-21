@@ -51,6 +51,163 @@ const getCurrentKhmerMonth = () => {
 
 type TabType = "overview" | "pass-fail" | "performance" | "distribution" | "rankings";
 
+// Class Details Card Component
+function ClassDetailsCard({ classData }: { classData: any }) {
+  const [expandedClass, setExpandedClass] = useState(false);
+  
+  const getGradeColor = (letter: string) => {
+    const colors: Record<string, string> = {
+      A: 'from-green-500 to-green-600',
+      B: 'from-blue-500 to-blue-600',
+      C: 'from-yellow-500 to-yellow-600',
+      D: 'from-orange-500 to-orange-600',
+      E: 'from-red-500 to-red-600',
+      F: 'from-red-600 to-red-700',
+    };
+    return colors[letter] || 'from-gray-500 to-gray-600';
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border-2 border-gray-200 overflow-hidden hover:shadow-md transition-all">
+      {/* Class Header */}
+      <button
+        onClick={() => setExpandedClass(!expandedClass)}
+        className="w-full p-5 flex items-center justify-between hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all group"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+            <span className="text-white font-black text-lg">
+              {classData.section}
+            </span>
+          </div>
+          <div className="text-left">
+            <p className="font-khmer-body text-lg font-black text-gray-900">
+              {classData.name}
+            </p>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="font-khmer-body text-sm text-gray-600 font-medium flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" />
+                {classData.studentCount} សិស្ស
+              </span>
+              {classData.teacherName && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="font-khmer-body text-xs text-gray-500">
+                    គ្រូ: {classData.teacherName}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right px-4 py-2 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <p className="font-black text-2xl text-green-600 leading-none">
+              {classData.passPercentage.toFixed(1)}%
+            </p>
+            <p className="font-khmer-body text-xs text-green-700 font-semibold mt-0.5">
+              ជាប់
+            </p>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+            {expandedClass ? (
+              <ChevronDown className="w-5 h-5 text-gray-600 group-hover:text-indigo-600" />
+            ) : (
+              <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" />
+            )}
+          </div>
+        </div>
+      </button>
+
+      {/* Expanded Class Details */}
+      {expandedClass && (
+        <div className="border-t-2 border-gray-100 bg-gradient-to-br from-gray-50 to-white p-5">
+          {/* Class Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <p className="font-khmer-body text-xs text-blue-600 font-semibold mb-1">មធ្យមភាគ</p>
+              <p className="font-black text-xl text-blue-600">{classData.averageScore.toFixed(1)}</p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+              <p className="font-khmer-body text-xs text-green-600 font-semibold mb-1">ជាប់</p>
+              <p className="font-black text-xl text-green-600">{classData.passedCount}</p>
+            </div>
+            <div className="bg-red-50 rounded-lg p-3 border border-red-200">
+              <p className="font-khmer-body text-xs text-red-600 font-semibold mb-1">ធ្លាក់</p>
+              <p className="font-black text-xl text-red-600">{classData.failedCount}</p>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+              <p className="font-khmer-body text-xs text-purple-600 font-semibold mb-1">ប្រុស/ស្រី</p>
+              <p className="font-black text-xl text-purple-600">{classData.maleCount}/{classData.femaleCount}</p>
+            </div>
+          </div>
+
+          {/* Grade Distribution */}
+          <div className="bg-white rounded-lg p-4 border border-gray-200 mb-5">
+            <h5 className="font-khmer-body text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-indigo-600" />
+              ការចែកចាយពិន្ទុ
+            </h5>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {Object.entries(classData.gradeDistribution).map(([letter, dist]: [string, any]) => (
+                <div key={letter} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${getGradeColor(letter)} text-white font-black text-sm shadow`}>
+                    {letter}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-black text-lg text-gray-900">{dist.total}</p>
+                    <p className="font-khmer-body text-xs text-gray-500">
+                      {classData.studentCount > 0 ? ((dist.total / classData.studentCount) * 100).toFixed(0) : 0}%
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Subjects */}
+          {classData.subjectStats && classData.subjectStats.length > 0 && (
+            <div>
+              <h5 className="font-khmer-body text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-indigo-600" />
+                មុខវិជ្ជាទាំងអស់ ({classData.subjectStats.length} មុខវិជ្ជា)
+              </h5>
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                {classData.subjectStats.map((subject: any) => (
+                  <div key={subject.subjectId} className="bg-gradient-to-r from-white to-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex-1">
+                        <h6 className="font-khmer-body text-base font-black text-gray-900">
+                          {subject.subjectName}
+                        </h6>
+                        <p className="font-mono text-xs text-gray-500 font-semibold mt-0.5">
+                          {subject.subjectCode} • Max: {subject.maxScore} • Coefficient: {subject.coefficient}
+                        </p>
+                      </div>
+                      <div className="text-right px-3 py-2 bg-indigo-50 rounded-lg border border-indigo-200">
+                        <p className="font-black text-lg text-indigo-600">{subject.totalStudentsWithGrades}</p>
+                        <p className="font-khmer-body text-xs text-indigo-700 font-semibold">សិស្សមានពិន្ទុ</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 md:grid-cols-6 gap-1.5">
+                      {Object.entries(subject.gradeDistribution).map(([letter, dist]: [string, any]) => (
+                        <div key={letter} className={`text-center p-2 rounded-lg bg-gradient-to-br ${getGradeColor(letter)}`}>
+                          <p className="text-white font-black text-xs mb-0.5">{letter}</p>
+                          <p className="text-white font-black text-base">{dist.total}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function StatisticsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
@@ -62,14 +219,10 @@ export default function StatisticsPage() {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [compareMonth, setCompareMonth] = useState(getCurrentKhmerMonth());
   const [compareStats, setCompareStats] = useState<ComprehensiveStats | null>(null);
-  const [topStudents, setTopStudents] = useState<any[]>([]);
-  const [loadingTopStudents, setLoadingTopStudents] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>("all");
   const [selectedDistributionGrade, setSelectedDistributionGrade] = useState<string>("all");
   const [selectedDistributionClass, setSelectedDistributionClass] = useState<string>("all");
-  const [selectedRankingsGrade, setSelectedRankingsGrade] = useState<string>("all");
-  const [selectedRankingsClass, setSelectedRankingsClass] = useState<string>("all");
 
   const loadStats = useCallback(async () => {
     try {
@@ -102,29 +255,9 @@ export default function StatisticsPage() {
     }
   }, [comparisonMode, compareMonth, selectedYear]);
 
-  const loadTopStudents = useCallback(async () => {
-    try {
-      setLoadingTopStudents(true);
-      const data = await dashboardApi.getTopStudents(
-        selectedMonth, 
-        selectedYear, 
-        10, 
-        selectedRankingsGrade,
-        selectedRankingsClass
-      );
-      setTopStudents(data || []);
-    } catch (err) {
-      console.error("Error loading top students:", err);
-      setTopStudents([]);
-    } finally {
-      setLoadingTopStudents(false);
-    }
-  }, [selectedMonth, selectedYear, selectedRankingsGrade, selectedRankingsClass]);
-
   useEffect(() => {
     loadStats();
-    loadTopStudents();
-  }, [loadStats, loadTopStudents]);
+  }, [loadStats]);
 
   useEffect(() => {
     if (comparisonMode) {
@@ -1535,205 +1668,35 @@ export default function StatisticsPage() {
 
             {activeTab === "rankings" && (
               <div className="space-y-6">
-                {/* Top 10 Students Leaderboard */}
-                <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 rounded-3xl shadow-xl p-8 border-2 border-yellow-200">
-                  {/* Header with Trophy Icon */}
+                {/* Detailed Grade Statistics */}
+                <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-xl p-8 border border-gray-200">
                   <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-4 rounded-2xl shadow-lg">
-                        <Trophy className="w-8 h-8 text-white" />
+                      <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl shadow-lg">
+                        <BarChart3 className="w-8 h-8 text-white" />
                       </div>
                       <div>
                         <h3 className="font-khmer-title text-2xl font-black text-gray-900">
-                          សិស្សល្អបំផុត ១០នាក់
+                          ស្ថិតិលម្អិតតាមថ្នាក់
                         </h3>
                         <p className="font-khmer-body text-sm text-gray-600 mt-1">
-                          អ្នកឈានមុខគេសម្រាប់ឆ្នាំសិក្សា {selectedYear}
+                          ទិន្នន័យពេញលេញសម្រាប់ថ្នាក់ ថ្នាក់រៀន និងមុខវិជ្ជា
                         </p>
                       </div>
                     </div>
-                    <div className="hidden md:flex items-center gap-2">
-                      <Award className="w-6 h-6 text-yellow-600" />
-                      <span className="font-khmer-body text-sm font-semibold text-yellow-700">
-                        តារាងលេខរៀង
+                    <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-200">
+                      <Calendar className="w-5 h-5 text-indigo-600" />
+                      <span className="font-khmer-body text-sm font-semibold text-indigo-700">
+                        {selectedMonth} {selectedYear}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Filter Controls */}
-                  <div className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-yellow-200 shadow-md">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      {/* Grade Selector */}
-                      <div className="flex-1 w-full sm:w-auto">
-                        <label className="font-khmer-body text-sm text-gray-700 font-bold mb-2 block">
-                          ជ្រើសរើសថ្នាក់:
-                        </label>
-                        <select
-                          value={selectedRankingsGrade}
-                          onChange={(e) => {
-                            setSelectedRankingsGrade(e.target.value);
-                            setSelectedRankingsClass("all");
-                          }}
-                          className="w-full font-khmer-body px-5 py-3 bg-gradient-to-r from-white to-yellow-50 border-2 border-yellow-300 rounded-xl text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:border-yellow-500 transition-all duration-200 cursor-pointer hover:border-yellow-400 hover:shadow-md"
-                        >
-                          <option value="all">🏫 ថ្នាក់ទី ៧-១២ (ទាំងអស់)</option>
-                          {stats.grades.map(g => (
-                            <option key={g.grade} value={g.grade}>📚 ថ្នាក់ទី{g.grade}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Class Selector - Only show when a specific grade is selected */}
-                      {selectedRankingsGrade !== "all" && (() => {
-                        const selectedGrade = stats.grades.find(g => g.grade === selectedRankingsGrade);
-                        if (!selectedGrade) return null;
-                        
-                        return (
-                          <div className="flex-1 w-full sm:w-auto">
-                            <label className="font-khmer-body text-sm text-gray-700 font-bold mb-2 block">
-                              ជ្រើសរើសថ្នាក់រៀន:
-                            </label>
-                            <select
-                              value={selectedRankingsClass}
-                              onChange={(e) => setSelectedRankingsClass(e.target.value)}
-                              className="w-full font-khmer-body px-5 py-3 bg-gradient-to-r from-white to-orange-50 border-2 border-orange-300 rounded-xl text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-orange-400 focus:border-orange-500 transition-all duration-200 cursor-pointer hover:border-orange-400 hover:shadow-md"
-                            >
-                              <option value="all">📖 ទាំងអស់</option>
-                              {selectedGrade.classes.map(cls => (
-                                <option key={cls.id} value={cls.id}>🎓 {cls.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {loadingTopStudents ? (
-                    <div className="text-center py-16">
-                      <Loader2 className="h-12 w-12 animate-spin text-yellow-600 mx-auto mb-4" />
-                      <p className="font-khmer-body text-gray-600">កំពុងផ្ទុកទិន្នន័យ...</p>
-                    </div>
-                  ) : topStudents.length > 0 ? (
-                    <div className="space-y-4">
-                      {topStudents.map((student, index) => (
-                        <div
-                          key={student.id || index}
-                          className={`group relative overflow-hidden rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
-                            index === 0
-                              ? 'bg-gradient-to-r from-yellow-100 via-yellow-50 to-orange-100 border-yellow-400'
-                              : index === 1
-                              ? 'bg-gradient-to-r from-gray-100 via-gray-50 to-slate-100 border-gray-400'
-                              : index === 2
-                              ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-amber-100 border-orange-400'
-                              : 'bg-gradient-to-r from-white to-gray-50 border-gray-300'
-                          }`}
-                        >
-                          {/* Rank Badge */}
-                          <div className="absolute top-0 left-0 w-20 h-20 overflow-hidden">
-                            <div className={`absolute transform -rotate-45 ${
-                              index === 0 ? 'bg-yellow-500' :
-                              index === 1 ? 'bg-gray-400' :
-                              index === 2 ? 'bg-orange-500' :
-                              'bg-indigo-500'
-                            } text-white text-center font-black text-xs py-1 left-[-35px] top-[15px] w-[100px] shadow-md`}>
-                              {index < 3 ? '⭐' : ''}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-6 p-6 pl-8">
-                            {/* Rank Number */}
-                            <div
-                              className={`flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center font-black text-3xl shadow-xl transform transition-transform group-hover:scale-110 ${
-                                index === 0
-                                  ? 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 text-white'
-                                  : index === 1
-                                  ? 'bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 text-white'
-                                  : index === 2
-                                  ? 'bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 text-white'
-                                  : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
-                              }`}
-                            >
-                              {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
-                            </div>
-
-                            {/* Student Info */}
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-khmer-body text-xl font-black text-gray-900 truncate mb-2">
-                                {student.name || 'Unknown'}
-                              </h4>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/80 rounded-lg font-khmer-body text-sm font-bold text-gray-700 shadow-sm border border-gray-200">
-                                  <Users className="w-4 h-4" />
-                                  {student.className || 'N/A'}
-                                </span>
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-khmer-body text-sm font-bold shadow-sm ${
-                                  student.gender === 'MALE' 
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                                    : 'bg-pink-100 text-pink-700 border border-pink-200'
-                                }`}>
-                                  {student.gender === 'MALE' ? '👨‍🎓 ប្រុស' : '👩‍🎓 ស្រី'}
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-khmer-body text-xs font-semibold shadow-sm border border-indigo-200">
-                                  📊 {student.totalScores} មុខវិជ្ជា
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Score Display */}
-                            <div className="text-right flex-shrink-0">
-                              <div className={`inline-flex flex-col items-center px-6 py-4 rounded-2xl shadow-lg ${
-                                index === 0
-                                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                                  : index === 1
-                                  ? 'bg-gradient-to-br from-gray-300 to-gray-500'
-                                  : index === 2
-                                  ? 'bg-gradient-to-br from-orange-400 to-amber-500'
-                                  : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                              }`}>
-                                <p className="font-black text-4xl text-white leading-none mb-1">
-                                  {student.averageScore?.toFixed(1) || '0.0'}
-                                </p>
-                                <p className="font-khmer-body text-xs text-white/90 font-bold uppercase tracking-wide">
-                                  មធ្យមភាគ
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 bg-white/50 rounded-2xl border-2 border-dashed border-gray-300">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <Trophy className="w-12 h-12 text-gray-400" />
-                        </div>
-                        <p className="font-khmer-body text-xl font-bold text-gray-700 mb-2">
-                          មិនមានទិន្នន័យ
-                        </p>
-                        <p className="font-khmer-body text-sm text-gray-500">
-                          សូមពិនិត្យមើលការជ្រើសរើសថ្នាក់ ឬថ្នាក់រៀនរបស់អ្នក
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Detailed Grade Statistics */}
-                <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-                  <div className="flex items-center gap-3 mb-6">
-                    <BarChart3 className="w-6 h-6 text-gray-600" />
-                    <h3 className="font-khmer-title text-xl text-gray-900">
-                      ស្ថិតិលម្អិតតាមថ្នាក់
-                    </h3>
                   </div>
 
                   <div className="space-y-4">
                     {stats.grades.map((grade) => (
                       <div
                         key={grade.grade}
-                        className="bg-gray-50 rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                        className="bg-white rounded-2xl shadow-md border-2 border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
                       >
                         {/* Grade Header */}
                         <button
@@ -1742,146 +1705,169 @@ export default function StatisticsPage() {
                               expandedGrade === grade.grade ? null : grade.grade
                             )
                           }
-                          className="w-full p-5 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                          className="w-full p-6 flex items-center justify-between hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all group"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                              <span className="text-white font-black text-xl">
+                          <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                              <span className="text-white font-black text-2xl">
                                 {grade.grade}
                               </span>
                             </div>
                             <div className="text-left">
-                              <p className="font-khmer-title text-lg text-gray-900">
+                              <p className="font-khmer-title text-xl font-black text-gray-900">
                                 ថ្នាក់ទី{grade.grade}
                               </p>
-                              <p className="font-khmer-body text-sm text-gray-500 font-medium">
-                                {grade.totalStudents} សិស្ស • {grade.totalClasses} ថ្នាក់
-                              </p>
+                              <div className="flex items-center gap-4 mt-1">
+                                <span className="font-khmer-body text-sm text-gray-600 font-medium flex items-center gap-1.5">
+                                  <Users className="w-4 h-4" />
+                                  {grade.totalStudents} សិស្ស
+                                </span>
+                                <span className="text-gray-300">•</span>
+                                <span className="font-khmer-body text-sm text-gray-600 font-medium">
+                                  {grade.totalClasses} ថ្នាក់រៀន
+                                </span>
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-6">
-                            <div className="text-right">
-                              <p className="font-black text-2xl text-green-600">
+                            <div className="text-right px-5 py-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                              <p className="font-black text-3xl text-green-600 leading-none">
                                 {grade.passPercentage.toFixed(1)}%
                               </p>
-                              <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                              <p className="font-khmer-body text-xs text-green-700 font-semibold mt-1">
                                 អត្រាជាប់
                               </p>
                             </div>
-                            {expandedGrade === grade.grade ? (
-                              <ChevronDown className="w-5 h-5 text-gray-400" />
-                            ) : (
-                              <ChevronRight className="w-5 h-5 text-gray-400" />
-                            )}
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                              {expandedGrade === grade.grade ? (
+                                <ChevronDown className="w-6 h-6 text-gray-600 group-hover:text-indigo-600" />
+                              ) : (
+                                <ChevronRight className="w-6 h-6 text-gray-400 group-hover:text-indigo-600" />
+                              )}
+                            </div>
                           </div>
                         </button>
 
-                        {/* Expanded Details */}
+                        {/* Expanded Grade Details */}
                         {expandedGrade === grade.grade && (
-                          <div className="px-5 pb-5 border-t border-gray-200">
-                            {/* Pass/Fail Stats */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 mb-4">
-                              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
-                                <p className="font-khmer-body text-sm text-green-700 font-bold mb-2">
-                                  ជាប់
-                                </p>
-                                <p className="font-black text-3xl text-green-600 mb-3">
-                                  {grade.passedCount}
-                                </p>
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-khmer-body text-green-600 font-medium">
-                                      ប្រុស:
+                          <div className="border-t-2 border-gray-100 bg-gradient-to-br from-gray-50 to-white">
+                            <div className="p-6">
+                              {/* Grade Summary Stats */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <Target className="w-5 h-5 text-blue-600" />
+                                    <p className="font-khmer-body text-sm text-blue-700 font-bold">
+                                      មធ្យមភាគសរុប
+                                    </p>
+                                  </div>
+                                  <p className="font-black text-4xl text-blue-600">
+                                    {grade.averageScore.toFixed(1)}
+                                  </p>
+                                </div>
+
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <TrendingUp className="w-5 h-5 text-green-600" />
+                                    <p className="font-khmer-body text-sm text-green-700 font-bold">
+                                      ជាប់
+                                    </p>
+                                  </div>
+                                  <p className="font-black text-4xl text-green-600 mb-2">
+                                    {grade.passedCount}
+                                  </p>
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="font-khmer-body text-green-600">
+                                      ប្រុស: <span className="font-black">{grade.passedMale}</span>
                                     </span>
-                                    <span className="font-black text-green-700">
-                                      {grade.passedMale} ({grade.malePassPercentage.toFixed(1)}%)
+                                    <span className="font-khmer-body text-green-600">
+                                      ស្រី: <span className="font-black">{grade.passedFemale}</span>
                                     </span>
                                   </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-khmer-body text-green-600 font-medium">
-                                      ស្រី:
+                                </div>
+
+                                <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-5 border-2 border-red-200">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <TrendingDown className="w-5 h-5 text-red-600" />
+                                    <p className="font-khmer-body text-sm text-red-700 font-bold">
+                                      ធ្លាក់
+                                    </p>
+                                  </div>
+                                  <p className="font-black text-4xl text-red-600 mb-2">
+                                    {grade.failedCount}
+                                  </p>
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="font-khmer-body text-red-600">
+                                      ប្រុស: <span className="font-black">{grade.failedMale}</span>
                                     </span>
-                                    <span className="font-black text-green-700">
-                                      {grade.passedFemale} ({grade.femalePassPercentage.toFixed(1)}%)
+                                    <span className="font-khmer-body text-red-600">
+                                      ស្រី: <span className="font-black">{grade.failedFemale}</span>
                                     </span>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-5 border border-red-200">
-                                <p className="font-khmer-body text-sm text-red-700 font-bold mb-2">
-                                  ធ្លាក់
-                                </p>
-                                <p className="font-black text-3xl text-red-600 mb-3">
-                                  {grade.failedCount}
-                                </p>
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-khmer-body text-red-600 font-medium">
-                                      ប្រុស:
-                                    </span>
-                                    <span className="font-black text-red-700">
-                                      {grade.failedMale}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-khmer-body text-red-600 font-medium">
-                                      ស្រី:
-                                    </span>
-                                    <span className="font-black text-red-700">
-                                      {grade.failedFemale}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Grade Distribution */}
-                            <div>
-                              <p className="font-khmer-body text-sm text-gray-600 font-bold mb-3">
-                                ការចែកចាយពិន្ទុ
-                              </p>
-                              <div className="space-y-3">
-                                {Object.entries(grade.gradeDistribution).map(
-                                  ([letter, dist]) => (
-                                    <div
-                                      key={letter}
-                                      className="flex items-center gap-4"
-                                    >
+                              {/* Grade Distribution Chart */}
+                              <div className="bg-white rounded-xl p-5 border border-gray-200 mb-6">
+                                <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                  <PieChart className="w-5 h-5 text-indigo-600" />
+                                  ការចែកចាយពិន្ទុថ្នាក់ទី{grade.grade}
+                                </h4>
+                                <div className="space-y-3">
+                                  {Object.entries(grade.gradeDistribution).map(
+                                    ([letter, dist]) => (
                                       <div
-                                        className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br ${getGradeColor(
-                                          letter
-                                        )} text-white font-black text-base shadow-md`}
+                                        key={letter}
+                                        className="flex items-center gap-4"
                                       >
-                                        {letter}
-                                      </div>
-                                      <div className="flex-1">
-                                        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                          <div
-                                            className={`h-full bg-gradient-to-r ${getGradeColor(
-                                              letter
-                                            )} transition-all`}
-                                            style={{
-                                              width: `${
-                                                grade.totalStudents > 0
-                                                  ? ((dist as any).total / grade.totalStudents) * 100
-                                                  : 0
-                                              }%`,
-                                            }}
-                                          />
+                                        <div
+                                          className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${getGradeColor(
+                                            letter
+                                          )} text-white font-black text-lg shadow-md`}
+                                        >
+                                          {letter}
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                                            <div
+                                              className={`h-full bg-gradient-to-r ${getGradeColor(
+                                                letter
+                                              )} transition-all duration-500`}
+                                              style={{
+                                                width: `${
+                                                  grade.totalStudents > 0
+                                                    ? ((dist as any).total / grade.totalStudents) * 100
+                                                    : 0
+                                                }%`,
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 min-w-[160px] justify-end">
+                                          <span className="font-black text-2xl text-gray-900">
+                                            {(dist as any).total}
+                                          </span>
+                                          <span className="font-khmer-body text-sm text-gray-500 font-medium">
+                                            ({grade.totalStudents > 0 ? (((dist as any).total / grade.totalStudents) * 100).toFixed(1) : 0}%)
+                                          </span>
                                         </div>
                                       </div>
-                                      <div className="flex items-center gap-3 min-w-[120px] justify-end">
-                                        <span className="font-black text-lg text-gray-900">
-                                          {(dist as any).total}
-                                        </span>
-                                        <span className="font-khmer-body text-sm text-gray-500 font-medium">
-                                          នាក់
-                                        </span>
-                                      </div>
-                                    </div>
-                                  )
-                                )}
+                                    )
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Classes List */}
+                              <div>
+                                <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                  <Users className="w-5 h-5 text-indigo-600" />
+                                  ថ្នាក់រៀនទាំងអស់ ({grade.classes.length} ថ្នាក់)
+                                </h4>
+                                <div className="space-y-3">
+                                  {grade.classes.map((cls) => (
+                                    <ClassDetailsCard key={cls.id} classData={cls} />
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           </div>
