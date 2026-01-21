@@ -90,9 +90,10 @@ const register = async (req, res) => {
 };
 exports.register = register;
 /**
- * ✅ LOGIN - ចូលប្រើប្រាស់ (Supports Teacher & Student Login)
+ * ✅ LOGIN - ចូលប្រើប្រាស់ (Supports Teacher, Student & Parent Login)
  * Students can login with: studentCode, email, or phone
  * Teachers can login with: email or phone
+ * Parents can login with: email or phone
  */
 const login = async (req, res) => {
     try {
@@ -162,6 +163,35 @@ const login = async (req, res) => {
                         phone: true,
                     },
                 },
+                parent: {
+                    select: {
+                        id: true,
+                        parentId: true,
+                        firstName: true,
+                        lastName: true,
+                        khmerName: true,
+                        relationship: true,
+                        isAccountActive: true,
+                        studentParents: {
+                            include: {
+                                student: {
+                                    select: {
+                                        id: true,
+                                        studentId: true,
+                                        khmerName: true,
+                                        class: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                grade: true,
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             },
         });
         if (!user) {
@@ -195,6 +225,13 @@ const login = async (req, res) => {
                 success: false,
                 message: "គណនីសិស្សត្រូវបានបិទ\nStudent account is deactivated",
                 deactivationReason: user.student.deactivationReason,
+            });
+        }
+        // ✅ Check if parent account is deactivated
+        if (user.role === "PARENT" && user.parent && !user.parent.isAccountActive) {
+            return res.status(403).json({
+                success: false,
+                message: "គណនីឪពុកម្តាយត្រូវបានបិទ\nParent account is deactivated",
             });
         }
         // ✅ Password Security: Check if using default password
@@ -250,6 +287,7 @@ const login = async (req, res) => {
             studentRole: user.student?.studentRole || null,
             studentId: user.student?.id || null,
             teacherId: user.teacher?.id || null,
+            parentId: user.parent?.id || null,
         }, jwtSecret, { expiresIn: process.env.JWT_EXPIRES_IN || "365d" });
         console.log("✅ Login successful:", user.id, "Role:", user.role);
         // Calculate password security status
@@ -272,6 +310,7 @@ const login = async (req, res) => {
                     role: user.role,
                     student: user.student,
                     teacher: user.teacher,
+                    parent: user.parent,
                 },
                 token,
                 expiresIn: process.env.JWT_EXPIRES_IN || "365d",
@@ -413,6 +452,39 @@ const getCurrentUser = async (req, res) => {
                                         id: true,
                                         name: true,
                                         grade: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                parent: {
+                    select: {
+                        id: true,
+                        parentId: true,
+                        firstName: true,
+                        lastName: true,
+                        khmerName: true,
+                        relationship: true,
+                        phone: true,
+                        email: true,
+                        studentParents: {
+                            select: {
+                                id: true,
+                                isPrimary: true,
+                                relationship: true,
+                                student: {
+                                    select: {
+                                        id: true,
+                                        studentId: true,
+                                        khmerName: true,
+                                        class: {
+                                            select: {
+                                                id: true,
+                                                name: true,
+                                                grade: true,
+                                            },
+                                        },
                                     },
                                 },
                             },

@@ -66,10 +66,6 @@ export default function StatisticsPage() {
   const [loadingTopStudents, setLoadingTopStudents] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>("all");
-  const [selectedDistributionGrade, setSelectedDistributionGrade] = useState<string>("all");
-  const [selectedDistributionClass, setSelectedDistributionClass] = useState<string>("all");
-  const [selectedRankingsGrade, setSelectedRankingsGrade] = useState<string>("all");
-  const [selectedRankingsClass, setSelectedRankingsClass] = useState<string>("all");
 
   const loadStats = useCallback(async () => {
     try {
@@ -105,13 +101,7 @@ export default function StatisticsPage() {
   const loadTopStudents = useCallback(async () => {
     try {
       setLoadingTopStudents(true);
-      const data = await dashboardApi.getTopStudents(
-        selectedMonth, 
-        selectedYear, 
-        10, 
-        selectedRankingsGrade,
-        selectedRankingsClass
-      );
+      const data = await dashboardApi.getTopStudents(selectedMonth, selectedYear, 10);
       setTopStudents(data || []);
     } catch (err) {
       console.error("Error loading top students:", err);
@@ -119,7 +109,7 @@ export default function StatisticsPage() {
     } finally {
       setLoadingTopStudents(false);
     }
-  }, [selectedMonth, selectedYear, selectedRankingsGrade, selectedRankingsClass]);
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     loadStats();
@@ -1175,7 +1165,6 @@ export default function StatisticsPage() {
 
             {activeTab === "distribution" && (
               <div className="space-y-6">
-                {/* Grade Distribution with Filter */}
                 <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
                   <div className="flex items-center gap-3 mb-6">
                     <PieChart className="w-6 h-6 text-purple-500" />
@@ -1183,90 +1172,23 @@ export default function StatisticsPage() {
                       ការចែកចាយពិន្ទុ A-F
                     </h3>
                   </div>
-
-                  {/* Filter Controls */}
-                  <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                    <div className="flex flex-wrap items-center gap-4">
-                      {/* Grade Selector */}
-                      <div className="flex items-center gap-3">
-                        <span className="font-khmer-body text-sm text-gray-700 font-semibold">ជ្រើសរើសថ្នាក់:</span>
-                        <select
-                          value={selectedDistributionGrade}
-                          onChange={(e) => {
-                            setSelectedDistributionGrade(e.target.value);
-                            setSelectedDistributionClass("all"); // Reset class when grade changes
-                          }}
-                          className="font-khmer-body px-4 py-2 bg-white border-2 border-purple-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:border-purple-300"
-                        >
-                          <option value="all">ទាំងអស់</option>
-                          {stats.grades.map(g => (
-                            <option key={g.grade} value={g.grade}>ថ្នាក់ទី{g.grade}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Class Selector - Only show when a specific grade is selected */}
-                      {selectedDistributionGrade !== "all" && (() => {
-                        const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                        if (!selectedGrade) return null;
-                        
-                        return (
-                          <div className="flex items-center gap-3">
-                            <span className="font-khmer-body text-sm text-gray-700 font-semibold">ជ្រើសរើសថ្នាក់រៀន:</span>
-                            <select
-                              value={selectedDistributionClass}
-                              onChange={(e) => setSelectedDistributionClass(e.target.value)}
-                              className="font-khmer-body px-4 py-2 bg-white border-2 border-purple-200 rounded-xl text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 cursor-pointer hover:border-purple-300"
-                            >
-                              <option value="all">ទាំងអស់</option>
-                              {selectedGrade.classes.map(cls => (
-                                <option key={cls.id} value={cls.id}>{cls.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Pie Chart */}
+                    {/* Overall Grade Distribution Pie Chart */}
                     <div>
                       <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4">
-                        {selectedDistributionGrade === "all" 
-                          ? "ការចែកចាយពិន្ទុសរុប" 
-                          : selectedDistributionClass === "all"
-                          ? `ការចែកចាយពិន្ទុថ្នាក់ទី${selectedDistributionGrade}`
-                          : `ការចែកចាយពិន្ទុថ្នាក់ ${stats.grades.find(g => g.grade === selectedDistributionGrade)?.classes.find(c => c.id === selectedDistributionClass)?.name || ''}`
-                        }
+                        ការចែកចាយពិន្ទុសរុប
                       </h4>
                       <CustomPieChart
                         data={(() => {
-                          let distribution: any;
-                          
-                          if (selectedDistributionGrade === "all") {
-                            // Show all grades combined
-                            const totalDistribution = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
-                            stats.grades.forEach(grade => {
-                              Object.entries(grade.gradeDistribution).forEach(([letter, dist]: [string, any]) => {
-                                totalDistribution[letter as keyof typeof totalDistribution] += dist.total;
-                              });
+                          const totalDistribution = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+                          stats.grades.forEach(grade => {
+                            Object.entries(grade.gradeDistribution).forEach(([letter, dist]: [string, any]) => {
+                              totalDistribution[letter as keyof typeof totalDistribution] += dist.total;
                             });
-                            distribution = totalDistribution;
-                          } else if (selectedDistributionClass === "all") {
-                            // Show specific grade (all classes combined)
-                            const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                            distribution = selectedGrade?.gradeDistribution || { A: {total: 0}, B: {total: 0}, C: {total: 0}, D: {total: 0}, E: {total: 0}, F: {total: 0} };
-                          } else {
-                            // Show specific class
-                            const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                            const selectedClass = selectedGrade?.classes.find(c => c.id === selectedDistributionClass);
-                            distribution = selectedClass?.gradeDistribution || { A: {total: 0}, B: {total: 0}, C: {total: 0}, D: {total: 0}, E: {total: 0}, F: {total: 0} };
-                          }
-
-                          return Object.entries(distribution).map(([letter, data]: [string, any]) => ({
+                          });
+                          return Object.entries(totalDistribution).map(([letter, count]) => ({
                             name: `ពិន្ទុ ${letter}`,
-                            value: typeof data === 'number' ? data : data.total,
+                            value: count,
                             letter,
                           }));
                         })()}
@@ -1277,257 +1199,107 @@ export default function StatisticsPage() {
                       />
                     </div>
 
-                    {/* Gender Breakdown Details - Compact Grid Layout */}
+                    {/* Grade Distribution by Grade Level */}
                     <div>
                       <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4">
-                        ការចែកចាយតាមភេទ
+                        តាមថ្នាក់រៀន
                       </h4>
-                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                        {(() => {
-                          let distribution: any;
-                          
-                          if (selectedDistributionGrade === "all") {
-                            // Show all grades combined
-                            const totalDistribution = { 
-                              A: {total: 0, male: 0, female: 0}, 
-                              B: {total: 0, male: 0, female: 0}, 
-                              C: {total: 0, male: 0, female: 0}, 
-                              D: {total: 0, male: 0, female: 0}, 
-                              E: {total: 0, male: 0, female: 0}, 
-                              F: {total: 0, male: 0, female: 0} 
-                            };
-                            stats.grades.forEach(grade => {
-                              Object.entries(grade.gradeDistribution).forEach(([letter, dist]: [string, any]) => {
-                                const key = letter as keyof typeof totalDistribution;
-                                totalDistribution[key].total += dist.total;
-                                totalDistribution[key].male += dist.male;
-                                totalDistribution[key].female += dist.female;
-                              });
-                            });
-                            distribution = totalDistribution;
-                          } else if (selectedDistributionClass === "all") {
-                            // Show specific grade
-                            const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                            distribution = selectedGrade?.gradeDistribution || {};
-                          } else {
-                            // Show specific class
-                            const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                            const selectedClass = selectedGrade?.classes.find(c => c.id === selectedDistributionClass);
-                            distribution = selectedClass?.gradeDistribution || {};
-                          }
-
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                        {stats.grades.map(grade => {
                           const gradeLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
-                          const colors: Record<string, string> = {
-                            A: 'from-green-500 to-green-600',
-                            B: 'from-blue-500 to-blue-600',
-                            C: 'from-yellow-500 to-yellow-600',
-                            D: 'from-orange-500 to-orange-600',
-                            E: 'from-red-500 to-red-600',
-                            F: 'from-red-600 to-red-700',
-                          };
-                          
-                          const bgColors: Record<string, string> = {
-                            A: 'bg-green-500',
-                            B: 'bg-blue-500',
-                            C: 'bg-yellow-500',
-                            D: 'bg-orange-500',
-                            E: 'bg-red-500',
-                            F: 'bg-red-600',
-                          };
+                          const totalGraded = gradeLetters.reduce((sum, letter) => 
+                            sum + (grade.gradeDistribution[letter as keyof typeof grade.gradeDistribution]?.total || 0), 0
+                          );
 
-                          return gradeLetters.map(letter => {
-                            const data = distribution[letter] || { total: 0, male: 0, female: 0 };
-                            const malePercent = data.total > 0 ? ((data.male / data.total) * 100).toFixed(1) : '0.0';
-                            const femalePercent = data.total > 0 ? ((data.female / data.total) * 100).toFixed(1) : '0.0';
-
-                            return (
-                              <div key={letter} className="bg-white rounded-lg border-2 border-gray-100 p-3 hover:shadow-lg transition-all hover:border-gray-200">
-                                {/* Header with Grade Letter */}
-                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                                  <div className={`w-8 h-8 ${bgColors[letter]} rounded-lg flex items-center justify-center shadow-sm`}>
-                                    <span className="text-white font-black text-base">{letter}</span>
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-khmer-body text-xs text-gray-500">ពិន្ទុ {letter}</p>
-                                    <p className="font-black text-xl text-gray-900 leading-tight">{data.total}</p>
-                                  </div>
-                                </div>
-
-                                {/* Compact Gender Stats */}
-                                <div className="space-y-1.5">
-                                  {/* Male - Horizontal Layout */}
-                                  <div className="flex items-center justify-between bg-blue-50 rounded-md px-2 py-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                      <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white text-[10px] font-bold">♂</span>
-                                      </div>
-                                      <span className="font-khmer-body text-xs text-gray-700 font-medium">ប្រុស</span>
+                          return (
+                            <div key={grade.grade} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                              <p className="font-khmer-body font-bold text-gray-900 mb-2">ថ្នាក់ទី{grade.grade}</p>
+                              <div className="flex gap-1 h-8 rounded-lg overflow-hidden">
+                                {gradeLetters.map(letter => {
+                                  const dist = grade.gradeDistribution[letter as keyof typeof grade.gradeDistribution];
+                                  const percentage = totalGraded > 0 ? (dist.total / totalGraded) * 100 : 0;
+                                  const colors: Record<string, string> = {
+                                    A: 'bg-green-500',
+                                    B: 'bg-blue-500',
+                                    C: 'bg-yellow-500',
+                                    D: 'bg-orange-500',
+                                    E: 'bg-red-500',
+                                    F: 'bg-red-700',
+                                  };
+                                  return (
+                                    <div
+                                      key={letter}
+                                      className={`${colors[letter]} flex items-center justify-center text-white text-xs font-bold transition-all hover:opacity-80`}
+                                      style={{ width: `${percentage}%` }}
+                                      title={`${letter}: ${dist.total} (${percentage.toFixed(1)}%)`}
+                                    >
+                                      {percentage > 5 && letter}
                                     </div>
-                                    <div className="flex items-baseline gap-1">
-                                      <span className="font-black text-base text-gray-900">{data.male}</span>
-                                      <span className="text-[10px] text-gray-500 font-semibold">({malePercent}%)</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Female - Horizontal Layout */}
-                                  <div className="flex items-center justify-between bg-pink-50 rounded-md px-2 py-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                      <div className="w-5 h-5 bg-pink-500 rounded flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white text-[10px] font-bold">♀</span>
-                                      </div>
-                                      <span className="font-khmer-body text-xs text-gray-700 font-medium">ស្រី</span>
-                                    </div>
-                                    <div className="flex items-baseline gap-1">
-                                      <span className="font-black text-base text-gray-900">{data.female}</span>
-                                      <span className="text-[10px] text-gray-500 font-semibold">({femalePercent}%)</span>
-                                    </div>
-                                  </div>
-                                </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          });
-                        })()}
+                              <div className="flex gap-3 mt-2 text-xs font-khmer-body flex-wrap">
+                                {gradeLetters.map(letter => {
+                                  const dist = grade.gradeDistribution[letter as keyof typeof grade.gradeDistribution];
+                                  return (
+                                    <span key={letter} className="text-gray-600">
+                                      {letter}: <span className="font-bold text-gray-900">{dist.total}</span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Grade Distribution by Gender - More Relevant Visualization */}
+                {/* Gender Statistics */}
                 <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
                   <div className="flex items-center gap-3 mb-6">
-                    <BarChart3 className="w-6 h-6 text-purple-500" />
+                    <Users className="w-6 h-6 text-pink-500" />
                     <h3 className="font-khmer-title text-xl text-gray-900">
-                      ការចែកចាយពិន្ទុតាមភេទ
+                      ស្ថិតិតាមភេទ
                     </h3>
                   </div>
-                  
-                  {/* Stacked Bar Chart showing Grade Distribution by Gender */}
-                  <div>
-                    <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4">
-                      ការប្រៀបធៀបពិន្ទុ A-F តាមភេទ
-                    </h4>
-                    <CustomBarChart
-                      data={(() => {
-                        let distribution: any;
-                        
-                        if (selectedDistributionGrade === "all") {
-                          // All grades combined
-                          const totalDistribution = { 
-                            A: {male: 0, female: 0}, 
-                            B: {male: 0, female: 0}, 
-                            C: {male: 0, female: 0}, 
-                            D: {male: 0, female: 0}, 
-                            E: {male: 0, female: 0}, 
-                            F: {male: 0, female: 0} 
-                          };
-                          stats.grades.forEach(grade => {
-                            Object.entries(grade.gradeDistribution).forEach(([letter, dist]: [string, any]) => {
-                              const key = letter as keyof typeof totalDistribution;
-                              totalDistribution[key].male += dist.male;
-                              totalDistribution[key].female += dist.female;
-                            });
-                          });
-                          distribution = totalDistribution;
-                        } else if (selectedDistributionClass === "all") {
-                          // Specific grade
-                          const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                          distribution = selectedGrade?.gradeDistribution || {};
-                        } else {
-                          // Specific class
-                          const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                          const selectedClass = selectedGrade?.classes.find(c => c.id === selectedDistributionClass);
-                          distribution = selectedClass?.gradeDistribution || {};
-                        }
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Gender Distribution Pie Chart */}
+                    <div>
+                      <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4">
+                        ចំនួនសិស្សតាមភេទ
+                      </h4>
+                      <CustomPieChart
+                        data={[
+                          { name: 'ប្រុស', value: totalMale },
+                          { name: 'ស្រី', value: totalFemale },
+                        ]}
+                        nameKey="name"
+                        valueKey="value"
+                        colors={['#3b82f6', '#ec4899']}
+                        height={300}
+                      />
+                    </div>
 
-                        return ['A', 'B', 'C', 'D', 'E', 'F'].map(letter => ({
-                          grade: `ពិន្ទុ ${letter}`,
-                          'ប្រុស': distribution[letter]?.male || 0,
-                          'ស្រី': distribution[letter]?.female || 0,
-                        }));
-                      })()}
-                      xKey="grade"
-                      yKey={['ប្រុស', 'ស្រី']}
-                      colors={['#3b82f6', '#ec4899']}
-                      height={350}
-                      showLegend={true}
-                      yAxisLabel="ចំនួនសិស្ស"
-                      tooltipFormatter={(value) => `${value} នាក់`}
-                    />
-                  </div>
-
-                  {/* Summary Statistics Cards */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                    {/* Total Students */}
-                    {(() => {
-                      let totalStudents = 0;
-                      let totalMaleStudents = 0;
-                      let totalFemaleStudents = 0;
-                      
-                      if (selectedDistributionGrade === "all") {
-                        stats.grades.forEach(grade => {
-                          Object.values(grade.gradeDistribution).forEach((dist: any) => {
-                            totalStudents += dist.total;
-                            totalMaleStudents += dist.male;
-                            totalFemaleStudents += dist.female;
-                          });
-                        });
-                      } else if (selectedDistributionClass === "all") {
-                        const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                        if (selectedGrade) {
-                          Object.values(selectedGrade.gradeDistribution).forEach((dist: any) => {
-                            totalStudents += dist.total;
-                            totalMaleStudents += dist.male;
-                            totalFemaleStudents += dist.female;
-                          });
-                        }
-                      } else {
-                        const selectedGrade = stats.grades.find(g => g.grade === selectedDistributionGrade);
-                        const selectedClass = selectedGrade?.classes.find(c => c.id === selectedDistributionClass);
-                        if (selectedClass) {
-                          Object.values(selectedClass.gradeDistribution).forEach((dist: any) => {
-                            totalStudents += dist.total;
-                            totalMaleStudents += dist.male;
-                            totalFemaleStudents += dist.female;
-                          });
-                        }
-                      }
-
-                      return (
-                        <>
-                          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
-                            <p className="font-khmer-body text-xs opacity-90 mb-1">សរុប</p>
-                            <p className="text-3xl font-black">{totalStudents}</p>
-                            <p className="font-khmer-body text-xs opacity-75 mt-1">សិស្សសរុប</p>
-                          </div>
-                          
-                          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-                            <p className="font-khmer-body text-xs opacity-90 mb-1">ប្រុស</p>
-                            <p className="text-3xl font-black">{totalMaleStudents}</p>
-                            <p className="font-khmer-body text-xs opacity-75 mt-1">
-                              {totalStudents > 0 ? ((totalMaleStudents / totalStudents) * 100).toFixed(1) : '0.0'}%
-                            </p>
-                          </div>
-                          
-                          <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-4 text-white">
-                            <p className="font-khmer-body text-xs opacity-90 mb-1">ស្រី</p>
-                            <p className="text-3xl font-black">{totalFemaleStudents}</p>
-                            <p className="font-khmer-body text-xs opacity-75 mt-1">
-                              {totalStudents > 0 ? ((totalFemaleStudents / totalStudents) * 100).toFixed(1) : '0.0'}%
-                            </p>
-                          </div>
-                          
-                          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white">
-                            <p className="font-khmer-body text-xs opacity-90 mb-1">ភាពខុសគ្នា</p>
-                            <p className="text-3xl font-black">
-                              {Math.abs(totalMaleStudents - totalFemaleStudents)}
-                            </p>
-                            <p className="font-khmer-body text-xs opacity-75 mt-1">
-                              {totalMaleStudents > totalFemaleStudents ? 'ប្រុស​ច្រើន​ជាង' : totalFemaleStudents > totalMaleStudents ? 'ស្រី​ច្រើន​ជាង' : 'ស្មើ​គ្នា'}
-                            </p>
-                          </div>
-                        </>
-                      );
-                    })()}
+                    {/* Gender Performance Comparison */}
+                    <div>
+                      <h4 className="font-khmer-body text-base font-bold text-gray-900 mb-4">
+                        អត្រាជាប់តាមភេទ
+                      </h4>
+                      <CustomBarChart
+                        data={stats.grades.map(g => ({
+                          grade: `ថ្នាក់${g.grade}`,
+                          'ប្រុស': parseFloat(g.malePassPercentage.toFixed(1)),
+                          'ស្រី': parseFloat(g.femalePassPercentage.toFixed(1)),
+                        }))}
+                        xKey="grade"
+                        yKey={['ប្រុស', 'ស្រី']}
+                        colors={['#3b82f6', '#ec4899']}
+                        height={300}
+                        tooltipFormatter={(value) => `${value}%`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1536,186 +1308,76 @@ export default function StatisticsPage() {
             {activeTab === "rankings" && (
               <div className="space-y-6">
                 {/* Top 10 Students Leaderboard */}
-                <div className="bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 rounded-3xl shadow-xl p-8 border-2 border-yellow-200">
-                  {/* Header with Trophy Icon */}
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-gradient-to-br from-yellow-400 to-orange-500 p-4 rounded-2xl shadow-lg">
-                        <Trophy className="w-8 h-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-khmer-title text-2xl font-black text-gray-900">
-                          សិស្សល្អបំផុត ១០នាក់
-                        </h3>
-                        <p className="font-khmer-body text-sm text-gray-600 mt-1">
-                          អ្នកឈានមុខគេសម្រាប់ឆ្នាំសិក្សា {selectedYear}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="hidden md:flex items-center gap-2">
-                      <Award className="w-6 h-6 text-yellow-600" />
-                      <span className="font-khmer-body text-sm font-semibold text-yellow-700">
-                        តារាងលេខរៀង
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Filter Controls */}
-                  <div className="mb-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-yellow-200 shadow-md">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      {/* Grade Selector */}
-                      <div className="flex-1 w-full sm:w-auto">
-                        <label className="font-khmer-body text-sm text-gray-700 font-bold mb-2 block">
-                          ជ្រើសរើសថ្នាក់:
-                        </label>
-                        <select
-                          value={selectedRankingsGrade}
-                          onChange={(e) => {
-                            setSelectedRankingsGrade(e.target.value);
-                            setSelectedRankingsClass("all");
-                          }}
-                          className="w-full font-khmer-body px-5 py-3 bg-gradient-to-r from-white to-yellow-50 border-2 border-yellow-300 rounded-xl text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:border-yellow-500 transition-all duration-200 cursor-pointer hover:border-yellow-400 hover:shadow-md"
-                        >
-                          <option value="all">🏫 ថ្នាក់ទី ៧-១២ (ទាំងអស់)</option>
-                          {stats.grades.map(g => (
-                            <option key={g.grade} value={g.grade}>📚 ថ្នាក់ទី{g.grade}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Class Selector - Only show when a specific grade is selected */}
-                      {selectedRankingsGrade !== "all" && (() => {
-                        const selectedGrade = stats.grades.find(g => g.grade === selectedRankingsGrade);
-                        if (!selectedGrade) return null;
-                        
-                        return (
-                          <div className="flex-1 w-full sm:w-auto">
-                            <label className="font-khmer-body text-sm text-gray-700 font-bold mb-2 block">
-                              ជ្រើសរើសថ្នាក់រៀន:
-                            </label>
-                            <select
-                              value={selectedRankingsClass}
-                              onChange={(e) => setSelectedRankingsClass(e.target.value)}
-                              className="w-full font-khmer-body px-5 py-3 bg-gradient-to-r from-white to-orange-50 border-2 border-orange-300 rounded-xl text-gray-900 font-semibold focus:outline-none focus:ring-4 focus:ring-orange-400 focus:border-orange-500 transition-all duration-200 cursor-pointer hover:border-orange-400 hover:shadow-md"
-                            >
-                              <option value="all">📖 ទាំងអស់</option>
-                              {selectedGrade.classes.map(cls => (
-                                <option key={cls.id} value={cls.id}>🎓 {cls.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        );
-                      })()}
-                    </div>
+                <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Medal className="w-6 h-6 text-yellow-500" />
+                    <h3 className="font-khmer-title text-xl text-gray-900">
+                      សិស្សល្អបំផុត ១០នាក់
+                    </h3>
                   </div>
 
                   {loadingTopStudents ? (
-                    <div className="text-center py-16">
-                      <Loader2 className="h-12 w-12 animate-spin text-yellow-600 mx-auto mb-4" />
-                      <p className="font-khmer-body text-gray-600">កំពុងផ្ទុកទិន្នន័យ...</p>
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mx-auto" />
                     </div>
                   ) : topStudents.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {topStudents.map((student, index) => (
                         <div
                           key={student.id || index}
-                          className={`group relative overflow-hidden rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] ${
+                          className={`p-6 rounded-xl shadow-sm border transition-shadow hover:shadow-md ${
                             index === 0
-                              ? 'bg-gradient-to-r from-yellow-100 via-yellow-50 to-orange-100 border-yellow-400'
+                              ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-300'
                               : index === 1
-                              ? 'bg-gradient-to-r from-gray-100 via-gray-50 to-slate-100 border-gray-400'
+                              ? 'bg-gradient-to-br from-gray-50 to-slate-50 border-gray-300'
                               : index === 2
-                              ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-amber-100 border-orange-400'
-                              : 'bg-gradient-to-r from-white to-gray-50 border-gray-300'
+                              ? 'bg-gradient-to-br from-orange-50 to-amber-50 border-orange-300'
+                              : 'bg-white border-gray-200'
                           }`}
                         >
-                          {/* Rank Badge */}
-                          <div className="absolute top-0 left-0 w-20 h-20 overflow-hidden">
-                            <div className={`absolute transform -rotate-45 ${
-                              index === 0 ? 'bg-yellow-500' :
-                              index === 1 ? 'bg-gray-400' :
-                              index === 2 ? 'bg-orange-500' :
-                              'bg-indigo-500'
-                            } text-white text-center font-black text-xs py-1 left-[-35px] top-[15px] w-[100px] shadow-md`}>
-                              {index < 3 ? '⭐' : ''}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-6 p-6 pl-8">
-                            {/* Rank Number */}
+                          <div className="flex items-center gap-4">
                             <div
-                              className={`flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center font-black text-3xl shadow-xl transform transition-transform group-hover:scale-110 ${
+                              className={`w-14 h-14 rounded-xl flex items-center justify-center font-black text-2xl shadow-md ${
                                 index === 0
-                                  ? 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 text-white'
+                                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white'
                                   : index === 1
-                                  ? 'bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 text-white'
+                                  ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-white'
                                   : index === 2
-                                  ? 'bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 text-white'
-                                  : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+                                  ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white'
+                                  : 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white'
                               }`}
                             >
-                              {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+                              {index + 1}
                             </div>
-
-                            {/* Student Info */}
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-khmer-body text-xl font-black text-gray-900 truncate mb-2">
+                            <div className="flex-1">
+                              <p className="font-khmer-body text-lg font-black text-gray-900">
                                 {student.name || 'Unknown'}
-                              </h4>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/80 rounded-lg font-khmer-body text-sm font-bold text-gray-700 shadow-sm border border-gray-200">
-                                  <Users className="w-4 h-4" />
-                                  {student.className || 'N/A'}
+                              </p>
+                              <div className="flex items-center gap-2 flex-wrap mt-1">
+                                <span className="font-khmer-body text-sm text-gray-600 font-medium">
+                                  ថ្នាក់: {student.className || 'N/A'}
                                 </span>
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-khmer-body text-sm font-bold shadow-sm ${
-                                  student.gender === 'MALE' 
-                                    ? 'bg-blue-100 text-blue-700 border border-blue-200' 
-                                    : 'bg-pink-100 text-pink-700 border border-pink-200'
-                                }`}>
-                                  {student.gender === 'MALE' ? '👨‍🎓 ប្រុស' : '👩‍🎓 ស្រី'}
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-khmer-body text-xs font-semibold shadow-sm border border-indigo-200">
-                                  📊 {student.totalScores} មុខវិជ្ជា
+                                <span className="text-gray-400">•</span>
+                                <span className="font-khmer-body text-sm text-indigo-600 font-bold">
+                                  {student.gender === 'MALE' ? 'ប្រុស' : 'ស្រី'}
                                 </span>
                               </div>
                             </div>
-
-                            {/* Score Display */}
-                            <div className="text-right flex-shrink-0">
-                              <div className={`inline-flex flex-col items-center px-6 py-4 rounded-2xl shadow-lg ${
-                                index === 0
-                                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500'
-                                  : index === 1
-                                  ? 'bg-gradient-to-br from-gray-300 to-gray-500'
-                                  : index === 2
-                                  ? 'bg-gradient-to-br from-orange-400 to-amber-500'
-                                  : 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                              }`}>
-                                <p className="font-black text-4xl text-white leading-none mb-1">
-                                  {student.averageScore?.toFixed(1) || '0.0'}
-                                </p>
-                                <p className="font-khmer-body text-xs text-white/90 font-bold uppercase tracking-wide">
-                                  មធ្យមភាគ
-                                </p>
-                              </div>
+                            <div className="text-right">
+                              <p className="font-black text-3xl text-indigo-600">
+                                {student.averageScore?.toFixed(1) || '0.0'}
+                              </p>
+                              <p className="font-khmer-body text-xs text-gray-500 font-medium">
+                                មធ្យមភាគ
+                              </p>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-16 bg-white/50 rounded-2xl border-2 border-dashed border-gray-300">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                          <Trophy className="w-12 h-12 text-gray-400" />
-                        </div>
-                        <p className="font-khmer-body text-xl font-bold text-gray-700 mb-2">
-                          មិនមានទិន្នន័យ
-                        </p>
-                        <p className="font-khmer-body text-sm text-gray-500">
-                          សូមពិនិត្យមើលការជ្រើសរើសថ្នាក់ ឬថ្នាក់រៀនរបស់អ្នក
-                        </p>
-                      </div>
+                    <div className="text-center py-8 text-gray-500 font-khmer-body">
+                      មិនមានទិន្នន័យ
                     </div>
                   )}
                 </div>
