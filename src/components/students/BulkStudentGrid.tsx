@@ -749,7 +749,7 @@ export default function BulkStudentGrid({
             style={{ maxHeight: "calc(100vh - 320px)" }}
           >
             <table ref={tableRef} className="w-full border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-20 shadow-md">
                 <tr className="bg-pink-50">
                   {columnHeaders.map((header, index) => (
                     <th
