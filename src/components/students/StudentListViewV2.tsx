@@ -12,6 +12,7 @@ import {
   UserCircle2,
   Calendar,
   School,
+  UserPlus,
 } from "lucide-react";
 import { studentsApi, PaginationInfo } from "@/lib/api/students";
 
@@ -25,7 +26,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
   const [selectedGender, setSelectedGender] = useState<string>("all");
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"view" | "edit">("view");
+  const [modalMode, setModalMode] = useState<"view" | "edit" | "create">("view");
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -43,8 +44,8 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
       const response = await studentsApi.getAllLightweight(
         1,
         itemsPerPage,
-        selectedClass,
-        selectedGender
+        selectedClass === "all" ? undefined : selectedClass,
+        selectedGender === "all" ? undefined : selectedGender
       );
       if (response.success) {
         setStudents(response.data);
@@ -70,8 +71,8 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
       const response = await studentsApi.getAllLightweight(
         nextPage,
         itemsPerPage,
-        selectedClass,
-        selectedGender
+        selectedClass === "all" ? undefined : selectedClass,
+        selectedGender === "all" ? undefined : selectedGender
       );
       if (response.success) {
         setStudents((prev) => [...prev, ...response.data]);
@@ -166,6 +167,12 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
   const handleEditStudent = (student: any) => {
     setSelectedStudent(student);
     setModalMode("edit");
+    setShowModal(true);
+  };
+
+  const handleAddNewStudent = () => {
+    setSelectedStudent(null);
+    setModalMode("create");
     setShowModal(true);
   };
 
@@ -293,7 +300,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
           {/* ✅ Filters */}
           <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-              <div className="md:col-span-5">
+              <div className="md:col-span-4">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -335,6 +342,16 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
 
               <div className="md:col-span-2">
                 <button
+                  onClick={handleAddNewStudent}
+                  className="w-full h-12 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:scale-105 shadow-lg"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  បន្ថែមសិស្ស
+                </button>
+              </div>
+
+              <div className="md:col-span-1">
+                <button
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   className="w-full h-12 px-4 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 disabled:from-gray-100 disabled:to-gray-100 disabled:cursor-not-allowed border-2 border-gray-300 text-gray-700 font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:scale-105"
@@ -342,7 +359,6 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
                   <RefreshCw
                     className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`}
                   />
-                  {isRefreshing ? "កំពុងផ្ទុក..." : "ផ្ទុកឡើងវិញ"}
                 </button>
               </div>
             </div>
@@ -488,7 +504,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
       )}
 
       {/* ✅ Student Modal */}
-      {showModal && selectedStudent && (
+      {showModal && (
         <StudentModal
           student={selectedStudent}
           mode={modalMode}

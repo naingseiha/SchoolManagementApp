@@ -116,12 +116,11 @@ export default function BulkStudentGrid({
       setLoadingStudents(true);
       setSaveStatus("⚡ Loading existing students...");
 
-      const response = await studentsApi.getAllLightweight();
+      const response = await studentsApi.getAllLightweight(1, 10000, classId);
       const allStudents = response.success && Array.isArray(response.data) ? response.data : [];
-      const classStudents = allStudents.filter((s) => s.classId === classId);
 
-      if (classStudents.length > 0) {
-        const sortedClassStudents = [...classStudents].sort((a, b) => {
+      if (allStudents.length > 0) {
+        const sortedClassStudents = [...allStudents].sort((a, b) => {
           let nameA = "";
           let nameB = "";
 
