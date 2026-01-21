@@ -227,6 +227,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log("→ Redirecting student to student portal");
         router.prefetch("/student-portal");
         router.replace("/student-portal"); // Use replace instead of push
+      } else if (result.user.role === "PARENT") {
+        console.log("→ Redirecting parent to parent portal");
+        router.prefetch("/parent-portal");
+        router.replace("/parent-portal"); // Use replace instead of push
       } else {
         console.log("→ Redirecting to dashboard");
         router.prefetch("/");

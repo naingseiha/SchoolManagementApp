@@ -149,6 +149,20 @@ export default function SettingsPage() {
         : undefined,
     },
     {
+      id: "parents",
+      title: "គ្រប់គ្រងឪពុកម្តាយ",
+      subtitle: "Parent Account Control",
+      description: "គ្រប់គ្រងគណនីឪពុកម្តាយ ភ្ជាប់កូន និងសិទ្ធិ",
+      icon: Users,
+      gradient: "from-pink-500 via-rose-600 to-purple-600",
+      href: "/admin/parents",
+      count: stats?.totalParents || 0,
+      countLabel: "ឪពុកម្តាយ",
+      badge: stats?.activeParents 
+        ? `${stats.activeParents} សកម្ម` 
+        : undefined,
+    },
+    {
       id: "security",
       title: "សុវត្ថិភាពប្រព័ន្ធ",
       subtitle: "System Security Dashboard",
@@ -325,7 +339,7 @@ function SettingsContent({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {cards.map((card) => (
               <EnhancedSettingsCard 
                 key={card.id} 
