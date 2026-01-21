@@ -47,80 +47,7 @@ const StatCard = memo(({ icon: Icon, label, value, gradient }: {
 ));
 StatCard.displayName = 'StatCard';
 
-// ✅ OPTIMIZED: Memoized grade card component
-const GradeCard = memo(({ grade, router }: {
-  grade: {
-    grade: string;
-    totalStudents: number;
-    averageScore: number;
-    passPercentage: number;
-  };
-  router: any;
-}) => {
-  const handleClick = useCallback(() => {
-    router.push(`/grade-entry?grade=${grade.grade}`);
-  }, [grade.grade, router]);
-
-  return (
-    <button
-      onClick={handleClick}
-      className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-md border border-white/40 active:scale-95 transition-all text-left"
-    >
-      <div className="flex items-center justify-between mb-3">
-        <span className="font-koulen text-base text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
-          ថ្នាក់ទី{grade.grade}
-        </span>
-        <div
-          className={`w-2 h-2 rounded-full ${
-            grade.averageScore >= 70
-              ? "bg-green-500"
-              : grade.averageScore >= 50
-              ? "bg-yellow-500"
-              : "bg-red-500"
-          }`}
-        ></div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="font-battambang text-[11px] text-gray-600">
-            សិស្ស
-          </span>
-          <span className="font-koulen text-sm text-gray-800 font-bold">
-            {grade.totalStudents}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="font-battambang text-[11px] text-gray-600">
-            មធ្យមភាគ
-          </span>
-          <span
-            className={`font-koulen text-sm font-bold ${
-              grade.averageScore >= 70
-                ? "text-green-600"
-                : grade.averageScore >= 50
-                ? "text-yellow-600"
-                : "text-red-600"
-            }`}
-          >
-            {grade.averageScore.toFixed(1)}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <span className="font-battambang text-[11px] text-gray-600">
-            អត្រាជាប់
-          </span>
-          <span className="font-koulen text-sm text-green-600 font-bold">
-            {grade.passPercentage.toFixed(0)}%
-          </span>
-        </div>
-      </div>
-    </button>
-  );
-});
-GradeCard.displayName = 'GradeCard';
+// ✅ PERFORMANCE: Removed GradeCard component (no longer needed)
 
 // ✅ OPTIMIZED: Lightweight mobile stats type (no heavy ComprehensiveStats)
 interface MobileGradeStats {
@@ -589,25 +516,7 @@ export default function SimpleMobileDashboard({
         </div>
       </div>
 
-      {/* Grade Overview - Simple Summary */}
-      <div className="relative px-5 pt-2 pb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="font-koulen text-lg text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-bold">
-            សង្ខេបតាមថ្នាក់
-          </h1>
-        </div>
-
-        {/* ✅ OPTIMIZED: Using memoized GradeCard components */}
-        <div className="grid grid-cols-2 gap-3">
-          {gradeStats?.grades.map((grade) => (
-            <GradeCard
-              key={grade.grade}
-              grade={grade}
-              router={router}
-            />
-          ))}
-        </div>
-      </div>
+      {/* ✅ PERFORMANCE: Removed grade overview section to speed up dashboard loading */}
 
       {/* ✅ OPTIMIZED: Removed custom animations for better performance */}
       <style jsx>{`

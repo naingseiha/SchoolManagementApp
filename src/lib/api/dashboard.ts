@@ -319,8 +319,8 @@ export interface ScoreProgressParams {
 
 export const dashboardApi = {
   /**
-   * Get general dashboard statistics (cached for 1 minute)
-   * ✅ OPTIMIZED: Reduced cache time for fresher data
+   * Get general dashboard statistics (cached for 5 minutes)
+   * ✅ PERFORMANCE: Increased cache for better performance and reduced API load
    */
   getStats: async (): Promise<DashboardStats> => {
     return apiCache.getOrFetch(
@@ -330,7 +330,7 @@ export const dashboardApi = {
         const data = await apiClient.get("/dashboard/stats");
         return data;
       },
-      60 * 1000 // 1 minute cache (reduced from 2 minutes)
+      5 * 60 * 1000 // 5 minutes cache (increased from 1 minute for better performance)
     );
   },
 
