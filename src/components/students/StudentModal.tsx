@@ -19,11 +19,12 @@ import {
   UserX,
   ChevronRight,
   Info,
+  UserPlus,
 } from "lucide-react";
 
 interface StudentModalProps {
-  student: any;
-  mode: "view" | "edit";
+  student: any | null;
+  mode: "view" | "edit" | "create";
   onClose: () => void;
   onUpdate: () => void;
 }
@@ -34,7 +35,7 @@ export default function StudentModal({
   onClose,
   onUpdate,
 }: StudentModalProps) {
-  const [mode, setMode] = useState<"view" | "edit">(initialMode);
+  const [mode, setMode] = useState<"view" | "edit" | "create">(initialMode);
   const [student, setStudent] = useState(initialStudent);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -44,13 +45,14 @@ export default function StudentModal({
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [changingClass, setChangingClass] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
 
-  // ✅ Load full student data when modal opens
+  // ✅ Load full student data when modal opens (skip for create mode)
   useEffect(() => {
-    loadFullStudentData();
+    if (initialMode !== "create" && initialStudent?.id) {
+      loadFullStudentData();
+    }
     loadClasses();
-  }, [initialStudent.id]);
+  }, [initialStudent?.id, initialMode]);
 
   const loadFullStudentData = async () => {
     try {
@@ -75,36 +77,58 @@ export default function StudentModal({
   };
 
   const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 200);
+    onClose();
   };
 
   const handleSave = async (updatedData: Partial<any>) => {
     try {
       setSaving(true);
-      await studentsApi.update(student.id, updatedData as any);
-      await loadFullStudentData();
-      onUpdate();
-      setMode("view");
 
-      // ✅ Toast notification
-      const toast = document.createElement("div");
-      toast.className =
-        "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
-      toast.innerHTML = `
-        <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          <span class="font-bold">រក្សាទុកទិន្នន័យបានជោគជ័យ! </span>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      if (mode === "create") {
+        // Create new student
+        await studentsApi.create(updatedData as any);
+        onUpdate();
+
+        // ✅ Toast notification
+        const toast = document.createElement("div");
+        toast.className =
+          "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
+        toast.innerHTML = `
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="font-bold">បន្ថែមសិស្សបានជោគជ័យ!</span>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+
+        handleClose();
+      } else {
+        // Update existing student
+        await studentsApi.update(student.id, updatedData as any);
+        await loadFullStudentData();
+        onUpdate();
+        setMode("view");
+
+        // ✅ Toast notification
+        const toast = document.createElement("div");
+        toast.className =
+          "fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl z-[100] animate-in slide-in-from-top-2 duration-300";
+        toast.innerHTML = `
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="font-bold">រក្សាទុកទិន្នន័យបានជោគជ័យ! </span>
+          </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
     } catch (error: any) {
-      console.error("Failed to update student:", error);
+      console.error("Failed to save student:", error);
       alert(`❌ កំហុស: ${error.message}`);
     } finally {
       setSaving(false);
@@ -194,100 +218,97 @@ export default function StudentModal({
 
   return (
     <>
-      {/* ✅ Main Modal with Backdrop Animation */}
+      {/* ✅ Simple Clean Modal */}
       <div
-        className={`fixed inset-0 bg-black transition-opacity duration-300 flex items-center justify-center z-50 p-4 overflow-y-auto ${
-          isClosing ? "bg-opacity-0" : "bg-opacity-50"
-        }`}
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
         onClick={handleClose}
       >
         <div
-          className={`bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col my-8 transition-all duration-300 ${
-            isClosing ? "scale-95 opacity-0" : "scale-100 opacity-100"
-          }`}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col my-8"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ✅ Header with Gradient */}
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 rounded-t-2xl flex items-center justify-between flex-shrink-0 shadow-lg">
-            <div className="flex items-center gap-4">
-              <div className="bg-white p-3 rounded-xl shadow-lg transform hover:scale-110 transition-transform duration-200">
+          {/* ✅ Simple Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div
+                className={`p-3 rounded-xl ${
+                  mode === "create"
+                    ? "bg-green-100"
+                    : mode === "edit"
+                      ? "bg-blue-100"
+                      : "bg-gray-100"
+                }`}
+              >
                 {mode === "view" ? (
-                  <Eye className="w-6 h-6 text-blue-600" />
+                  <Eye className={`w-6 h-6 text-gray-600`} />
+                ) : mode === "create" ? (
+                  <UserPlus className="w-6 h-6 text-green-600" />
                 ) : (
                   <Edit className="w-6 h-6 text-blue-600" />
                 )}
               </div>
-              <div className="text-white">
-                <h2 className="text-2xl font-koulen tracking-tight">
-                  {mode === "view" ? "ព័ត៌មានសិស្ស" : "កែសម្រួលសិស្ស"}
-                </h2>
-                <p className="text-blue-100 text-sm font-medium mt-0.5">
+              <div>
+                <h4 className="text-2xl font-koulen text-gray-900">
+                  {mode === "view"
+                    ? "ព័ត៌មានសិស្ស"
+                    : mode === "create"
+                      ? "បន្ថែមសិស្សថ្មី"
+                      : "កែសម្រួលសិស្ស"}
+                </h4>
+                <p className="text-sm text-gray-500 font-medium">
                   {mode === "view"
                     ? "Student Details"
-                    : "Edit Student Information"}
+                    : mode === "create"
+                      ? "Add New Student"
+                      : "Edit Student Information"}
                 </p>
               </div>
             </div>
 
-            {/* ✅ Action Buttons with Hover Effects */}
+            {/* ✅ Header Actions */}
             <div className="flex items-center gap-2">
-              {mode === "view" ? (
+              {mode === "view" && (
                 <>
-                  {/* Change Class Button */}
                   <button
                     onClick={() => setShowChangeClassModal(true)}
-                    className="h-11 px-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 border border-white/20 hover: scale-105 hover:shadow-lg"
+                    className="px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 font-semibold rounded-lg transition-all flex items-center gap-2"
                     title="ផ្លាស់ប្តូរថ្នាក់"
                   >
                     <ArrowLeftRight className="w-4 h-4" />
                     <span className="hidden sm:inline">ផ្លាស់ប្តូរថ្នាក់</span>
                   </button>
 
-                  {/* Edit Button */}
                   <button
                     onClick={() => setMode("edit")}
-                    className="h-11 px-4 bg-white text-blue-600 hover:bg-blue-50 font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 hover:scale-105 hover:shadow-lg"
+                    className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 font-semibold rounded-lg transition-all flex items-center gap-2"
                   >
                     <Edit className="w-4 h-4" />
                     <span className="hidden sm:inline">កែសម្រួល</span>
                   </button>
 
-                  {/* Delete Button */}
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="h-11 px-4 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 hover:scale-105 hover:shadow-lg"
+                    className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 font-semibold rounded-lg transition-all flex items-center gap-2"
                     title="លុបសិស្ស"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span className="hidden sm:inline">លុប</span>
                   </button>
                 </>
-              ) : (
-                <>
-                  {/* Cancel Edit */}
-                  <button
-                    onClick={() => setMode("view")}
-                    disabled={saving}
-                    className="h-11 px-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 border border-white/20"
-                  >
-                    បោះបង់
-                  </button>
-                </>
               )}
 
-              {/* Close Button */}
               <button
                 onClick={handleClose}
-                className="h-11 w-11 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all duration-200 flex items-center justify-center border border-white/20 hover: rotate-90"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-all"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
           </div>
 
-          {/* ✅ Content with Smooth Loading */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {loading ? (
+          {/* ✅ Content */}
+          <div className="flex-1 overflow-y-auto">
+            {loading && mode !== "create" ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-4">
                 <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
                 <p className="text-gray-600 font-medium">
@@ -300,9 +321,11 @@ export default function StudentModal({
                   <StudentDetailView student={student} />
                 ) : (
                   <StudentEditForm
-                    student={student}
+                    student={mode === "create" ? null : student}
                     onSave={handleSave}
-                    onCancel={() => setMode("view")}
+                    onCancel={
+                      mode === "create" ? handleClose : () => setMode("view")
+                    }
                     isSaving={saving}
                   />
                 )}
@@ -312,84 +335,63 @@ export default function StudentModal({
         </div>
       </div>
 
-      {/* ✅ Change Class Modal with Smooth Animations */}
+      {/* ✅ Simple Change Class Modal */}
       {showChangeClassModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
           onClick={() => setShowChangeClassModal(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 p-6 rounded-t-2xl">
-              <div className="flex items-center gap-3 text-white">
-                <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
-                  <ArrowLeftRight className="w-6 h-6" />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-purple-100 rounded-xl">
+                  <ArrowLeftRight className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-koulen">ផ្លាស់ប្តូរថ្នាក់</h3>
-                  <p className="text-purple-100 text-sm">
-                    Transfer to New Class
-                  </p>
+                  <h4 className="text-xl font-koulen text-gray-900">
+                    ផ្លាស់ប្តូរថ្នាក់
+                  </h4>
+                  <p className="text-sm text-gray-500">Transfer to New Class</p>
                 </div>
               </div>
-            </div>
 
-            {/* Body */}
-            <div className="p-6 space-y-6">
-              {/* Student Info Card */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-l-4 border-blue-500 shadow-sm">
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xl font-koulen shadow-lg">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-xl">
                     {student.gender === "male" ? "👨‍🎓" : "👩‍🎓"}
                   </div>
                   <div>
-                    <div className="font-bold text-gray-900">
+                    <div className="font-semibold text-gray-900">
                       {student.khmerName ||
                         `${student.firstName} ${student.lastName}`}
                     </div>
-                    <div className="text-sm text-gray-600 flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
-                        ID: {student.studentId}
-                      </span>
+                    <div className="text-sm text-gray-600">
+                      ID: {student.studentId}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Current Class */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <School className="w-4 h-4 text-gray-600" />
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ថ្នាក់បច្ចុប្បន្ន • Current Class
                 </label>
-                <div className="bg-gray-100 rounded-lg p-4 flex items-center gap-3 border-2 border-gray-200">
-                  <School className="w-5 h-5 text-gray-600" />
-                  <span className="font-bold text-gray-900">
-                    {getCurrentClassName()}
-                  </span>
+                <div className="bg-gray-100 rounded-lg p-3 font-semibold text-gray-900">
+                  {getCurrentClassName()}
                 </div>
               </div>
 
-              {/* Arrow Indicator */}
-              <div className="flex justify-center">
-                <div className="bg-purple-100 p-2 rounded-full">
-                  <ChevronRight className="w-6 h-6 text-purple-600 rotate-90" />
-                </div>
-              </div>
-
-              {/* New Class */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                  <School className="w-4 h-4 text-purple-600" />
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ថ្នាក់ថ្មី • New Class <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={selectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
-                  className="w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium transition-all duration-200 hover:border-purple-300"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-medium"
                   disabled={changingClass}
                 >
                   <option value="">-- ជ្រើសរើសថ្នាក់ --</option>
@@ -403,185 +405,124 @@ export default function StudentModal({
                 </select>
               </div>
 
-              {/* Preview */}
-              {selectedClassId && selectedClassId !== student.classId && (
-                <div className="bg-green-50 rounded-xl p-4 border-l-4 border-green-500 animate-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center gap-3">
-                    <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    <div className="text-sm text-green-800">
-                      <div className="font-bold mb-1">ការផ្លាស់ប្តូរ: </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-gray-200 rounded font-semibold text-gray-700">
-                          {getCurrentClassName()}
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-green-600" />
-                        <span className="px-2 py-1 bg-green-200 rounded font-semibold text-green-700">
-                          {getNewClassName()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 bg-gray-50 rounded-b-2xl flex gap-3">
-              <button
-                onClick={() => {
-                  setShowChangeClassModal(false);
-                  setSelectedClassId(student.classId || "");
-                }}
-                disabled={changingClass}
-                className="flex-1 h-12 px-4 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-105"
-              >
-                បោះបង់
-              </button>
-              <button
-                onClick={handleChangeClass}
-                disabled={
-                  changingClass ||
-                  !selectedClassId ||
-                  selectedClassId === student.classId
-                }
-                className="flex-1 h-12 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 hover:shadow-lg"
-              >
-                {changingClass ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    កំពុងផ្លាស់ប្តូរ...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4" />
-                    បញ្ជាក់ការផ្លាស់ប្តូរ
-                  </>
-                )}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowChangeClassModal(false);
+                    setSelectedClassId(student.classId || "");
+                  }}
+                  disabled={changingClass}
+                  className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-all disabled:opacity-50"
+                >
+                  បោះបង់
+                </button>
+                <button
+                  onClick={handleChangeClass}
+                  disabled={
+                    changingClass ||
+                    !selectedClassId ||
+                    selectedClassId === student.classId
+                  }
+                  className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {changingClass ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      កំពុងផ្លាស់ប្តូរ...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      បញ្ជាក់ការផ្លាស់ប្តូរ
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ✅ Delete Confirmation Modal with Warning Animation */}
+      {/* ✅ Simple Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4"
           onClick={() => setShowDeleteConfirm(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 p-6 rounded-t-2xl">
-              <div className="flex items-center gap-3 text-white">
-                <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm animate-pulse">
-                  <AlertTriangle className="w-6 h-6" />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-red-100 rounded-xl">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-koulen">លុបសិស្ស</h3>
-                  <p className="text-red-100 text-sm">
-                    Permanent Deletion Warning
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-6">
-              {/* Warning */}
-              <div className="bg-red-50 rounded-xl p-4 border-l-4 border-red-500 animate-in slide-in-from-left-2 duration-300">
-                <div className="flex items-start gap-3">
-                  <UserX className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-bold text-red-900 mb-2 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" />
-                      សកម្មភាពនេះមិនអាចត្រលប់វិញបានទេ!
-                    </p>
-                    <p className="text-sm text-red-800 leading-relaxed">
-                      ការលុបសិស្សនេះនឹងដកចេញពី System ទាំងស្រុង រួមទាំង:
-                    </p>
-                    <ul className="mt-2 space-y-1 text-sm text-red-700">
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                        ពិន្ទុគ្រប់មុខវិជ្ជា
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                        កំណត់ត្រាវត្តមាន
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                        ព័ត៌មានទាំងអស់
-                      </li>
-                    </ul>
-                  </div>
+                  <h4 className="text-xl font-koulen text-gray-900">
+                    លុបសិស្ស
+                  </h4>
+                  <p className="text-sm text-gray-500">Delete Student</p>
                 </div>
               </div>
 
-              {/* Student Info */}
-              <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4 shadow-inner">
+              <div className="mb-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                <p className="font-bold text-red-900 mb-2">
+                  សកម្មភាពនេះមិនអាចត្រលប់វិញបានទេ!
+                </p>
+                <p className="text-sm text-red-800">
+                  តើអ្នកប្រាកដថាចង់លុបសិស្ស{" "}
+                  <span className="font-semibold">
+                    {student.khmerName ||
+                      `${student.firstName} ${student.lastName}`}
+                  </span>{" "}
+                  មែនទេ?
+                </p>
+              </div>
+
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-full flex items-center justify-center text-white text-xl font-koulen shadow-lg">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-xl">
                     {student.gender === "male" ? "👨‍🎓" : "👩‍🎓"}
                   </div>
                   <div>
-                    <div className="font-bold text-gray-900">
+                    <div className="font-semibold text-gray-900">
                       {student.khmerName ||
                         `${student.firstName} ${student.lastName}`}
                     </div>
-                    <div className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                      <span className="px-2 py-0.5 bg-gray-300 text-gray-700 rounded text-xs font-semibold">
-                        ID: {student.studentId || "N/A"}
-                      </span>
-                      <span className="text-gray-400">•</span>
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
-                        {getCurrentClassName()}
-                      </span>
+                    <div className="text-sm text-gray-600">
+                      ID: {student.studentId || "N/A"} • {getCurrentClassName()}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Confirmation Text */}
-              <div className="text-center bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                <Info className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
-                <p className="text-gray-700 font-medium">
-                  តើអ្នកប្រាកដថាចង់លុបសិស្សនេះមែនទេ?
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  សូមពិចារណាម្តងទៀតមុនពេលបញ្ជាក់
-                </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-all disabled:opacity-50"
+                >
+                  បោះបង់
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      កំពុងលុប...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      បញ្ជាក់ការលុប
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 bg-gray-50 rounded-b-2xl flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-                className="flex-1 h-12 px-4 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-105"
-              >
-                បោះបង់
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 h-12 px-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:scale-105 hover:shadow-lg"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    កំពុងលុប...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    បញ្ជាក់ការលុប
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </div>

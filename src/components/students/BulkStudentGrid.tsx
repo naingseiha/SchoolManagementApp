@@ -116,12 +116,11 @@ export default function BulkStudentGrid({
       setLoadingStudents(true);
       setSaveStatus("⚡ Loading existing students...");
 
-      const response = await studentsApi.getAllLightweight();
+      const response = await studentsApi.getAllLightweight(1, 10000, classId);
       const allStudents = response.success && Array.isArray(response.data) ? response.data : [];
-      const classStudents = allStudents.filter((s) => s.classId === classId);
 
-      if (classStudents.length > 0) {
-        const sortedClassStudents = [...classStudents].sort((a, b) => {
+      if (allStudents.length > 0) {
+        const sortedClassStudents = [...allStudents].sort((a, b) => {
           let nameA = "";
           let nameB = "";
 
@@ -750,7 +749,7 @@ export default function BulkStudentGrid({
             style={{ maxHeight: "calc(100vh - 320px)" }}
           >
             <table ref={tableRef} className="w-full border-collapse">
-              <thead>
+              <thead className="sticky top-0 z-20 shadow-md">
                 <tr className="bg-pink-50">
                   {columnHeaders.map((header, index) => (
                     <th

@@ -6,63 +6,122 @@ import { useData } from "@/context/DataContext";
 import { Save, X, Loader2 } from "lucide-react";
 
 interface StudentEditFormProps {
-  student: Student;
+  student: Student | null;
   onSave: (data: Partial<Student>) => void;
   onCancel: () => void;
-  isSubmitting: boolean;
+  isSaving?: boolean;
+  isSubmitting?: boolean;
 }
+
+// ✅ Move these components outside to prevent re-creation on every render
+const InputField = ({
+  label,
+  name,
+  type = "text",
+  required = false,
+  placeholder = "",
+  value,
+  onChange,
+}: any) => (
+  <div>
+    <label className="block text-sm font-semibold text-gray-700 mb-2">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      required={required}
+      placeholder={placeholder}
+      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
+    />
+  </div>
+);
+
+const SectionTitle = ({ title }: { title: string }) => (
+  <h4 className="text-lg font-black text-gray-900 mb-4 pb-2 border-b-2 border-blue-600">
+    {title}
+  </h4>
+);
 
 export default function StudentEditForm({
   student,
   onSave,
   onCancel,
+  isSaving,
   isSubmitting,
 }: StudentEditFormProps) {
   const { classes } = useData();
   const [formData, setFormData] = useState({
-    khmerName: student.khmerName || "",
+    khmerName: student?.khmerName || "",
     englishName:
-      student.englishName || `${student.firstName} ${student.lastName}`,
-    firstName: student.firstName || "",
-    lastName: student.lastName || "",
-    gender: student.gender,
-    dateOfBirth: student.dateOfBirth || "",
-    placeOfBirth: (student as any).placeOfBirth || "",
-    currentAddress: (student as any).currentAddress || "",
-    phoneNumber: student.phoneNumber || student.phone || "",
-    email: student.email || "",
-    classId: student.classId || "",
-    fatherName: (student as any).fatherName || "",
-    motherName: (student as any).motherName || "",
-    parentPhone: (student as any).parentPhone || "",
-    parentOccupation: (student as any).parentOccupation || "",
-    previousGrade: (student as any).previousGrade || "",
-    previousSchool: (student as any).previousSchool || "",
-    repeatingGrade: (student as any).repeatingGrade || "",
-    transferredFrom: (student as any).transferredFrom || "",
-    grade9ExamSession: (student as any).grade9ExamSession || "",
-    grade9ExamCenter: (student as any).grade9ExamCenter || "",
-    grade9ExamRoom: (student as any).grade9ExamRoom || "",
-    grade9ExamDesk: (student as any).grade9ExamDesk || "",
-    grade9PassStatus: (student as any).grade9PassStatus || "",
-    grade12ExamSession: (student as any).grade12ExamSession || "",
-    grade12ExamCenter: (student as any).grade12ExamCenter || "",
-    grade12ExamRoom: (student as any).grade12ExamRoom || "",
-    grade12ExamDesk: (student as any).grade12ExamDesk || "",
-    grade12Track: (student as any).grade12Track || "",
-    grade12PassStatus: (student as any).grade12PassStatus || "",
-    remarks: (student as any).remarks || "",
+      student?.englishName ||
+      (student ? `${student.firstName} ${student.lastName}` : ""),
+    firstName: student?.firstName || "",
+    lastName: student?.lastName || "",
+    gender: student?.gender || "male",
+    dateOfBirth: student?.dateOfBirth || "",
+    placeOfBirth: (student as any)?.placeOfBirth || "",
+    currentAddress: (student as any)?.currentAddress || "",
+    phoneNumber: student?.phoneNumber || student?.phone || "",
+    email: student?.email || "",
+    classId: student?.classId || "",
+    fatherName: (student as any)?.fatherName || "",
+    motherName: (student as any)?.motherName || "",
+    parentPhone: (student as any)?.parentPhone || "",
+    parentOccupation: (student as any)?.parentOccupation || "",
+    previousGrade: (student as any)?.previousGrade || "",
+    previousSchool: (student as any)?.previousSchool || "",
+    repeatingGrade: (student as any)?.repeatingGrade || "",
+    transferredFrom: (student as any)?.transferredFrom || "",
+    grade9ExamSession: (student as any)?.grade9ExamSession || "",
+    grade9ExamCenter: (student as any)?.grade9ExamCenter || "",
+    grade9ExamRoom: (student as any)?.grade9ExamRoom || "",
+    grade9ExamDesk: (student as any)?.grade9ExamDesk || "",
+    grade9PassStatus: (student as any)?.grade9PassStatus || "",
+    grade12ExamSession: (student as any)?.grade12ExamSession || "",
+    grade12ExamCenter: (student as any)?.grade12ExamCenter || "",
+    grade12ExamRoom: (student as any)?.grade12ExamRoom || "",
+    grade12ExamDesk: (student as any)?.grade12ExamDesk || "",
+    grade12Track: (student as any)?.grade12Track || "",
+    grade12PassStatus: (student as any)?.grade12PassStatus || "",
+    remarks: (student as any)?.remarks || "",
   });
+
+  const saving = isSaving || isSubmitting;
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
+    const { name, value } = e.target;
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+
+    // Auto-populate firstName and lastName from khmerName
+    if (name === "khmerName" && value.trim()) {
+      const parts = value.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        setFormData((prev) => ({
+          ...prev,
+          khmerName: value,
+          lastName: parts[0], // First word as lastName
+          firstName: parts.slice(1).join(" "), // Rest as firstName
+        }));
+      } else if (parts.length === 1) {
+        setFormData((prev) => ({
+          ...prev,
+          khmerName: value,
+          lastName: parts[0],
+          firstName: "",
+        }));
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -82,51 +141,45 @@ export default function StudentEditForm({
     onSave(formData);
   };
 
-  const InputField = ({
-    label,
-    name,
-    type = "text",
-    required = false,
-    placeholder = "",
-  }: any) => (
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={(formData as any)[name]}
-        onChange={handleChange}
-        required={required}
-        placeholder={placeholder}
-        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-medium"
-      />
-    </div>
-  );
-
-  const SectionTitle = ({ title }: { title: string }) => (
-    <h3 className="text-lg font-black text-gray-900 mb-4 pb-2 border-b-2 border-blue-600">
-      {title}
-    </h3>
-  );
-
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-8">
       {/* Basic Information */}
       <div>
         <SectionTitle title="ព័ត៌មានទូទៅ" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <InputField
+              label="គោត្តនាមនិងនាម (ខ្មែរ)"
+              name="khmerName"
+              required
+              placeholder="ឧ.  សុខ ចន្ទា"
+              value={formData.khmerName}
+              onChange={handleChange}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              💡 វាលខាងក្រោមនឹងត្រូវបំពេញដោយស្វ័យប្រវត្តិពីឈ្មោះពេញខាងលើ
+            </p>
+          </div>
           <InputField
-            label="គោត្តនាមនិងនាម (ខ្មែរ)"
-            name="khmerName"
-            required
-            placeholder="ឧ.  សុខ ចន្ទា"
+            label="គោត្តនាម (នាមត្រកូល)"
+            name="lastName"
+            placeholder="សុខ"
+            value={formData.lastName}
+            onChange={handleChange}
+          />
+          <InputField
+            label="នាម (ឈ្មោះផ្ទាល់ខ្លួន)"
+            name="firstName"
+            placeholder="ចន្ទា"
+            value={formData.firstName}
+            onChange={handleChange}
           />
           <InputField
             label="ឈ្មោះជាអក្សរឡាតាំង"
             name="englishName"
             placeholder="Sok Chantha"
+            value={formData.englishName}
+            onChange={handleChange}
           />
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -148,16 +201,22 @@ export default function StudentEditForm({
             name="dateOfBirth"
             type="date"
             required
+            value={formData.dateOfBirth}
+            onChange={handleChange}
           />
           <InputField
             label="ទីកន្លែងកំណើត"
             name="placeOfBirth"
             placeholder="ភ្នំពេញ"
+            value={formData.placeOfBirth}
+            onChange={handleChange}
           />
           <InputField
             label="អាសយដ្ឋានបច្ចុប្បន្ន"
             name="currentAddress"
             placeholder="ភ្នំពេញ"
+            value={formData.currentAddress}
+            onChange={handleChange}
           />
         </div>
       </div>
@@ -171,12 +230,16 @@ export default function StudentEditForm({
             name="phoneNumber"
             type="tel"
             placeholder="012345678"
+            value={formData.phoneNumber}
+            onChange={handleChange}
           />
           <InputField
             label="អ៊ីមែល"
             name="email"
             type="email"
             placeholder="student@school.edu. kh"
+            value={formData.email}
+            onChange={handleChange}
           />
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -203,22 +266,34 @@ export default function StudentEditForm({
       <div>
         <SectionTitle title="ព័ត៌មានឪពុកម្តាយ" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField label="ឈ្មោះឪពុក" name="fatherName" placeholder="ឪពុក" />
+          <InputField
+            label="ឈ្មោះឪពុក"
+            name="fatherName"
+            value={formData.fatherName}
+            onChange={handleChange}
+            placeholder="ឪពុក"
+          />
           <InputField
             label="ឈ្មោះម្តាយ"
             name="motherName"
             placeholder="ម្តាយ"
+            value={formData.motherName}
+            onChange={handleChange}
           />
           <InputField
             label="លេខទូរសព្ទឪពុកម្តាយ"
             name="parentPhone"
             type="tel"
             placeholder="012345678"
+            value={formData.parentPhone}
+            onChange={handleChange}
           />
           <InputField
             label="មុខរបរឪពុកម្តាយ"
             name="parentOccupation"
             placeholder="កសិករ"
+            value={formData.parentOccupation}
+            onChange={handleChange}
           />
         </div>
       </div>
@@ -231,21 +306,29 @@ export default function StudentEditForm({
             label="ឡើងពីថ្នាក់"
             name="previousGrade"
             placeholder="៦ក"
+            value={formData.previousGrade}
+            onChange={handleChange}
           />
           <InputField
             label="មកពីសាលា"
             name="previousSchool"
             placeholder="សាលាចាស់"
+            value={formData.previousSchool}
+            onChange={handleChange}
           />
           <InputField
             label="ត្រួតថ្នាក់ទី"
             name="repeatingGrade"
             placeholder="៧ខ"
+            value={formData.repeatingGrade}
+            onChange={handleChange}
           />
           <InputField
             label="ផ្ទេរមកពី"
             name="transferredFrom"
             placeholder="ខេត្ត/ក្រុង"
+            value={formData.transferredFrom}
+            onChange={handleChange}
           />
         </div>
       </div>
@@ -258,21 +341,29 @@ export default function StudentEditForm({
             label="សម័យប្រឡង"
             name="grade9ExamSession"
             placeholder="២០២៤"
+            value={formData.grade9ExamSession}
+            onChange={handleChange}
           />
           <InputField
             label="មណ្ឌលប្រឡង"
             name="grade9ExamCenter"
             placeholder="មណ្ឌល១"
+            value={formData.grade9ExamCenter}
+            onChange={handleChange}
           />
           <InputField
             label="បន្ទប់ប្រឡង"
             name="grade9ExamRoom"
             placeholder="១"
+            value={formData.grade9ExamRoom}
+            onChange={handleChange}
           />
           <InputField
             label="លេខតុប្រឡង"
             name="grade9ExamDesk"
             placeholder="០១"
+            value={formData.grade9ExamDesk}
+            onChange={handleChange}
           />
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -301,21 +392,29 @@ export default function StudentEditForm({
             label="សម័យប្រឡង"
             name="grade12ExamSession"
             placeholder="២០២៧"
+            value={formData.grade12ExamSession}
+            onChange={handleChange}
           />
           <InputField
             label="មណ្ឌលប្រឡង"
             name="grade12ExamCenter"
             placeholder="មណ្ឌល១"
+            value={formData.grade12ExamCenter}
+            onChange={handleChange}
           />
           <InputField
             label="បន្ទប់ប្រឡង"
             name="grade12ExamRoom"
             placeholder="១"
+            value={formData.grade12ExamRoom}
+            onChange={handleChange}
           />
           <InputField
             label="លេខតុប្រឡង"
             name="grade12ExamDesk"
             placeholder="០១"
+            value={formData.grade12ExamDesk}
+            onChange={handleChange}
           />
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -369,7 +468,7 @@ export default function StudentEditForm({
         <button
           type="button"
           onClick={onCancel}
-          disabled={isSubmitting}
+          disabled={saving}
           className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 font-semibold transition-all disabled:opacity-50 flex items-center gap-2"
         >
           <X className="w-5 h-5" />
@@ -377,10 +476,10 @@ export default function StudentEditForm({
         </button>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={saving}
           className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 font-semibold shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
         >
-          {isSubmitting ? (
+          {saving ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
               កំពុងរក្សាទុក...
