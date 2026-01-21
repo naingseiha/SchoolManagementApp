@@ -138,13 +138,10 @@ export default function DashboardPage() {
     loadDashboardStats();
   }, [isAuthenticated, isLoading, currentUser, deviceType]);
 
-  // ✅ OPTIMIZED: Mobile doesn't need DataContext loading states - it fetches its own data
-  // Desktop needs DataContext for displaying stats
-  const isWaitingForData = deviceType === "mobile" 
-    ? isLoading // Only wait for auth on mobile
-    : (isLoading || isLoadingStudents || isLoadingClasses); // Desktop waits for all data
-
-  if (isWaitingForData) {
+  // ✅ PERFORMANCE: Progressive Loading - Only block on auth, not data
+  // Desktop and mobile both render immediately after auth
+  // Data loads progressively in background
+  if (isLoading) {
     return deviceType === "mobile" ? (
       <MobileLayout title="ផ្ទាំង">
         <div className="p-4">
@@ -219,7 +216,11 @@ export default function DashboardPage() {
                       សិស្សសរុប
                     </span>
                     <div className="text-3xl font-moul text-white">
-                      {stats.totalStudents}
+                      {isLoadingStudents ? (
+                        <div className="animate-pulse bg-white/30 h-9 w-16 rounded"></div>
+                      ) : (
+                        stats.totalStudents
+                      )}
                     </div>
                   </div>
                   <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30">
@@ -227,7 +228,11 @@ export default function DashboardPage() {
                       គ្រូបង្រៀនសរុប
                     </span>
                     <div className="text-3xl font-moul text-white">
-                      {stats.totalTeachers}
+                      {isLoadingStudents ? (
+                        <div className="animate-pulse bg-white/30 h-9 w-16 rounded"></div>
+                      ) : (
+                        stats.totalTeachers
+                      )}
                     </div>
                   </div>
                   <div className="bg-white/20 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/30">
@@ -235,7 +240,11 @@ export default function DashboardPage() {
                       ថ្នាក់សកម្ម
                     </span>
                     <div className="text-3xl font-moul text-white">
-                      {stats.totalClasses}
+                      {isLoadingClasses ? (
+                        <div className="animate-pulse bg-white/30 h-9 w-16 rounded"></div>
+                      ) : (
+                        stats.totalClasses
+                      )}
                     </div>
                   </div>
                 </div>
@@ -262,14 +271,22 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     សិស្ស
                   </p>
-                  <p className="text-4xl font-moul text-gray-900 mb-4">
-                    {stats.totalStudents}
-                  </p>
+                  {isLoadingStudents ? (
+                    <div className="animate-pulse bg-gray-200 h-10 w-24 rounded mb-4"></div>
+                  ) : (
+                    <p className="text-4xl font-moul text-gray-900 mb-4">
+                      {stats.totalStudents}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                    <span className="font-khmer-body text-sm text-gray-600 font-medium">
-                      {stats.studentsWithClass} បានចុះឈ្មោះ
-                    </span>
+                    {isLoadingStudents ? (
+                      <div className="animate-pulse bg-gray-200 h-5 w-32 rounded"></div>
+                    ) : (
+                      <span className="font-khmer-body text-sm text-gray-600 font-medium">
+                        {stats.studentsWithClass} បានចុះឈ្មោះ
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -292,14 +309,22 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     គ្រូបង្រៀន
                   </p>
-                  <p className="text-4xl font-moul text-gray-900 mb-4">
-                    {stats.totalTeachers}
-                  </p>
+                  {isLoadingStudents ? (
+                    <div className="animate-pulse bg-gray-200 h-10 w-24 rounded mb-4"></div>
+                  ) : (
+                    <p className="text-4xl font-moul text-gray-900 mb-4">
+                      {stats.totalTeachers}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                    <span className="font-khmer-body text-sm text-gray-600 font-medium">
-                      {stats.teachersWithClass} បានចាត់តាំង
-                    </span>
+                    {isLoadingStudents ? (
+                      <div className="animate-pulse bg-gray-200 h-5 w-32 rounded"></div>
+                    ) : (
+                      <span className="font-khmer-body text-sm text-gray-600 font-medium">
+                        {stats.teachersWithClass} បានចាត់តាំង
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -322,9 +347,13 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     ថ្នាក់រៀន
                   </p>
-                  <p className="text-4xl font-moul text-gray-900 mb-4">
-                    {stats.totalClasses}
-                  </p>
+                  {isLoadingClasses ? (
+                    <div className="animate-pulse bg-gray-200 h-10 w-24 rounded mb-4"></div>
+                  ) : (
+                    <p className="text-4xl font-moul text-gray-900 mb-4">
+                      {stats.totalClasses}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
                     <span className="font-khmer-body text-sm text-gray-600 font-medium">
@@ -352,14 +381,22 @@ export default function DashboardPage() {
                   <p className="font-khmer-body text-gray-500 text-xs font-bold mb-2">
                     មុខវិជ្ជា
                   </p>
-                  <p className="text-4xl font-moul text-gray-900 mb-4">
-                    {stats.totalSubjects}
-                  </p>
+                  {isLoadingStudents ? (
+                    <div className="animate-pulse bg-gray-200 h-10 w-24 rounded mb-4"></div>
+                  ) : (
+                    <p className="text-4xl font-moul text-gray-900 mb-4">
+                      {stats.totalSubjects}
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                    <span className="font-khmer-body text-sm text-gray-600 font-medium">
-                      {stats.activeSubjects} សកម្ម
-                    </span>
+                    {isLoadingStudents ? (
+                      <div className="animate-pulse bg-gray-200 h-5 w-32 rounded"></div>
+                    ) : (
+                      <span className="font-khmer-body text-sm text-gray-600 font-medium">
+                        {stats.activeSubjects} សកម្ម
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -558,8 +595,20 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ✅ NEW: Pass/Fail Statistics Card */}
-            {dashboardStats && (
+            {/* ✅ PERFORMANCE: Charts section loads progressively after initial render */}
+            {/* Show skeleton while dashboard stats are loading */}
+            {isLoadingStats && !dashboardStats ? (
+              <div className="bg-white rounded-3xl shadow-lg p-7 mb-8">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ) : dashboardStats ? (
               <div className="bg-white rounded-3xl shadow-lg p-7 mb-8">
                 <div className="flex items-center justify-between mb-6">
                   <div>
@@ -634,10 +683,26 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Enhanced Analytics Section */}
-            {dashboardStats && (
+            {isLoadingStats && !dashboardStats ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white rounded-3xl shadow-lg p-7">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                    <div className="h-32 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+                <div className="bg-white rounded-3xl shadow-lg p-7">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                    <div className="h-64 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ) : dashboardStats ? (
               <>
                 {/* Recent Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -883,21 +948,7 @@ export default function DashboardPage() {
                   </div>
                 )}
               </>
-            )}
-
-            {/* Loading state for stats */}
-            {isLoadingStats && !dashboardStats && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SkeletonCard />
-                  <SkeletonCard />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <SkeletonChart />
-                  <SkeletonChart />
-                </div>
-              </div>
-            )}
+            ) : null}
 
             {/* Error state */}
             {statsError && (
