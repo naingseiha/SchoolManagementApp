@@ -34,16 +34,17 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
   const [students, setStudents] = useState<any[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
+  const [itemsPerPage, setItemsPerPage] = useState<number | "all">(50);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // ✅ Fetch students with filters (resets to page 1)
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
     try {
+      const perPage = itemsPerPage === "all" ? 99999 : itemsPerPage;
       const response = await studentsApi.getAllLightweight(
         1,
-        itemsPerPage,
+        perPage,
         selectedClass === "all" ? undefined : selectedClass,
         selectedGender === "all" ? undefined : selectedGender
       );
@@ -61,7 +62,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
 
   // ✅ Load more students (append to existing, preserves filters)
   const loadMoreStudents = useCallback(async () => {
-    if (!pagination || currentPage >= pagination.totalPages || isLoadingMore) {
+    if (!pagination || currentPage >= pagination.totalPages || isLoadingMore || itemsPerPage === "all") {
       return;
     }
 
@@ -70,7 +71,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
       const nextPage = currentPage + 1;
       const response = await studentsApi.getAllLightweight(
         nextPage,
-        itemsPerPage,
+        itemsPerPage as number,
         selectedClass === "all" ? undefined : selectedClass,
         selectedGender === "all" ? undefined : selectedGender
       );
@@ -195,7 +196,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
   };
 
   // ✅ Check if can load more
-  const canLoadMore = pagination && currentPage < pagination.totalPages;
+  const canLoadMore = pagination && currentPage < pagination.totalPages && itemsPerPage !== "all";
 
   return (
     <div className="space-y-4">
@@ -300,7 +301,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
           {/* ✅ Filters */}
           <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-              <div className="md:col-span-4">
+              <div className="md:col-span-3">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -313,7 +314,7 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
                 </div>
               </div>
 
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
@@ -337,6 +338,19 @@ export default function StudentListViewV2({ classes }: StudentListViewV2Props) {
                   <option value="all">👤 ភេទទាំងអស់</option>
                   <option value="male">👨 ប្រុស</option>
                   <option value="female">👩 ស្រី</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(e.target.value === "all" ? "all" : Number(e.target.value))}
+                  className="w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-bold bg-white cursor-pointer"
+                >
+                  <option value="50">បង្ហាញ 50</option>
+                  <option value="100">បង្ហាញ 100</option>
+                  <option value="200">បង្ហាញ 200</option>
+                  <option value="all">🔢 បង្ហាញទាំងអស់</option>
                 </select>
               </div>
 
