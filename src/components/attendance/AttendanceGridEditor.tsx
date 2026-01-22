@@ -669,7 +669,7 @@ export default function AttendanceGridEditor({
   }, []);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden w-full min-w-0">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
         <div className="flex items-center justify-between">

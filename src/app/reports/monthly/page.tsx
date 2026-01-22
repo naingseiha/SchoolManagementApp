@@ -446,7 +446,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex min-h-screen print-wrapper bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex h-screen print-wrapper bg-gradient-to-br from-gray-50 to-gray-100">
       {/* ✅ UPDATED: Print CSS - Hide everything except report */}
       <style jsx global>{`
         @media print {
@@ -478,14 +478,14 @@ export default function ReportsPage() {
         }
       `}</style>
 
-      <div className="no-print">
+      <div className="no-print flex-shrink-0">
         <Sidebar />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col min-h-0">
         <div className="no-print">
           <Header />
         </div>
-        <main className="p-6 animate-fadeIn">
+        <main className="flex-1 overflow-y-auto min-h-0 p-6 animate-fadeIn">
           {/* Professional Page Header */}
           <div className="mb-6 no-print">
             <div className="flex items-center gap-4 mb-2">

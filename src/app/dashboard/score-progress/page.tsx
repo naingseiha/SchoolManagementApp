@@ -10,11 +10,13 @@ import { Loader2 } from "lucide-react";
 export default function ScoreProgressPage() {
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 p-8">
             <Suspense
               fallback={
                 <div className="flex items-center justify-center py-20">

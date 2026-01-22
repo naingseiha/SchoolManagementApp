@@ -351,11 +351,11 @@ export default function AttendancePage() {
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
         <Header />
 
-        <main className="flex-1 overflow-y-auto min-h-0">
-          <div className="max-w-[1600px] mx-auto p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+          <div className="p-6 space-y-6">
             {/* Teacher Info Box */}
             {currentUser.role === "TEACHER" && (
               <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 shadow-sm">

@@ -373,11 +373,13 @@ export default function StatisticsPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gray-50">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="flex items-center justify-center p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center p-8">
             <div className="bg-white rounded-2xl shadow-lg p-12 max-w-md w-full text-center">
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <XCircle className="w-10 h-10 text-red-600" />
@@ -401,11 +403,13 @@ export default function StatisticsPage() {
 
   if (loading || !stats) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gray-50">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="flex items-center justify-center p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center p-8">
             <div className="text-center">
               <Loader2 className="h-16 w-16 animate-spin text-indigo-600 mx-auto mb-6" />
               <p className="font-khmer-body text-gray-600 text-lg font-bold">
@@ -447,11 +451,13 @@ export default function StatisticsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1">
+    <div className="flex h-screen bg-gray-50">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className="p-8">
+        <main className="flex-1 overflow-y-auto min-h-0 p-8">
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">

@@ -24,12 +24,15 @@ export default function ResponsiveLayout({
   }
 
   // Desktop layout (>= 768px)
+  // Fixed layout: sidebar and header stay in place, only content scrolls
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-      <Sidebar />
-      <div className="flex-1">
+    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className={className}>
+        <main className={`flex-1 overflow-y-auto min-h-0 ${className}`}>
           {children}
         </main>
       </div>

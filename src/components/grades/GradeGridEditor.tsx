@@ -335,7 +335,7 @@ export default function GradeGridEditor({
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative">
+    <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 relative w-full min-w-0">
       <GridHeader
         className={gridData.className}
         month={gridData.month}
