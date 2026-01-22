@@ -452,28 +452,71 @@ export default function ReportsPage() {
         @media print {
           @page {
             size: A4;
-            margin: 8mm 5mm;
+            margin: 5mm 3mm;
           }
 
-          body {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            height: auto !important;
+            overflow: visible !important;
           }
 
-          /* ✅ Hide sidebar, header, controls, and dashboard */
+          /* ✅ Completely remove hidden elements from print flow */
           .no-print,
           .print-hide {
             display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            left: -9999px !important;
           }
 
-          /* ✅ Show only the report */
+          /* ✅ Show only the report - override hidden class */
           .print-show {
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+
+          /* ✅ Reset the entire page structure for print */
+          .print-wrapper {
+            display: block !important;
+            background: white !important;
+            height: auto !important;
+            width: 100% !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .print-wrapper > * {
+            display: none !important;
+          }
+
+          .print-wrapper .print-show {
             display: block !important;
           }
 
-          /* ✅ Ensure report takes full width */
-          .print-wrapper {
-            background: white !important;
+          /* ✅ Override flex layout on print */
+          .flex-1.flex.flex-col,
+          .flex-1 {
+            display: block !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+
+          main {
+            overflow: visible !important;
+            height: auto !important;
+            padding: 0 !important;
           }
         }
       `}</style>

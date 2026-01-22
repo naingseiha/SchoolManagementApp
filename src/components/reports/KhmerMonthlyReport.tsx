@@ -88,28 +88,36 @@ export default function KhmerMonthlyReport({
         .report-page {
           page-break-inside: avoid;
           page-break-after: always;
+          break-inside: avoid;
+          break-after: page;
         }
 
         .report-page:last-child {
           page-break-after: auto;
+          break-after: auto;
         }
 
         @media print {
           .report-page {
-            page-break-inside: avoid;
-            page-break-after: always;
+            page-break-inside: avoid !important;
+            page-break-after: always !important;
+            break-inside: avoid !important;
+            break-after: page !important;
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
             min-height: auto !important;
+            height: auto !important;
             margin: 0 !important;
-            padding: 8mm 5mm !important;
+            padding: 5mm 3mm !important;
             box-shadow: none !important;
             background: white !important;
+            overflow: visible !important;
           }
 
           .report-page:last-child {
             page-break-after: auto !important;
+            break-after: auto !important;
           }
 
           table {
@@ -153,7 +161,7 @@ export default function KhmerMonthlyReport({
             width: "210mm",
             minHeight: pageIndex === 0 ? "auto" : "auto",
             margin: "0 auto",
-            padding: "8mm 5mm",
+            padding: "5mm 3mm",
             boxSizing: "border-box",
             maxWidth: "100%",
           }}
