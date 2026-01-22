@@ -233,6 +233,11 @@
     max-width: 100vw;
   }
 
+  /* Ensure Next.js root can scroll */
+  #__next {
+    min-height: 100vh;
+  }
+
   /* Disable pull-to-refresh on mobile (optional) */
   body {
     overscroll-behavior-y: contain;

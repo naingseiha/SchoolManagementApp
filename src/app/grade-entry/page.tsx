@@ -522,15 +522,15 @@ export default function GradeEntryPage() {
   const yearOptions = getAcademicYearOptions();
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen bg-gray-50">
       <div className="flex-shrink-0">
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-[1600px] mx-auto p-6 space-y-6">
             {/* ✅ TEACHER INFO BOX */}
             {currentUser.role === "TEACHER" && (

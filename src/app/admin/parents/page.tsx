@@ -324,11 +324,11 @@ export default function ParentsManagementPage() {
 
     // Desktop Layout with Sidebar
     return (
-      <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto min-h-0">
             <div className="flex items-center justify-center min-h-screen">
               <div className="text-center">
                 <Loader2 className="w-16 h-16 animate-spin text-purple-600 mx-auto mb-4" />
@@ -677,11 +677,11 @@ export default function ParentsManagementPage() {
 
   // Desktop Layout
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-purple-50 via-pink-50/30 to-rose-50/30">
+    <div className="flex h-screen bg-gradient-to-br from-purple-50 via-pink-50/30 to-rose-50/30">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className="flex-1 overflow-y-auto">{content}</main>
+        <main className="flex-1 overflow-y-auto min-h-0">{content}</main>
       </div>
     </div>
   );
