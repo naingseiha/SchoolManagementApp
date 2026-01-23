@@ -49,18 +49,16 @@ StatCard.displayName = 'StatCard';
 
 // ✅ PERFORMANCE: Removed GradeCard component (no longer needed)
 
-// ✅ OPTIMIZED: Lightweight mobile stats type (no heavy ComprehensiveStats)
+// ✅ SUPER OPTIMIZED: Minimal data structure for fastest loading
 interface MobileGradeStats {
   month: string;
   year: number;
+  totalTeachers: number;
+  totalSubjects: number;
   grades: Array<{
     grade: string;
     totalStudents: number;
     totalClasses: number;
-    averageScore: number;
-    passPercentage: number;
-    passedCount: number;
-    failedCount: number;
   }>;
 }
 
@@ -180,31 +178,11 @@ export default function SimpleMobileDashboard({
         (acc, grade) => ({
           students: acc.students + grade.totalStudents,
           classes: acc.classes + grade.totalClasses,
-          avgScore: acc.avgScore + grade.averageScore,
-          passCount: acc.passCount + grade.passedCount,
-          failCount: acc.failCount + grade.failedCount,
         }),
-        { students: 0, classes: 0, avgScore: 0, passCount: 0, failCount: 0 }
+        { students: 0, classes: 0 }
       ),
     [gradeStats]
   );
-
-  const overallPassRate = useMemo(() => {
-    if (!totalStats) return "0";
-    const totalWithGrades = totalStats.passCount + totalStats.failCount;
-    return totalWithGrades > 0
-      ? ((totalStats.passCount / totalWithGrades) * 100).toFixed(1)
-      : "0";
-  }, [totalStats]);
-
-  // ✅ NEW: Calculate fail percentage instead of average
-  const overallFailRate = useMemo(() => {
-    if (!totalStats) return "0";
-    const totalWithGrades = totalStats.passCount + totalStats.failCount;
-    return totalWithGrades > 0
-      ? ((totalStats.failCount / totalWithGrades) * 100).toFixed(1)
-      : "0";
-  }, [totalStats]);
 
   const handleSearch = useCallback(
     (e?: React.FormEvent) => {
@@ -389,16 +367,16 @@ export default function SimpleMobileDashboard({
                 gradient="bg-gradient-to-br from-indigo-400 to-purple-500"
               />
               <StatCard
-                icon={Award}
-                label="ជាប់"
-                value={`${overallPassRate}%`}
+                icon={GraduationCap}
+                label="គ្រូបង្រៀន"
+                value={gradeStats?.totalTeachers || 0}
                 gradient="bg-gradient-to-br from-green-400 to-emerald-500"
               />
               <StatCard
-                icon={BarChart3}
-                label="ធ្លាក់"
-                value={`${overallFailRate}%`}
-                gradient="bg-gradient-to-br from-red-400 to-rose-500"
+                icon={Award}
+                label="មុខវិជ្ជា"
+                value={gradeStats?.totalSubjects || 0}
+                gradient="bg-gradient-to-br from-orange-400 to-amber-500"
               />
             </div>
           </div>
