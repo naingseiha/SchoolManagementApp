@@ -149,12 +149,24 @@ export default function MobileGradeEntry({
   const [isExporting, setIsExporting] = useState(false);
   const exportReportRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Load classes if empty
+  // ✅ Load classes if empty - ensure this runs on mount and when auth is ready
+  // Add a forced refresh on component mount to handle PWA first-load issues
+  const mountedRef = useRef(false);
+  
   useEffect(() => {
-    if (classes.length === 0 && !isLoadingClasses) {
-      refreshClasses();
+    if (!authLoading && currentUser) {
+      if (!mountedRef.current) {
+        // Force refresh on first mount
+        console.log("📚 MobileGradeEntry: First mount, forcing class refresh...");
+        mountedRef.current = true;
+        refreshClasses();
+      } else if (classes.length === 0 && !isLoadingClasses) {
+        // Retry if classes are still empty
+        console.log("📚 MobileGradeEntry: Classes empty after mount, retrying...");
+        refreshClasses();
+      }
     }
-  }, [classes.length, isLoadingClasses, refreshClasses]);
+  }, [authLoading, currentUser, classes.length, isLoadingClasses]);
 
   // ✅ Auto-load data when class is pre-selected from URL/props
   useEffect(() => {
@@ -170,6 +182,12 @@ export default function MobileGradeEntry({
   }, [initialClassId, classes.length, currentUser]);
 
   const availableClasses = useMemo(() => {
+    console.log("🔄 MobileGradeEntry: Recalculating availableClasses", {
+      currentUser: currentUser?.role,
+      classesLength: classes.length,
+      isLoadingClasses
+    });
+    
     if (!currentUser) return [];
 
     if (currentUser.role === "ADMIN") {
@@ -191,11 +209,13 @@ export default function MobileGradeEntry({
       }
 
       const teacherClassIds = Array.from(classIdsSet);
-      return classes.filter((c) => teacherClassIds.includes(c.id));
+      const filtered = classes.filter((c) => teacherClassIds.includes(c.id));
+      console.log("👨‍🏫 Teacher available classes:", filtered.length);
+      return filtered;
     }
 
     return [];
-  }, [currentUser, classes]);
+  }, [currentUser, classes, isLoadingClasses]);
 
   const teacherEditableSubjects = useMemo(() => {
     if (!currentUser) return new Set<string>();
@@ -971,9 +991,18 @@ export default function MobileGradeEntry({
               <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                 <Users className="w-4 h-4 text-purple-600" />
               </div>
-              <label className="font-battambang text-sm font-semibold text-gray-700">
+              <label className="font-battambang text-sm font-semibold text-gray-700 flex-1">
                 ថ្នាក់ • Class
               </label>
+              {/* Refresh button if no classes */}
+              {availableClasses.length === 0 && !isLoadingClasses && (
+                <button
+                  onClick={() => refreshClasses()}
+                  className="text-xs px-3 py-1 bg-purple-500 text-white rounded-lg font-battambang hover:bg-purple-600 active:scale-95 transition-all"
+                >
+                  ផ្ទុកឡើងវិញ
+                </button>
+              )}
             </div>
             <select
               value={selectedClass}
@@ -983,7 +1012,11 @@ export default function MobileGradeEntry({
               style={{ fontSize: "16px" }}
             >
               <option value="">
-                {isLoadingClasses ? "កំពុងផ្ទុក..." : "-- ជ្រើសរើសថ្នាក់ --"}
+                {isLoadingClasses 
+                  ? "កំពុងផ្ទុក..." 
+                  : availableClasses.length === 0 && !isLoadingClasses
+                    ? "មិនមានថ្នាក់ • No classes"
+                    : "-- ជ្រើសរើសថ្នាក់ --"}
               </option>
               {availableClasses.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -991,6 +1024,12 @@ export default function MobileGradeEntry({
                 </option>
               ))}
             </select>
+            {/* Debug info for development */}
+            {availableClasses.length === 0 && !isLoadingClasses && (
+              <p className="mt-2 text-xs text-gray-500 font-battambang">
+                Debug: classes={classes.length}, available={availableClasses.length}, loading={isLoadingClasses.toString()}
+              </p>
+            )}
           </div>
 
           {/* Month & Year Card */}
