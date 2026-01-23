@@ -132,7 +132,7 @@ class NotificationService {
             gte: targetDate,
             lt: nextDay,
           },
-          isSuspended: false,
+          isActive: true,
           email: {
             not: null,
           },

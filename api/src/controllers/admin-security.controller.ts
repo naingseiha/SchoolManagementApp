@@ -383,7 +383,11 @@ export const extendExpiration = async (req: Request, res: Response) => {
       });
     }
 
-    const newExpiresAt = calculatePasswordExpiry(days);
+    // Calculate new expiration date by adding days to current expiration
+    // If no current expiration, start from today
+    const baseDate = teacher.passwordExpiresAt || new Date();
+    const newExpiresAt = new Date(baseDate);
+    newExpiresAt.setDate(newExpiresAt.getDate() + days);
 
     await prisma.user.update({
       where: { id: teacherId },

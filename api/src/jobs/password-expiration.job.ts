@@ -68,7 +68,7 @@ async function checkExpiredPasswords(): Promise<void> {
       passwordExpiresAt: {
         lte: now, // Less than or equal to now (expired)
       },
-      isSuspended: false,
+      isActive: true, // Only suspend active accounts
     },
     select: {
       id: true,
@@ -118,26 +118,13 @@ async function checkExpiredPasswords(): Promise<void> {
       await prisma.user.update({
         where: { id: teacher.id },
         data: {
-          isSuspended: true,
+          isActive: false,
+          accountSuspendedAt: new Date(),
           suspensionReason: "Default password expired",
         },
       });
 
       suspendedCount++;
-
-      // Create audit log
-      await prisma.securityAuditLog.create({
-        data: {
-          userId: teacher.id,
-          adminId: "SYSTEM",
-          action: "AUTO_SUSPEND",
-          reason: "Default password expired",
-          metadata: {
-            expiredAt: teacher.passwordExpiresAt?.toISOString(),
-            suspendedAt: new Date().toISOString(),
-          },
-        },
-      });
 
       console.log(`🚫 Suspended: ${teacher.firstName} ${teacher.lastName}`);
 
