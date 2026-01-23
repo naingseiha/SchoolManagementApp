@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { Permission } from "../permissions";
 
 // Types
 export interface AdminAccount {
@@ -8,7 +9,9 @@ export interface AdminAccount {
   firstName: string;
   lastName: string;
   isActive: boolean;
+  isSuperAdmin: boolean;
   isDefaultPassword: boolean;
+  permissions: any;
   passwordChangedAt: string | null;
   lastLogin: string | null;
   createdAt: string;
@@ -42,6 +45,17 @@ export interface CreateAdminRequest {
 export interface ToggleStatusRequest {
   isActive: boolean;
   reason?: string;
+}
+
+export interface AdminPermissions {
+  adminId: string;
+  adminName: string;
+  isSuperAdmin: boolean;
+  permissions: string[];
+}
+
+export interface UpdatePermissionsRequest {
+  permissions: string[];
 }
 
 export const adminManagementApi = {
@@ -157,6 +171,84 @@ export const adminManagementApi = {
       return data;
     } catch (error: any) {
       console.error("❌ Error deleting admin account:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get available permissions
+   */
+  async getAvailablePermissions(): Promise<Record<string, any>> {
+    try {
+      console.log("📋 Fetching available permissions...");
+      const data = await apiClient.get<Record<string, any>>(
+        "/admin/permissions/available"
+      );
+      console.log("✅ Permissions fetched");
+      return data;
+    } catch (error: any) {
+      console.error("❌ Error fetching permissions:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get admin permissions
+   */
+  async getAdminPermissions(adminId: string): Promise<AdminPermissions> {
+    try {
+      console.log(`📋 Fetching permissions for admin: ${adminId}`);
+      const data = await apiClient.get<AdminPermissions>(
+        `/admin/admins/${adminId}/permissions`
+      );
+      console.log("✅ Admin permissions fetched:", data);
+      return data;
+    } catch (error: any) {
+      console.error("❌ Error fetching admin permissions:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update admin permissions
+   */
+  async updateAdminPermissions(
+    adminId: string,
+    request: UpdatePermissionsRequest
+  ): Promise<{ message: string; adminId: string; permissions: string[] }> {
+    try {
+      console.log(`🔐 Updating permissions for admin: ${adminId}`);
+      const data = await apiClient.put<{
+        message: string;
+        adminId: string;
+        permissions: string[];
+      }>(`/admin/admins/${adminId}/permissions`, request);
+      console.log("✅ Permissions updated successfully");
+      return data;
+    } catch (error: any) {
+      console.error("❌ Error updating permissions:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Set Super Admin status
+   */
+  async setSuperAdmin(
+    adminId: string,
+    isSuperAdmin: boolean
+  ): Promise<{ message: string; adminId: string; isSuperAdmin: boolean }> {
+    try {
+      console.log(`👑 Setting Super Admin status: ${isSuperAdmin}`);
+      const data = await apiClient.put<{
+        message: string;
+        adminId: string;
+        isSuperAdmin: boolean;
+      }>(`/admin/admins/${adminId}/super-admin`, { isSuperAdmin });
+      console.log("✅ Super Admin status updated");
+      return data;
+    } catch (error: any) {
+      console.error("❌ Error setting Super Admin status:", error);
       throw error;
     }
   },

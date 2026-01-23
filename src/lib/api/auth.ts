@@ -16,6 +16,7 @@ export interface User {
   teacher?: any;
   student?: any;
   permissions?: any;
+  isSuperAdmin?: boolean;
 }
 
 interface LoginResponseData {

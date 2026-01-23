@@ -22,8 +22,8 @@ model Attendance {
 
   @@unique([studentId, classId, date, session])
   @@index([classId, date])
-  @@index([studentId, date]) // ✅ OPTIMIZED PHASE 5: For student attendance lookups
-  @@index([date, status]) // ✅ OPTIMIZED PHASE 5: For daily attendance reports
+  @@index([studentId, date])
+  @@index([date, status])
   @@map("attendance")
 }
 
@@ -71,8 +71,8 @@ model Grade {
 
   @@unique([studentId, subjectId, classId, month, year])
   @@index([classId, month, year])
-  @@index([studentId, month, year]) // ✅ OPTIMIZED PHASE 5: For student grade lookups
-  @@index([subjectId, classId]) // ✅ OPTIMIZED PHASE 5: For subject-based queries
+  @@index([studentId, month, year])
+  @@index([subjectId, classId])
   @@map("grades")
 }
 
@@ -115,8 +115,8 @@ model StudentMonthlySummary {
 
   @@unique([studentId, classId, month, year])
   @@index([classId, month, year])
-  @@index([studentId, year]) // ✅ OPTIMIZED PHASE 5: For student summary lookups
-  @@index([month, year, average]) // ✅ OPTIMIZED PHASE 5: For ranking queries
+  @@index([studentId, year])
+  @@index([month, year, average])
   @@map("student_monthly_summaries")
 }
 
@@ -157,10 +157,10 @@ model Student {
   previousSchool       String?
   repeatingGrade       String?
   transferredFrom      String?
-  studentRole          StudentRole             @default(GENERAL)
-  isAccountActive      Boolean                 @default(true)
   accountDeactivatedAt DateTime?
   deactivationReason   String?
+  isAccountActive      Boolean                 @default(true)
+  studentRole          StudentRole             @default(GENERAL)
   attendance           Attendance[]
   grades               Grade[]
   monthlySummaries     StudentMonthlySummary[]
@@ -168,11 +168,11 @@ model Student {
   class                Class?                  @relation(fields: [classId], references: [id])
   user                 User?
 
-  @@index([classId]) // ✅ OPTIMIZED PHASE 5: For class-based student queries
-  @@index([grade12PassStatus]) // ✅ OPTIMIZED PHASE 5: For filtering by pass status
-  @@index([gender]) // ✅ OPTIMIZED PHASE 5: For gender-based statistics
-  @@index([isAccountActive]) // For filtering active/inactive accounts
-  @@index([classId, studentRole]) // For querying class leaders
+  @@index([classId])
+  @@index([grade12PassStatus])
+  @@index([gender])
+  @@index([isAccountActive])
+  @@index([classId, studentRole])
   @@map("students")
 }
 
@@ -193,8 +193,8 @@ model Parent {
   isAccountActive Boolean            @default(true)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
-  user            User?
   studentParents  StudentParent[]
+  user            User?
 
   @@index([phone, isAccountActive])
   @@index([email, isAccountActive])
@@ -209,8 +209,8 @@ model StudentParent {
   relationship ParentRelationship
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
-  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
   parent       Parent             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student      Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, parentId])
   @@index([studentId])
@@ -324,23 +324,23 @@ model User {
   phone               String?             @unique
   studentId           String?             @unique
   teacherId           String?             @unique
-  parentId            String?             @unique
   role                UserRole            @default(TEACHER)
-  isDefaultPassword   Boolean             @default(true)
-  passwordExpiresAt   DateTime?
-  passwordChangedAt   DateTime?
-  passwordResetToken  String?             @unique
-  passwordResetExpiry DateTime?
   accountSuspendedAt  DateTime?
-  suspensionReason    String?
+  isDefaultPassword   Boolean             @default(true)
+  isSuperAdmin        Boolean             @default(false)
   lastPasswordHashes  String[]
-  gradeConfirmations  GradeConfirmation[]
-  student             Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher             Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  parent              Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  passwordChangedAt   DateTime?
+  passwordExpiresAt   DateTime?
+  passwordResetExpiry DateTime?
+  passwordResetToken  String?             @unique
+  suspensionReason    String?
+  parentId            String?             @unique
   adminAuditLogs      AuditLog[]          @relation("AuditLogAdmin")
   teacherAuditLogs    AuditLog[]          @relation("AuditLogTeacher")
-  notificationLogs    NotificationLog[]   @relation("NotificationLog")
+  gradeConfirmations  GradeConfirmation[]
+  parent              Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student             Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher             Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -349,6 +349,23 @@ model User {
   @@index([isDefaultPassword])
   @@index([passwordExpiresAt])
   @@map("users")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  teacherId String
+  action    String
+  reason    String?
+  details   Json?
+  createdAt DateTime @default(now())
+  admin     User     @relation("AuditLogAdmin", fields: [adminId], references: [id])
+  teacher   User     @relation("AuditLogTeacher", fields: [teacherId], references: [id])
+
+  @@index([adminId])
+  @@index([teacherId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 enum AttendanceSession {
@@ -414,35 +431,4 @@ enum ParentRelationship {
   STEP_MOTHER
   GRANDPARENT
   OTHER
-}
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  adminId   String
-  teacherId String
-  action    String
-  reason    String?
-  details   Json?
-  createdAt DateTime @default(now())
-  admin     User     @relation("AuditLogAdmin", fields: [adminId], references: [id])
-  teacher   User     @relation("AuditLogTeacher", fields: [teacherId], references: [id])
-
-  @@index([adminId])
-  @@index([teacherId])
-  @@index([createdAt])
-  @@map("audit_logs")
-}
-
-model NotificationLog {
-  id       String   @id @default(cuid())
-  userId   String
-  type     String
-  metadata Json?
-  sentAt   DateTime @default(now())
-  user     User     @relation("NotificationLog", fields: [userId], references: [id])
-
-  @@index([userId])
-  @@index([sentAt])
-  @@index([type])
-  @@map("notification_logs")
 }

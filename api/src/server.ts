@@ -1,8 +1,11 @@
+// Load environment variables FIRST (before any imports that use them)
+import dotenv from "dotenv";
+dotenv.config();
+
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression"; // ✅ OPTIMIZED: Add gzip compression
-import dotenv from "dotenv";
 import {
   connectDatabase,
   startKeepAlive,
@@ -32,9 +35,6 @@ import attendanceRoutes from "./routes/attendance.routes";
 import exportRoutes from "./routes/export.routes";
 import reportRoutes from "./routes/report.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
-
-// Load environment variables
-dotenv.config();
 
 // Initialize Express app
 const app: Application = express();

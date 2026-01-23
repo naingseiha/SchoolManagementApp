@@ -27,6 +27,8 @@ import {
   Eye,
 } from "lucide-react";
 import { adminManagementApi, AdminAccount } from "@/lib/api/admin-management";
+import PermissionModal from "@/components/admin/modals/PermissionModal";
+import { SuperAdminBadge, PermissionSummary } from "@/components/admin/PermissionBadge";
 
 export default function AdminManagementPage() {
   const { isAuthenticated, currentUser, isLoading: authLoading } = useAuth();
@@ -47,6 +49,7 @@ export default function AdminManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -292,6 +295,10 @@ Are you absolutely sure you want to delete this admin?`;
             }}
             onToggleStatus={handleToggleStatus}
             onDelete={handleDeleteAdmin}
+            onManagePermissions={(admin) => {
+              setSelectedAdmin(admin);
+              setShowPermissionModal(true);
+            }}
           />
         ))}
       </div>
@@ -329,6 +336,25 @@ Are you absolutely sure you want to delete this admin?`;
             setCurrentPassword("");
             setPasswordError("");
             setShowPassword(false);
+          }}
+        />
+      )}
+
+      {/* Permission Modal */}
+      {showPermissionModal && selectedAdmin && (
+        <PermissionModal
+          adminId={selectedAdmin.id}
+          adminName={`${selectedAdmin.firstName} ${selectedAdmin.lastName}`}
+          isSuperAdmin={selectedAdmin.isSuperAdmin || false}
+          onClose={() => {
+            setShowPermissionModal(false);
+            setSelectedAdmin(null);
+          }}
+          onSuccess={() => {
+            setToastMessage("Permissions updated successfully");
+            setShowSuccessToast(true);
+            setTimeout(() => setShowSuccessToast(false), 3000);
+            loadAdmins();
           }}
         />
       )}
@@ -376,14 +402,17 @@ function AdminCard({
   onPasswordChange,
   onToggleStatus,
   onDelete,
+  onManagePermissions,
 }: {
   admin: AdminAccount;
   currentUserId?: string;
   onPasswordChange: (admin: AdminAccount) => void;
   onToggleStatus: (admin: AdminAccount) => void;
   onDelete: (admin: AdminAccount) => void;
+  onManagePermissions: (admin: AdminAccount) => void;
 }) {
   const isCurrentUser = admin.id === currentUserId;
+  const permissionCount = admin.permissions?.adminPermissions?.length || 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all">
@@ -394,9 +423,12 @@ function AdminCard({
             <Shield className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-900 font-battambang">
-              {admin.firstName} {admin.lastName}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900 font-battambang">
+                {admin.firstName} {admin.lastName}
+              </h3>
+              {admin.isSuperAdmin && <SuperAdminBadge />}
+            </div>
             {isCurrentUser && (
               <span className="text-xs text-indigo-600 font-semibold">
                 (You)
@@ -458,16 +490,30 @@ function AdminCard({
         )}
       </div>
 
+      {/* Permission Summary */}
+      <PermissionSummary
+        permissionCount={permissionCount}
+        isSuperAdmin={admin.isSuperAdmin}
+        className="mb-4 pb-4 border-b border-gray-100"
+      />
+
       {/* Actions */}
-      <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => onManagePermissions(admin)}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all text-sm"
+        >
+          <Shield className="w-4 h-4" />
+          Permissions
+        </button>
         <button
           onClick={() => onPasswordChange(admin)}
           className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all text-sm"
         >
           <Key className="w-4 h-4" />
-          Change Password
+          Password
         </button>
-        {!isCurrentUser && (
+        {!isCurrentUser && !admin.isSuperAdmin && (
           <>
             <button
               onClick={() => onToggleStatus(admin)}
