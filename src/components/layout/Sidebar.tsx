@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, memo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
   LayoutDashboard,
   Users,
@@ -26,6 +28,7 @@ function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser } = useAuth();
+  const { hasPermission, isSuperAdmin } = usePermissions();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [targetPath, setTargetPath] = useState<string | null>(null);
@@ -39,6 +42,7 @@ function Sidebar() {
       label: "ផ្ទាំងគ្រប់គ្រង",
       href: "/",
       roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.VIEW_DASHBOARD,
       gradient: "from-blue-500 to-cyan-500",
     },
     {
@@ -46,6 +50,7 @@ function Sidebar() {
       label: "សិស្ស",
       href: "/students",
       roles: ["ADMIN"],
+      permission: PERMISSIONS.MANAGE_STUDENTS,
       gradient: "from-purple-500 to-pink-500",
     },
     {
@@ -53,6 +58,7 @@ function Sidebar() {
       label: "គ្រូបង្រៀន",
       href: "/teachers",
       roles: ["ADMIN"],
+      permission: PERMISSIONS.MANAGE_TEACHERS,
       gradient: "from-green-500 to-emerald-500",
     },
     {
@@ -60,6 +66,7 @@ function Sidebar() {
       label: "ថ្នាក់រៀន",
       href: "/classes",
       roles: ["ADMIN"],
+      permission: PERMISSIONS.MANAGE_CLASSES,
       gradient: "from-orange-500 to-red-500",
     },
     {
@@ -67,6 +74,7 @@ function Sidebar() {
       label: "មុខវិជ្ជា",
       href: "/subjects",
       roles: ["ADMIN"],
+      permission: PERMISSIONS.MANAGE_SUBJECTS,
       gradient: "from-indigo-500 to-purple-500",
     },
     {
@@ -74,6 +82,7 @@ function Sidebar() {
       label: "ពិន្ទុ",
       href: "/grade-entry",
       roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.MANAGE_GRADES,
       gradient: "from-yellow-500 to-orange-500",
     },
     {
@@ -81,6 +90,7 @@ function Sidebar() {
       label: "វត្តមាន",
       href: "/attendance",
       roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.MANAGE_ATTENDANCE,
       gradient: "from-teal-500 to-cyan-500",
     },
     {
@@ -88,6 +98,7 @@ function Sidebar() {
       label: "របាយការណ៍",
       href: "/reports/monthly",
       roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.VIEW_REPORTS,
       gradient: "from-pink-500 to-rose-500",
     },
     {
@@ -95,6 +106,7 @@ function Sidebar() {
       label: "តារាងកិត្តិយស",
       href: "/reports/award",
       roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.VIEW_AWARD_REPORT,
       gradient: "from-pink-500 to-rose-500",
     },
     {
@@ -102,6 +114,7 @@ function Sidebar() {
       label: "សៀវភៅតាមដានសិស្ស",
       href: "/reports/tracking-book",
       roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.VIEW_TRACKING_BOOK,
       gradient: "from-pink-500 to-rose-500",
     },
     {
@@ -109,13 +122,33 @@ function Sidebar() {
       label: "ការកំណត់",
       href: "/settings",
       roles: ["ADMIN"],
+      permission: PERMISSIONS.VIEW_SETTINGS,
       gradient: "from-gray-500 to-slate-500",
     },
   ];
 
-  const filteredMenuItems = menuItems.filter((item) =>
-    item.roles.includes(userRole || "")
-  );
+  // Filter menu items based on role AND permissions
+  const filteredMenuItems = menuItems.filter((item) => {
+    // Check if user has the required role
+    if (!item.roles.includes(userRole || "")) return false;
+    
+    // For ADMIN users, check permissions (unless Super Admin)
+    if (userRole === "ADMIN" && item.permission) {
+      // Super Admins see everything
+      if (isSuperAdmin) {
+        console.log(`✅ [SIDEBAR] ${item.label}: Super Admin - showing`);
+        return true;
+      }
+      
+      // Regular admins need specific permission
+      const hasAccess = hasPermission(item.permission);
+      console.log(`🔍 [SIDEBAR] ${item.label}: Permission ${item.permission} = ${hasAccess}`);
+      return hasAccess;
+    }
+    
+    // TEACHER users see all teacher-allowed items
+    return true;
+  });
 
   const getRoleDisplay = (userRole?: string, teacherRole?: string) => {
     if (userRole === "ADMIN") {

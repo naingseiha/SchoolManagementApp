@@ -1,8 +1,11 @@
+// Load environment variables FIRST (before any imports that use them)
+import dotenv from "dotenv";
+dotenv.config();
+
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression"; // ✅ OPTIMIZED: Add gzip compression
-import dotenv from "dotenv";
 import {
   connectDatabase,
   startKeepAlive,
@@ -19,6 +22,7 @@ import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
 import adminSecurityRoutes from "./routes/admin-security.routes";
 import adminParentsRoutes from "./routes/admin.parents.routes";
+import adminManagementRoutes from "./routes/admin-management.routes";
 import studentRoutes from "./routes/student.routes";
 import studentPortalRoutes from "./routes/student-portal.routes";
 import teacherRoutes from "./routes/teacher.routes";
@@ -31,9 +35,6 @@ import attendanceRoutes from "./routes/attendance.routes";
 import exportRoutes from "./routes/export.routes";
 import reportRoutes from "./routes/report.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
-
-// Load environment variables
-dotenv.config();
 
 // Initialize Express app
 const app: Application = express();
@@ -116,6 +117,7 @@ app.get("/api/health", (req: Request, res: Response) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminManagementRoutes);
 app.use("/api/admin/security", adminSecurityRoutes);
 app.use("/api/admin/parents", adminParentsRoutes);
 app.use("/api/dashboard", dashboardRoutes);

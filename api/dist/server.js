@@ -18,6 +18,7 @@ const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
 const admin_security_routes_1 = __importDefault(require("./routes/admin-security.routes"));
 const admin_parents_routes_1 = __importDefault(require("./routes/admin.parents.routes"));
+const admin_management_routes_1 = __importDefault(require("./routes/admin-management.routes"));
 const student_routes_1 = __importDefault(require("./routes/student.routes"));
 const student_portal_routes_1 = __importDefault(require("./routes/student-portal.routes"));
 const teacher_routes_1 = __importDefault(require("./routes/teacher.routes"));
@@ -101,6 +102,7 @@ app.get("/api/health", (req, res) => {
 // API Routes
 app.use("/api/auth", auth_routes_1.default);
 app.use("/api/admin", admin_routes_1.default);
+app.use("/api/admin", admin_management_routes_1.default);
 app.use("/api/admin/security", admin_security_routes_1.default);
 app.use("/api/admin/parents", admin_parents_routes_1.default);
 app.use("/api/dashboard", dashboard_routes_1.default);
