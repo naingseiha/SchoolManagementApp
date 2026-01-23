@@ -13,6 +13,7 @@ interface AuthContextType {
   ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
+  isVerifyingWithServer: boolean; // ✅ NEW: Track server verification status
   error: string | null;
 }
 
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifyingWithServer, setIsVerifyingWithServer] = useState(false); // ✅ NEW
   const [error, setError] = useState<string | null>(null); // ✅ ADDED
   const router = useRouter();
 
@@ -54,9 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setCurrentUser(parsedUser);
           setIsAuthenticated(true);
           setIsLoading(false); // Set loading to false immediately for better UX
+          setIsVerifyingWithServer(true); // ✅ NEW: Indicate server verification in progress
         } catch (e) {
           console.log("⚠️ Failed to parse cached user, will verify with server");
         }
+      } else {
+        setIsVerifyingWithServer(true); // ✅ NEW: No cache, verifying with server
       }
 
       try {
@@ -80,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCurrentUser(user);
         setIsAuthenticated(true);
         setError(null);
+        setIsVerifyingWithServer(false); // ✅ NEW: Server verification complete
         // Update localStorage with fresh user data
         localStorage.setItem("user", JSON.stringify(user));
         console.log("✅ Auth state updated with fresh data");
@@ -100,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAuthenticated(false);
             setIsLoading(false);
           }
+          setIsVerifyingWithServer(false); // ✅ NEW: Stop verification flag
           setError("មានបញ្ហាក្នុងការភ្ជាប់ទៅ server • Connection timeout - will retry");
           console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
           return;
@@ -115,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem("token");
           setCurrentUser(null);
           setIsAuthenticated(false);
+          setIsVerifyingWithServer(false); // ✅ NEW: Stop verification flag
           setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Please login again");
         } else if (
           error.message?.includes("expired") ||
@@ -161,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             localStorage.removeItem("token");
             setCurrentUser(null);
             setIsAuthenticated(false);
+            setIsVerifyingWithServer(false); // ✅ NEW: Stop verification flag
             setError("សូមចូលប្រើប្រាស់ម្តងទៀត • Session expired");
           }
         } else {
@@ -170,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setCurrentUser(null);
             setIsAuthenticated(false);
           }
+          setIsVerifyingWithServer(false); // ✅ NEW: Stop verification flag
           setError("មានបញ្ហាក្នុងការភ្ជាប់ទៅ server • Connection error - using cached data");
         }
       } finally {
@@ -177,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!cachedUser) {
           setIsLoading(false);
         }
+        setIsVerifyingWithServer(false); // ✅ NEW: Ensure flag is always cleared
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       }
     };
@@ -291,6 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         isLoading,
+        isVerifyingWithServer, // ✅ NEW: Add server verification flag
         error, // ✅ ADDED:  Provide error
       }}
     >

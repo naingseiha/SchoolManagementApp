@@ -86,7 +86,7 @@ export default function MobileGradeEntry({
   const router = useRouter();
   const pathname = usePathname();
   const { classes, isLoadingClasses, refreshClasses } = useData();
-  const { currentUser, isLoading: authLoading } = useAuth();
+  const { currentUser, isLoading: authLoading, isVerifyingWithServer } = useAuth();
   const searchParams = useSearchParams();
 
   // ✅ Read classId from URL params or props
@@ -152,21 +152,30 @@ export default function MobileGradeEntry({
   // ✅ Load classes if empty - ensure this runs on mount and when auth is ready
   // Add a forced refresh on component mount to handle PWA first-load issues
   const mountedRef = useRef(false);
+  const classLoadAttempts = useRef(0);
+  const MAX_LOAD_ATTEMPTS = 3;
   
   useEffect(() => {
-    if (!authLoading && currentUser) {
+    if (!authLoading && !isVerifyingWithServer && currentUser && classLoadAttempts.current < MAX_LOAD_ATTEMPTS) {
       if (!mountedRef.current) {
         // Force refresh on first mount
         console.log("📚 MobileGradeEntry: First mount, forcing class refresh...");
         mountedRef.current = true;
+        classLoadAttempts.current++;
         refreshClasses();
       } else if (classes.length === 0 && !isLoadingClasses) {
-        // Retry if classes are still empty
-        console.log("📚 MobileGradeEntry: Classes empty after mount, retrying...");
-        refreshClasses();
+        // Retry if classes are still empty (with exponential backoff)
+        console.log(`📚 MobileGradeEntry: Classes empty after mount, retrying (attempt ${classLoadAttempts.current + 1})...`);
+        classLoadAttempts.current++;
+        const retryDelay = Math.min(1000 * Math.pow(2, classLoadAttempts.current - 1), 5000);
+        setTimeout(() => {
+          if (classes.length === 0 && !isLoadingClasses) {
+            refreshClasses();
+          }
+        }, retryDelay);
       }
     }
-  }, [authLoading, currentUser, classes.length, isLoadingClasses]);
+  }, [authLoading, isVerifyingWithServer, currentUser, classes.length, isLoadingClasses, refreshClasses]);
 
   // ✅ Auto-load data when class is pre-selected from URL/props
   useEffect(() => {
@@ -185,12 +194,25 @@ export default function MobileGradeEntry({
     console.log("🔄 MobileGradeEntry: Recalculating availableClasses", {
       currentUser: currentUser?.role,
       classesLength: classes.length,
-      isLoadingClasses
+      isLoadingClasses,
+      authLoading,
+      isVerifyingWithServer
     });
     
-    if (!currentUser) return [];
+    // Wait for auth and classes to finish loading
+    // IMPORTANT: Also wait for server verification to complete to ensure full user data
+    if (authLoading || isLoadingClasses || isVerifyingWithServer) {
+      console.log("⏳ Still loading auth, classes, or verifying with server...");
+      return [];
+    }
+    
+    if (!currentUser) {
+      console.log("❌ No current user");
+      return [];
+    }
 
     if (currentUser.role === "ADMIN") {
+      console.log("👨‍💼 Admin user - showing all classes:", classes.length);
       return classes;
     }
 
@@ -210,12 +232,12 @@ export default function MobileGradeEntry({
 
       const teacherClassIds = Array.from(classIdsSet);
       const filtered = classes.filter((c) => teacherClassIds.includes(c.id));
-      console.log("👨‍🏫 Teacher available classes:", filtered.length);
+      console.log("👨‍🏫 Teacher available classes:", filtered.length, "out of", classes.length);
       return filtered;
     }
 
     return [];
-  }, [currentUser, classes, isLoadingClasses]);
+  }, [currentUser, classes, isLoadingClasses, authLoading, isVerifyingWithServer]);
 
   const teacherEditableSubjects = useMemo(() => {
     if (!currentUser) return new Set<string>();
@@ -995,7 +1017,7 @@ export default function MobileGradeEntry({
                 ថ្នាក់ • Class
               </label>
               {/* Refresh button if no classes */}
-              {availableClasses.length === 0 && !isLoadingClasses && (
+              {availableClasses.length === 0 && !isLoadingClasses && !authLoading && !isVerifyingWithServer && (
                 <button
                   onClick={() => refreshClasses()}
                   className="text-xs px-3 py-1 bg-purple-500 text-white rounded-lg font-battambang hover:bg-purple-600 active:scale-95 transition-all"
@@ -1007,14 +1029,14 @@ export default function MobileGradeEntry({
             <select
               value={selectedClass}
               onChange={(e) => handleClassChange(e.target.value)}
-              disabled={isLoadingClasses}
+              disabled={isLoadingClasses || authLoading || isVerifyingWithServer}
               className="w-full h-12 px-4 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 transition-all"
               style={{ fontSize: "16px" }}
             >
               <option value="">
-                {isLoadingClasses 
+                {(isLoadingClasses || authLoading || isVerifyingWithServer)
                   ? "កំពុងផ្ទុក..." 
-                  : availableClasses.length === 0 && !isLoadingClasses
+                  : availableClasses.length === 0
                     ? "មិនមានថ្នាក់ • No classes"
                     : "-- ជ្រើសរើសថ្នាក់ --"}
               </option>
@@ -1025,9 +1047,9 @@ export default function MobileGradeEntry({
               ))}
             </select>
             {/* Debug info for development */}
-            {availableClasses.length === 0 && !isLoadingClasses && (
+            {availableClasses.length === 0 && !isLoadingClasses && !authLoading && !isVerifyingWithServer && (
               <p className="mt-2 text-xs text-gray-500 font-battambang">
-                Debug: classes={classes.length}, available={availableClasses.length}, loading={isLoadingClasses.toString()}
+                Debug: classes={classes.length}, available={availableClasses.length}, loading={isLoadingClasses.toString()}, authLoading={authLoading.toString()}, verifying={isVerifyingWithServer.toString()}
               </p>
             )}
           </div>

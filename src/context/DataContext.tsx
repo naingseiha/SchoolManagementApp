@@ -213,6 +213,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (classesResult.status === "fulfilled") {
         console.log("⚡ Classes loaded (lightweight):", classesResult.value.length);
         setClasses(classesResult.value);
+        setClassesLastFetched(Date.now());
       } else {
         console.warn("⚠️ Classes load failed:", classesResult.reason?.message || classesResult.reason);
         setClasses([]);
