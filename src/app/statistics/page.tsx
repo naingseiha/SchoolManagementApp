@@ -14,7 +14,6 @@ import {
   Trophy,
   Target,
   XCircle,
-  GitCompare,
   PieChart,
   Medal,
   Download,
@@ -273,11 +272,6 @@ export default function StatisticsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedGrade, setExpandedGrade] = useState<string | null>(null);
-  const [comparisonMode, setComparisonMode] = useState(false);
-  const [compareMonth, setCompareMonth] = useState(getCurrentKhmerMonth());
-  const [compareStats, setCompareStats] = useState<ComprehensiveStats | null>(
-    null,
-  );
   const [exporting, setExporting] = useState(false);
   const [selectedGradeFilter, setSelectedGradeFilter] = useState<string>("all");
   const [selectedDistributionGrade, setSelectedDistributionGrade] =
@@ -307,29 +301,9 @@ export default function StatisticsPage() {
     }
   }, [selectedMonth, selectedYear]);
 
-  const loadCompareStats = useCallback(async () => {
-    if (!comparisonMode) return;
-
-    try {
-      const data = await dashboardApi.getComprehensiveStats(
-        compareMonth,
-        selectedYear,
-      );
-      setCompareStats(data);
-    } catch (err) {
-      console.error("Error loading comparison stats:", err);
-    }
-  }, [comparisonMode, compareMonth, selectedYear]);
-
   useEffect(() => {
     loadStats();
   }, [loadStats]);
-
-  useEffect(() => {
-    if (comparisonMode) {
-      loadCompareStats();
-    }
-  }, [comparisonMode, loadCompareStats]);
 
   const handleExportPDF = async () => {
     setExporting(true);
@@ -500,154 +474,39 @@ export default function StatisticsPage() {
               </div>
             </div>
 
-            {/* Month & Year Selector */}
-            <div className="flex gap-4 items-end flex-wrap">
-              {!comparisonMode ? (
-                <>
-                  {/* Month Selector - Modern Card Design */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-5 shadow-md border-2 border-gray-200 hover:border-indigo-300 transition-all min-w-[200px]">
-                    <label className="block font-khmer-body text-xs text-gray-500 font-bold mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-indigo-600" />
-                      </div>
-                      ខែ
-                    </label>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="w-full h-11 px-4 text-base font-khmer-body font-bold bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer hover:border-gray-300"
-                    >
-                      {MONTHS.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            {/* Month & Year Selector - Clean Design */}
+            <div className="flex gap-3 items-center">
+              {/* Month Selector */}
+              <div className="flex items-center gap-2 bg-white rounded-lg px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <Calendar className="w-4 h-4 text-indigo-600" />
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="font-khmer-body font-bold text-sm bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer text-gray-700"
+                >
+                  {MONTHS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                  {/* Year Selector - Modern Card Design */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-5 shadow-md border-2 border-gray-200 hover:border-indigo-300 transition-all min-w-[180px]">
-                    <label className="block font-khmer-body text-xs text-gray-500 font-bold mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-purple-600" />
-                      </div>
-                      ឆ្នាំសិក្សា
-                    </label>
-                    <select
-                      value={selectedYear.toString()}
-                      onChange={(e) =>
-                        setSelectedYear(parseInt(e.target.value))
-                      }
-                      className="w-full h-11 px-4 text-base font-khmer-body font-bold bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all cursor-pointer hover:border-gray-300"
-                    >
-                      {getAcademicYearOptions().map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Compare Button - Enhanced Design */}
-                  <button
-                    onClick={() => setComparisonMode(true)}
-                    className="h-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-khmer-body font-bold rounded-2xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-600/40 hover:-translate-y-0.5 flex items-center gap-3 border-2 border-blue-400 hover:border-blue-300"
-                  >
-                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                      <GitCompare className="w-5 h-5" />
-                    </div>
-                    <span className="text-base">ប្រៀបធៀប</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  {/* First Month - Blue Theme */}
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-5 shadow-lg border-2 border-blue-300 hover:border-blue-400 transition-all min-w-[200px]">
-                    <label className="block font-khmer-body text-xs text-blue-700 font-bold mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 bg-blue-200 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-blue-700" />
-                      </div>
-                      ខែទី១
-                    </label>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="w-full h-11 px-4 text-base font-khmer-body font-bold bg-white border-2 border-blue-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
-                    >
-                      {MONTHS.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* VS Separator - Enhanced */}
-                  <div className="flex items-center justify-center">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <span className="text-white font-black text-lg">VS</span>
-                    </div>
-                  </div>
-
-                  {/* Second Month - Orange Theme */}
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-5 shadow-lg border-2 border-orange-300 hover:border-orange-400 transition-all min-w-[200px]">
-                    <label className="block font-khmer-body text-xs text-orange-700 font-bold mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 bg-orange-200 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-orange-700" />
-                      </div>
-                      ខែទី២
-                    </label>
-                    <select
-                      value={compareMonth}
-                      onChange={(e) => setCompareMonth(e.target.value)}
-                      className="w-full h-11 px-4 text-base font-khmer-body font-bold bg-white border-2 border-orange-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all cursor-pointer"
-                    >
-                      {MONTHS.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Year Selector */}
-                  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-5 shadow-md border-2 border-gray-200 hover:border-indigo-300 transition-all min-w-[180px]">
-                    <label className="block font-khmer-body text-xs text-gray-500 font-bold mb-3 flex items-center gap-2">
-                      <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-purple-600" />
-                      </div>
-                      ឆ្នាំសិក្សា
-                    </label>
-                    <select
-                      value={selectedYear.toString()}
-                      onChange={(e) =>
-                        setSelectedYear(parseInt(e.target.value))
-                      }
-                      className="w-full h-11 px-4 text-base font-khmer-body font-bold bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all cursor-pointer hover:border-gray-300"
-                    >
-                      {getAcademicYearOptions().map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Close Comparison Button - Enhanced */}
-                  <button
-                    onClick={() => {
-                      setComparisonMode(false);
-                      setCompareStats(null);
-                    }}
-                    className="h-auto px-6 py-3.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-khmer-body font-bold rounded-2xl hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg shadow-gray-500/30 hover:shadow-xl hover:shadow-gray-600/40 hover:-translate-y-0.5 flex items-center gap-3 border-2 border-gray-400 hover:border-gray-300"
-                  >
-                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                      <XCircle className="w-5 h-5" />
-                    </div>
-                    <span className="text-base">បិទការប្រៀបធៀប</span>
-                  </button>
-                </>
-              )}
+              {/* Year Selector */}
+              <div className="flex items-center gap-2 bg-white rounded-lg px-4 py-2 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                <Calendar className="w-4 h-4 text-purple-600" />
+                <select
+                  value={selectedYear.toString()}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="font-khmer-body font-bold text-sm bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer text-gray-700"
+                >
+                  {getAcademicYearOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
