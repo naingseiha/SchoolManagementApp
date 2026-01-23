@@ -181,6 +181,40 @@ export const login = async (req: Request, res: Response) => {
             position: true,
             homeroomClassId: true,
             phone: true,
+            homeroomClass: {
+              select: {
+                id: true,
+                name: true,
+                grade: true,
+              },
+            },
+            subjectTeachers: {
+              select: {
+                id: true,
+                subjectId: true,
+                subject: {
+                  select: {
+                    id: true,
+                    code: true,
+                    name: true,
+                    nameKh: true,
+                  },
+                },
+              },
+            },
+            teacherClasses: {
+              select: {
+                id: true,
+                classId: true,
+                class: {
+                  select: {
+                    id: true,
+                    name: true,
+                    grade: true,
+                  },
+                },
+              },
+            },
           },
         },
         parent: {

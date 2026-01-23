@@ -67,13 +67,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log("🔐 Verifying token with server...");
 
+        // ✅ Clear any cached /auth/me responses to ensure fresh data
+        if (typeof window !== "undefined") {
+          apiClient.clearCache();
+        }
+
         // ✅ Increased timeout to 15s to prevent false timeouts on slow networks
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("AUTH_TIMEOUT")), 15000)
         );
 
-        // Use cached request to speed up repeated auth checks
-        const authCheckPromise = authApi.getCurrentUser(true); // Pass true for caching
+        // Don't use cache for checkAuth - always get fresh data
+        const authCheckPromise = authApi.getCurrentUser(false); // Pass false to bypass cache
 
         const user = await Promise.race([
           authCheckPromise,
