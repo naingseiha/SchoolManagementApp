@@ -19,6 +19,7 @@ import authRoutes from "./routes/auth.routes";
 import adminRoutes from "./routes/admin.routes";
 import adminSecurityRoutes from "./routes/admin-security.routes";
 import adminParentsRoutes from "./routes/admin.parents.routes";
+import adminManagementRoutes from "./routes/admin-management.routes";
 import studentRoutes from "./routes/student.routes";
 import studentPortalRoutes from "./routes/student-portal.routes";
 import teacherRoutes from "./routes/teacher.routes";
@@ -116,6 +117,7 @@ app.get("/api/health", (req: Request, res: Response) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminManagementRoutes);
 app.use("/api/admin/security", adminSecurityRoutes);
 app.use("/api/admin/parents", adminParentsRoutes);
 app.use("/api/dashboard", dashboardRoutes);

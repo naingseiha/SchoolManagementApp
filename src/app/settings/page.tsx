@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { adminSecurityApi } from "@/lib/api/admin-security";
 import { adminApi } from "@/lib/api/admin";
+import { adminManagementApi } from "@/lib/api/admin-management";
 
 interface SettingsCard {
   id: string;
@@ -71,6 +72,7 @@ export default function SettingsPage() {
   const deviceType = useDeviceType();
   const [stats, setStats] = useState<any>(null);
   const [accountStats, setAccountStats] = useState<any>(null);
+  const [adminStats, setAdminStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -89,12 +91,14 @@ export default function SettingsPage() {
   const loadAllStats = async () => {
     try {
       setLoading(true);
-      const [dashboard, accounts] = await Promise.all([
+      const [dashboard, accounts, admins] = await Promise.all([
         adminSecurityApi.getDashboard(),
-        adminApi.getAccountStatistics().catch(() => null)
+        adminApi.getAccountStatistics().catch(() => null),
+        adminManagementApi.getAdminStatistics().catch(() => null)
       ]);
       setStats(dashboard);
       setAccountStats(accounts);
+      setAdminStats(admins);
     } catch (error) {
       console.error("Failed to load stats:", error);
     } finally {
@@ -120,6 +124,21 @@ export default function SettingsPage() {
   }
 
   const settingsCards: SettingsCard[] = [
+    {
+      id: "admins",
+      title: "គ្រប់គ្រងអ្នកគ្រប់គ្រង",
+      subtitle: "Admin Account Control",
+      description: "គ្រប់គ្រងគណនីអ្នកគ្រប់គ្រង ផ្លាស់ប្តូរពាក្យសម្ងាត់",
+      icon: UserCheck,
+      gradient: "from-indigo-500 via-purple-600 to-blue-600",
+      href: "/admin/admins",
+      count: adminStats?.totalAdmins || 0,
+      countLabel: "អ្នកគ្រប់គ្រង",
+      badge: adminStats?.activeAdmins 
+        ? `${adminStats.activeAdmins} សកម្ម` 
+        : undefined,
+      alertLevel: adminStats?.defaultPasswordCount > 0 ? "warning" : "success",
+    },
     {
       id: "students",
       title: "គ្រប់គ្រងសិស្ស",
@@ -195,6 +214,7 @@ export default function SettingsPage() {
           isAdmin={currentUser?.role === "ADMIN"} 
           stats={stats}
           accountStats={accountStats}
+          adminStats={adminStats}
           onRefresh={handleRefresh}
           router={router}
         />
@@ -216,6 +236,7 @@ export default function SettingsPage() {
             isAdmin={currentUser?.role === "ADMIN"} 
             stats={stats}
             accountStats={accountStats}
+            adminStats={adminStats}
             onRefresh={handleRefresh}
             router={router}
           />
@@ -232,6 +253,7 @@ function SettingsContent({
   isAdmin,
   stats,
   accountStats,
+  adminStats,
   onRefresh,
   router,
 }: {
@@ -241,6 +263,7 @@ function SettingsContent({
   isAdmin: boolean;
   stats: any;
   accountStats: any;
+  adminStats: any;
   onRefresh: () => void;
   router: any;
 }) {
@@ -339,7 +362,7 @@ function SettingsContent({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
             {cards.map((card) => (
               <EnhancedSettingsCard 
                 key={card.id} 
