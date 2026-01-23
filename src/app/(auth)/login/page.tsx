@@ -14,13 +14,20 @@ import {
   EyeOff,
   UserCircle,
   GraduationCap,
+  Sparkles,
 } from "lucide-react";
 
 type LoginMode = "teacher" | "student";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading, error: authError, isAuthenticated, currentUser } = useAuth();
+  const {
+    login,
+    isLoading,
+    error: authError,
+    isAuthenticated,
+    currentUser,
+  } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("teacher");
 
@@ -35,7 +42,6 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated && !isLoading && currentUser) {
       console.log("✅ User already authenticated, redirecting...");
-      // Redirect based on role
       if (currentUser.role === "STUDENT") {
         console.log("→ Redirecting student to student portal");
         router.push("/student-portal");
@@ -49,7 +55,6 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Prevent duplicate submissions
     if (isSubmitting || isLoading) {
       return;
     }
@@ -66,12 +71,10 @@ export default function LoginPage() {
       }
 
       await login({ identifier, password });
-      // On success, login function will redirect, so we don't need to do anything here
     } catch (err: any) {
       console.error("Login error:", err);
       setError(err.message || "ការចូលបរាជ័យ។ សូមពិនិត្យមើលព័ត៌មានរបស់អ្នក។");
     } finally {
-      // Always reset isSubmitting to ensure button doesn't get stuck
       setIsSubmitting(false);
     }
   };
@@ -97,67 +100,80 @@ export default function LoginPage() {
 
   const getPlaceholder = () => {
     if (loginMode === "student") {
-      return "បញ្ចូលលេខកូដសិស្ស / អ៊ីមែល / ទូរស័ព្ទ";
+      return "អត្តលេខ / អ៊ីមែល / ទូរស័ព្ទ";
     }
     return "បញ្ចូលលេខទូរស័ព្ទ ឬអ៊ីមែល";
   };
 
   const getInputLabel = () => {
     if (loginMode === "student") {
-      return "លេខកូដសិស្ស / អ៊ីមែល / ទូរស័ព្ទ";
+      return "អត្តលេខសិស្ស / អ៊ីមែល / ទូរស័ព្ទ";
     }
     return "លេខទូរស័ព្ទ ឬអ៊ីមែល";
   };
 
-  const inputType = formData.identifier.includes("@") ? "email" : "phone";
   const displayError = error || authError;
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
-      {/* Animated Background Pattern */}
+    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 safe-area-inset">
+      {/* Optimized Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-30">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-blob"></div>
-          <div className="absolute top-40 right-20 w-72 h-72 bg-yellow-200 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-40 w-72 h-72 bg-pink-200 rounded-full mix-blend-overlay filter blur-3xl animate-blob animation-delay-4000"></div>
+        {/* Gradient Mesh Background */}
+        <div className="absolute inset-0 opacity-40">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/30 via-purple-400/30 to-pink-400/30"></div>
+          <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-indigo-300 to-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-float"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-pink-300 to-rose-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-float-delayed"></div>
         </div>
 
-        {/* Decorative circles */}
-        <div className="absolute top-10 right-10 w-20 h-20 border-4 border-white/20 rounded-full"></div>
-        <div className="absolute bottom-20 left-10 w-32 h-32 border-4 border-white/10 rounded-full"></div>
-        <div className="absolute top-1/2 right-1/4 w-16 h-16 border-4 border-white/20 rounded-full"></div>
+        {/* Decorative Elements - Hidden on small mobile */}
+        <div className="hidden sm:block absolute top-10 right-10 w-20 h-20 border-2 border-white/20 rounded-full animate-pulse"></div>
+        <div className="hidden sm:block absolute bottom-20 left-10 w-32 h-32 border-2 border-white/10 rounded-full"></div>
+        <div className="hidden md:block absolute top-1/2 right-1/4 w-16 h-16 border-2 border-white/20 rounded-full"></div>
       </div>
 
       {/* Login Card */}
-      <div className="relative w-full max-w-md mx-6">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* Header Section */}
-          <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-8 py-12 text-center">
-            <div className="absolute inset-0 bg-black/5"></div>
+      <div className="relative w-full max-w-md mx-4 sm:mx-6 my-4 sm:my-8">
+        {/* Glassmorphism Card */}
+        <div className="backdrop-blur-xl bg-white/95 rounded-3xl shadow-2xl border border-white/20 overflow-hidden transform transition-all duration-500 hover:scale-[1.01]">
+          {/* Compact Header Section - Mobile Optimized */}
+          <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-6 py-8 sm:px-8 sm:py-10 text-center overflow-hidden">
+            {/* Animated Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+
+            {/* Sparkle Effect */}
+            <div className="absolute top-4 right-4 text-white/30 animate-pulse">
+              <Sparkles className="w-5 h-5" />
+            </div>
 
             <div className="relative">
-              {/* Icon */}
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl"></div>
-                  <div className="relative bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-lg">
-                    <BookOpen className="h-12 w-12 text-indigo-600" strokeWidth={2.5} />
+              {/* Compact Icon - Mobile Optimized */}
+              <div className="flex justify-center mb-4 sm:mb-5">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
+                  <div className="relative bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl shadow-lg transform transition-transform duration-300 group-hover:scale-110">
+                    <BookOpen
+                      className="h-10 w-10 sm:h-12 sm:w-12 text-indigo-600"
+                      strokeWidth={2.5}
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Title */}
-              <h1 className="font-khmer-title text-4xl text-white mb-2 drop-shadow-lg">
+              {/* Compact Title */}
+              <h1 className="font-moul text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg tracking-wide">
                 ប្រព័ន្ធគ្រប់គ្រងសាលា
               </h1>
-              <div className="w-20 h-1 bg-white/50 mx-auto rounded-full"></div>
+              <p className="text-white/90 text-xs sm:text-sm font-poppins tracking-wider mb-2">
+                School Management System
+              </p>
+              <div className="w-16 h-1 bg-white/50 mx-auto rounded-full"></div>
             </div>
           </div>
 
-          {/* Form Section */}
-          <div className="px-8 py-10">
-            {/* Login Mode Toggle */}
-            <div className="flex mb-6 bg-gray-100 rounded-xl p-1">
+          {/* Form Section - Enhanced Spacing */}
+          <div className="px-5 py-6 sm:px-8 sm:py-8">
+            {/* Modern Login Mode Toggle */}
+            <div className="flex gap-2 mb-6 bg-gradient-to-r from-gray-100 to-gray-50 rounded-2xl p-1.5 shadow-inner">
               <button
                 type="button"
                 onClick={() => {
@@ -165,13 +181,13 @@ export default function LoginPage() {
                   setFormData({ identifier: "", password: "" });
                   setError("");
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-khmer-body font-semibold transition-all duration-200 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-4 px-3 sm:px-4 rounded-xl font-koulen font-semibold text-sm sm:text-base transition-all duration-300 touch-manipulation ${
                   loginMode === "teacher"
-                    ? "bg-white text-indigo-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
+                    ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
                 }`}
               >
-                <BookOpen className="h-5 w-5" />
+                <BookOpen className="h-5 w-5 flex-shrink-0" />
                 <span>គ្រូ</span>
               </button>
               <button
@@ -181,40 +197,40 @@ export default function LoginPage() {
                   setFormData({ identifier: "", password: "" });
                   setError("");
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-khmer-body font-semibold transition-all duration-200 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-4 px-3 sm:px-4 rounded-xl font-koulen font-semibold text-sm sm:text-base transition-all duration-300 touch-manipulation ${
                   loginMode === "student"
-                    ? "bg-white text-purple-600 shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
+                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-105"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
                 }`}
               >
-                <GraduationCap className="h-5 w-5" />
+                <GraduationCap className="h-5 w-5 flex-shrink-0" />
                 <span>សិស្ស</span>
               </button>
             </div>
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Error Message */}
+            <form className="space-y-5 sm:space-y-6" onSubmit={handleSubmit}>
+              {/* Enhanced Error Message */}
               {displayError && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                  <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
-                    <span className="font-khmer-body text-sm text-red-800">
+                <div className="bg-gradient-to-r from-red-50 to-rose-50 border-l-4 border-red-500 p-4 rounded-xl shadow-sm animate-shake">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                    <span className="font-battambang text-sm text-red-800 leading-relaxed">
                       {displayError}
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Identifier Field */}
+              {/* Enhanced Identifier Field */}
               <div className="space-y-2">
                 <label
                   htmlFor="identifier"
-                  className="font-khmer-body block text-sm font-semibold text-gray-700"
+                  className="font-koulen block text-sm sm:text-base font-semibold text-gray-700 ml-1"
                 >
                   {getInputLabel()}
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 group-focus-within:text-indigo-600">
                     {getInputIcon()}
                   </div>
                   <input
@@ -225,27 +241,27 @@ export default function LoginPage() {
                     required
                     value={formData.identifier}
                     onChange={handleChange}
-                    className="font-khmer-body block w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                    className="font-battambang block w-full pl-12 pr-4 py-4 sm:py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
                     placeholder={getPlaceholder()}
                   />
                 </div>
-                <p className="font-khmer-body text-xs text-gray-500 ml-1">
+                <p className="font-battambang text-xs sm:text-sm text-gray-500 ml-2">
                   {loginMode === "teacher"
                     ? "គ្រូប្រើលេខទូរស័ព្ទ ចំណែកអ្នកគ្រប់គ្រងប្រើអ៊ីមែល"
                     : "សិស្សប្រើលេខកូដសិស្ស ឬអ៊ីមែល ឬទូរស័ព្ទ"}
                 </p>
               </div>
 
-              {/* Password Field */}
+              {/* Enhanced Password Field */}
               <div className="space-y-2">
                 <label
                   htmlFor="password"
-                  className="font-khmer-body block text-sm font-semibold text-gray-700"
+                  className="font-koulen block text-sm sm:text-base font-semibold text-gray-700 ml-1"
                 >
                   ពាក្យសម្ងាត់
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 group-focus-within:text-indigo-600">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -256,13 +272,16 @@ export default function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="font-khmer-body block w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                    className="font-battambang block w-full pl-12 pr-14 py-4 sm:py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
                     placeholder="បញ្ចូលពាក្យសម្ងាត់"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-indigo-600 transition-all duration-200 touch-manipulation active:scale-95"
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -273,12 +292,13 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Submit Button */}
+              {/* Enhanced Submit Button - Mobile Optimized */}
               <button
                 type="submit"
                 disabled={isSubmitting || isLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-khmer-body font-semibold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-koulen font-bold py-4 sm:py-5 px-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center text-base sm:text-lg touch-manipulation relative overflow-hidden group"
               >
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                 {isSubmitting || isLoading ? (
                   <>
                     <Loader2 className="animate-spin h-5 w-5 mr-2" />
@@ -291,51 +311,84 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
-
-              {/* Student Login Link */}
-              {loginMode === "teacher" && (
-                <div className="text-center pt-4 border-t border-gray-200">
-                  <p className="font-khmer-body text-sm text-gray-600 mb-2">
-                    តើអ្នកជាសិស្សទេ?
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => window.location.href = "/student-login"}
-                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-khmer-body font-semibold"
-                  >
-                    <GraduationCap className="w-5 h-5" />
-                    <span>ចូលសម្រាប់សិស្ស</span>
-                  </button>
-                </div>
-              )}
             </form>
           </div>
         </div>
 
-        {/* Footer */}
-        <p className="font-khmer-body text-center text-sm text-white/80 mt-6 drop-shadow-lg">
+        {/* Footer - Compact on Mobile */}
+        <p className="font-battambang text-center text-xs sm:text-sm text-white/90 mt-4 sm:mt-6 drop-shadow-lg px-4">
           © ២០២៥ ប្រព័ន្ធគ្រប់គ្រងសាលា។ រក្សាសិទ្ធិគ្រប់យ៉ាង។
         </p>
       </div>
 
       <style jsx>{`
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          25% { transform: translate(20px, -50px) scale(1.1); }
-          50% { transform: translate(-20px, 20px) scale(0.9); }
-          75% { transform: translate(50px, 50px) scale(1.05); }
+        @keyframes float {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(30px, -30px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
         }
 
-        .animate-blob {
-          animation: blob 7s infinite;
+        @keyframes float-delayed {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(-30px, 30px) scale(1.1);
+          }
+          66% {
+            transform: translate(20px, -20px) scale(0.9);
+          }
         }
 
-        .animation-delay-2000 {
-          animation-delay: 2s;
+        @keyframes shake {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-5px);
+          }
+          75% {
+            transform: translateX(5px);
+          }
         }
 
-        .animation-delay-4000 {
-          animation-delay: 4s;
+        .animate-float {
+          animation: float 15s ease-in-out infinite;
+        }
+
+        .animate-float-delayed {
+          animation: float-delayed 20s ease-in-out infinite;
+        }
+
+        .animate-shake {
+          animation: shake 0.3s ease-in-out;
+        }
+
+        .safe-area-inset {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .touch-manipulation {
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-float,
+          .animate-float-delayed,
+          .animate-pulse {
+            animation: none;
+          }
         }
       `}</style>
     </div>
