@@ -314,11 +314,13 @@ export default function SchedulePage() {
     sessionTypeOverride || currentSchedule?.sessionType || "both";
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex-1">
+    <div className="flex h-screen bg-gray-50">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className="p-6 space-y-6 no-print">
+        <main className="flex-1 overflow-y-auto min-h-0 p-6 space-y-6 no-print">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>

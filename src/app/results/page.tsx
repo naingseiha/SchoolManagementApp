@@ -302,11 +302,13 @@ export default function ResultsPage() {
   // Render Grade Selector (Level 1)
   if (!selectedGrade) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 p-8">
             {/* Header */}
             <div className="mb-8">
               <div className="flex items-center justify-between gap-4 mb-6">
@@ -441,11 +443,13 @@ export default function ResultsPage() {
   // Render View Mode Selector (Level 2)
   if (selectedGrade && !selectedClass && viewMode === "byClass") {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 p-8">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group"
@@ -767,11 +771,13 @@ export default function ResultsPage() {
   // Render Class Results (Level 3)
   if (selectedClass) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 p-8">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group"
@@ -850,11 +856,13 @@ export default function ResultsPage() {
   // Render Grade-Wide Results (Level 2 - By Grade View)
   if (selectedGrade && viewMode === "byGrade") {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 p-8">
             <button
               onClick={handleBack}
               className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group"

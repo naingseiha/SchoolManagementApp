@@ -74,11 +74,13 @@ export default function SubjectsPage() {
 
   if (subjectsLoading && showSubjects && subjects.length === 0) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <div className="flex items-center justify-center h-screen">
+          <div className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
               <p className="text-gray-600">Loading subjects...</p>
@@ -91,11 +93,13 @@ export default function SubjectsPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <div className="flex items-center justify-center h-screen">
+          <div className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center">
             <div className="text-center">
               <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
               <p className="text-red-600 mb-4">{error}</p>
@@ -211,13 +215,15 @@ export default function SubjectsPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
+    <div className="flex h-screen bg-gray-50">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
 
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
 
-        <main className="p-6">
+        <main className="flex-1 overflow-y-auto min-h-0 p-6">
           {/* Page Header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">

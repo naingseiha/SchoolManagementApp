@@ -204,11 +204,11 @@ export default function SettingsPage() {
 
   // Desktop Layout
   return (
-    <div className="flex h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-h-0">
           <SettingsContent 
             cards={settingsCards} 
             loading={loading} 

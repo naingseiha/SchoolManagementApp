@@ -72,13 +72,15 @@ export default function TeachersPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      <Sidebar />
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
 
-        <main className="flex-1 p-6 space-y-5 overflow-x-hidden">
+        <main className="flex-1 overflow-y-auto min-h-0 p-6 space-y-5">
           {/* ✅ Modern Header Section with Gradient */}
           <div className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-50 border border-blue-100 rounded-2xl shadow-sm">
             {/* Decorative background */}

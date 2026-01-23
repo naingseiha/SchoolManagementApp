@@ -478,4 +478,28 @@ export const dashboardApi = {
     });
     console.log("🧹 Dashboard cache cleared");
   },
+
+  /**
+   * Get comparison statistics between two months
+   * @param month1 - First month to compare
+   * @param month2 - Second month to compare
+   * @param year - Academic year
+   */
+  getComparisonStats: async (month1: string, month2: string, year: number): Promise<{ month1: ComprehensiveStats; month2: ComprehensiveStats }> => {
+    const cacheKey = `dashboard:comparison:${month1}:${month2}:${year}`;
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        // Fetch both months' data in parallel
+        const [stats1, stats2] = await Promise.all([
+          apiClient.get(`/dashboard/comprehensive-stats?month=${month1}&year=${year}`),
+          apiClient.get(`/dashboard/comprehensive-stats?month=${month2}&year=${year}`)
+        ]);
+
+        console.log("🔄 Comparison Stats API: Data received for both months");
+        return { month1: stats1, month2: stats2 };
+      },
+      5 * 60 * 1000
+    );
+  },
 };

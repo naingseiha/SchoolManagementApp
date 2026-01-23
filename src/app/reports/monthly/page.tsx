@@ -446,46 +446,89 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex min-h-screen print-wrapper bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex h-screen print-wrapper bg-gradient-to-br from-gray-50 to-gray-100">
       {/* ✅ UPDATED: Print CSS - Hide everything except report */}
       <style jsx global>{`
         @media print {
           @page {
             size: A4;
-            margin: 8mm 5mm;
+            margin: 5mm 3mm;
           }
 
-          body {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
+            height: auto !important;
+            overflow: visible !important;
           }
 
-          /* ✅ Hide sidebar, header, controls, and dashboard */
+          /* ✅ Completely remove hidden elements from print flow */
           .no-print,
           .print-hide {
             display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            left: -9999px !important;
           }
 
-          /* ✅ Show only the report */
+          /* ✅ Show only the report - override hidden class */
           .print-show {
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+
+          /* ✅ Reset the entire page structure for print */
+          .print-wrapper {
+            display: block !important;
+            background: white !important;
+            height: auto !important;
+            width: 100% !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          .print-wrapper > * {
+            display: none !important;
+          }
+
+          .print-wrapper .print-show {
             display: block !important;
           }
 
-          /* ✅ Ensure report takes full width */
-          .print-wrapper {
-            background: white !important;
+          /* ✅ Override flex layout on print */
+          .flex-1.flex.flex-col,
+          .flex-1 {
+            display: block !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+
+          main {
+            overflow: visible !important;
+            height: auto !important;
+            padding: 0 !important;
           }
         }
       `}</style>
 
-      <div className="no-print">
+      <div className="no-print flex-shrink-0">
         <Sidebar />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col min-h-0">
         <div className="no-print">
           <Header />
         </div>
-        <main className="p-6 animate-fadeIn">
+        <main className="flex-1 overflow-y-auto min-h-0 p-6 animate-fadeIn">
           {/* Professional Page Header */}
           <div className="mb-6 no-print">
             <div className="flex items-center gap-4 mb-2">

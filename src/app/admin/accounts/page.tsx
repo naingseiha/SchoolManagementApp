@@ -318,11 +318,13 @@ export default function EnhancedAccountsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
-        <Sidebar />
-        <div className="flex-1">
+      <div className="flex h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
+        <div className="flex-shrink-0">
+          <Sidebar />
+        </div>
+        <div className="flex-1 flex flex-col min-h-0">
           <Header />
-          <main className="p-8">
+          <main className="flex-1 overflow-y-auto min-h-0 p-8">
             <div className="flex items-center justify-center h-96">
               <div className="text-center">
                 <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
@@ -338,11 +340,13 @@ export default function EnhancedAccountsPage() {
   const grades = statistics?.byGrade ? Object.keys(statistics.byGrade).sort((a, b) => Number(a) - Number(b)) : [];
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
-      <Sidebar />
-      <div className="flex-1">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30">
+      <div className="flex-shrink-0">
+        <Sidebar />
+      </div>
+      <div className="flex-1 flex flex-col min-h-0">
         <Header />
-        <main className="p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto min-h-0 p-4 md:p-8">
           {/* Page Header */}
           <div className="mb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
