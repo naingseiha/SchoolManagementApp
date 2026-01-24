@@ -77,10 +77,10 @@ export default function TeachersPage() {
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
         <Header />
 
-        <main className="flex-1 overflow-y-auto min-h-0 p-6 space-y-5">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-6 space-y-5">
           {/* ✅ Modern Header Section with Gradient */}
           <div className="relative overflow-hidden bg-gradient-to-br from-white via-blue-50 to-indigo-50 border border-blue-100 rounded-2xl shadow-sm">
             {/* Decorative background */}

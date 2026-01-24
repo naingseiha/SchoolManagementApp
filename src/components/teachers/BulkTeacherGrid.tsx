@@ -740,7 +740,7 @@ export default function BulkTeacherGrid({
     <>
       <ToastContainer />
 
-      <div className="space-y-4">
+      <div className="space-y-4 w-full min-w-0">
         {/* Summary Bar */}
         <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -863,7 +863,7 @@ export default function BulkTeacherGrid({
         {/* Grid */}
         <div
           ref={gridRef}
-          className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm"
+          className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm w-full min-w-0"
           onPaste={handlePaste}
           tabIndex={0}
         >
