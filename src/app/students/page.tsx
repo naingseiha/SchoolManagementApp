@@ -64,10 +64,10 @@ export default function StudentsPage() {
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0">
         <Header />
 
-        <main className="flex-1 overflow-y-auto min-h-0 p-6 space-y-4">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-6 space-y-4">
           {/* ✅ Clean Header Section - No heavy shadow */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-center justify-between">
