@@ -91,7 +91,7 @@ export default function BulkImportView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full min-w-0">
       {/* ✅ Pass existing teachers to grid */}
       <BulkTeacherGrid
         subjects={subjects}

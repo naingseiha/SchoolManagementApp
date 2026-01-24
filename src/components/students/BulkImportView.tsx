@@ -119,7 +119,7 @@ export default function BulkImportView({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full">
       {/* ✅ Clean Instructions Card - No heavy shadow */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start gap-3">

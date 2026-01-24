@@ -23,6 +23,11 @@ const SimpleBarChart = dynamic(
   { ssr: false, loading: () => <SkeletonChart /> }
 );
 
+const GroupedBarChart = dynamic(
+  () => import("@/components/ui/SimpleBarChart").then((mod) => ({ default: mod.GroupedBarChart })),
+  { ssr: false, loading: () => <SkeletonChart /> }
+);
+
 const SimplePieChart = dynamic(
   () => import("@/components/ui/SimpleBarChart").then((mod) => ({ default: mod.SimplePieChart })),
   { ssr: false, loading: () => <SkeletonChart /> }
@@ -115,15 +120,21 @@ export default function DashboardPage() {
         setIsLoadingStats(true);
         setStatsError(null);
 
-        // ✅ OPTIMIZED: Add timeout to prevent stuck requests (reduced to 15s for faster feedback)
+        // ✅ OPTIMIZED: Add timeout to prevent stuck requests (30s timeout for gender breakdown query)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Request timeout - please refresh the page")), 15000); // 15 second timeout
+          setTimeout(() => reject(new Error("Request timeout - please refresh the page")), 30000); // 30 second timeout
         });
 
         const dataPromise = dashboardApi.getStats();
 
         // Race between data fetch and timeout
         const data = await Promise.race([dataPromise, timeoutPromise]) as DashboardStats;
+
+        console.log("📊 Dashboard data received:", {
+          hasStudentsByGrade: !!data.studentsByGrade,
+          studentsByGradeLength: data.studentsByGrade?.length,
+          studentsByGrade: data.studentsByGrade,
+        });
 
         setDashboardStats(data);
         console.log("✅ Desktop dashboard stats loaded successfully");
@@ -599,95 +610,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ✅ PERFORMANCE: Charts section loads progressively after initial render */}
-            {/* Show skeleton while dashboard stats are loading */}
-            {isLoadingStats && !dashboardStats ? (
-              <div className="bg-white rounded-3xl shadow-lg p-7 mb-8">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="h-32 bg-gray-200 rounded"></div>
-                    <div className="h-32 bg-gray-200 rounded"></div>
-                    <div className="h-32 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            ) : dashboardStats ? (
-              <div className="bg-white rounded-3xl shadow-lg p-7 mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="font-khmer-title text-2xl text-gray-900 font-bold">
-                      ស្ថិតិជាប់/ធ្លាក់
-                    </h3>
-                    <p className="font-khmer-body text-xs text-gray-500 font-medium mt-1">
-                      Pass/Fail Statistics
-                    </p>
-                  </div>
-                  <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
-                    <BarChart3 className="w-6 h-6 text-white" />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Pass Percentage */}
-                  <div className="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-100 hover:border-green-200 transition-all">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-green-200/30 rounded-full blur-2xl"></div>
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-3">
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        <p className="font-khmer-body text-sm text-green-700 font-bold">
-                          ជាប់ឆ្នាំ
-                        </p>
-                      </div>
-                      <p className="text-4xl font-moul text-green-600 mb-2">
-                        {dashboardStats.overview.passPercentage.toFixed(1)}%
-                      </p>
-                      <p className="font-khmer-body text-xs text-green-600 font-medium">
-                        {dashboardStats.overview.passedCount} / {dashboardStats.overview.totalGradesCount} ពិន្ទុ
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Fail Percentage */}
-                  <div className="group relative overflow-hidden bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl p-6 border-2 border-red-100 hover:border-red-200 transition-all">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-200/30 rounded-full blur-2xl"></div>
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-3">
-                        <XCircle className="w-5 h-5 text-red-600" />
-                        <p className="font-khmer-body text-sm text-red-700 font-bold">
-                          ធ្លាក់ឆ្នាំ
-                        </p>
-                      </div>
-                      <p className="text-4xl font-moul text-red-600 mb-2">
-                        {dashboardStats.overview.failPercentage.toFixed(1)}%
-                      </p>
-                      <p className="font-khmer-body text-xs text-red-600 font-medium">
-                        {dashboardStats.overview.failedCount} / {dashboardStats.overview.totalGradesCount} ពិន្ទុ
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Total Grades */}
-                  <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-100 hover:border-blue-200 transition-all">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-200/30 rounded-full blur-2xl"></div>
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Award className="w-5 h-5 text-blue-600" />
-                        <p className="font-khmer-body text-sm text-blue-700 font-bold">
-                          ពិន្ទុសរុប
-                        </p>
-                      </div>
-                      <p className="text-4xl font-moul text-blue-600 mb-2">
-                        {dashboardStats.overview.totalGradesCount}
-                      </p>
-                      <p className="font-khmer-body text-xs text-blue-600 font-medium">
-                        ឆ្នាំសិក្សាបច្ចុប្បន្ន
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
 
             {/* Enhanced Analytics Section */}
             {isLoadingStats && !dashboardStats ? (
@@ -768,189 +691,49 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Class Distribution */}
+                  {/* Student Distribution by Grade */}
                   <div className="bg-white rounded-3xl shadow-lg p-7">
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <h3 className="font-khmer-title text-lg text-gray-900 mb-1">
-                          ថ្នាក់តាមកម្រិត
+                          សិស្សតាមកម្រិត
                         </h3>
                         <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                          ទិដ្ឋភាពចែកចាយ
+                          ចំនួនសិស្សសរុបតាមភេទ
                         </p>
                       </div>
                       <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl">
                         <GraduationCap className="w-5 h-5 text-white" />
                       </div>
                     </div>
-                    <SimpleBarChart
-                      data={dashboardStats.classByGrade.map((item) => ({
-                        label: `ថ្នាក់ទី ${item.grade}`,
-                        value: item.count,
-                        color: "#8b5cf6",
-                      }))}
-                      height={180}
-                    />
-                  </div>
-                </div>
-
-                {/* Analytics Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                  {/* Grade Distribution */}
-                  <div className="bg-white rounded-3xl shadow-lg p-7">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="font-khmer-title text-lg text-gray-900 mb-1">
-                          ការចែកចាយពិន្ទុ
-                        </h3>
-                        <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                          ការអនុវត្តឆ្នាំសិក្សាបច្ចុប្បន្ន
-                        </p>
-                      </div>
-                      <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl">
-                        <Award className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                    <SimpleBarChart
-                      data={[
-                        {
-                          label: "A (ល្អប្រសើរ)",
-                          value: dashboardStats.gradeDistribution.A,
-                          color: "#10b981",
-                        },
-                        {
-                          label: "B (ល្អណាស់)",
-                          value: dashboardStats.gradeDistribution.B,
-                          color: "#3b82f6",
-                        },
-                        {
-                          label: "C (ល្អ)",
-                          value: dashboardStats.gradeDistribution.C,
-                          color: "#f59e0b",
-                        },
-                        {
-                          label: "D (ល្អបង្គួរ)",
-                          value: dashboardStats.gradeDistribution.D,
-                          color: "#f97316",
-                        },
-                        {
-                          label: "E (មធ្យម)",
-                          value: dashboardStats.gradeDistribution.E,
-                          color: "#ef4444",
-                        },
-                        {
-                          label: "F (ខ្សោយ)",
-                          value: dashboardStats.gradeDistribution.F,
-                          color: "#dc2626",
-                        },
-                      ]}
-                      height={200}
-                    />
-                  </div>
-
-                  {/* Attendance Overview */}
-                  <div className="bg-white rounded-3xl shadow-lg p-7">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h3 className="font-khmer-title text-lg text-gray-900 mb-1">
-                          ទិដ្ឋភាពវត្តមាន
-                        </h3>
-                        <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                          ស្ថិតិ ៣០ ថ្ងៃចុងក្រោយ
-                        </p>
-                      </div>
-                      <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                        <CheckCircle2 className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex justify-center">
-                      <SimplePieChart
-                        data={[
-                          {
-                            label: "មាន",
-                            value: dashboardStats.attendanceStats.present,
-                            color: "#10b981",
-                          },
-                          {
-                            label: "អវត្តមាន",
-                            value: dashboardStats.attendanceStats.absent,
-                            color: "#ef4444",
-                          },
-                          {
-                            label: "យឺត",
-                            value: dashboardStats.attendanceStats.late,
-                            color: "#f59e0b",
-                          },
-                          {
-                            label: "មានច្បាប់",
-                            value: dashboardStats.attendanceStats.excused,
-                            color: "#3b82f6",
-                          },
-                        ]}
-                        size={180}
+                    {dashboardStats.studentsByGrade && dashboardStats.studentsByGrade.length > 0 ? (
+                      <GroupedBarChart
+                        data={dashboardStats.studentsByGrade.map((item) => ({
+                          label: `ថ្នាក់ទី ${item.grade}`,
+                          groups: [
+                            {
+                              label: "ប្រុស",
+                              value: item.male,
+                              color: "#3b82f6",
+                            },
+                            {
+                              label: "ស្រី",
+                              value: item.female,
+                              color: "#ec4899",
+                            },
+                          ],
+                        }))}
+                        height={180}
                       />
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-[180px] text-gray-400">
+                        <p className="font-khmer-body text-sm">មិនមានទិន្នន័យ</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Top Performing Classes */}
-                {dashboardStats.topPerformingClasses.length > 0 && (
-                  <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
-                    <div className="flex items-center justify-between mb-7">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl">
-                          <TrendingUp className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-khmer-title text-2xl text-gray-900 flex items-center gap-2">
-                            ថ្នាក់ល្អប្រសើរបំផុត 🏆
-                          </h3>
-                          <p className="font-khmer-body text-xs text-gray-500 font-medium">
-                            ផ្អែកលើមធ្យមភាគសិស្ស
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {dashboardStats.topPerformingClasses.map((cls, index) => (
-                        <div
-                          key={cls.id}
-                          className="group relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 hover:shadow-xl transition-all duration-300 border-2 border-amber-200 hover:border-amber-300 transform hover:-translate-y-1"
-                        >
-                          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-200/30 rounded-full blur-2xl group-hover:bg-amber-300/50 transition-all"></div>
-                          <div className="relative">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
-                                  <span className="text-xl font-koulen text-white">
-                                    #{index + 1}
-                                  </span>
-                                </div>
-                                <div>
-                                  <h4 className="font-khmer-body font-black text-gray-900 text-lg">
-                                    {cls.name}
-                                  </h4>
-                                  <p className="font-khmer-body text-xs text-gray-600 font-medium">
-                                    ថ្នាក់ទី {cls.grade} • {cls.studentCount}{" "}
-                                    សិស្ស
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="pt-4 border-t-2 border-amber-200">
-                              <p className="font-khmer-body text-xs text-gray-600 font-bold mb-2">
-                                ពិន្ទុមធ្យម
-                              </p>
-                              <p className="text-3xl font-moul text-amber-600">
-                                {cls.averageScore?.toFixed(1) || "N/A"}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
               </>
             ) : null}
 

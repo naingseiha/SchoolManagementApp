@@ -40,6 +40,12 @@ export interface DashboardStats {
     grade: string;
     count: number;
   }>;
+  studentsByGrade: Array<{
+    grade: string;
+    male: number;
+    female: number;
+    total: number;
+  }>;
   topPerformingClasses: Array<{
     id: string;
     name: string;

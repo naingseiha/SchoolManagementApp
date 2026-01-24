@@ -600,7 +600,7 @@ export default function BulkStudentGrid({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full">
       {existingStudentsCount > 0 && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
@@ -745,75 +745,80 @@ export default function BulkStudentGrid({
       ) : (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div
-            className="overflow-x-auto"
-            style={{ maxHeight: "calc(100vh - 320px)" }}
+            className="overflow-auto"
+            style={{
+              maxHeight: "calc(100vh - 320px)",
+              maxWidth: "100%",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#3b82f6 #f3f4f6",
+            }}
           >
             <table ref={tableRef} className="w-full border-collapse">
-              <thead className="sticky top-0 z-20 shadow-md">
-                <tr className="bg-pink-50">
-                  {columnHeaders.map((header, index) => (
-                    <th
-                      key={header.key}
-                      style={{
-                        width: `${header.width}px`,
-                        minWidth: `${header.width}px`,
-                        fontFamily: "Koulen, sans-serif",
-                      }}
-                      className={`
-                        relative border border-gray-300 p-3 text-sm font-semibold text-gray-700
-                        ${
-                          header.sticky && header.key === "no"
-                            ? "sticky left-0 z-10 bg-pink-50"
-                            : ""
-                        }
-                        ${
-                          header.sticky && header.key === "actions"
-                            ? "sticky right-0 z-10 bg-pink-50"
-                            : ""
-                        }
-                      `}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        {header.required && (
-                          <span className="text-red-500 text-sm font-black">
-                            *
-                          </span>
-                        )}
-                        <span>{header.label}</span>
-                      </div>
-
-                      {/* ✅ Resize Handle */}
-                      {!header.sticky && (
-                        <div
-                          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-400 group"
-                          onMouseDown={(e) => handleMouseDown(index, e)}
-                        >
-                          <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <GripVertical size={16} className="text-blue-600" />
-                          </div>
-                        </div>
+            <thead className="sticky top-0 z-20 shadow-md">
+              <tr className="bg-pink-50">
+                {columnHeaders.map((header, index) => (
+                  <th
+                    key={header.key}
+                    style={{
+                      width: `${header.width}px`,
+                      minWidth: `${header.width}px`,
+                      fontFamily: "Koulen, sans-serif",
+                    }}
+                    className={`
+                      relative border border-gray-300 p-3 text-sm font-semibold text-gray-700
+                      ${
+                        header.sticky && header.key === "no"
+                          ? "sticky left-0 z-10 bg-pink-50"
+                          : ""
+                      }
+                      ${
+                        header.sticky && header.key === "actions"
+                          ? "sticky right-0 z-10 bg-pink-50"
+                          : ""
+                      }
+                    `}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {header.required && (
+                        <span className="text-red-500 text-sm font-black">
+                          *
+                        </span>
                       )}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, index) => (
-                  <StudentGridRow
-                    key={row.id || `new-${index}`}
-                    rowIndex={index}
-                    data={row}
-                    grade={grade}
-                    onChange={handleCellChange}
-                    onDelete={handleDeleteRow}
-                    isExisting={!!row.id}
-                    columnHeaders={columnHeaders}
-                    inputRefs={inputRefs}
-                    totalRows={rows.length}
-                  />
+                      <span>{header.label}</span>
+                    </div>
+
+                    {/* ✅ Resize Handle */}
+                    {!header.sticky && (
+                      <div
+                        className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-400 group"
+                        onMouseDown={(e) => handleMouseDown(index, e)}
+                      >
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <GripVertical size={16} className="text-blue-600" />
+                        </div>
+                      </div>
+                    )}
+                  </th>
                 ))}
-              </tbody>
-            </table>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <StudentGridRow
+                  key={row.id || `new-${index}`}
+                  rowIndex={index}
+                  data={row}
+                  grade={grade}
+                  onChange={handleCellChange}
+                  onDelete={handleDeleteRow}
+                  isExisting={!!row.id}
+                  columnHeaders={columnHeaders}
+                  inputRefs={inputRefs}
+                  totalRows={rows.length}
+                />
+              ))}
+            </tbody>
+          </table>
           </div>
         </div>
       )}

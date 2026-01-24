@@ -116,16 +116,65 @@ export class DashboardController {
         excused: excusedCount,
       };
 
-      // Get class distribution by grade
-      const classByGrade = await prisma.class.groupBy({
-        by: ["grade"],
-        _count: {
-          id: true,
-        },
-        orderBy: {
-          grade: "asc",
-        },
+      // Get class distribution by grade and student gender data in parallel
+      const [classByGrade, studentsByGradeWithGender, classGrades] = await Promise.all([
+        prisma.class.groupBy({
+          by: ["grade"],
+          _count: {
+            id: true,
+          },
+          orderBy: {
+            grade: "asc",
+          },
+        }),
+        prisma.student.groupBy({
+          by: ["classId", "gender"],
+          _count: {
+            id: true,
+          },
+          where: {
+            classId: {
+              not: null,
+            },
+          },
+        }),
+        prisma.class.findMany({
+          select: {
+            id: true,
+            grade: true,
+          },
+        }),
+      ]);
+
+      const classGradeMap = new Map(classGrades.map((c) => [c.id, c.grade]));
+
+      // Group students by grade and gender
+      const studentsByGradeMap = new Map<string, { male: number; female: number; total: number }>();
+      
+      studentsByGradeWithGender.forEach((item) => {
+        const grade = classGradeMap.get(item.classId!);
+        if (!grade) return;
+
+        const current = studentsByGradeMap.get(grade) || { male: 0, female: 0, total: 0 };
+        
+        if (item.gender === "MALE") {
+          current.male += item._count.id;
+        } else if (item.gender === "FEMALE") {
+          current.female += item._count.id;
+        }
+        current.total += item._count.id;
+        
+        studentsByGradeMap.set(grade, current);
       });
+
+      const studentsByGrade = Array.from(studentsByGradeMap.entries())
+        .map(([grade, counts]) => ({ 
+          grade, 
+          male: counts.male,
+          female: counts.female,
+          total: counts.total 
+        }))
+        .sort((a, b) => parseInt(a.grade) - parseInt(b.grade));
 
       // ✅ OPTIMIZED: Get top performing classes with a single query using include
       const classSummaries = await prisma.studentMonthlySummary.groupBy({
@@ -206,6 +255,7 @@ export class DashboardController {
             grade: c.grade,
             count: c._count.id,
           })),
+          studentsByGrade,
           topPerformingClasses: topClasses.filter((c) => c !== null),
         },
       });

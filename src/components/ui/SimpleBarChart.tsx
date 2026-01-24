@@ -23,37 +23,127 @@ export const SimpleBarChart: React.FC<BarChartProps> = ({
 
   return (
     <div className="w-full">
-      <div className="flex items-end justify-between gap-2" style={{ height: `${height}px` }}>
+      {/* Chart area */}
+      <div className="flex items-end justify-between gap-2 mb-2" style={{ height: `${height}px` }}>
         {data.map((item, index) => {
           const percentage = (item.value / max) * 100;
-          const barHeight = `${percentage}%`;
-
+          
           return (
-            <div key={index} className="flex-1 flex flex-col items-center justify-end gap-2">
-              {/* Value label */}
+            <div key={index} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+              {/* Value label at top */}
               {showValues && item.value > 0 && (
-                <div className="text-xs font-bold text-gray-700">
+                <div className="text-sm font-bold text-gray-700 mb-auto">
                   {item.value}
                 </div>
               )}
 
-              {/* Bar */}
+              {/* Bar - grows from bottom */}
               <div
                 className="w-full rounded-t-lg transition-all duration-500 hover:opacity-80"
                 style={{
-                  height: barHeight,
+                  height: `${percentage}%`,
                   backgroundColor: item.color || "#3b82f6",
-                  minHeight: item.value > 0 ? "4px" : "0px",
+                  minHeight: item.value > 0 ? "8px" : "0px",
                 }}
               />
-
-              {/* Label */}
-              <div className="text-xs font-semibold text-gray-600 text-center">
-                {item.label}
-              </div>
             </div>
           );
         })}
+      </div>
+      
+      {/* Labels at bottom */}
+      <div className="flex items-center justify-between gap-2">
+        {data.map((item, index) => (
+          <div key={index} className="flex-1 text-xs font-semibold text-gray-600 text-center">
+            {item.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+interface GroupedBarChartProps {
+  data: Array<{
+    label: string;
+    groups: Array<{
+      label: string;
+      value: number;
+      color: string;
+    }>;
+  }>;
+  height?: number;
+  showValues?: boolean;
+}
+
+export const GroupedBarChart: React.FC<GroupedBarChartProps> = ({
+  data,
+  height = 200,
+  showValues = true,
+}) => {
+  // Find max value across all groups
+  const max = Math.max(
+    ...data.flatMap((item) => item.groups.map((g) => g.value)),
+    1
+  );
+
+  return (
+    <div className="w-full">
+      {/* Chart area */}
+      <div className="flex items-end justify-between gap-3 mb-2" style={{ height: `${height}px` }}>
+        {data.map((item, index) => (
+          <div key={index} className="flex-1 flex items-end justify-center gap-1 h-full">
+            {item.groups.map((group, groupIndex) => {
+              const percentage = (group.value / max) * 100;
+              
+              return (
+                <div key={groupIndex} className="flex-1 flex flex-col items-center justify-end gap-1 h-full max-w-[40px]">
+                  {/* Value label at top */}
+                  {showValues && group.value > 0 && (
+                    <div className="text-[10px] font-bold text-gray-700 mb-auto">
+                      {group.value}
+                    </div>
+                  )}
+
+                  {/* Bar - grows from bottom */}
+                  <div
+                    className="w-full rounded-t-lg transition-all duration-500 hover:opacity-80 cursor-pointer"
+                    style={{
+                      height: `${percentage}%`,
+                      backgroundColor: group.color,
+                      minHeight: group.value > 0 ? "8px" : "0px",
+                    }}
+                    title={`${group.label}: ${group.value}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      
+      {/* Labels at bottom */}
+      <div className="flex items-center justify-between gap-3">
+        {data.map((item, index) => (
+          <div key={index} className="flex-1 text-xs font-semibold text-gray-600 text-center">
+            {item.label}
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 mt-4">
+        {data[0]?.groups.map((group, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded"
+              style={{ backgroundColor: group.color }}
+            />
+            <span className="text-xs font-medium text-gray-600">
+              {group.label}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
