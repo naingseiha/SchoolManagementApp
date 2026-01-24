@@ -179,15 +179,15 @@ export default function ScoreProgressDashboard() {
   if (error) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="bg-white rounded-3xl shadow-2xl p-12 max-w-md w-full text-center">
-          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <XCircle className="w-12 h-12 text-red-600" />
+        <div className="bg-white rounded-xl border border-gray-200 p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <XCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h3 className="font-khmer-title text-3xl text-gray-900 mb-3">មានបញ្ហា</h3>
-          <p className="text-gray-600 mb-8 font-khmer-body font-medium">{error}</p>
+          <h3 className="font-khmer-title text-xl text-gray-900 mb-2">មានបញ្ហា</h3>
+          <p className="text-gray-600 mb-6 font-khmer-body text-sm">{error}</p>
           <button
             onClick={fetchData}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-khmer-body font-bold py-4 px-8 rounded-2xl hover:shadow-xl transition-all active:scale-95"
+            className="w-full bg-indigo-600 text-white font-khmer-body font-medium py-2.5 px-6 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             ព្យាយាមម្តងទៀត
           </button>
@@ -200,14 +200,14 @@ export default function ScoreProgressDashboard() {
   if (!data) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="bg-white rounded-3xl shadow-lg p-8 max-w-md text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="w-8 h-8 text-gray-400" />
+        <div className="bg-white rounded-xl border border-gray-200 p-8 max-w-md text-center">
+          <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-7 h-7 text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2 font-khmer-title">
+          <h3 className="text-lg font-bold text-gray-900 mb-2 font-khmer-title">
             មិនមានទិន្នន័យ
           </h3>
-          <p className="text-gray-600 font-khmer-body">
+          <p className="text-gray-600 font-khmer-body text-sm">
             រកមិនឃើញទិន្នន័យសម្រាប់ខែ និង ឆ្នាំដែលបានជ្រើសរើស
           </p>
         </div>
@@ -221,30 +221,30 @@ export default function ScoreProgressDashboard() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-teal-500/30">
-              <CheckCircle className="w-8 h-8 text-white" />
+            <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center">
+              <CheckCircle className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h1 className="font-khmer-title text-4xl text-gray-900">
+              <h1 className="font-khmer-title text-3xl text-gray-900">
                 តារាងពិនិត្យការបញ្ចូលពិន្ទុ
               </h1>
-              <p className="font-khmer-body text-gray-500 font-medium">
+              <p className="font-khmer-body text-gray-600 text-sm">
                 ស្ថានភាពការបញ្ចូលពិន្ទុ និង ការផ្ទៀងផ្ទាត់
               </p>
             </div>
           </div>
           <button
             onClick={fetchData}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 text-white rounded-2xl hover:shadow-xl transition-all font-khmer-body font-bold active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors font-khmer-body font-medium shadow-sm"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4" />
             ផ្ទុកឡើងវិញ
           </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-3xl shadow-lg p-6 border border-gray-100">
+      <div className="bg-white rounded-xl p-6 border border-gray-200">
         <FilterControls
           selectedMonth={selectedMonth}
           selectedAcademicYear={selectedAcademicYear}
@@ -255,21 +255,21 @@ export default function ScoreProgressDashboard() {
         />
 
         {/* Search and Sort */}
-        <div className="flex gap-4 mt-6">
+        <div className="flex gap-3 mt-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="ស្វែងរកថ្នាក់រៀន ឬ គ្រូថ្នាក់..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-transparent font-khmer-body transition-all"
+              className="w-full h-10 pl-9 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-khmer-body text-sm bg-white placeholder:text-gray-400"
             />
           </div>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="px-6 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-transparent font-khmer-body font-bold transition-all"
+            className="h-10 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-khmer-body font-medium text-sm bg-white min-w-[180px]"
           >
             <option value="name">តម្រៀបតាមឈ្មោះ</option>
             <option value="completion">តម្រៀបតាមការបញ្ចូល</option>
@@ -295,11 +295,11 @@ export default function ScoreProgressDashboard() {
         ))}
 
         {filteredAndSortedClasses.length === 0 && (
-          <div className="bg-white rounded-3xl shadow-lg p-12 text-center">
-            <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <Search className="w-12 h-12 text-gray-400" />
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+              <Search className="w-8 h-8 text-gray-400" />
             </div>
-            <p className="font-khmer-body text-gray-500 font-bold text-lg">
+            <p className="font-khmer-body text-gray-600 font-medium">
               រកមិនឃើញថ្នាក់រៀនដែលស្វែងរក
             </p>
           </div>
@@ -333,17 +333,17 @@ const FilterControls = memo(({
   const academicYearOptions = useMemo(() => getAcademicYearOptions(), []);
 
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className="flex flex-wrap gap-3">
       {/* Month Filter */}
-      <div className="flex-1 min-w-[200px]">
-        <label className="block text-xs font-bold text-gray-600 mb-2 font-khmer-body flex items-center gap-2">
-          <Calendar className="w-4 h-4" />
+      <div className="flex-1 min-w-[180px]">
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5 font-khmer-body flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5" />
           ខែ
         </label>
         <select
           value={selectedMonth}
           onChange={(e) => onMonthChange(e.target.value)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-transparent font-khmer-body font-bold transition-all"
+          className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-khmer-body font-medium text-sm bg-white"
         >
           {KHMER_MONTHS.map((month) => (
             <option key={month} value={month}>
@@ -354,14 +354,14 @@ const FilterControls = memo(({
       </div>
 
       {/* Academic Year Filter */}
-      <div className="flex-1 min-w-[200px]">
-        <label className="block text-xs font-bold text-gray-600 mb-2 font-khmer-body">
+      <div className="flex-1 min-w-[180px]">
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5 font-khmer-body">
           ឆ្នាំសិក្សា
         </label>
         <select
           value={selectedAcademicYear}
           onChange={(e) => onAcademicYearChange(parseInt(e.target.value))}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-transparent font-khmer-body font-bold transition-all"
+          className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-khmer-body font-medium text-sm bg-white"
         >
           {academicYearOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -372,15 +372,15 @@ const FilterControls = memo(({
       </div>
 
       {/* Grade Filter */}
-      <div className="flex-1 min-w-[200px]">
-        <label className="block text-xs font-bold text-gray-600 mb-2 font-khmer-body flex items-center gap-2">
-          <Filter className="w-4 h-4" />
+      <div className="flex-1 min-w-[180px]">
+        <label className="block text-xs font-semibold text-gray-700 mb-1.5 font-khmer-body flex items-center gap-1.5">
+          <Filter className="w-3.5 h-3.5" />
           កម្រិត
         </label>
         <select
           value={selectedGrade}
           onChange={(e) => onGradeChange(e.target.value)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-transparent font-khmer-body font-bold transition-all"
+          className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-khmer-body font-medium text-sm bg-white"
         >
           <option value="all">ទាំងអស់</option>
           {[7, 8, 9, 10, 11, 12].map((grade) => (
@@ -433,28 +433,28 @@ const OverallStats = memo(({ data }: OverallStatsProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
       {stats.map((stat, index) => (
         <div
           key={index}
-          className={`bg-white rounded-3xl p-6 shadow-lg border-2 ${stat.borderColor} hover:shadow-2xl transition-all`}
+          className="bg-white rounded-xl p-5 border border-gray-200 hover:border-gray-300 transition-all"
         >
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`w-14 h-14 bg-gradient-to-br ${stat.gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
-              <stat.icon className="w-7 h-7 text-white" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`w-10 h-10 bg-gradient-to-br ${stat.gradient} rounded-lg flex items-center justify-center`}>
+              <stat.icon className="w-5 h-5 text-white" />
             </div>
-            <p className="font-khmer-body text-sm text-gray-600 font-bold">
+            <p className="font-khmer-body text-sm text-gray-600 font-medium">
               {stat.label}
             </p>
           </div>
-          <p className="font-black text-5xl text-gray-900 mb-2">{stat.value}</p>
+          <p className="font-bold text-3xl text-gray-900 mb-2">{stat.value}</p>
 
           {/* Progress bar for percentage stats */}
           {(stat.label.includes("បញ្ចូល") || stat.label.includes("ផ្ទៀងផ្ទាត់")) && (
-            <div className="mt-4">
-              <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="mt-3">
+              <div className="w-full bg-gray-100 rounded-full h-2">
                 <div
-                  className={`h-3 rounded-full bg-gradient-to-r ${stat.gradient} transition-all`}
+                  className={`h-2 rounded-full bg-gradient-to-r ${stat.gradient} transition-all`}
                   style={{
                     width: `${stat.label.includes("បញ្ចូល")
                       ? data.overall.completionPercentage
@@ -462,7 +462,7 @@ const OverallStats = memo(({ data }: OverallStatsProps) => {
                   }}
                 />
               </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-600 font-khmer-body font-bold">
+              <div className="flex justify-between mt-2 text-xs text-gray-500 font-khmer-body font-medium">
                 <span>
                   {stat.label.includes("បញ្ចូល")
                     ? data.overall.completedSubjects
@@ -506,28 +506,28 @@ const GradeSection = memo(({ grade, expandedClasses, onToggleClass, searchQuery 
   return (
     <div className="space-y-4">
       {/* Grade Header */}
-      <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl shadow-xl p-6 border border-indigo-400/50">
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-white/25 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
-              <span className="text-white font-black text-3xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-2xl">
                 {grade.grade}
               </span>
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-white font-khmer-title">
+              <h2 className="text-2xl font-bold text-white font-khmer-title">
                 ថ្នាក់ទី{grade.grade}
               </h2>
-              <p className="text-white/90 font-khmer-body font-medium">
+              <p className="text-white/90 font-khmer-body font-medium text-sm">
                 {filteredClasses.length} ថ្នាក់ • មធ្យមភាគ {grade.avgCompletion.toFixed(1)}%
               </p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-4xl font-black text-white">
+            <div className="text-3xl font-bold text-white">
               {grade.avgCompletion.toFixed(0)}%
             </div>
-            <div className="text-white/90 text-sm font-khmer-body font-bold">ការបញ្ចូលពិន្ទុ</div>
+            <div className="text-white/90 text-xs font-khmer-body font-medium">ការបញ្ចូលពិន្ទុ</div>
           </div>
         </div>
       </div>
@@ -566,25 +566,25 @@ const ClassCard = memo(({ classData, isExpanded, onToggle }: ClassCardProps) => 
   }, [classData.completionStats.completionPercentage]);
 
   return (
-    <div className="bg-white rounded-3xl shadow-lg border-2 border-gray-100 overflow-hidden hover:shadow-2xl transition-all">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-all">
       {/* Card Header */}
       <button
         onClick={onToggle}
-        className="w-full p-6 flex items-center justify-between hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all"
+        className="w-full p-5 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
-        <div className="flex items-center gap-5 flex-1">
+        <div className="flex items-center gap-4 flex-1">
           {/* Class Icon */}
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-lg">
-            <Users className="w-7 h-7 text-white" />
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg p-3">
+            <Users className="w-5 h-5 text-white" />
           </div>
 
           {/* Class Info */}
           <div className="flex-1 text-left">
-            <h3 className="text-xl font-black text-gray-900 font-khmer-title">
+            <h3 className="text-lg font-bold text-gray-900 font-khmer-title">
               {classData.name}
             </h3>
-            <div className="flex items-center gap-4 mt-2">
-              <span className="text-sm text-gray-600 font-khmer-body font-bold">
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-sm text-gray-600 font-khmer-body font-medium">
                 {classData.studentCount} សិស្ស
               </span>
               {classData.homeroomTeacher && (
@@ -599,54 +599,54 @@ const ClassCard = memo(({ classData, isExpanded, onToggle }: ClassCardProps) => 
           </div>
 
           {/* Completion Stats */}
-          <div className="flex gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl px-4 py-3 border-2 border-green-200 text-center min-w-[100px]">
-              <div className={`text-2xl font-black ${completionColor}`}>
+          <div className="flex gap-3">
+            <div className="bg-green-50 rounded-lg px-4 py-2.5 border border-green-200 text-center min-w-[90px]">
+              <div className={`text-xl font-bold ${completionColor}`}>
                 {classData.completionStats.completionPercentage.toFixed(0)}%
               </div>
-              <div className="text-xs text-gray-600 font-khmer-body font-bold">បញ្ចូលពិន្ទុ</div>
+              <div className="text-xs text-gray-600 font-khmer-body font-medium mt-0.5">បញ្ចូលពិន្ទុ</div>
             </div>
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl px-4 py-3 border-2 border-orange-200 text-center min-w-[100px]">
-              <div className="text-2xl font-black text-orange-600">
+            <div className="bg-orange-50 rounded-lg px-4 py-2.5 border border-orange-200 text-center min-w-[90px]">
+              <div className="text-xl font-bold text-orange-600">
                 {classData.completionStats.verificationPercentage.toFixed(0)}%
               </div>
-              <div className="text-xs text-gray-600 font-khmer-body font-bold">ផ្ទៀងផ្ទាត់</div>
+              <div className="text-xs text-gray-600 font-khmer-body font-medium mt-0.5">ផ្ទៀងផ្ទាត់</div>
             </div>
           </div>
 
           {/* Expand Icon */}
           {isExpanded ? (
-            <ChevronUp className="w-6 h-6 text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-gray-400" />
           ) : (
-            <ChevronDown className="w-6 h-6 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-gray-400" />
           )}
         </div>
       </button>
 
       {/* Expanded Content - Subject Details */}
       {isExpanded && (
-        <div className="border-t-2 border-gray-100 p-6 bg-gradient-to-br from-gray-50 to-white">
-          <div className="mb-6">
+        <div className="border-t border-gray-200 p-5 bg-gray-50">
+          <div className="mb-5">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="font-black text-gray-900 font-khmer-body text-lg">
+              <h4 className="font-bold text-gray-900 font-khmer-body">
                 មុខវិជ្ជាទាំងអស់ ({classData.subjects.length})
               </h4>
-              <div className="text-sm text-gray-600 font-khmer-body font-bold bg-white px-4 py-2 rounded-xl border-2 border-gray-200">
+              <div className="text-sm text-gray-600 font-khmer-body font-medium bg-white px-3 py-1.5 rounded-lg border border-gray-200">
                 បញ្ចូលពេញលេញ: {classData.completionStats.completedSubjects}/{classData.completionStats.totalSubjects}
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
               <div
-                className="bg-gradient-to-r from-green-500 to-emerald-500 h-4 rounded-full transition-all shadow-sm"
+                className="bg-gradient-to-r from-green-500 to-emerald-500 h-2.5 rounded-full transition-all"
                 style={{ width: `${classData.completionStats.completionPercentage}%` }}
               />
             </div>
           </div>
 
           {/* Subject Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {classData.subjects.map((subject) => (
               <SubjectItem key={subject.id} subject={subject} />
             ))}
@@ -683,21 +683,21 @@ const SubjectItem = memo(({ subject }: SubjectItemProps) => {
 
   return (
     <div
-      className={`p-5 rounded-2xl border-2 ${borderColor} ${bgColor} hover:shadow-lg transition-all hover:scale-[1.02]`}
+      className={`p-3 rounded-lg border ${borderColor} ${bgColor} hover:border-gray-400 transition-all`}
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
-          <h5 className="font-black text-gray-900 font-khmer-body text-sm mb-1">
+          <h5 className="font-semibold text-gray-900 font-khmer-body text-sm leading-tight">
             {subject.nameKh}
           </h5>
-          <p className="text-xs text-gray-500 font-mono font-bold">{subject.code}</p>
+          <p className="text-xs text-gray-500 font-mono mt-0.5">{subject.code}</p>
         </div>
-        <div className={`p-2 rounded-xl border ${
+        <div className={`p-1 rounded-md ${
           subject.scoreStatus.status === "COMPLETE" && !subject.verification.isConfirmed
-            ? "bg-yellow-100 border-yellow-200"
-            : `${config.bgColor} ${config.borderColor}`
+            ? "bg-yellow-100"
+            : config.bgColor
         }`}>
-          <StatusIcon className={`w-5 h-5 ${
+          <StatusIcon className={`w-4 h-4 ${
             subject.scoreStatus.status === "COMPLETE" && !subject.verification.isConfirmed
               ? "text-yellow-600"
               : config.color
@@ -706,41 +706,41 @@ const SubjectItem = memo(({ subject }: SubjectItemProps) => {
       </div>
 
       {/* Score Progress */}
-      <div className="mb-3">
-        <div className="flex justify-between text-xs mb-2">
-          <span className="text-gray-600 font-khmer-body font-bold">
+      <div className="mb-2">
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-gray-600 font-khmer-body font-medium">
             {subject.scoreStatus.studentsWithScores}/{subject.scoreStatus.totalStudents} សិស្ស
           </span>
-          <span className={`font-black ${config.color}`}>
+          <span className={`font-semibold ${config.color}`}>
             {subject.scoreStatus.percentage.toFixed(0)}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2 shadow-inner">
+        <div className="w-full bg-gray-200 rounded-full h-1.5">
           <div
-            className={`h-2 rounded-full ${config.progressColor} transition-all`}
+            className={`h-1.5 rounded-full ${config.progressColor} transition-all`}
             style={{ width: `${subject.scoreStatus.percentage}%` }}
           />
         </div>
       </div>
 
       {/* Verification Badge */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
         {subject.verification.isConfirmed ? (
-          <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-100 px-3 py-1.5 rounded-xl font-khmer-body font-bold border border-green-200">
-            <Shield className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-1.5 py-0.5 rounded font-khmer-body font-medium">
+            <Shield className="w-3 h-3" />
             ផ្ទៀងផ្ទាត់ហើយ
           </div>
         ) : (
-          <div className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-khmer-body font-bold border ${
+          <div className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded font-khmer-body font-medium ${
             subject.scoreStatus.status === "COMPLETE"
-              ? "text-yellow-700 bg-yellow-100 border-yellow-200"
-              : "text-gray-600 bg-gray-100 border-gray-200"
+              ? "text-yellow-700 bg-yellow-100"
+              : "text-gray-600 bg-gray-100"
           }`}>
-            <ShieldAlert className="w-3.5 h-3.5" />
+            <ShieldAlert className="w-3 h-3" />
             មិនទាន់ផ្ទៀងផ្ទាត់
           </div>
         )}
-        <span className={`text-xs font-black px-2 py-1 rounded-lg ${
+        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
           subject.scoreStatus.status === "COMPLETE" && !subject.verification.isConfirmed
             ? "text-yellow-700 bg-yellow-100"
             : `${config.color} ${config.bgColor}`
