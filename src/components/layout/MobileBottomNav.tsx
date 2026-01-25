@@ -9,6 +9,7 @@ import {
   GraduationCap,
   BarChart3,
   UserCircle2,
+  Rss,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { LucideIcon } from "lucide-react";
@@ -32,6 +33,15 @@ const NAV_ITEMS: NavItem[] = [
     href: "/",
     roles: ["ADMIN", "TEACHER"],
     color: "from-blue-500 to-cyan-500",
+  },
+  {
+    id: "feed",
+    label: "Feed",
+    labelKh: "មតិព័ត៌មាន",
+    icon: Rss,
+    href: "/feed",
+    roles: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
+    color: "from-indigo-500 to-purple-500",
   },
   {
     id: "grade-entry",
