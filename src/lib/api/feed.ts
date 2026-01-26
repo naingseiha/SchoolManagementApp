@@ -13,7 +13,13 @@ export type PostType =
   | "ANNOUNCEMENT"
   | "ASSIGNMENT"
   | "POLL"
-  | "RESOURCE";
+  | "RESOURCE"
+  | "PROJECT"
+  | "TUTORIAL"
+  | "RESEARCH"
+  | "ACHIEVEMENT"
+  | "REFLECTION"
+  | "COLLABORATION";
 
 export type PostVisibility = "PUBLIC" | "SCHOOL" | "CLASS" | "PRIVATE";
 
@@ -39,6 +45,13 @@ export interface PostAuthor {
   };
 }
 
+export interface PollOption {
+  id: string;
+  text: string;
+  position: number;
+  votesCount: number;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -55,6 +68,10 @@ export interface Post {
   isLiked: boolean;
   createdAt: string;
   updatedAt: string;
+  // Poll fields
+  pollOptions?: PollOption[];
+  userVote?: string | null;
+  totalVotes?: number;
 }
 
 export interface Comment {
@@ -170,6 +187,7 @@ export const createPost = async (data: {
   postType?: PostType;
   visibility?: PostVisibility;
   media?: File[];
+  pollOptions?: string[]; // ✅ Added for polls
 }): Promise<Post> => {
   const token = getAuthToken();
   const formData = new FormData();
@@ -177,6 +195,11 @@ export const createPost = async (data: {
   formData.append("content", data.content);
   if (data.postType) formData.append("postType", data.postType);
   if (data.visibility) formData.append("visibility", data.visibility);
+
+  // ✅ Add poll options if present
+  if (data.pollOptions && Array.isArray(data.pollOptions)) {
+    formData.append("pollOptions", JSON.stringify(data.pollOptions));
+  }
 
   if (data.media) {
     data.media.forEach((file) => {
@@ -519,4 +542,56 @@ export const POST_TYPE_INFO: Record<
     color: "#30B0C7",
     bgColor: "bg-gradient-to-br from-cyan-50 to-teal-50",
   },
+  PROJECT: {
+    label: "Project",
+    labelKh: "គម្រោង",
+    icon: "Briefcase",
+    color: "#FF6B35",
+    bgColor: "bg-gradient-to-br from-orange-50 to-red-50",
+  },
+  TUTORIAL: {
+    label: "Tutorial",
+    labelKh: "មេរៀន",
+    icon: "BookText",
+    color: "#00D4AA",
+    bgColor: "bg-gradient-to-br from-teal-50 to-green-50",
+  },
+  RESEARCH: {
+    label: "Research",
+    labelKh: "ការស្រាវជ្រាវ",
+    icon: "Microscope",
+    color: "#8B5CF6",
+    bgColor: "bg-gradient-to-br from-purple-50 to-indigo-50",
+  },
+  ACHIEVEMENT: {
+    label: "Achievement",
+    labelKh: "សមិទ្ធិផល",
+    icon: "Trophy",
+    color: "#FFD700",
+    bgColor: "bg-gradient-to-br from-yellow-50 to-amber-50",
+  },
+  REFLECTION: {
+    label: "Reflection",
+    labelKh: "ការពិចារណា",
+    icon: "Lightbulb",
+    color: "#F59E0B",
+    bgColor: "bg-gradient-to-br from-amber-50 to-orange-50",
+  },
+  COLLABORATION: {
+    label: "Collaboration",
+    labelKh: "កិច្ចសហការ",
+    icon: "Users",
+    color: "#06B6D4",
+    bgColor: "bg-gradient-to-br from-cyan-50 to-sky-50",
+  },
+};
+
+/**
+ * Vote on a poll option
+ */
+export const votePoll = async (optionId: string): Promise<any> => {
+  const response = await authFetch(`/feed/polls/${optionId}/vote`, {
+    method: "POST",
+  });
+  return response;
 };

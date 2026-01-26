@@ -20,6 +20,13 @@ import {
   Users,
   Lock,
   User,
+  Briefcase,
+  Book,
+  Microscope,
+  Trophy,
+  Lightbulb,
+  Plus,
+  Minus,
 } from "lucide-react";
 import {
   createPost,
@@ -46,6 +53,12 @@ const POST_TYPES: { type: PostType; icon: React.ElementType; label: string; labe
   { type: "ASSIGNMENT", icon: BookOpen, label: "Assignment", labelKh: "កិច្ចការផ្ទះ" },
   { type: "POLL", icon: BarChart3, label: "Poll", labelKh: "មតិ" },
   { type: "RESOURCE", icon: FolderOpen, label: "Resource", labelKh: "ធនធាន" },
+  { type: "PROJECT", icon: Briefcase, label: "Project", labelKh: "គម្រោង" },
+  { type: "TUTORIAL", icon: Book, label: "Tutorial", labelKh: "មេរៀន" },
+  { type: "RESEARCH", icon: Microscope, label: "Research", labelKh: "ការស្រាវជ្រាវ" },
+  { type: "ACHIEVEMENT", icon: Trophy, label: "Achievement", labelKh: "សមិទ្ធិផល" },
+  { type: "REFLECTION", icon: Lightbulb, label: "Reflection", labelKh: "ការពិចារណា" },
+  { type: "COLLABORATION", icon: Users, label: "Collaboration", labelKh: "កិច្ចសហការ" },
 ];
 
 const VISIBILITY_OPTIONS: {
@@ -73,8 +86,11 @@ function CreatePost({
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
-  const [showTypeSelector, setShowTypeSelector] = useState(false);
   const [showVisibilitySelector, setShowVisibilitySelector] = useState(false);
+  
+  // Poll-specific state
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollDuration, setPollDuration] = useState<number>(7); // days
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -97,8 +113,28 @@ function CreatePost({
     setPostType("ARTICLE");
     setMediaFiles([]);
     setMediaPreviews([]);
-    setShowTypeSelector(false);
     setShowVisibilitySelector(false);
+    setPollOptions(["", ""]);
+    setPollDuration(7);
+  };
+
+  // Poll option handlers
+  const addPollOption = () => {
+    if (pollOptions.length < 6) {
+      setPollOptions([...pollOptions, ""]);
+    }
+  };
+
+  const removePollOption = (index: number) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, i) => i !== index));
+    }
+  };
+
+  const updatePollOption = (index: number, value: string) => {
+    const newOptions = [...pollOptions];
+    newOptions[index] = value;
+    setPollOptions(newOptions);
   };
 
   const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,20 +182,37 @@ function CreatePost({
   };
 
   const handlePost = async () => {
+    // Validation
     if (!content.trim() && mediaFiles.length === 0) {
       onError?.("សូមបញ្ចូលខ្លឹមសារឬរូបភាព");
       return;
     }
 
+    // Poll validation
+    if (postType === "POLL") {
+      const validOptions = pollOptions.filter(opt => opt.trim());
+      if (validOptions.length < 2) {
+        onError?.("សូមបញ្ចូលជម្រើសយ៉ាងតិច ២");
+        return;
+      }
+    }
+
     setIsPosting(true);
 
     try {
-      await createPost({
+      const postData: any = {
         content: content.trim(),
         postType,
         visibility,
         media: mediaFiles.length > 0 ? mediaFiles : undefined,
-      });
+      };
+
+      // Add poll options if POLL type
+      if (postType === "POLL") {
+        postData.pollOptions = pollOptions.filter(opt => opt.trim());
+      }
+
+      await createPost(postData);
 
       resetForm();
       onPostCreated?.();
@@ -219,7 +272,7 @@ function CreatePost({
         </button>
       </div>
 
-      {/* Author & Post Type */}
+      {/* Author */}
       <div className="px-4 py-3 flex items-center gap-3">
         {userProfilePicture ? (
           <img
@@ -234,90 +287,105 @@ function CreatePost({
         )}
         <div className="flex-1">
           <p className="font-bold text-gray-900">{userName}</p>
-          <div className="flex items-center gap-2 mt-1">
-            {/* Post Type Selector */}
-            <div className="relative">
+        </div>
+      </div>
+
+      {/* Post Type Selector - Horizontal Scroll */}
+      <div className="px-4 pb-2 border-b border-gray-100">
+        <p className="text-xs font-medium text-gray-500 mb-2">Select post type:</p>
+        <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+          {POST_TYPES.map(({ type, icon: Icon, labelKh }) => {
+            const typeInfo = POST_TYPE_INFO[type];
+            const isSelected = postType === type;
+            return (
               <button
-                onClick={() => setShowTypeSelector(!showTypeSelector)}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${selectedType.color} text-white`}
+                key={type}
+                onClick={() => setPostType(type)}
+                className={`flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl flex-shrink-0 transition-all ${
+                  isSelected
+                    ? "ring-2 ring-offset-1 shadow-md"
+                    : "hover:bg-gray-50 border border-gray-200"
+                }`}
+                style={{
+                  ringColor: isSelected ? typeInfo.color : undefined,
+                  backgroundColor: isSelected ? `${typeInfo.color}10` : undefined,
+                }}
               >
-                {POST_TYPES.find((t) => t.type === postType)?.icon &&
-                  (() => {
-                    const Icon = POST_TYPES.find((t) => t.type === postType)
-                      ?.icon!;
-                    return <Icon className="w-3 h-3" />;
-                  })()}
-                {selectedType.labelKh}
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              {showTypeSelector && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowTypeSelector(false)}
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: isSelected ? typeInfo.color : '#f3f4f6',
+                  }}
+                >
+                  <Icon
+                    className="w-5 h-5"
+                    style={{ color: isSelected ? 'white' : typeInfo.color }}
                   />
-                  <div className="absolute left-0 top-8 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                    {POST_TYPES.map(({ type, icon: Icon }) => (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          setPostType(type);
-                          setShowTypeSelector(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 ${
-                          postType === type ? "bg-indigo-50 text-indigo-700" : ""
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{POST_TYPE_INFO[type].labelKh}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Visibility Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowVisibilitySelector(!showVisibilitySelector)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
-              >
-                <VisibilityIcon className="w-3 h-3" />
-                {selectedVisibility?.labelKh}
-                <ChevronDown className="w-3 h-3" />
+                </div>
+                <span
+                  className="text-xs font-medium whitespace-nowrap"
+                  style={{ color: isSelected ? typeInfo.color : '#6b7280' }}
+                >
+                  {labelKh}
+                </span>
               </button>
+            );
+          })}
+        </div>
+      </div>
 
-              {showVisibilitySelector && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowVisibilitySelector(false)}
-                  />
-                  <div className="absolute left-0 top-8 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                    {VISIBILITY_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setVisibility(option.value);
-                          setShowVisibilitySelector(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 ${
-                          visibility === option.value
-                            ? "bg-indigo-50 text-indigo-700"
-                            : ""
-                        }`}
-                      >
-                        <option.icon className="w-4 h-4" />
-                        <span>{option.labelKh}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+      {/* Selected Type Badge */}
+      <div className="px-4 pt-3 flex items-center gap-2">
+        <div
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white"
+          style={{ backgroundColor: selectedType.color }}
+        >
+          {POST_TYPES.find((t) => t.type === postType)?.icon &&
+            (() => {
+              const Icon = POST_TYPES.find((t) => t.type === postType)?.icon!;
+              return <Icon className="w-3.5 h-3.5" />;
+            })()}
+          {selectedType.labelKh}
+        </div>
+
+        {/* Visibility Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setShowVisibilitySelector(!showVisibilitySelector)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
+          >
+            <VisibilityIcon className="w-3 h-3" />
+            {selectedVisibility?.labelKh}
+            <ChevronDown className="w-3 h-3" />
+          </button>
+
+          {showVisibilitySelector && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowVisibilitySelector(false)}
+              />
+              <div className="absolute left-0 top-8 w-40 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
+                {VISIBILITY_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setVisibility(option.value);
+                      setShowVisibilitySelector(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-gray-50 ${
+                      visibility === option.value
+                        ? "bg-indigo-50 text-indigo-700"
+                        : ""
+                    }`}
+                  >
+                    <option.icon className="w-4 h-4" />
+                    <span>{option.labelKh}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -332,14 +400,59 @@ function CreatePost({
               ? "សួរសំណួរ..."
               : postType === "ACHIEVEMENT"
                 ? "ចែករំលែកសមិទ្ធផល..."
-                : postType === "LEARNING_GOAL"
-                  ? "កំណត់គោលដៅសិក្សា..."
+                : postType === "POLL"
+                  ? "សួរសំណួរមតិ..."
                   : "តើអ្នកកំពុងគិតអ្វី?"
           }
           className="w-full min-h-[120px] resize-none border-0 focus:ring-0 text-gray-900 placeholder-gray-400 text-base"
           maxLength={2000}
         />
       </div>
+
+      {/* Poll Options - Show only when POLL type is selected */}
+      {postType === "POLL" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-700">ជម្រើសមតិ:</p>
+            <span className="text-xs text-gray-500">{pollOptions.length}/6 options</span>
+          </div>
+          
+          {pollOptions.map((option, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={option}
+                  onChange={(e) => updatePollOption(index, e.target.value)}
+                  placeholder={`ជម្រើសទី ${index + 1}`}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  maxLength={100}
+                />
+              </div>
+              {pollOptions.length > 2 && (
+                <button
+                  onClick={() => removePollOption(index)}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  type="button"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          
+          {pollOptions.length < 6 && (
+            <button
+              onClick={addPollOption}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              type="button"
+            >
+              <Plus className="w-4 h-4" />
+              បន្ថែមជម្រើស
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Media Previews */}
       {mediaPreviews.length > 0 && (

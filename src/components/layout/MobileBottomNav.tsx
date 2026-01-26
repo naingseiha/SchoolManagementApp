@@ -13,13 +13,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { LucideIcon } from "lucide-react";
+import { useMemo } from "react";
 
 interface NavItem {
   id: string;
   label: string;
   labelKh: string;
   icon: LucideIcon;
-  href: string;
+  href: string | ((userId: string) => string); // Support dynamic hrefs
   roles?: string[];
   color: string; // Gradient color for active state
 }
@@ -39,7 +40,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     labelKh: "ទិន្នន័យ",
     icon: BarChart3,
-    href: "/",
+    href: "/dashboard",
     roles: ["ADMIN", "TEACHER"],
     color: "from-blue-500 to-cyan-500",
   },
@@ -63,11 +64,11 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: "profile",
-    label: "Menu",
-    labelKh: "ខ្ញុំ",
+    label: "Profile",
+    labelKh: "ប្រវត្តិរូប",
     icon: UserCircle2,
-    href: "/teacher-portal",
-    roles: ["ADMIN", "TEACHER"],
+    href: (userId: string) => `/profile/${userId}`,
+    roles: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
     color: "from-pink-500 to-rose-500",
   },
 ];
@@ -80,8 +81,18 @@ export default function MobileBottomNav({ onNavigate }: MobileBottomNavProps = {
   const pathname = usePathname();
   const { currentUser } = useAuth();
 
+  // Generate nav items with dynamic hrefs
+  const navItems = useMemo(() => {
+    return NAV_ITEMS.map(item => ({
+      ...item,
+      href: typeof item.href === 'function' 
+        ? item.href(currentUser?.id || '') 
+        : item.href
+    }));
+  }, [currentUser?.id]);
+
   // Filter nav items based on user role
-  const filteredItems = NAV_ITEMS.filter(
+  const filteredItems = navItems.filter(
     (item) => !item.roles || item.roles.includes(currentUser?.role || "")
   );
 

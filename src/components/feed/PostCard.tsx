@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo, useCallback } from "react";
+import { useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -19,16 +19,25 @@ import {
   Edit,
   Trash2,
   Flag,
-  X,
-  Star,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
-  Code,
+  Briefcase,
+  Book,
+  Microscope,
+  Trophy,
+  Lightbulb,
+  Users,
+  Clock,
+  Calendar,
+  ExternalLink,
+  Play,
+  Send,
+  AlertCircle,
+  Star,
 } from "lucide-react";
 import { Post, PostType, toggleLike, deletePost, POST_TYPE_INFO } from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
-import { km } from "date-fns/locale";
+import PollCard from "./PollCard";
 
 interface PostCardProps {
   post: Post;
@@ -48,9 +57,15 @@ const POST_TYPE_ICONS: Record<PostType, React.ElementType> = {
   ASSIGNMENT: BookOpen,
   POLL: BarChart3,
   RESOURCE: FolderOpen,
+  PROJECT: Briefcase,
+  TUTORIAL: Book,
+  RESEARCH: Microscope,
+  ACHIEVEMENT: Trophy,
+  REFLECTION: Lightbulb,
+  COLLABORATION: Users,
 };
 
-function PostCard({
+export default function PostCard({
   post,
   currentUserId,
   onPostDeleted,
@@ -60,11 +75,11 @@ function PostCard({
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isInterested, setIsInterested] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showFullContent, setShowFullContent] = useState(false);
 
   const isOwnPost = currentUserId === post.authorId;
   const PostTypeIcon = POST_TYPE_ICONS[post.postType];
@@ -77,214 +92,290 @@ function PostCard({
     return `${post.author.firstName} ${post.author.lastName}`;
   };
 
-  const getTimeAgo = () => {
-    const date = new Date(post.createdAt);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const getAuthorSubtitle = () => {
+    if (post.author.teacher?.position) return post.author.teacher.position;
+    if (post.author.student?.class) {
+      return `${post.author.student.class.name}`;
     }
-    return formatDistanceToNow(date, { addSuffix: false, locale: km });
+    return post.author.role;
   };
 
-  const handleLike = useCallback(async () => {
+  const getTimeAgo = () => {
+    return formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
+  };
+
+  const handleLike = async () => {
     if (isLiking) return;
-
     setIsLiking(true);
-    const previousIsLiked = isLiked;
-    const previousLikesCount = likesCount;
-
-    // Optimistic update
-    setIsLiked(!isLiked);
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
-
     try {
-      const result = await toggleLike(post.id);
-      setIsLiked(result.isLiked);
-      setLikesCount(result.likesCount);
+      await toggleLike(post.id);
+      setIsLiked(!isLiked);
+      setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
     } catch (error) {
-      setIsLiked(previousIsLiked);
-      setLikesCount(previousLikesCount);
-      console.error("Failed to toggle like:", error);
+      console.error("Toggle like error:", error);
     } finally {
       setIsLiking(false);
     }
-  }, [isLiking, isLiked, likesCount, post.id]);
+  };
 
-  const handleDelete = useCallback(async () => {
-    if (isDeleting || !confirm("តើអ្នកពិតជាចង់លុបការផ្សាយនេះមែនទេ?")) return;
-
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this post?")) return;
     setIsDeleting(true);
     try {
       await deletePost(post.id);
-      onPostDeleted?.(post.id);
+      if (onPostDeleted) onPostDeleted(post.id);
     } catch (error) {
-      console.error("Failed to delete post:", error);
-      alert("មិនអាចលុបការផ្សាយបានទេ។");
+      console.error("Delete error:", error);
+      alert("Failed to delete post");
     } finally {
       setIsDeleting(false);
-      setShowMenu(false);
     }
-  }, [post.id, isDeleting, onPostDeleted]);
+  };
 
   const nextImage = () => {
-    if (post.mediaUrls.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % post.mediaUrls.length);
-    }
+    setCurrentImageIndex((prev) =>
+      prev === post.mediaUrls.length - 1 ? 0 : prev + 1
+    );
   };
 
   const prevImage = () => {
-    if (post.mediaUrls.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + post.mediaUrls.length) % post.mediaUrls.length);
-    }
+    setCurrentImageIndex((prev) =>
+      prev === 0 ? post.mediaUrls.length - 1 : prev - 1
+    );
   };
 
-  const getCtaButton = () => {
+  // Render type-specific features
+  const renderTypeSpecificContent = () => {
     switch (post.postType) {
-      case "COURSE":
-        return { text: "Enroll Now", textKh: "ចុះឈ្មោះ" };
-      case "ARTICLE":
-        return { text: `${post.commentsCount || 0} Reads`, textKh: `${post.commentsCount || 0} ការអាន` };
-      case "QUIZ":
-      case "EXAM":
-        return { text: "Take Now", textKh: "ចាប់ផ្តើម" };
-      case "ASSIGNMENT":
-        return { text: "Submit", textKh: "ដាក់ស្នើ" };
       case "POLL":
-        return { text: "Vote", textKh: "បោះឆ្នោត" };
-      default:
-        return null;
+        if (post.pollOptions && post.pollOptions.length > 0) {
+          return (
+            <PollCard
+              postId={post.id}
+              pollOptions={post.pollOptions}
+              userVote={post.userVote || null}
+              totalVotes={post.totalVotes || 0}
+            />
+          );
+        }
+        break;
+
+      case "QUESTION":
+        return (
+          <div className="mt-4">
+            <button className="w-full py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Answer This Question
+            </button>
+          </div>
+        );
+
+      case "COURSE":
+        return (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                12 weeks
+              </span>
+              <span className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                234 enrolled
+              </span>
+            </div>
+            <button className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+              <GraduationCap className="w-4 h-4" />
+              Enroll Now
+            </button>
+          </div>
+        );
+
+      case "QUIZ":
+        return (
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-sm text-gray-600">10 questions • 15 min</span>
+            <button className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+              <Play className="w-4 h-4" />
+              Take Quiz
+            </button>
+          </div>
+        );
+
+      case "ASSIGNMENT":
+        return (
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-orange-600">
+              <Calendar className="w-4 h-4" />
+              <span className="font-medium">Due: March 15</span>
+            </div>
+            <button className="py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
+              <Send className="w-4 h-4" />
+              Submit
+            </button>
+          </div>
+        );
+
+      case "ANNOUNCEMENT":
+        return (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-red-900">Important Announcement</span>
+          </div>
+        );
+
+      case "PROJECT":
+        return (
+          <div className="mt-4">
+            <button className="w-full py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+              <ExternalLink className="w-4 h-4" />
+              View Project
+            </button>
+          </div>
+        );
+
+      case "ACHIEVEMENT":
+        return (
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3">
+            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900">Achievement Unlocked!</h4>
+              <p className="text-sm text-gray-600">Celebrate this milestone</p>
+            </div>
+          </div>
+        );
     }
+    return null;
   };
 
-  const ctaButton = getCtaButton();
+  const contentText = post.content;
+  const isLongContent = contentText.length > 300;
+  const displayContent = isLongContent && !showFullContent
+    ? contentText.slice(0, 300) + "..."
+    : contentText;
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden mb-4 shadow-sm border border-gray-100">
+    <article className="bg-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <div className="flex items-center gap-3 flex-1">
-          <button
-            onClick={() => onProfileClick?.(post.authorId)}
-            className="flex-shrink-0"
-          >
-            {post.author.profilePictureUrl ? (
-              <img
-                src={post.author.profilePictureUrl}
-                alt={getAuthorName()}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                {getAuthorName().charAt(0)}
-              </div>
-            )}
-          </button>
-
-          <div className="flex-1 min-w-0">
+      <div className="px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          {/* Author Info */}
+          <div className="flex gap-3 flex-1 min-w-0">
             <button
               onClick={() => onProfileClick?.(post.authorId)}
-              className="font-semibold text-gray-900 hover:underline text-sm block truncate"
+              className="flex-shrink-0"
             >
-              {getAuthorName()}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                {getAuthorName().charAt(0).toUpperCase()}
+              </div>
             </button>
-            <p className="text-xs text-gray-500">{getTimeAgo()}</p>
-          </div>
-        </div>
-
-        {/* Post Type Badge & Menu */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ backgroundColor: postTypeInfo.color + '15' }}>
-            <PostTypeIcon className="w-4 h-4" style={{ color: postTypeInfo.color }} />
-            <div className="flex flex-col items-end">
-              <span className="text-xs font-semibold" style={{ color: postTypeInfo.color }}>
-                {postTypeInfo.label}
-              </span>
-              {ctaButton && (
-                <span className="text-[10px] text-gray-500">
-                  {ctaButton.textKh}
-                </span>
-              )}
+            
+            <div className="flex-1 min-w-0">
+              <button
+                onClick={() => onProfileClick?.(post.authorId)}
+                className="font-semibold text-gray-900 hover:underline text-[15px] block truncate"
+              >
+                {getAuthorName()}
+              </button>
+              <p className="text-xs text-gray-500">{getTimeAgo()}</p>
             </div>
           </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <MoreVertical className="w-5 h-5 text-gray-600" />
-            </button>
+          {/* Post Type Badge & Menu */}
+          <div className="flex items-center gap-2 ml-3">
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5">
+                <PostTypeIcon className="w-4 h-4" style={{ color: postTypeInfo.color }} />
+                <span className="text-xs font-semibold" style={{ color: postTypeInfo.color }}>
+                  {postTypeInfo.label}
+                </span>
+              </div>
+              <span className="text-[10px] text-gray-500">0 Reads</span>
+            </div>
 
-            {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowMenu(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]">
-                  {isOwnPost ? (
-                    <>
-                      <button
-                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
-                        onClick={() => {
-                          setShowMenu(false);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                        កែសម្រួល
-                      </button>
-                      <button
-                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600"
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        {isDeleting ? "កំពុងលុប..." : "លុប"}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
-                      onClick={() => {
-                        setShowMenu(false);
-                      }}
-                    >
-                      <Flag className="w-4 h-4" />
-                      រាយការណ៍
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
+            {/* Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <MoreVertical className="w-5 h-5 text-gray-600" />
+              </button>
+
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]">
+                    {isOwnPost ? (
+                      <>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                          onClick={() => setShowMenu(false)}
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit Post
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 flex items-center gap-3 text-red-600"
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {isDeleting ? "Deleting..." : "Delete Post"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                          onClick={() => setShowMenu(false)}
+                        >
+                          <Flag className="w-4 h-4" />
+                          Report Post
+                        </button>
+                        <button
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                          onClick={() => setShowMenu(false)}
+                        >
+                          <Bookmark className="w-4 h-4" />
+                          Save Post
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Image Carousel */}
+      {/* Media Gallery - Full Width, No Padding */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div className="relative w-full bg-gradient-to-br from-blue-50 to-purple-50" style={{ aspectRatio: '16/10' }}>
+        <div className="relative w-full bg-gray-100" style={{ aspectRatio: '16/9' }}>
           <img
             src={post.mediaUrls[currentImageIndex]}
             alt="Post media"
             className="w-full h-full object-cover"
           />
           
-          {/* Navigation Arrows */}
           {post.mediaUrls.length > 1 && (
             <>
               <button
                 onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-all"
               >
-                <ChevronLeft className="w-5 h-5 text-gray-700" />
+                <ChevronLeft className="w-5 h-5 text-gray-800" />
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-all"
               >
-                <ChevronRight className="w-5 h-5 text-gray-700" />
+                <ChevronRight className="w-5 h-5 text-gray-800" />
               </button>
               
               {/* Dots Indicator */}
@@ -293,10 +384,10 @@ function PostCard({
                   <button
                     key={idx}
                     onClick={() => setCurrentImageIndex(idx)}
-                    className={`w-1.5 h-1.5 rounded-full transition-all ${
+                    className={`h-1.5 rounded-full transition-all ${
                       idx === currentImageIndex
                         ? 'bg-orange-500 w-6'
-                        : 'bg-white/70'
+                        : 'bg-white/70 w-1.5'
                     }`}
                   />
                 ))}
@@ -306,104 +397,86 @@ function PostCard({
         </div>
       )}
 
-      {/* Content */}
-      <div className="px-4 pt-3 pb-2">
-        {/* Title with Icon */}
-        <div className="flex items-start gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
-            <Code className="w-5 h-5 text-gray-700" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-900 text-base leading-tight mb-1">
-              {post.content.split('\n')[0] || postTypeInfo.label}
-            </h3>
-            <p className="text-xs text-gray-500">
-              {post.author.teacher?.position || post.author.student?.class?.name || 'Education'}
-            </p>
-          </div>
+      {/* Content Section */}
+      <div className="px-4 py-4">
+        {/* Title - No Icon */}
+        <div className="mb-3">
+          <h3 className="font-semibold text-gray-900 text-base leading-tight mb-1">
+            {post.content.split('\n')[0] || postTypeInfo.label}
+          </h3>
+          <p className="text-xs text-gray-500">
+            {getAuthorSubtitle()}
+          </p>
         </div>
 
         {/* Description */}
         {post.content.split('\n').slice(1).join('\n') && (
-          <p className="text-sm text-gray-600 line-clamp-3 mb-3 leading-relaxed">
-            {post.content.split('\n').slice(1).join('\n')}
-          </p>
+          <div>
+            <p className="text-[15px] text-gray-600 leading-relaxed">
+              {displayContent.split('\n').slice(1).join('\n')}
+            </p>
+            {isLongContent && (
+              <button
+                onClick={() => setShowFullContent(!showFullContent)}
+                className="text-blue-600 hover:underline text-sm mt-2"
+              >
+                {showFullContent ? "Show less" : "Show more"}
+              </button>
+            )}
+          </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 mb-3">
-          <button
-            onClick={() => setIsInterested(!isInterested)}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-              isInterested
-                ? 'bg-yellow-50 text-yellow-600 border border-yellow-200'
-                : 'bg-gray-50 text-gray-600 border border-gray-200'
-            }`}
-          >
-            <Star className={`w-4 h-4 ${isInterested ? 'fill-yellow-500' : ''}`} />
-            {isInterested ? 'Interested' : 'Interested'}
-          </button>
-          
-          {post.postType === 'COURSE' && (
-            <button className="flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 bg-gray-50 text-gray-600 border border-gray-200">
-              <TrendingUp className="w-4 h-4" />
-              Unfollow
+        {/* Type-Specific Content */}
+        {renderTypeSpecificContent()}
+
+        {/* Feature/Insights Buttons for Article/Course */}
+        {(post.postType === 'ARTICLE' || post.postType === 'COURSE') && (
+          <div className="flex gap-2 mt-4">
+            <button className="flex-1 py-2 px-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 flex items-center justify-center gap-1.5 transition-colors">
+              <Star className="w-4 h-4" />
+              Feature
             </button>
-          )}
+            <button className="flex-1 py-2 px-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 flex items-center justify-center gap-1.5 transition-colors">
+              <BarChart3 className="w-4 h-4" />
+              Insights
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Engagement Section */}
+      <div className="px-4 pb-4 pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleLike}
+            disabled={isLiking}
+            className="flex items-center gap-1.5 text-gray-600 hover:text-red-500 transition-colors"
+          >
+            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+            <span className="text-sm font-medium">{likesCount}</span>
+          </button>
+
+          <button
+            onClick={() => onCommentClick?.(post.id)}
+            className="flex items-center gap-1.5 text-gray-600 hover:text-blue-500 transition-colors"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">{post.commentsCount}</span>
+          </button>
+
+          <button className="flex items-center gap-1.5 text-gray-600 hover:text-green-500 transition-colors">
+            <Share2 className="w-5 h-5" />
+            <span className="text-sm font-medium">{post.sharesCount}</span>
+          </button>
+
+          <button
+            onClick={() => setIsBookmarked(!isBookmarked)}
+            className="text-gray-600 hover:text-yellow-500 transition-colors"
+          >
+            <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+          </button>
         </div>
       </div>
-
-      {/* Footer - Engagement Stats */}
-      <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
-        <button
-          onClick={handleLike}
-          disabled={isLiking}
-          className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group"
-        >
-          <Heart
-            className={`w-5 h-5 transition-all ${
-              isLiked
-                ? 'fill-red-500 text-red-500'
-                : 'text-gray-600 group-hover:text-red-500'
-            }`}
-          />
-          <span className={`text-sm font-medium ${isLiked ? 'text-red-500' : 'text-gray-600'}`}>
-            {likesCount}
-          </span>
-        </button>
-
-        <button
-          onClick={() => onCommentClick?.(post.id)}
-          className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group"
-        >
-          <MessageCircle className="w-5 h-5 text-gray-600 group-hover:text-blue-500" />
-          <span className="text-sm font-medium text-gray-600">
-            {post.commentsCount}
-          </span>
-        </button>
-
-        <button className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group">
-          <Share2 className="w-5 h-5 text-gray-600 group-hover:text-green-500" />
-          <span className="text-sm font-medium text-gray-600">
-            {post.sharesCount}
-          </span>
-        </button>
-
-        <button
-          onClick={() => setIsBookmarked(!isBookmarked)}
-          className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group"
-        >
-          <Bookmark
-            className={`w-5 h-5 transition-all ${
-              isBookmarked
-                ? 'fill-blue-500 text-blue-500'
-                : 'text-gray-600 group-hover:text-blue-500'
-            }`}
-          />
-        </button>
-      </div>
-    </div>
+    </article>
   );
 }
-
-export default memo(PostCard);

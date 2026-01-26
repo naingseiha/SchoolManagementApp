@@ -19,9 +19,10 @@ import { useAuth } from "@/context/AuthContext";
 interface FeedPageProps {
   showCreatePost?: boolean;
   onProfileClick?: (userId: string) => void;
+  selectedFilter?: PostType | "ALL";
 }
 
-function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
+function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: externalFilter }: FeedPageProps) {
   const { currentUser } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +31,7 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedFilter, setSelectedFilter] = useState<PostType | "ALL">("ALL");
+  const selectedFilter = externalFilter || "ALL";
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -95,15 +96,6 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }, []);
 
-  // Handle filter change
-  const handleFilterChange = useCallback((filter: PostType | "ALL") => {
-    setSelectedFilter(filter);
-    setShowFilterDropdown(false);
-    setCurrentPage(1);
-    setPosts([]);
-    setHasMore(true);
-  }, []);
-
   // Infinite scroll observer
   useEffect(() => {
     if (observerRef.current) {
@@ -139,20 +131,22 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
   };
 
   return (
-    <div className="w-full pt-4 space-y-4">
+    <div className="w-full pt-4">
       {/* Create Post */}
         {showCreatePost && (
-          <CreatePost
-            userProfilePicture={null}
-            userName={getUserName()}
-            onPostCreated={handlePostCreated}
-            onError={(error) => setError(error)}
-          />
+          <div className="mb-4">
+            <CreatePost
+              userProfilePicture={null}
+              userName={getUserName()}
+              onPostCreated={handlePostCreated}
+              onError={(error) => setError(error)}
+            />
+          </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
             <div className="p-2 bg-red-100 rounded-full">
               <X className="w-5 h-5 text-red-600" />
             </div>
@@ -170,15 +164,15 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 bg-white">
             <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
             <p className="text-gray-500">កំពុងផ្ទុកមតិព័ត៌មាន...</p>
           </div>
         )}
 
-        {/* Posts List */}
+        {/* Posts List - No spacing between cards */}
         {!isLoading && posts.length === 0 && !error && (
-          <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center py-12 bg-white border-t border-b border-gray-100">
             <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Rss className="w-8 h-8 text-indigo-600" />
             </div>
@@ -191,20 +185,27 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
           </div>
         )}
 
-        {!isLoading &&
-          posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              currentUserId={currentUser?.id}
-              onPostDeleted={handlePostDeleted}
-              onProfileClick={onProfileClick}
-            />
+        <div className="bg-white">
+          {!isLoading &&
+            posts.map((post, index) => (
+              <div key={post.id}>
+                <PostCard
+                  post={post}
+                  currentUserId={currentUser?.id}
+                  onPostDeleted={handlePostDeleted}
+                  onProfileClick={onProfileClick}
+                />
+                {/* Separator between posts */}
+                {index < posts.length - 1 && (
+                  <div className="h-2 bg-gray-50" />
+                )}
+              </div>
           ))}
+        </div>
 
         {/* Load More Trigger */}
         {hasMore && !isLoading && (
-          <div ref={loadMoreRef} className="py-4">
+          <div ref={loadMoreRef} className="py-4 bg-white">
             {isLoadingMore && (
               <div className="flex justify-center">
                 <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
@@ -215,7 +216,7 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
 
         {/* No More Posts */}
         {!hasMore && posts.length > 0 && (
-          <div className="text-center py-6">
+          <div className="text-center py-6 bg-white">
             <p className="text-gray-400 text-sm">
               អ្នកបានមើលការផ្សាយទាំងអស់ហើយ
             </p>

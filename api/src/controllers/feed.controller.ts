@@ -9,7 +9,17 @@ import { storageService } from "../services/storage.service";
 export const createPost = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
-    const { content, postType, visibility } = req.body;
+    let { content, postType, visibility, pollOptions } = req.body;
+
+    // ✅ Parse pollOptions if it's a JSON string (from FormData)
+    if (typeof pollOptions === 'string') {
+      try {
+        pollOptions = JSON.parse(pollOptions);
+      } catch (e) {
+        console.error("Failed to parse pollOptions:", e);
+        pollOptions = undefined;
+      }
+    }
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
@@ -23,6 +33,22 @@ export const createPost = async (req: Request, res: Response) => {
         success: false,
         message: "Post content must be 2000 characters or less",
       });
+    }
+
+    // Validate poll options if POLL type
+    if (postType === "POLL") {
+      if (!pollOptions || !Array.isArray(pollOptions) || pollOptions.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: "Poll must have at least 2 options",
+        });
+      }
+      if (pollOptions.length > 6) {
+        return res.status(400).json({
+          success: false,
+          message: "Poll can have maximum 6 options",
+        });
+      }
     }
 
     // Handle media uploads if present
@@ -44,11 +70,12 @@ export const createPost = async (req: Request, res: Response) => {
       }
     }
 
+    // Create post with poll options if POLL type
     const post = await prisma.post.create({
       data: {
         authorId: userId!,
         content: content.trim(),
-        postType: postType || "STATUS",
+        postType: postType || "ARTICLE",
         visibility: visibility || "SCHOOL",
         mediaUrls,
         mediaKeys,
@@ -94,6 +121,21 @@ export const createPost = async (req: Request, res: Response) => {
       },
     });
 
+    // Create poll options if POLL type
+    if (postType === "POLL" && pollOptions && Array.isArray(pollOptions)) {
+      await Promise.all(
+        pollOptions.map((optionText: string, index: number) =>
+          prisma.pollOption.create({
+            data: {
+              postId: post.id,
+              text: optionText.trim(),
+              position: index,
+            },
+          })
+        )
+      );
+    }
+
     res.status(201).json({
       success: true,
       message: "Post created successfully",
@@ -138,7 +180,7 @@ export const getFeedPosts = async (req: Request, res: Response) => {
       where.postType = postType;
     }
 
-    // Get posts with author info
+    // Get posts with author info and poll options
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         where,
@@ -191,6 +233,51 @@ export const getFeedPosts = async (req: Request, res: Response) => {
       prisma.post.count({ where }),
     ]);
 
+    // Fetch poll options for POLL type posts
+    const pollPostIds = posts.filter(p => p.postType === 'POLL').map(p => p.id);
+    const pollOptions = pollPostIds.length > 0 
+      ? await prisma.pollOption.findMany({
+          where: { postId: { in: pollPostIds } },
+          orderBy: { position: 'asc' },
+          include: {
+            _count: {
+              select: { votes: true }
+            }
+          }
+        })
+      : [];
+
+    // Get user's votes
+    const userVotes = userId && pollPostIds.length > 0
+      ? await prisma.pollVote.findMany({
+          where: { 
+            userId,
+            option: { postId: { in: pollPostIds } }
+          },
+          include: { option: { select: { postId: true } } }
+        })
+      : [];
+
+    // Group poll options by postId
+    const pollOptionsByPost = new Map<string, any[]>();
+    pollOptions.forEach(option => {
+      if (!pollOptionsByPost.has(option.postId)) {
+        pollOptionsByPost.set(option.postId, []);
+      }
+      pollOptionsByPost.get(option.postId)!.push({
+        id: option.id,
+        text: option.text,
+        position: option.position,
+        votesCount: option._count.votes,
+      });
+    });
+
+    // Map user votes by postId
+    const userVotesByPost = new Map<string, string>();
+    userVotes.forEach(vote => {
+      userVotesByPost.set(vote.option.postId, vote.optionId);
+    });
+
     // Check if current user liked each post
     const postIds = posts.map((p) => p.id);
     const userLikes = await prisma.like.findMany({
@@ -207,6 +294,13 @@ export const getFeedPosts = async (req: Request, res: Response) => {
       likesCount: post._count.likes,
       commentsCount: post._count.comments,
       isLiked: likedPostIds.has(post.id),
+      // Add poll data if POLL type
+      ...(post.postType === 'POLL' && {
+        pollOptions: pollOptionsByPost.get(post.id) || [],
+        userVote: userVotesByPost.get(post.id) || null,
+        totalVotes: (pollOptionsByPost.get(post.id) || [])
+          .reduce((sum: number, opt: any) => sum + opt.votesCount, 0),
+      }),
     }));
 
     res.json({
@@ -831,6 +925,82 @@ export const getUserPosts = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to get user posts",
+    });
+  }
+};
+
+/**
+ * Vote on a poll option
+ * POST /api/feed/polls/:optionId/vote
+ */
+export const votePoll = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { optionId } = req.params;
+
+    // Check if option exists
+    const option = await prisma.pollOption.findUnique({
+      where: { id: optionId },
+      include: { votes: { where: { userId } } },
+    });
+
+    if (!option) {
+      return res.status(404).json({
+        success: false,
+        message: "Poll option not found",
+      });
+    }
+
+    // Check if user already voted
+    if (option.votes.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already voted on this poll",
+      });
+    }
+
+    // Create vote and update count
+    await prisma.$transaction([
+      prisma.pollVote.create({
+        data: {
+          optionId,
+          userId,
+        },
+      }),
+      prisma.pollOption.update({
+        where: { id: optionId },
+        data: { votesCount: { increment: 1 } },
+      }),
+    ]);
+
+    // Get updated poll data
+    const updatedOptions = await prisma.pollOption.findMany({
+      where: { postId: option.postId },
+      orderBy: { position: 'asc' },
+      select: {
+        id: true,
+        text: true,
+        position: true,
+        votesCount: true,
+      },
+    });
+
+    const totalVotes = updatedOptions.reduce((sum, opt) => sum + opt.votesCount, 0);
+
+    res.json({
+      success: true,
+      message: "Vote recorded successfully",
+      data: {
+        pollOptions: updatedOptions,
+        userVote: optionId,
+        totalVotes,
+      },
+    });
+  } catch (error: any) {
+    console.error("Vote poll error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to record vote",
     });
   }
 };

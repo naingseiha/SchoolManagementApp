@@ -17,6 +17,12 @@ import {
   Megaphone,
   BookOpen,
   BarChart3,
+  Briefcase,
+  Book,
+  Microscope,
+  Trophy,
+  Lightbulb,
+  Users as UsersIcon,
 } from "lucide-react";
 import type { PostType } from "@/lib/api/feed";
 
@@ -28,12 +34,18 @@ const POST_TYPE_FILTERS: {
   { value: "ALL", icon: Rss, labelKh: "ទាំងអស់" },
   { value: "ARTICLE", icon: FileText, labelKh: "អត្ថបទ" },
   { value: "COURSE", icon: GraduationCap, labelKh: "វគ្គសិក្សា" },
+  { value: "PROJECT", icon: Briefcase, labelKh: "គម្រោង" },
+  { value: "TUTORIAL", icon: Book, labelKh: "មេរៀន" },
+  { value: "RESEARCH", icon: Microscope, labelKh: "ការស្រាវជ្រាវ" },
+  { value: "ACHIEVEMENT", icon: Trophy, labelKh: "សមិទ្ធិផល" },
   { value: "QUIZ", icon: Brain, labelKh: "សំណួរក្លាយ" },
   { value: "QUESTION", icon: HelpCircle, labelKh: "សំណួរ" },
   { value: "EXAM", icon: ClipboardCheck, labelKh: "ប្រឡង" },
   { value: "ANNOUNCEMENT", icon: Megaphone, labelKh: "ប្រកាស" },
   { value: "ASSIGNMENT", icon: BookOpen, labelKh: "កិច្ចការ" },
   { value: "POLL", icon: BarChart3, labelKh: "មតិ" },
+  { value: "REFLECTION", icon: Lightbulb, labelKh: "ការពិចារណា" },
+  { value: "COLLABORATION", icon: UsersIcon, labelKh: "កិច្ចសហការ" },
 ];
 
 export default function FeedRoute() {

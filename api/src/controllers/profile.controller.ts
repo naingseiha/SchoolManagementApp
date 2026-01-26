@@ -393,6 +393,19 @@ export const getUserProfile = async (req: Request, res: Response) => {
         profileVisibility: true,
         profileCompleteness: true,
         createdAt: true,
+        // Career fields
+        careerGoals: true,
+        totalPoints: true,
+        level: true,
+        currentStreak: true,
+        longestStreak: true,
+        totalLearningHours: true,
+        location: true,
+        languages: true,
+        professionalTitle: true,
+        isVerified: true,
+        isOpenToOpportunities: true,
+        resumeUrl: true,
         student: {
           select: {
             khmerName: true,

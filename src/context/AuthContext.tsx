@@ -248,9 +248,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.prefetch("/parent-portal");
         router.replace("/parent-portal"); // Use replace instead of push
       } else {
-        console.log("→ Redirecting to dashboard");
-        router.prefetch("/");
-        router.replace("/"); // Use replace instead of push
+        console.log("→ Redirecting to feed");
+        router.prefetch("/feed");
+        router.replace("/feed"); // Use replace instead of push
       }
 
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

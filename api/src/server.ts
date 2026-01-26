@@ -38,6 +38,9 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import profileRoutes from "./routes/profile.routes";
 import feedRoutes from "./routes/feed.routes";
 import socialRoutes from "./routes/social.routes";
+import skillsRoutes from "./routes/skills.routes";
+import projectsRoutes from "./routes/projects.routes";
+import achievementsRoutes from "./routes/achievements.routes";
 
 // Initialize Express app
 const app: Application = express();
@@ -138,6 +141,9 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/social", socialRoutes);
+app.use("/api/profile", skillsRoutes);
+app.use("/api/profile", projectsRoutes);
+app.use("/api", achievementsRoutes);
 
 // API Documentation Route
 app.get("/api", (req: Request, res: Response) => {

@@ -45,9 +45,12 @@ export default function LoginPage() {
       if (currentUser.role === "STUDENT") {
         console.log("→ Redirecting student to student portal");
         router.push("/student-portal");
+      } else if (currentUser.role === "PARENT") {
+        console.log("→ Redirecting parent to parent portal");
+        router.push("/parent-portal");
       } else {
-        console.log("→ Redirecting to dashboard");
-        router.push("/");
+        console.log("→ Redirecting to feed");
+        router.push("/feed");
       }
     }
   }, [isAuthenticated, isLoading, currentUser, router]);

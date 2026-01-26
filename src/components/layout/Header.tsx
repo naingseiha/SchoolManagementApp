@@ -146,8 +146,12 @@ export default function Header() {
           {/* User Profile Section */}
           <div className="flex items-center space-x-2 md:space-x-3">
             {/* User Avatar */}
-            <div className="relative group">
-              <div className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110 cursor-pointer">
+            <div 
+              className="relative group cursor-pointer"
+              onClick={() => currentUser?.id && router.push(`/profile/${currentUser.id}`)}
+              title="មើលប្រវត្តិរូប (View Profile)"
+            >
+              <div className="flex h-10 w-10 md:h-11 md:w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white font-semibold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
                 <User className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-white shadow-sm animate-pulse"></div>

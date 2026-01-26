@@ -22,6 +22,7 @@ import {
   UserCheck,
   Sparkles,
   Loader2,
+  User,
 } from "lucide-react";
 
 function Sidebar() {
@@ -40,10 +41,18 @@ function Sidebar() {
     {
       icon: LayoutDashboard,
       label: "ផ្ទាំងគ្រប់គ្រង",
-      href: "/",
+      href: "/dashboard",
       roles: ["ADMIN", "TEACHER"],
       permission: PERMISSIONS.VIEW_DASHBOARD,
       gradient: "from-blue-500 to-cyan-500",
+    },
+    {
+      icon: User,
+      label: "ប្រវត្តិរូប",
+      href: `/profile/${currentUser?.id || ''}`,
+      roles: ["ADMIN", "TEACHER"],
+      permission: null, // Everyone can view their own profile
+      gradient: "from-indigo-500 to-purple-500",
     },
     {
       icon: Users,

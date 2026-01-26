@@ -379,6 +379,7 @@ model User {
   posts             Post[]
   comments          Comment[]
   likes             Like[]
+  pollVotes         PollVote[]     @relation("PollVotes")
   followers         Follow[]       @relation("Followers")
   following         Follow[]       @relation("Following")
   notifications     Notification[] @relation("NotificationRecipient")
@@ -683,6 +684,34 @@ model Like {
   @@unique([postId, userId])
   @@index([userId])
   @@map("likes")
+}
+
+// ✅ Poll system for interactive surveys
+model PollOption {
+  id        String     @id @default(cuid())
+  postId    String
+  text      String     @db.Text
+  position  Int        @default(0) // Order of options
+  votesCount Int       @default(0)
+  createdAt DateTime   @default(now())
+  
+  votes     PollVote[]
+  
+  @@index([postId])
+  @@map("poll_options")
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation("PollVotes", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  
+  @@unique([optionId, userId]) // One vote per option per user
+  @@index([userId])
+  @@map("poll_votes")
 }
 
 model Follow {

@@ -3,11 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// Load environment variables FIRST (before any imports that use them)
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const compression_1 = __importDefault(require("compression")); // ✅ OPTIMIZED: Add gzip compression
-const dotenv_1 = __importDefault(require("dotenv"));
 const database_1 = require("./config/database");
 const errorHandler_1 = require("./middleware/errorHandler");
 const password_expiration_job_1 = require("./jobs/password-expiration.job");
@@ -31,8 +33,11 @@ const attendance_routes_1 = __importDefault(require("./routes/attendance.routes"
 const export_routes_1 = __importDefault(require("./routes/export.routes"));
 const report_routes_1 = __importDefault(require("./routes/report.routes"));
 const dashboard_routes_1 = __importDefault(require("./routes/dashboard.routes"));
-// Load environment variables
-dotenv_1.default.config();
+const profile_routes_1 = __importDefault(require("./routes/profile.routes"));
+const feed_routes_1 = __importDefault(require("./routes/feed.routes"));
+const social_routes_1 = __importDefault(require("./routes/social.routes"));
+const skills_routes_1 = __importDefault(require("./routes/skills.routes"));
+const projects_routes_1 = __importDefault(require("./routes/projects.routes"));
 // Initialize Express app
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5001;
@@ -117,6 +122,11 @@ app.use("/api/grades", grade_routes_1.default);
 app.use("/api/attendance", attendance_routes_1.default);
 app.use("/api/export", export_routes_1.default);
 app.use("/api/reports", report_routes_1.default);
+app.use("/api/profile", profile_routes_1.default);
+app.use("/api/feed", feed_routes_1.default);
+app.use("/api/social", social_routes_1.default);
+app.use("/api/profile", skills_routes_1.default);
+app.use("/api/profile", projects_routes_1.default);
 // API Documentation Route
 app.get("/api", (req, res) => {
     res.json({

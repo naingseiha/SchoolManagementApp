@@ -12,6 +12,7 @@ import {
   addComment,
   deleteComment,
   getUserPosts,
+  votePoll,
 } from "../controllers/feed.controller";
 
 const router = Router();
@@ -28,6 +29,9 @@ router.delete("/posts/:postId", deletePost);
 
 // Like system
 router.post("/posts/:postId/like", toggleLike);
+
+// Poll voting
+router.post("/polls/:optionId/vote", votePoll);
 
 // Comments
 router.get("/posts/:postId/comments", getComments);
