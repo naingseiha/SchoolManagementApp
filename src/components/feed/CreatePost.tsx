@@ -5,18 +5,21 @@ import {
   Image as ImageIcon,
   X,
   Loader2,
-  Award,
-  Target,
-  BookOpen,
+  FileText,
+  GraduationCap,
+  Brain,
   HelpCircle,
+  ClipboardCheck,
   Megaphone,
-  MessageSquare,
-  User,
+  BookOpen,
+  BarChart3,
+  FolderOpen,
   Send,
   ChevronDown,
   Globe,
   Users,
   Lock,
+  User,
 } from "lucide-react";
 import {
   createPost,
@@ -33,13 +36,16 @@ interface CreatePostProps {
   onError?: (error: string) => void;
 }
 
-const POST_TYPES: { type: PostType; icon: React.ElementType }[] = [
-  { type: "STATUS", icon: MessageSquare },
-  { type: "ACHIEVEMENT", icon: Award },
-  { type: "LEARNING_GOAL", icon: Target },
-  { type: "RESOURCE_SHARE", icon: BookOpen },
-  { type: "QUESTION", icon: HelpCircle },
-  { type: "ANNOUNCEMENT", icon: Megaphone },
+const POST_TYPES: { type: PostType; icon: React.ElementType; label: string; labelKh: string }[] = [
+  { type: "ARTICLE", icon: FileText, label: "Article", labelKh: "អត្ថបទ" },
+  { type: "COURSE", icon: GraduationCap, label: "Course", labelKh: "វគ្គសិក្សា" },
+  { type: "QUIZ", icon: Brain, label: "Quiz", labelKh: "សំណួរក្លាយ" },
+  { type: "QUESTION", icon: HelpCircle, label: "Question", labelKh: "សំណួរ" },
+  { type: "EXAM", icon: ClipboardCheck, label: "Exam", labelKh: "ប្រឡង" },
+  { type: "ANNOUNCEMENT", icon: Megaphone, label: "Announcement", labelKh: "ប្រកាស" },
+  { type: "ASSIGNMENT", icon: BookOpen, label: "Assignment", labelKh: "កិច្ចការផ្ទះ" },
+  { type: "POLL", icon: BarChart3, label: "Poll", labelKh: "មតិ" },
+  { type: "RESOURCE", icon: FolderOpen, label: "Resource", labelKh: "ធនធាន" },
 ];
 
 const VISIBILITY_OPTIONS: {
@@ -62,7 +68,7 @@ function CreatePost({
 }: CreatePostProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [content, setContent] = useState("");
-  const [postType, setPostType] = useState<PostType>("STATUS");
+  const [postType, setPostType] = useState<PostType>("ARTICLE");
   const [visibility, setVisibility] = useState<PostVisibility>("SCHOOL");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
@@ -88,7 +94,7 @@ function CreatePost({
   const resetForm = () => {
     setIsExpanded(false);
     setContent("");
-    setPostType("STATUS");
+    setPostType("ARTICLE");
     setMediaFiles([]);
     setMediaPreviews([]);
     setShowTypeSelector(false);

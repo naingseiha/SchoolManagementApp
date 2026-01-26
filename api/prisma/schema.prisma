@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
 }
 
 datasource db {
@@ -468,12 +469,15 @@ enum ProfileVisibility {
 
 // Post type for activity feed
 enum PostType {
-  STATUS          // Text update
-  ACHIEVEMENT     // Academic achievement
-  LEARNING_GOAL   // Learning milestone
-  RESOURCE_SHARE  // Sharing educational resources
-  QUESTION        // Academic question
-  ANNOUNCEMENT    // Teacher/Admin announcements
+  ARTICLE         // Educational articles
+  COURSE          // Course materials
+  QUIZ            // Quizzes and tests
+  QUESTION        // Student questions
+  EXAM            // Exam announcements
+  ANNOUNCEMENT    // Official announcements
+  ASSIGNMENT      // Homework assignments
+  POLL            // Surveys and polls
+  RESOURCE        // Learning resources
 }
 
 // Post visibility
@@ -506,7 +510,7 @@ model Post {
   content       String         @db.Text
   mediaUrls     String[]       // Array of R2 URLs
   mediaKeys     String[]       // R2 keys for cleanup
-  postType      PostType       @default(STATUS)
+  postType      PostType       @default(ARTICLE)
   visibility    PostVisibility @default(SCHOOL)
   likesCount    Int            @default(0)
   commentsCount Int            @default(0)

@@ -101,11 +101,26 @@ export default function DashboardPage() {
     if (!isLoading && !isAuthenticated) {
       console.log("⚠️ Not authenticated, redirecting to login...");
       router.push("/login");
+      return;
     }
-    // Redirect students to their portal immediately with replace
-    if (!isLoading && isAuthenticated && currentUser?.role === "STUDENT") {
-      console.log("📍 Student detected, redirecting to student portal...");
-      router.replace("/student-portal"); // Use replace to prevent back button issues
+    
+    // Redirect to feed only on first load (not when user clicks Dashboard tab)
+    if (!isLoading && isAuthenticated && currentUser) {
+      // Check if this is the initial app load
+      const hasVisitedBefore = sessionStorage.getItem('hasVisitedApp');
+      
+      if (!hasVisitedBefore) {
+        // First visit in this session - redirect non-admins to feed
+        if (currentUser.role !== "ADMIN" && currentUser.role !== "SUPER_ADMIN") {
+          console.log("📱 First visit - redirecting to feed (default landing page)...");
+          sessionStorage.setItem('hasVisitedApp', 'true');
+          router.replace("/feed");
+        } else {
+          // Admin stays on dashboard
+          sessionStorage.setItem('hasVisitedApp', 'true');
+        }
+      }
+      // If hasVisitedBefore = true, user is navigating intentionally, let them stay
     }
   }, [isAuthenticated, isLoading, currentUser, router]);
 

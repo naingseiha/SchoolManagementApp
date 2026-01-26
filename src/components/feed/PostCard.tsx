@@ -5,19 +5,26 @@ import {
   Heart,
   MessageCircle,
   Share2,
-  MoreHorizontal,
-  Award,
-  Target,
-  BookOpen,
+  Bookmark,
+  MoreVertical,
+  FileText,
+  GraduationCap,
+  Brain,
   HelpCircle,
+  ClipboardCheck,
   Megaphone,
-  MessageSquare,
-  User,
-  Clock,
+  BookOpen,
+  BarChart3,
+  FolderOpen,
   Edit,
   Trash2,
   Flag,
   X,
+  Star,
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight,
+  Code,
 } from "lucide-react";
 import { Post, PostType, toggleLike, deletePost, POST_TYPE_INFO } from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
@@ -32,12 +39,15 @@ interface PostCardProps {
 }
 
 const POST_TYPE_ICONS: Record<PostType, React.ElementType> = {
-  STATUS: MessageSquare,
-  ACHIEVEMENT: Award,
-  LEARNING_GOAL: Target,
-  RESOURCE_SHARE: BookOpen,
+  ARTICLE: FileText,
+  COURSE: GraduationCap,
+  QUIZ: Brain,
   QUESTION: HelpCircle,
+  EXAM: ClipboardCheck,
   ANNOUNCEMENT: Megaphone,
+  ASSIGNMENT: BookOpen,
+  POLL: BarChart3,
+  RESOURCE: FolderOpen,
 };
 
 function PostCard({
@@ -49,9 +59,12 @@ function PostCard({
 }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isInterested, setIsInterested] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const isOwnPost = currentUserId === post.authorId;
   const PostTypeIcon = POST_TYPE_ICONS[post.postType];
@@ -64,17 +77,15 @@ function PostCard({
     return `${post.author.firstName} ${post.author.lastName}`;
   };
 
-  const getAuthorSubtitle = () => {
-    if (post.author.student?.class) {
-      return `${post.author.student.class.name} • សិស្ស`;
+  const getTimeAgo = () => {
+    const date = new Date(post.createdAt);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
-    if (post.author.teacher?.position) {
-      return post.author.teacher.position;
-    }
-    if (post.author.parent) {
-      return "មាតាបិតា";
-    }
-    return post.author.role;
+    return formatDistanceToNow(date, { addSuffix: false, locale: km });
   };
 
   const handleLike = useCallback(async () => {
@@ -93,14 +104,13 @@ function PostCard({
       setIsLiked(result.isLiked);
       setLikesCount(result.likesCount);
     } catch (error) {
-      // Revert on error
       setIsLiked(previousIsLiked);
       setLikesCount(previousLikesCount);
       console.error("Failed to toggle like:", error);
     } finally {
       setIsLiking(false);
     }
-  }, [post.id, isLiked, likesCount, isLiking]);
+  }, [isLiking, isLiked, likesCount, post.id]);
 
   const handleDelete = useCallback(async () => {
     if (isDeleting || !confirm("តើអ្នកពិតជាចង់លុបការផ្សាយនេះមែនទេ?")) return;
@@ -118,205 +128,278 @@ function PostCard({
     }
   }, [post.id, isDeleting, onPostDeleted]);
 
-  const formatTime = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), {
-        addSuffix: true,
-        locale: km,
-      });
-    } catch {
-      return dateString;
+  const nextImage = () => {
+    if (post.mediaUrls.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % post.mediaUrls.length);
     }
   };
 
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-start gap-3 p-4 pb-2">
-        <button
-          onClick={() => onProfileClick?.(post.authorId)}
-          className="flex-shrink-0"
-        >
-          {post.author.profilePictureUrl ? (
-            <img
-              src={post.author.profilePictureUrl}
-              alt={getAuthorName()}
-              className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <User className="w-6 h-6 text-white" />
-            </div>
-          )}
-        </button>
+  const prevImage = () => {
+    if (post.mediaUrls.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + post.mediaUrls.length) % post.mediaUrls.length);
+    }
+  };
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+  const getCtaButton = () => {
+    switch (post.postType) {
+      case "COURSE":
+        return { text: "Enroll Now", textKh: "ចុះឈ្មោះ" };
+      case "ARTICLE":
+        return { text: `${post.commentsCount || 0} Reads`, textKh: `${post.commentsCount || 0} ការអាន` };
+      case "QUIZ":
+      case "EXAM":
+        return { text: "Take Now", textKh: "ចាប់ផ្តើម" };
+      case "ASSIGNMENT":
+        return { text: "Submit", textKh: "ដាក់ស្នើ" };
+      case "POLL":
+        return { text: "Vote", textKh: "បោះឆ្នោត" };
+      default:
+        return null;
+    }
+  };
+
+  const ctaButton = getCtaButton();
+
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden mb-4 shadow-sm border border-gray-100">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div className="flex items-center gap-3 flex-1">
+          <button
+            onClick={() => onProfileClick?.(post.authorId)}
+            className="flex-shrink-0"
+          >
+            {post.author.profilePictureUrl ? (
+              <img
+                src={post.author.profilePictureUrl}
+                alt={getAuthorName()}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                {getAuthorName().charAt(0)}
+              </div>
+            )}
+          </button>
+
+          <div className="flex-1 min-w-0">
             <button
               onClick={() => onProfileClick?.(post.authorId)}
-              className="font-bold text-gray-900 hover:underline"
+              className="font-semibold text-gray-900 hover:underline text-sm block truncate"
             >
               {getAuthorName()}
             </button>
-
-            {post.postType !== "STATUS" && (
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white bg-gradient-to-r ${postTypeInfo.color}`}
-              >
-                <PostTypeIcon className="w-3 h-3" />
-                {postTypeInfo.labelKh}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-            <span>{getAuthorSubtitle()}</span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {formatTime(post.createdAt)}
-            </span>
-            {post.isEdited && <span className="text-gray-400">(edited)</span>}
+            <p className="text-xs text-gray-500">{getTimeAgo()}</p>
           </div>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <MoreHorizontal className="w-5 h-5 text-gray-500" />
-          </button>
+        {/* Post Type Badge & Menu */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ backgroundColor: postTypeInfo.color + '15' }}>
+            <PostTypeIcon className="w-4 h-4" style={{ color: postTypeInfo.color }} />
+            <div className="flex flex-col items-end">
+              <span className="text-xs font-semibold" style={{ color: postTypeInfo.color }}>
+                {postTypeInfo.label}
+              </span>
+              {ctaButton && (
+                <span className="text-[10px] text-gray-500">
+                  {ctaButton.textKh}
+                </span>
+              )}
+            </div>
+          </div>
 
-          {showMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowMenu(false)}
-              />
-              <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                {isOwnPost ? (
-                  <>
-                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                      <Edit className="w-4 h-4" />
-                      កែប្រែ
-                    </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MoreVertical className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {showMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]">
+                  {isOwnPost ? (
+                    <>
+                      <button
+                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                        onClick={() => {
+                          setShowMenu(false);
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                        កែសម្រួល
+                      </button>
+                      <button
+                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {isDeleting ? "កំពុងលុប..." : "លុប"}
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                      className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                      onClick={() => {
+                        setShowMenu(false);
+                      }}
                     >
-                      <Trash2 className="w-4 h-4" />
-                      {isDeleting ? "កំពុងលុប..." : "លុប"}
+                      <Flag className="w-4 h-4" />
+                      រាយការណ៍
                     </button>
-                  </>
-                ) : (
-                  <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                    <Flag className="w-4 h-4" />
-                    រាយការណ៍
-                  </button>
-                )}
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Image Carousel */}
+      {post.mediaUrls && post.mediaUrls.length > 0 && (
+        <div className="relative w-full bg-gradient-to-br from-blue-50 to-purple-50" style={{ aspectRatio: '16/10' }}>
+          <img
+            src={post.mediaUrls[currentImageIndex]}
+            alt="Post media"
+            className="w-full h-full object-cover"
+          />
+          
+          {/* Navigation Arrows */}
+          {post.mediaUrls.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-700" />
+              </button>
+              <button
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-700" />
+              </button>
+              
+              {/* Dots Indicator */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {post.mediaUrls.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all ${
+                      idx === currentImageIndex
+                        ? 'bg-orange-500 w-6'
+                        : 'bg-white/70'
+                    }`}
+                  />
+                ))}
               </div>
             </>
           )}
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-4 pb-3">
-        <p className="text-gray-900 whitespace-pre-wrap break-words leading-relaxed">
-          {post.content}
-        </p>
-      </div>
-
-      {/* Media */}
-      {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div
-          className={`grid gap-1 ${
-            post.mediaUrls.length === 1
-              ? "grid-cols-1"
-              : post.mediaUrls.length === 2
-                ? "grid-cols-2"
-                : "grid-cols-2"
-          }`}
-        >
-          {post.mediaUrls.slice(0, 4).map((url, index) => (
-            <div
-              key={index}
-              className={`relative ${
-                post.mediaUrls.length === 3 && index === 0 ? "col-span-2" : ""
-              }`}
-            >
-              <img
-                src={url}
-                alt={`Media ${index + 1}`}
-                className="w-full h-48 object-cover"
-                loading="lazy"
-              />
-              {index === 3 && post.mediaUrls.length > 4 && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white text-2xl font-bold">
-                    +{post.mediaUrls.length - 4}
-                  </span>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
       )}
 
-      {/* Stats */}
-      <div className="px-4 py-2 flex items-center justify-between text-sm text-gray-500 border-t border-gray-100">
-        <div className="flex items-center gap-4">
-          {likesCount > 0 && (
-            <span className="flex items-center gap-1">
-              <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-              {likesCount}
-            </span>
-          )}
+      {/* Content */}
+      <div className="px-4 pt-3 pb-2">
+        {/* Title with Icon */}
+        <div className="flex items-start gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+            <Code className="w-5 h-5 text-gray-700" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-gray-900 text-base leading-tight mb-1">
+              {post.content.split('\n')[0] || postTypeInfo.label}
+            </h3>
+            <p className="text-xs text-gray-500">
+              {post.author.teacher?.position || post.author.student?.class?.name || 'Education'}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          {post.commentsCount > 0 && (
-            <button
-              onClick={() => onCommentClick?.(post.id)}
-              className="hover:underline"
-            >
-              {post.commentsCount} មតិ
+
+        {/* Description */}
+        {post.content.split('\n').slice(1).join('\n') && (
+          <p className="text-sm text-gray-600 line-clamp-3 mb-3 leading-relaxed">
+            {post.content.split('\n').slice(1).join('\n')}
+          </p>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={() => setIsInterested(!isInterested)}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+              isInterested
+                ? 'bg-yellow-50 text-yellow-600 border border-yellow-200'
+                : 'bg-gray-50 text-gray-600 border border-gray-200'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${isInterested ? 'fill-yellow-500' : ''}`} />
+            {isInterested ? 'Interested' : 'Interested'}
+          </button>
+          
+          {post.postType === 'COURSE' && (
+            <button className="flex-1 py-2 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2 bg-gray-50 text-gray-600 border border-gray-200">
+              <TrendingUp className="w-4 h-4" />
+              Unfollow
             </button>
           )}
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="px-2 py-1 flex items-center border-t border-gray-100">
+      {/* Footer - Engagement Stats */}
+      <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
         <button
           onClick={handleLike}
           disabled={isLiking}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors ${
-            isLiked
-              ? "text-red-500 bg-red-50"
-              : "text-gray-600 hover:bg-gray-50"
-          }`}
+          className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group"
         >
           <Heart
-            className={`w-5 h-5 transition-transform ${
-              isLiked ? "fill-red-500 scale-110" : ""
+            className={`w-5 h-5 transition-all ${
+              isLiked
+                ? 'fill-red-500 text-red-500'
+                : 'text-gray-600 group-hover:text-red-500'
             }`}
           />
-          <span className="font-medium text-sm">ចូលចិត្ត</span>
+          <span className={`text-sm font-medium ${isLiked ? 'text-red-500' : 'text-gray-600'}`}>
+            {likesCount}
+          </span>
         </button>
 
         <button
           onClick={() => onCommentClick?.(post.id)}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group"
         >
-          <MessageCircle className="w-5 h-5" />
-          <span className="font-medium text-sm">មតិ</span>
+          <MessageCircle className="w-5 h-5 text-gray-600 group-hover:text-blue-500" />
+          <span className="text-sm font-medium text-gray-600">
+            {post.commentsCount}
+          </span>
         </button>
 
-        <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
-          <Share2 className="w-5 h-5" />
-          <span className="font-medium text-sm">ចែករំលែក</span>
+        <button className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group">
+          <Share2 className="w-5 h-5 text-gray-600 group-hover:text-green-500" />
+          <span className="text-sm font-medium text-gray-600">
+            {post.sharesCount}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setIsBookmarked(!isBookmarked)}
+          className="flex items-center gap-1.5 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors group"
+        >
+          <Bookmark
+            className={`w-5 h-5 transition-all ${
+              isBookmarked
+                ? 'fill-blue-500 text-blue-500'
+                : 'text-gray-600 group-hover:text-blue-500'
+            }`}
+          />
         </button>
       </div>
     </div>

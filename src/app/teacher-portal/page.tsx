@@ -594,6 +594,9 @@ export default function TeacherPortalPage() {
           {((profile.subjects && profile.subjects.length > 0) ||
             (profile.teachingClasses && profile.teachingClasses.length > 0) ||
             profile.homeroomClass) && <TeachingInfo profile={profile} />}
+
+          {/* Menu Items Section */}
+          <MenuItemsSection />
         </div>
       </div>
 
@@ -1518,6 +1521,110 @@ const InfoRow = memo(({ icon, label, value, color = "gray" }: any) => {
 });
 
 InfoRow.displayName = "InfoRow";
+
+// Menu Items Section Component
+const MenuItemsSection = memo(() => {
+  const router = useRouter();
+  
+  const menuItems = [
+    {
+      id: "reports",
+      icon: BarChart3,
+      label: "របាយការណ៍",
+      labelEn: "Reports",
+      href: "/reports/mobile",
+      color: "from-indigo-500 to-purple-500",
+      bgColor: "from-indigo-50 to-purple-50",
+      borderColor: "border-indigo-200",
+    },
+    {
+      id: "attendance",
+      icon: Calendar,
+      label: "វត្តមាន",
+      labelEn: "Attendance",
+      href: "/attendance",
+      color: "from-green-500 to-emerald-500",
+      bgColor: "from-green-50 to-emerald-50",
+      borderColor: "border-green-200",
+    },
+    {
+      id: "students",
+      icon: GraduationCap,
+      label: "សិស្ស",
+      labelEn: "Students",
+      href: "/students",
+      color: "from-orange-500 to-amber-500",
+      bgColor: "from-orange-50 to-amber-50",
+      borderColor: "border-orange-200",
+    },
+    {
+      id: "settings",
+      icon: Settings,
+      label: "ការកំណត់",
+      labelEn: "Settings",
+      href: "/settings",
+      color: "from-gray-500 to-slate-500",
+      bgColor: "from-gray-50 to-slate-50",
+      borderColor: "border-gray-200",
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-3xl p-5 border border-gray-200 hover:border-gray-300 transition-colors">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="p-2.5 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-md">
+          <Settings className="w-5 h-5 text-white" />
+        </div>
+        <h4 className="text-lg font-koulen font-black text-gray-900">
+          មឺនុយបន្ថែម • More Options
+        </h4>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.id}
+              onClick={() => router.push(item.href)}
+              className={`flex flex-col items-center gap-3 p-4 bg-gradient-to-br ${item.bgColor} border-2 ${item.borderColor} rounded-2xl hover:shadow-lg active:scale-95 transition-all duration-200 group`}
+            >
+              <div className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
+              </div>
+              <div className="text-center">
+                <p className="font-koulen text-sm font-bold text-gray-900">{item.label}</p>
+                <p className="text-[10px] text-gray-600">{item.labelEn}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      
+      {/* Logout Button */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <button
+          onClick={() => {
+            if (confirm("តើអ្នកចង់ចាកចេញពីគណនីមែនទេ?")) {
+              router.push("/logout");
+            }
+          }}
+          className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-200 rounded-2xl hover:shadow-lg active:scale-95 transition-all duration-200"
+        >
+          <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center">
+            <Lock className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-left flex-1">
+            <p className="font-koulen text-sm font-bold text-gray-900">ចាកចេញ</p>
+            <p className="text-[10px] text-gray-600">Logout from account</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  );
+});
+
+MenuItemsSection.displayName = "MenuItemsSection";
 
 // Skeleton Loading Component
 function ProfileSkeleton() {

@@ -5,12 +5,15 @@ const API_BASE_URL =
 
 // Types
 export type PostType =
-  | "STATUS"
-  | "ACHIEVEMENT"
-  | "LEARNING_GOAL"
-  | "RESOURCE_SHARE"
+  | "ARTICLE"
+  | "COURSE"
+  | "QUIZ"
   | "QUESTION"
-  | "ANNOUNCEMENT";
+  | "EXAM"
+  | "ANNOUNCEMENT"
+  | "ASSIGNMENT"
+  | "POLL"
+  | "RESOURCE";
 
 export type PostVisibility = "PUBLIC" | "SCHOOL" | "CLASS" | "PRIVATE";
 
@@ -450,42 +453,70 @@ export const POST_TYPE_INFO: Record<
     labelKh: string;
     icon: string;
     color: string;
+    bgColor: string;
   }
 > = {
-  STATUS: {
-    label: "Status",
-    labelKh: "ស្ថានភាព",
-    icon: "MessageSquare",
-    color: "from-gray-500 to-slate-600",
+  ARTICLE: {
+    label: "Article",
+    labelKh: "អត្ថបទ",
+    icon: "FileText",
+    color: "#FF9500",
+    bgColor: "bg-gradient-to-br from-orange-50 to-yellow-50",
   },
-  ACHIEVEMENT: {
-    label: "Achievement",
-    labelKh: "សមិទ្ធផល",
-    icon: "Award",
-    color: "from-yellow-500 to-orange-600",
+  COURSE: {
+    label: "Course",
+    labelKh: "វគ្គសិក្សា",
+    icon: "GraduationCap",
+    color: "#34C759",
+    bgColor: "bg-gradient-to-br from-green-50 to-emerald-50",
   },
-  LEARNING_GOAL: {
-    label: "Learning Goal",
-    labelKh: "គោលដៅសិក្សា",
-    icon: "Target",
-    color: "from-green-500 to-emerald-600",
-  },
-  RESOURCE_SHARE: {
-    label: "Resource",
-    labelKh: "ធនធាន",
-    icon: "BookOpen",
-    color: "from-blue-500 to-cyan-600",
+  QUIZ: {
+    label: "Quiz",
+    labelKh: "សំណួរក្លាយ",
+    icon: "Brain",
+    color: "#AF52DE",
+    bgColor: "bg-gradient-to-br from-purple-50 to-violet-50",
   },
   QUESTION: {
     label: "Question",
     labelKh: "សំណួរ",
     icon: "HelpCircle",
-    color: "from-purple-500 to-pink-600",
+    color: "#5856D6",
+    bgColor: "bg-gradient-to-br from-indigo-50 to-blue-50",
+  },
+  EXAM: {
+    label: "Exam",
+    labelKh: "ប្រឡង",
+    icon: "ClipboardCheck",
+    color: "#FF3B30",
+    bgColor: "bg-gradient-to-br from-red-50 to-pink-50",
   },
   ANNOUNCEMENT: {
     label: "Announcement",
     labelKh: "សេចក្តីប្រកាស",
     icon: "Megaphone",
-    color: "from-red-500 to-rose-600",
+    color: "#FF2D55",
+    bgColor: "bg-gradient-to-br from-pink-50 to-rose-50",
+  },
+  ASSIGNMENT: {
+    label: "Assignment",
+    labelKh: "កិច្ចការផ្ទះ",
+    icon: "BookOpen",
+    color: "#007AFF",
+    bgColor: "bg-gradient-to-br from-blue-50 to-cyan-50",
+  },
+  POLL: {
+    label: "Poll",
+    labelKh: "ការស ទង់មតិ",
+    icon: "BarChart3",
+    color: "#FFB800",
+    bgColor: "bg-gradient-to-br from-amber-50 to-yellow-50",
+  },
+  RESOURCE: {
+    label: "Resource",
+    labelKh: "ធនធាន",
+    icon: "FolderOpen",
+    color: "#30B0C7",
+    bgColor: "bg-gradient-to-br from-cyan-50 to-teal-50",
   },
 };

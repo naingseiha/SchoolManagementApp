@@ -5,12 +5,14 @@ import {
   RefreshCw,
   Loader2,
   Filter,
-  Award,
-  Target,
-  BookOpen,
+  FileText,
+  GraduationCap,
+  Brain,
   HelpCircle,
+  ClipboardCheck,
   Megaphone,
-  MessageSquare,
+  BookOpen,
+  BarChart3,
   Rss,
   ChevronDown,
   X,
@@ -34,14 +36,17 @@ const POST_TYPE_FILTERS: {
   value: PostType | "ALL";
   icon: React.ElementType;
   labelKh: string;
+  label: string;
 }[] = [
-  { value: "ALL", icon: Rss, labelKh: "ទាំងអស់" },
-  { value: "STATUS", icon: MessageSquare, labelKh: "ស្ថានភាព" },
-  { value: "ACHIEVEMENT", icon: Award, labelKh: "សមិទ្ធផល" },
-  { value: "LEARNING_GOAL", icon: Target, labelKh: "គោលដៅ" },
-  { value: "RESOURCE_SHARE", icon: BookOpen, labelKh: "ធនធាន" },
-  { value: "QUESTION", icon: HelpCircle, labelKh: "សំណួរ" },
-  { value: "ANNOUNCEMENT", icon: Megaphone, labelKh: "ប្រកាស" },
+  { value: "ALL", icon: Rss, labelKh: "ទាំងអស់", label: "All" },
+  { value: "ARTICLE", icon: FileText, labelKh: "អត្ថបទ", label: "Article" },
+  { value: "COURSE", icon: GraduationCap, labelKh: "វគ្គសិក្សា", label: "Course" },
+  { value: "QUIZ", icon: Brain, labelKh: "សំណួរក្លាយ", label: "Quiz" },
+  { value: "QUESTION", icon: HelpCircle, labelKh: "សំណួរ", label: "Question" },
+  { value: "EXAM", icon: ClipboardCheck, labelKh: "ប្រឡង", label: "Exam" },
+  { value: "ANNOUNCEMENT", icon: Megaphone, labelKh: "ប្រកាស", label: "Announcement" },
+  { value: "ASSIGNMENT", icon: BookOpen, labelKh: "កិច្ចការ", label: "Assignment" },
+  { value: "POLL", icon: BarChart3, labelKh: "មតិ", label: "Poll" },
 ];
 
 function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {

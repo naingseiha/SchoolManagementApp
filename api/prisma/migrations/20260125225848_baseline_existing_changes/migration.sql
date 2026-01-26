@@ -1,0 +1,1 @@
+-- This migration baselines the database with existing password security and audit log features

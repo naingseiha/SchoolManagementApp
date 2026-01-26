@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import FeedPage from "@/components/feed/FeedPage";
-import MobileLayout from "@/components/layout/MobileLayout";
+import FeedHeader from "@/components/feed/FeedHeader";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import { Loader2 } from "lucide-react";
 
@@ -38,9 +38,12 @@ export default function FeedRoute() {
   };
 
   return (
-    <MobileLayout>
-      <FeedPage onProfileClick={handleProfileClick} />
+    <div className="min-h-screen bg-gray-50 pb-16">
+      <FeedHeader />
+      <div className="max-w-2xl mx-auto">
+        <FeedPage onProfileClick={handleProfileClick} />
+      </div>
       <MobileBottomNav />
-    </MobileLayout>
+    </div>
   );
 }
