@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/database";
 import { storageService } from "../services/storage.service";
+import { socialNotificationService } from "../services/social-notification.service";
 
 /**
  * Create a new post
@@ -585,18 +586,9 @@ export const toggleLike = async (req: Request, res: Response) => {
       isLiked = true;
       likesCount = post.likesCount + 1;
 
-      // Create notification for post author (if not self)
+      // Send real-time notification
       if (post.authorId !== userId) {
-        await prisma.notification.create({
-          data: {
-            recipientId: post.authorId,
-            actorId: userId,
-            type: "LIKE",
-            title: "New Like",
-            message: "Someone liked your post",
-            link: `/feed/posts/${postId}`,
-          },
-        });
+        socialNotificationService.notifyPostLike(postId, userId!).catch(console.error);
       }
     }
 
@@ -742,18 +734,9 @@ export const addComment = async (req: Request, res: Response) => {
       }),
     ]);
 
-    // Create notification for post author (if not self)
+    // Send real-time notification
     if (post.authorId !== userId) {
-      await prisma.notification.create({
-        data: {
-          recipientId: post.authorId,
-          actorId: userId,
-          type: "COMMENT",
-          title: "New Comment",
-          message: "Someone commented on your post",
-          link: `/feed/posts/${postId}`,
-        },
-      });
+      socialNotificationService.notifyPostComment(postId, userId!, comment.id).catch(console.error);
     }
 
     res.status(201).json({

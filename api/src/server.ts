@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express, { Application, Request, Response } from "express";
+import { createServer } from "http";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression"; // ✅ OPTIMIZED: Add gzip compression
@@ -16,6 +17,7 @@ import { errorHandler, notFound } from "./middleware/errorHandler";
 import { startPasswordExpirationJob } from "./jobs/password-expiration.job";
 import { startNotificationJob } from "./jobs/notification.job";
 import { emailService } from "./services/email.service";
+import { socketService } from "./services/socket.service";
 
 // Import Routes
 import authRoutes from "./routes/auth.routes";
@@ -41,10 +43,14 @@ import socialRoutes from "./routes/social.routes";
 import skillsRoutes from "./routes/skills.routes";
 import projectsRoutes from "./routes/projects.routes";
 import achievementsRoutes from "./routes/achievements.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 // Initialize Express app
 const app: Application = express();
 const PORT = process.env.PORT || 5001;
+
+// Create HTTP server for Socket.IO
+const httpServer = createServer(app);
 
 // CORS Configuration
 const allowedOrigins = [
@@ -144,6 +150,7 @@ app.use("/api/social", socialRoutes);
 app.use("/api/profile", skillsRoutes);
 app.use("/api/profile", projectsRoutes);
 app.use("/api", achievementsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // API Documentation Route
 app.get("/api", (req: Request, res: Response) => {
@@ -221,6 +228,10 @@ const startServer = async () => {
 
     startKeepAlive();
 
+    // Initialize Socket.IO
+    socketService.init(httpServer);
+    console.log("✅ Socket.IO initialized");
+
     // Start background jobs
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.log("📋 Starting background jobs...");
@@ -237,7 +248,7 @@ const startServer = async () => {
     
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    const server = app.listen(PORT, () => {
+    const server = httpServer.listen(PORT, () => {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -245,6 +256,7 @@ const startServer = async () => {
       console.log(`📚 API Docs: http://localhost:${PORT}/api`);
       console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
       console.log(`🔌 Connection pool: 20 connections available`);
+      console.log(`⚡ Socket.IO: Active (real-time notifications)`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     });
 

@@ -396,6 +396,14 @@ model User {
   endorsementsReceived SkillEndorsement[] @relation("EndorsementRecipient")
   endorsementsGiven    SkillEndorsement[] @relation("EndorsementGiver")
 
+  // Relations - New Features
+  commentReactions CommentReaction[]
+  reportedPosts    PostReport[]     @relation("PostReporter")
+  reviewedReports  PostReport[]     @relation("ReportReviewer")
+  blocking         UserBlock[]      @relation("Blocker")
+  blockedBy        UserBlock[]      @relation("Blocked")
+  postViews        PostView[]
+
   @@index([email, isActive])
   @@index([phone, isActive])
   @@index([studentId, isActive])
@@ -526,6 +534,7 @@ enum PostVisibility {
 enum NotificationType {
   LIKE
   COMMENT
+  REPLY
   FOLLOW
   MENTION
   ANNOUNCEMENT
@@ -535,6 +544,32 @@ enum NotificationType {
   RECOMMENDATION_RECEIVED
   PROJECT_LIKED
   ACHIEVEMENT_EARNED
+  COURSE_ENROLL
+  ASSIGNMENT_DUE
+  POLL_RESULT
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  HELPFUL
+  INSIGHTFUL
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE
+  MISINFORMATION
+  VIOLENCE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  APPROVED
+  REMOVED
 }
 
 // ==========================================
@@ -665,11 +700,16 @@ model Comment {
   authorId  String
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   content   String   @db.Text
+  parentId  String? // For nested/threaded replies
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
+  reactions CommentReaction[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([postId, createdAt(sort: Desc)])
   @@index([authorId])
+  @@index([parentId])
   @@map("comments")
 }
 
@@ -736,8 +776,10 @@ model Notification {
   actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
   type        NotificationType
   title       String
-  message     String
+  message     String           @db.Text
   link        String? // Link to related content
+  postId      String? // Related post ID
+  commentId   String? // Related comment ID
   isRead      Boolean          @default(false)
   readAt      DateTime?
   createdAt   DateTime         @default(now())
@@ -916,4 +958,68 @@ model Recommendation {
   @@index([recipientId, isAccepted])
   @@index([authorId])
   @@map("recommendations")
+}
+
+// ==================== ADDITIONAL MODELS ====================
+
+model CommentReaction {
+  id        String       @id @default(cuid())
+  commentId String
+  comment   Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ReactionType
+  createdAt DateTime     @default(now())
+  
+  @@unique([commentId, userId, type])
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_reactions")
+}
+
+model PostReport {
+  id         String       @id @default(cuid())
+  postId     String
+  reporterId String
+  reporter   User         @relation("PostReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reason     ReportReason
+  details    String?      @db.Text
+  status     ReportStatus @default(PENDING)
+  reviewedBy String?
+  reviewer   User?        @relation("ReportReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  reviewedAt DateTime?
+  createdAt  DateTime     @default(now())
+  
+  @@index([postId, status])
+  @@index([reporterId])
+  @@index([status, createdAt])
+  @@map("post_reports")
+}
+
+model UserBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+model PostView {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  viewedAt  DateTime @default(now())
+  ipAddress String? // For anonymous tracking
+  
+  @@index([postId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@map("post_views")
 }

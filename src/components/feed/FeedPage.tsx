@@ -187,19 +187,14 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         <div className="bg-white">
           {!isLoading &&
-            posts.map((post, index) => (
-              <div key={post.id}>
-                <PostCard
-                  post={post}
-                  currentUserId={currentUser?.id}
-                  onPostDeleted={handlePostDeleted}
-                  onProfileClick={onProfileClick}
-                />
-                {/* Separator between posts */}
-                {index < posts.length - 1 && (
-                  <div className="h-2 bg-gray-50" />
-                )}
-              </div>
+            posts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUser?.id}
+                onPostDeleted={handlePostDeleted}
+                onProfileClick={onProfileClick}
+              />
           ))}
         </div>
 

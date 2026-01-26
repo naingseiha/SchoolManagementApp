@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/database";
+import { socialNotificationService } from "../services/social-notification.service";
 
 /**
  * Follow a user
@@ -55,17 +56,8 @@ export const followUser = async (req: Request, res: Response) => {
       },
     });
 
-    // Create notification for followed user
-    await prisma.notification.create({
-      data: {
-        recipientId: targetUserId,
-        actorId: currentUserId,
-        type: "FOLLOW",
-        title: "New Follower",
-        message: "Someone started following you",
-        link: `/profile/${currentUserId}`,
-      },
-    });
+    // Send real-time notification
+    socialNotificationService.notifyFollow(targetUserId, currentUserId!).catch(console.error);
 
     // Get updated counts
     const followersCount = await prisma.follow.count({

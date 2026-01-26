@@ -83,7 +83,7 @@ export default function FeedRoute() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gray-50">
+    <div className="fixed inset-0 flex flex-col bg-white">
       {/* Header and Filters - Fixed at top */}
       <div className="flex-shrink-0">
         <FeedHeader />

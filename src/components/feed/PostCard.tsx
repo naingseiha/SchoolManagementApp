@@ -34,6 +34,7 @@ import {
   Send,
   AlertCircle,
   Star,
+  TrendingUp,
 } from "lucide-react";
 import { Post, PostType, toggleLike, deletePost, POST_TYPE_INFO } from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
@@ -163,8 +164,8 @@ export default function PostCard({
       case "QUESTION":
         return (
           <div className="mt-4">
-            <button className="w-full py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-              <MessageCircle className="w-4 h-4" />
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 hover:border-blue-300 hover:from-blue-100 hover:to-indigo-100 text-blue-700 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 group">
+              <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
               Answer This Question
             </button>
           </div>
@@ -172,19 +173,26 @@ export default function PostCard({
 
       case "COURSE":
         return (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                12 weeks
-              </span>
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                234 enrolled
-              </span>
+          <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 rounded-lg border border-purple-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3 text-sm text-gray-700">
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  <span className="font-medium">12 weeks</span>
+                </span>
+                <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-purple-600" />
+                  <span className="font-medium">234 enrolled</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-amber-600">
+                <Star className="w-4 h-4 fill-amber-400" />
+                <span className="text-sm font-bold">4.8</span>
+              </div>
             </div>
-            <button className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-              <GraduationCap className="w-4 h-4" />
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <GraduationCap className="w-5 h-5" />
               Enroll Now
             </button>
           </div>
@@ -192,56 +200,92 @@ export default function PostCard({
 
       case "QUIZ":
         return (
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-sm text-gray-600">10 questions • 15 min</span>
-            <button className="py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
-              <Play className="w-4 h-4" />
-              Take Quiz
+          <div className="mt-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Quick Quiz</p>
+                  <p className="text-xs text-gray-600">10 questions • 15 min</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Best Score</p>
+                <p className="text-sm font-bold text-green-600">85%</p>
+              </div>
+            </div>
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <Play className="w-5 h-5" />
+              Start Quiz
             </button>
           </div>
         );
 
       case "ASSIGNMENT":
         return (
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-orange-600">
-              <Calendar className="w-4 h-4" />
-              <span className="font-medium">Due: March 15</span>
+          <div className="mt-4 p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Assignment Due</p>
+                  <div className="flex items-center gap-1.5 text-orange-600">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span className="text-xs font-medium">March 15, 2024</span>
+                  </div>
+                </div>
+              </div>
+              <div className="px-3 py-1 bg-orange-100 rounded-full">
+                <span className="text-xs font-bold text-orange-700">3 days left</span>
+              </div>
             </div>
-            <button className="py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2">
-              <Send className="w-4 h-4" />
-              Submit
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <Send className="w-5 h-5" />
+              Submit Assignment
             </button>
           </div>
         );
 
       case "ANNOUNCEMENT":
         return (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <span className="text-sm font-medium text-red-900">Important Announcement</span>
+          <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border-2 border-red-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Megaphone className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-red-900">Important Announcement</p>
+                <p className="text-xs text-red-700">Please read carefully</p>
+              </div>
+            </div>
           </div>
         );
 
       case "PROJECT":
         return (
           <div className="mt-4">
-            <button className="w-full py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-              <ExternalLink className="w-4 h-4" />
-              View Project
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 hover:border-cyan-300 hover:from-cyan-100 hover:to-blue-100 text-cyan-700 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 group">
+              <ExternalLink className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              View Project Details
             </button>
           </div>
         );
 
       case "ACHIEVEMENT":
         return (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">Achievement Unlocked!</h4>
-              <p className="text-sm text-gray-600">Celebrate this milestone</p>
+          <div className="mt-4 p-4 bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 rounded-lg border-2 border-yellow-300">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full flex items-center justify-center shadow-md">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-amber-900">Achievement Unlocked!</h4>
+                <p className="text-sm text-amber-700">Celebrate this milestone 🎉</p>
+              </div>
             </div>
           </div>
         );
@@ -256,49 +300,58 @@ export default function PostCard({
     : contentText;
 
   return (
-    <article className="bg-white">
+    <article className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow mb-4">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-100">
+      <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Author Info */}
           <div className="flex gap-3 flex-1 min-w-0">
             <button
               onClick={() => onProfileClick?.(post.authorId)}
-              className="flex-shrink-0"
+              className="flex-shrink-0 relative group"
             >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-md group-hover:shadow-lg transition-shadow">
                 {getAuthorName().charAt(0).toUpperCase()}
               </div>
+              {/* Online status indicator */}
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
             </button>
             
             <div className="flex-1 min-w-0">
               <button
                 onClick={() => onProfileClick?.(post.authorId)}
-                className="font-semibold text-gray-900 hover:underline text-[15px] block truncate"
+                className="font-bold text-gray-900 hover:text-blue-600 transition-colors text-[15px] block truncate"
               >
                 {getAuthorName()}
               </button>
-              <p className="text-xs text-gray-500">{getTimeAgo()}</p>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span>{getAuthorSubtitle()}</span>
+                <span>•</span>
+                <span>{getTimeAgo()}</span>
+              </div>
             </div>
           </div>
 
           {/* Post Type Badge & Menu */}
           <div className="flex items-center gap-2 ml-3">
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1.5">
-                <PostTypeIcon className="w-4 h-4" style={{ color: postTypeInfo.color }} />
-                <span className="text-xs font-semibold" style={{ color: postTypeInfo.color }}>
-                  {postTypeInfo.label}
-                </span>
-              </div>
-              <span className="text-[10px] text-gray-500">0 Reads</span>
+            <div 
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm"
+              style={{ 
+                backgroundColor: postTypeInfo.color + "15",
+                border: `1.5px solid ${postTypeInfo.color}40`
+              }}
+            >
+              <PostTypeIcon className="w-4 h-4" style={{ color: postTypeInfo.color }} />
+              <span className="text-xs font-bold" style={{ color: postTypeInfo.color }}>
+                {postTypeInfo.label}
+              </span>
             </div>
 
             {/* Menu */}
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <MoreVertical className="w-5 h-5 text-gray-600" />
               </button>
@@ -309,18 +362,18 @@ export default function PostCard({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[160px]">
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[180px]">
                     {isOwnPost ? (
                       <>
                         <button
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700 transition-colors"
                           onClick={() => setShowMenu(false)}
                         >
                           <Edit className="w-4 h-4" />
                           Edit Post
                         </button>
                         <button
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 flex items-center gap-3 text-red-600"
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-3 text-red-600 transition-colors"
                           onClick={handleDelete}
                           disabled={isDeleting}
                         >
@@ -331,14 +384,14 @@ export default function PostCard({
                     ) : (
                       <>
                         <button
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700 transition-colors"
                           onClick={() => setShowMenu(false)}
                         >
                           <Flag className="w-4 h-4" />
                           Report Post
                         </button>
                         <button
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"
+                          className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700 transition-colors"
                           onClick={() => setShowMenu(false)}
                         >
                           <Bookmark className="w-4 h-4" />
@@ -354,40 +407,41 @@ export default function PostCard({
         </div>
       </div>
 
-      {/* Media Gallery - Full Width, No Padding */}
+      {/* Media Gallery */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div className="relative w-full bg-gray-100" style={{ aspectRatio: '16/9' }}>
+        <div className="relative w-full bg-gray-100">
           <img
             src={post.mediaUrls[currentImageIndex]}
             alt="Post media"
-            className="w-full h-full object-cover"
+            className="w-full h-auto object-cover"
+            style={{ maxHeight: '500px' }}
           />
           
           {post.mediaUrls.length > 1 && (
             <>
               <button
                 onClick={prevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-all"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-800" />
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-all"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all"
               >
                 <ChevronRight className="w-5 h-5 text-gray-800" />
               </button>
               
               {/* Dots Indicator */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm rounded-full">
                 {post.mediaUrls.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`h-1.5 rounded-full transition-all ${
                       idx === currentImageIndex
-                        ? 'bg-orange-500 w-6'
-                        : 'bg-white/70 w-1.5'
+                        ? 'bg-white w-6'
+                        : 'bg-white/60 w-1.5 hover:bg-white/80'
                     }`}
                   />
                 ))}
@@ -399,28 +453,26 @@ export default function PostCard({
 
       {/* Content Section */}
       <div className="px-4 py-4">
-        {/* Title - No Icon */}
+        {/* Title */}
         <div className="mb-3">
-          <h3 className="font-semibold text-gray-900 text-base leading-tight mb-1">
+          <h3 className="font-bold text-gray-900 text-base leading-tight">
             {post.content.split('\n')[0] || postTypeInfo.label}
           </h3>
-          <p className="text-xs text-gray-500">
-            {getAuthorSubtitle()}
-          </p>
         </div>
 
         {/* Description */}
         {post.content.split('\n').slice(1).join('\n') && (
           <div>
-            <p className="text-[15px] text-gray-600 leading-relaxed">
+            <p className="text-[15px] text-gray-700 leading-relaxed">
               {displayContent.split('\n').slice(1).join('\n')}
             </p>
             {isLongContent && (
               <button
                 onClick={() => setShowFullContent(!showFullContent)}
-                className="text-blue-600 hover:underline text-sm mt-2"
+                className="text-blue-600 hover:text-blue-700 font-semibold text-sm mt-2 flex items-center gap-1"
               >
                 {showFullContent ? "Show less" : "Show more"}
+                <TrendingUp className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -429,15 +481,15 @@ export default function PostCard({
         {/* Type-Specific Content */}
         {renderTypeSpecificContent()}
 
-        {/* Feature/Insights Buttons for Article/Course */}
+        {/* Feature/Insights Buttons */}
         {(post.postType === 'ARTICLE' || post.postType === 'COURSE') && (
           <div className="flex gap-2 mt-4">
-            <button className="flex-1 py-2 px-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 flex items-center justify-center gap-1.5 transition-colors">
-              <Star className="w-4 h-4" />
+            <button className="flex-1 py-2.5 px-3 bg-white border-2 border-gray-200 hover:border-amber-300 hover:bg-amber-50 rounded-lg text-sm font-semibold text-gray-700 hover:text-amber-700 flex items-center justify-center gap-2 transition-all group">
+              <Star className="w-4 h-4 group-hover:fill-amber-400 group-hover:text-amber-500 transition-all" />
               Feature
             </button>
-            <button className="flex-1 py-2 px-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-lg text-sm font-medium text-gray-700 flex items-center justify-center gap-1.5 transition-colors">
-              <BarChart3 className="w-4 h-4" />
+            <button className="flex-1 py-2.5 px-3 bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg text-sm font-semibold text-gray-700 hover:text-blue-700 flex items-center justify-center gap-2 transition-all group">
+              <BarChart3 className="w-4 h-4 group-hover:text-blue-600 transition-colors" />
               Insights
             </button>
           </div>
@@ -446,34 +498,42 @@ export default function PostCard({
 
       {/* Engagement Section */}
       <div className="px-4 pb-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-1">
           <button
             onClick={handleLike}
             disabled={isLiking}
-            className="flex items-center gap-1.5 text-gray-600 hover:text-red-500 transition-colors"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              isLiked
+                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-600'
+            }`}
           >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-            <span className="text-sm font-medium">{likesCount}</span>
+            <Heart className={`w-5 h-5 transition-all ${isLiked ? 'fill-red-500 scale-110' : 'hover:scale-110'}`} />
+            <span className="font-semibold">{likesCount}</span>
           </button>
 
           <button
             onClick={() => onCommentClick?.(post.id)}
-            className="flex items-center gap-1.5 text-gray-600 hover:text-blue-500 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all group"
           >
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">{post.commentsCount}</span>
+            <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="font-semibold">{post.commentsCount}</span>
           </button>
 
-          <button className="flex items-center gap-1.5 text-gray-600 hover:text-green-500 transition-colors">
-            <Share2 className="w-5 h-5" />
-            <span className="text-sm font-medium">{post.sharesCount}</span>
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all group">
+            <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span className="font-semibold">{post.sharesCount}</span>
           </button>
 
           <button
             onClick={() => setIsBookmarked(!isBookmarked)}
-            className="text-gray-600 hover:text-yellow-500 transition-colors"
+            className={`p-2.5 rounded-lg transition-all ${
+              isBookmarked
+                ? 'bg-amber-50 text-amber-600'
+                : 'bg-gray-50 text-gray-600 hover:bg-amber-50 hover:text-amber-600'
+            }`}
           >
-            <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+            <Bookmark className={`w-5 h-5 transition-all ${isBookmarked ? 'fill-amber-500 scale-110' : 'hover:scale-110'}`} />
           </button>
         </div>
       </div>
