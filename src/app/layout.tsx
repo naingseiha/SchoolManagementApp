@@ -6,6 +6,7 @@ import { DataProvider } from "@/context/DataContext";
 import { SocketProvider } from "@/context/SocketContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { NetworkStatus } from "@/components/NetworkStatus";
+import SplashScreen from "@/components/common/SplashScreen";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -260,6 +261,7 @@ export default function RootLayout({
         )}
       </head>
       <body className={inter.className}>
+        <SplashScreen />
         <AuthProvider>
           <SocketProvider>
             <DataProvider>

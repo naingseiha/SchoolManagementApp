@@ -15,6 +15,7 @@ import {
 import CreatePost from "./CreatePost";
 import PostCard from "./PostCard";
 import { useAuth } from "@/context/AuthContext";
+import StunityLoader from "@/components/common/StunityLoader";
 
 interface FeedPageProps {
   showCreatePost?: boolean;
@@ -163,8 +164,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
         {/* Loading State */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-gray-400 animate-spin mb-3" />
-            <p className="text-gray-500 text-sm">Loading posts...</p>
+            <StunityLoader size="lg" showText={true} />
           </div>
         )}
 
@@ -199,7 +199,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
           <div ref={loadMoreRef} className="py-4">
             {isLoadingMore && (
               <div className="flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                <StunityLoader size="sm" />
               </div>
             )}
           </div>
