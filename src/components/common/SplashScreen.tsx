@@ -7,10 +7,10 @@ export default function SplashScreen() {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    // Hide splash after 2.5 seconds
+    // Hide splash after 3 seconds
     const timer = setTimeout(() => {
       setShow(false);
-    }, 2500);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -22,7 +22,7 @@ export default function SplashScreen() {
       className="fixed inset-0 z-[9999] flex items-center justify-center animate-fade-out"
       style={{
         background: 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 50%, #fde68a 100%)',
-        animation: 'fadeOut 0.5s ease-out 2s forwards',
+        animation: 'fadeOut 0.6s ease-out 2.4s forwards',
       }}
     >
       {/* Animated background patterns */}
@@ -40,8 +40,13 @@ export default function SplashScreen() {
 
       <style jsx>{`
         @keyframes fadeOut {
-          to {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          100% {
             opacity: 0;
+            transform: scale(1.05);
             visibility: hidden;
           }
         }
@@ -49,24 +54,30 @@ export default function SplashScreen() {
         @keyframes float {
           0%, 100% {
             transform: translate(0, 0) scale(1);
+            opacity: 0.3;
           }
           33% {
             transform: translate(30px, -30px) scale(1.1);
+            opacity: 0.5;
           }
           66% {
             transform: translate(-20px, 20px) scale(0.9);
+            opacity: 0.4;
           }
         }
 
         @keyframes float-delayed {
           0%, 100% {
             transform: translate(0, 0) scale(1);
+            opacity: 0.3;
           }
           33% {
             transform: translate(-30px, 30px) scale(0.9);
+            opacity: 0.4;
           }
           66% {
             transform: translate(20px, -20px) scale(1.1);
+            opacity: 0.5;
           }
         }
 

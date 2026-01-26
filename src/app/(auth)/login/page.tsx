@@ -16,6 +16,7 @@ import {
   GraduationCap,
   Sparkles,
 } from "lucide-react";
+import StunityLogo from "@/components/common/StunityLogo";
 
 type LoginMode = "teacher" | "student";
 
@@ -149,15 +150,12 @@ export default function LoginPage() {
             </div>
 
             <div className="relative">
-              {/* Compact Icon - Mobile Optimized */}
+              {/* Stunity Logo - Mobile Optimized */}
               <div className="flex justify-center mb-4 sm:mb-5">
                 <div className="relative group">
                   <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
                   <div className="relative bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl shadow-lg transform transition-transform duration-300 group-hover:scale-110">
-                    <BookOpen
-                      className="h-10 w-10 sm:h-12 sm:w-12 text-indigo-600"
-                      strokeWidth={2.5}
-                    />
+                    <StunityLogo size="md" />
                   </div>
                 </div>
               </div>
