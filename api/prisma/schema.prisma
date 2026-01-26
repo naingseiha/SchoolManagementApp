@@ -309,64 +309,91 @@ model Teacher {
 }
 
 model User {
-  id                  String              @id @default(cuid())
-  email               String?             @unique
+  id                  String    @id @default(cuid())
+  email               String?   @unique
   password            String
   firstName           String
   lastName            String
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  failedAttempts      Int                 @default(0)
-  isActive            Boolean             @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  failedAttempts      Int       @default(0)
+  isActive            Boolean   @default(true)
   lastLogin           DateTime?
   lockedUntil         DateTime?
-  loginCount          Int                 @default(0)
-  permissions         Json?               @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
-  phone               String?             @unique
-  studentId           String?             @unique
-  teacherId           String?             @unique
-  role                UserRole            @default(TEACHER)
+  loginCount          Int       @default(0)
+  permissions         Json?     @default("{\"canEnterGrades\": true, \"canViewReports\": true, \"canMarkAttendance\": true}")
+  phone               String?   @unique
+  studentId           String?   @unique
+  teacherId           String?   @unique
+  role                UserRole  @default(TEACHER)
   accountSuspendedAt  DateTime?
-  isDefaultPassword   Boolean             @default(true)
-  isSuperAdmin        Boolean             @default(false)
+  isDefaultPassword   Boolean   @default(true)
+  isSuperAdmin        Boolean   @default(false)
   lastPasswordHashes  String[]
   passwordChangedAt   DateTime?
   passwordExpiresAt   DateTime?
   passwordResetExpiry DateTime?
-  passwordResetToken  String?             @unique
+  passwordResetToken  String?   @unique
   suspensionReason    String?
-  parentId            String?             @unique
+  parentId            String?   @unique
 
   // Profile Enhancement Fields
   profilePictureUrl   String?
-  profilePictureKey   String?             // R2 object key for deletion
+  profilePictureKey   String? // R2 object key for deletion
   coverPhotoUrl       String?
   coverPhotoKey       String?
-  bio                 String?             @db.Text
-  headline            String?             // Short tagline (e.g., "Grade 10 Student | Math Enthusiast")
-  interests           String[]            // Learning interests
-  skills              String[]            // Academic skills
-  socialLinks         Json?               // { facebook?, linkedin?, github?, portfolio? }
-  profileCompleteness Int                 @default(0) // Percentage 0-100
+  bio                 String?           @db.Text
+  headline            String? // Short tagline (e.g., "Grade 10 Student | Math Enthusiast")
+  interests           String[] // Learning interests
+  skills              String[] // Academic skills
+  socialLinks         Json? // { facebook?, linkedin?, github?, portfolio? }
+  profileCompleteness Int               @default(0) // Percentage 0-100
   profileUpdatedAt    DateTime?
-  profileVisibility   ProfileVisibility   @default(SCHOOL)
+  profileVisibility   ProfileVisibility @default(SCHOOL)
+
+  // Career Profile Fields
+  careerGoals           String?   @db.Text // Career objectives
+  location              String? // City/Country
+  languages             String[] // Languages spoken
+  professionalTitle     String? // Current professional title
+  isVerified            Boolean   @default(false) // Verified account
+  verifiedAt            DateTime?
+  totalLearningHours    Int       @default(0) // Tracked learning time
+  currentStreak         Int       @default(0) // Days of consecutive activity
+  longestStreak         Int       @default(0)
+  totalPoints           Int       @default(0) // Gamification points
+  level                 Int       @default(1) // User level
+  isOpenToOpportunities Boolean   @default(false) // Open to jobs/internships
+  resumeUrl             String? // Generated resume URL
+  resumeKey             String?
 
   // Relations - Existing
-  adminAuditLogs      AuditLog[]          @relation("AuditLogAdmin")
-  teacherAuditLogs    AuditLog[]          @relation("AuditLogTeacher")
-  gradeConfirmations  GradeConfirmation[]
-  parent              Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  student             Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacher             Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  adminAuditLogs     AuditLog[]          @relation("AuditLogAdmin")
+  teacherAuditLogs   AuditLog[]          @relation("AuditLogTeacher")
+  gradeConfirmations GradeConfirmation[]
+  parent             Parent?             @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student            Student?            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher            Teacher?            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   // Relations - Social Features
-  posts               Post[]
-  comments            Comment[]
-  likes               Like[]
-  followers           Follow[]            @relation("Followers")
-  following           Follow[]            @relation("Following")
-  notifications       Notification[]      @relation("NotificationRecipient")
-  sentNotifications   Notification[]      @relation("NotificationActor")
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  followers         Follow[]       @relation("Followers")
+  following         Follow[]       @relation("Following")
+  notifications     Notification[] @relation("NotificationRecipient")
+  sentNotifications Notification[] @relation("NotificationActor")
+
+  // Relations - Career Profile Features
+  userSkills           UserSkill[]
+  experiences          Experience[]
+  certifications       Certification[]
+  projects             Project[]
+  achievements         Achievement[]
+  recommendations      Recommendation[]   @relation("RecommendationRecipient")
+  givenRecommendations Recommendation[]   @relation("RecommendationAuthor")
+  endorsementsReceived SkillEndorsement[] @relation("EndorsementRecipient")
+  endorsementsGiven    SkillEndorsement[] @relation("EndorsementGiver")
 
   @@index([email, isActive])
   @@index([phone, isActive])
@@ -461,31 +488,37 @@ enum ParentRelationship {
 
 // Profile visibility settings
 enum ProfileVisibility {
-  PUBLIC    // Everyone can see
-  SCHOOL    // Only school members
-  CLASS     // Only classmates
-  PRIVATE   // Only self
+  PUBLIC // Everyone can see
+  SCHOOL // Only school members
+  CLASS // Only classmates
+  PRIVATE // Only self
 }
 
 // Post type for activity feed
 enum PostType {
-  ARTICLE         // Educational articles
-  COURSE          // Course materials
-  QUIZ            // Quizzes and tests
-  QUESTION        // Student questions
-  EXAM            // Exam announcements
-  ANNOUNCEMENT    // Official announcements
-  ASSIGNMENT      // Homework assignments
-  POLL            // Surveys and polls
-  RESOURCE        // Learning resources
+  ARTICLE // Educational articles
+  COURSE // Course materials
+  QUIZ // Quizzes and tests
+  QUESTION // Student questions
+  EXAM // Exam announcements
+  ANNOUNCEMENT // Official announcements
+  ASSIGNMENT // Homework assignments
+  POLL // Surveys and polls
+  RESOURCE // Learning resources
+  PROJECT // Project showcase (Portfolio)
+  TUTORIAL // How-to guides and tutorials
+  RESEARCH // Research papers and findings
+  ACHIEVEMENT // Milestones and accomplishments
+  REFLECTION // Learning journey reflections
+  COLLABORATION // Team-up calls
 }
 
 // Post visibility
 enum PostVisibility {
-  PUBLIC    // Everyone can see
-  SCHOOL    // Only school members
-  CLASS     // Only classmates
-  PRIVATE   // Only author
+  PUBLIC // Everyone can see
+  SCHOOL // Only school members
+  CLASS // Only classmates
+  PRIVATE // Only author
 }
 
 // Notification type
@@ -497,6 +530,101 @@ enum NotificationType {
   ANNOUNCEMENT
   GRADE_POSTED
   ATTENDANCE_MARKED
+  SKILL_ENDORSED
+  RECOMMENDATION_RECEIVED
+  PROJECT_LIKED
+  ACHIEVEMENT_EARNED
+}
+
+// ==========================================
+// CAREER PROFILE ENUMS
+// ==========================================
+
+enum SkillCategory {
+  PROGRAMMING
+  LANGUAGES
+  MATHEMATICS
+  SCIENCE
+  HUMANITIES
+  ARTS
+  SPORTS
+  TEACHING
+  LEADERSHIP
+  COMMUNICATION
+  TECHNICAL
+  BUSINESS
+  OTHER
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum ExperienceType {
+  WORK
+  TEACHING
+  VOLUNTEER
+  INTERNSHIP
+  RESEARCH
+  LEADERSHIP
+  EXTRACURRICULAR
+}
+
+enum ProjectCategory {
+  SOFTWARE
+  RESEARCH
+  DESIGN
+  WRITING
+  SCIENCE
+  MATHEMATICS
+  ARTS
+  ENGINEERING
+  BUSINESS
+  SOCIAL_IMPACT
+  OTHER
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  PUBLISHED
+}
+
+enum AchievementType {
+  COURSE_COMPLETION
+  SKILL_MASTERY
+  TEACHING_EXCELLENCE
+  COMMUNITY_CONTRIBUTION
+  LEADERSHIP
+  INNOVATION
+  COLLABORATION
+  CONSISTENCY_STREAK
+  TOP_PERFORMER
+  MILESTONE
+  COMPETITION_WIN
+  PUBLICATION
+  CERTIFICATION
+}
+
+enum AchievementRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum RecommendationRelation {
+  TEACHER
+  CLASSMATE
+  MENTOR
+  COLLEAGUE
+  SUPERVISOR
+  OTHER
 }
 
 // ==========================================
@@ -508,8 +636,8 @@ model Post {
   authorId      String
   author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   content       String         @db.Text
-  mediaUrls     String[]       // Array of R2 URLs
-  mediaKeys     String[]       // R2 keys for cleanup
+  mediaUrls     String[] // Array of R2 URLs
+  mediaKeys     String[] // R2 keys for cleanup
   postType      PostType       @default(ARTICLE)
   visibility    PostVisibility @default(SCHOOL)
   likesCount    Int            @default(0)
@@ -520,8 +648,8 @@ model Post {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  comments      Comment[]
-  likes         Like[]
+  comments Comment[]
+  likes    Like[]
 
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
@@ -580,7 +708,7 @@ model Notification {
   type        NotificationType
   title       String
   message     String
-  link        String?          // Link to related content
+  link        String? // Link to related content
   isRead      Boolean          @default(false)
   readAt      DateTime?
   createdAt   DateTime         @default(now())
@@ -588,4 +716,175 @@ model Notification {
   @@index([recipientId, isRead, createdAt(sort: Desc)])
   @@index([actorId])
   @@map("notifications")
+}
+
+// ============================================
+// CAREER PROFILE SYSTEM MODELS
+// ============================================
+
+model UserSkill {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillName   String // e.g., "JavaScript", "Mathematics", "Teaching"
+  category    SkillCategory // Programming, Languages, Teaching, etc.
+  level       SkillLevel    @default(BEGINNER)
+  yearsOfExp  Float? // Years of experience with this skill
+  isVerified  Boolean       @default(false) // Verified by teacher/platform
+  verifiedBy  String? // Who verified it
+  verifiedAt  DateTime?
+  description String?       @db.Text // How you use this skill
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  endorsements SkillEndorsement[]
+
+  @@unique([userId, skillName])
+  @@index([userId, category])
+  @@index([skillName])
+  @@map("user_skills")
+}
+
+model SkillEndorsement {
+  id          String    @id @default(cuid())
+  skillId     String
+  skill       UserSkill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  endorserId  String
+  endorser    User      @relation("EndorsementGiver", fields: [endorserId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User      @relation("EndorsementRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  comment     String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@unique([skillId, endorserId])
+  @@index([recipientId])
+  @@index([endorserId])
+  @@map("skill_endorsements")
+}
+
+model Experience {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         ExperienceType
+  title        String // Job title or position
+  organization String // School/Company name
+  location     String?
+  startDate    DateTime
+  endDate      DateTime?
+  isCurrent    Boolean        @default(false)
+  description  String?        @db.Text
+  achievements String[] // Key achievements
+  skills       String[] // Skills used
+  mediaUrls    String[] // Images/documents
+  mediaKeys    String[] // R2 keys for cleanup
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId, startDate(sort: Desc)])
+  @@index([type])
+  @@map("experiences")
+}
+
+model Certification {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  issuingOrg     String // Organization that issued
+  issueDate      DateTime
+  expiryDate     DateTime?
+  credentialId   String? // Certificate ID/number
+  credentialUrl  String? // Verification URL
+  certificateUrl String? // R2 URL for certificate image/PDF
+  certificateKey String? // R2 key for cleanup
+  description    String?   @db.Text
+  skills         String[] // Skills this certification validates
+  isVerified     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId, issueDate(sort: Desc)])
+  @@map("certifications")
+}
+
+model Project {
+  id            String            @id @default(cuid())
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  description   String            @db.Text
+  category      ProjectCategory
+  status        ProjectStatus     @default(COMPLETED)
+  startDate     DateTime?
+  endDate       DateTime?
+  role          String? // Your role in the project
+  teamSize      Int? // Number of people involved
+  technologies  String[] // Technologies/tools used
+  skills        String[] // Skills demonstrated
+  mediaUrls     String[] // Images, videos, documents
+  mediaKeys     String[] // R2 keys
+  projectUrl    String? // Live project URL
+  githubUrl     String? // GitHub repository
+  demoUrl       String? // Demo video/site
+  achievements  String[] // Key achievements/metrics
+  collaborators String[] // User IDs of team members
+  visibility    ProfileVisibility @default(PUBLIC)
+  viewsCount    Int               @default(0)
+  likesCount    Int               @default(0)
+  isFeatured    Boolean           @default(false) // Featured on profile
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([category, visibility])
+  @@index([isFeatured])
+  @@map("projects")
+}
+
+model Achievement {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           AchievementType
+  title          String
+  description    String            @db.Text
+  issuedBy       String? // Organization/person who awarded
+  issuedDate     DateTime          @default(now())
+  badgeUrl       String? // Badge/icon URL
+  badgeKey       String? // R2 key
+  certificateUrl String? // Certificate URL
+  certificateKey String? // R2 key
+  points         Int               @default(0) // Gamification points
+  rarity         AchievementRarity @default(COMMON)
+  isPublic       Boolean           @default(true)
+  metadata       Json? // Additional data (stats, metrics, etc.)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([userId, issuedDate(sort: Desc)])
+  @@index([type, rarity])
+  @@map("achievements")
+}
+
+model Recommendation {
+  id           String                 @id @default(cuid())
+  recipientId  String
+  recipient    User                   @relation("RecommendationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User                   @relation("RecommendationAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  relationship RecommendationRelation
+  content      String                 @db.Text
+  skills       String[] // Skills being endorsed
+  rating       Int? // Optional 1-5 rating
+  isPublic     Boolean                @default(true)
+  isAccepted   Boolean                @default(false) // Recipient must accept
+  acceptedAt   DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@unique([recipientId, authorId])
+  @@index([recipientId, isAccepted])
+  @@index([authorId])
+  @@map("recommendations")
 }

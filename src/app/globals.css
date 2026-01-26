@@ -737,3 +737,43 @@ html {
 .animate-scale-in {
   animation: scale-in 0.3s ease-out;
 }
+
+/* ============================================
+   HIDE SCROLLBARS (Instagram/Facebook style)
+   ============================================ */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Hide all scrollbars globally for mobile app feel */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+
+/* Optional: Show scrollbar on hover for desktop */
+@media (min-width: 768px) {
+  *:hover::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  *:hover::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  *:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+  
+  *:hover::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+}

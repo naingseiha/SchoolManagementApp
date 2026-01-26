@@ -21,8 +21,8 @@ export default function FeedHeader() {
   };
 
   return (
-    <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between max-w-3xl mx-auto">
+    <div className="sticky top-0 z-30 bg-white shadow-sm">
+      <div className="px-4 py-3 flex items-center justify-between max-w-3xl mx-auto">
         {/* Profile Picture */}
         <button className="flex-shrink-0">
           {getUserProfilePicture() ? (

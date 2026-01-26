@@ -2,19 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, memo } from "react";
 import {
-  RefreshCw,
   Loader2,
-  Filter,
-  FileText,
-  GraduationCap,
-  Brain,
-  HelpCircle,
-  ClipboardCheck,
-  Megaphone,
-  BookOpen,
-  BarChart3,
   Rss,
-  ChevronDown,
   X,
 } from "lucide-react";
 import {
@@ -32,23 +21,6 @@ interface FeedPageProps {
   onProfileClick?: (userId: string) => void;
 }
 
-const POST_TYPE_FILTERS: {
-  value: PostType | "ALL";
-  icon: React.ElementType;
-  labelKh: string;
-  label: string;
-}[] = [
-  { value: "ALL", icon: Rss, labelKh: "ទាំងអស់", label: "All" },
-  { value: "ARTICLE", icon: FileText, labelKh: "អត្ថបទ", label: "Article" },
-  { value: "COURSE", icon: GraduationCap, labelKh: "វគ្គសិក្សា", label: "Course" },
-  { value: "QUIZ", icon: Brain, labelKh: "សំណួរក្លាយ", label: "Quiz" },
-  { value: "QUESTION", icon: HelpCircle, labelKh: "សំណួរ", label: "Question" },
-  { value: "EXAM", icon: ClipboardCheck, labelKh: "ប្រឡង", label: "Exam" },
-  { value: "ANNOUNCEMENT", icon: Megaphone, labelKh: "ប្រកាស", label: "Announcement" },
-  { value: "ASSIGNMENT", icon: BookOpen, labelKh: "កិច្ចការ", label: "Assignment" },
-  { value: "POLL", icon: BarChart3, labelKh: "មតិ", label: "Poll" },
-];
-
 function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
   const { currentUser } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -59,7 +31,6 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedFilter, setSelectedFilter] = useState<PostType | "ALL">("ALL");
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -167,81 +138,9 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
     return "អ្នកប្រើប្រាស់";
   };
 
-  const selectedFilterInfo = POST_TYPE_FILTERS.find(
-    (f) => f.value === selectedFilter
-  );
-  const FilterIcon = selectedFilterInfo?.icon || Rss;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">
-            <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              មតិព័ត៌មាន
-            </span>
-          </h1>
-
-          <div className="flex items-center gap-2">
-            {/* Filter dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                <FilterIcon className="w-4 h-4" />
-                <span className="hidden sm:inline">
-                  {selectedFilterInfo?.labelKh}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-
-              {showFilterDropdown && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowFilterDropdown(false)}
-                  />
-                  <div className="absolute right-0 top-10 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
-                    {POST_TYPE_FILTERS.map((filter) => (
-                      <button
-                        key={filter.value}
-                        onClick={() => handleFilterChange(filter.value)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm hover:bg-gray-50 ${
-                          selectedFilter === filter.value
-                            ? "bg-indigo-50 text-indigo-700"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        <filter.icon className="w-4 h-4" />
-                        <span>{filter.labelKh}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Refresh button */}
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <RefreshCw
-                className={`w-5 h-5 text-gray-600 ${
-                  isRefreshing ? "animate-spin" : ""
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-4 pb-24 space-y-4">
-        {/* Create Post */}
+    <div className="w-full pt-4 space-y-4">
+      {/* Create Post */}
         {showCreatePost && (
           <CreatePost
             userProfilePicture={null}
@@ -322,7 +221,6 @@ function FeedPage({ showCreatePost = true, onProfileClick }: FeedPageProps) {
             </p>
           </div>
         )}
-      </div>
     </div>
   );
 }
