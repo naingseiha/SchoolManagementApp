@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { DataProvider } from "@/context/DataContext";
+import { SocketProvider } from "@/context/SocketContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { NetworkStatus } from "@/components/NetworkStatus";
 
@@ -260,11 +261,13 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <DataProvider>
-            {children}
-            <PWAInstallPrompt />
-            <NetworkStatus />
-          </DataProvider>
+          <SocketProvider>
+            <DataProvider>
+              {children}
+              <PWAInstallPrompt />
+              <NetworkStatus />
+            </DataProvider>
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>

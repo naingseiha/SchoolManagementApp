@@ -11,6 +11,8 @@ import {
   getComments,
   addComment,
   deleteComment,
+  editComment,
+  toggleCommentReaction,
   getUserPosts,
   votePoll,
 } from "../controllers/feed.controller";
@@ -36,7 +38,9 @@ router.post("/polls/:optionId/vote", votePoll);
 // Comments
 router.get("/posts/:postId/comments", getComments);
 router.post("/posts/:postId/comments", addComment);
+router.put("/comments/:commentId", editComment);
 router.delete("/comments/:commentId", deleteComment);
+router.post("/comments/:commentId/react", toggleCommentReaction);
 
 // User posts
 router.get("/users/:userId/posts", getUserPosts);

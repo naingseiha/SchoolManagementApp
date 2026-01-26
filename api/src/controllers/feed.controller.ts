@@ -615,14 +615,25 @@ export const toggleLike = async (req: Request, res: Response) => {
 export const getComments = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
+    const userId = req.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
+    const sort = (req.query.sort as string) || "new"; // new, old, top
     const skip = (page - 1) * limit;
 
+    // Determine sort order
+    let orderBy: any = { createdAt: "desc" }; // Default: newest first
+    if (sort === "old") orderBy = { createdAt: "asc" };
+    // "top" sorting will be done after fetching reactions
+
+    // Fetch top-level comments (no parentId)
     const [comments, total] = await Promise.all([
       prisma.comment.findMany({
-        where: { postId },
-        orderBy: { createdAt: "asc" },
+        where: { 
+          postId,
+          parentId: null, // Only top-level comments
+        },
+        orderBy,
         skip,
         take: limit,
         include: {
@@ -633,25 +644,100 @@ export const getComments = async (req: Request, res: Response) => {
               lastName: true,
               profilePictureUrl: true,
               role: true,
-              student: {
-                select: { khmerName: true },
-              },
-              teacher: {
-                select: { khmerName: true },
-              },
-              parent: {
-                select: { khmerName: true },
-              },
+              student: { select: { khmerName: true } },
+              teacher: { select: { khmerName: true } },
+              parent: { select: { khmerName: true } },
             },
           },
+          replies: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              author: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  profilePictureUrl: true,
+                  role: true,
+                  student: { select: { khmerName: true } },
+                  teacher: { select: { khmerName: true } },
+                  parent: { select: { khmerName: true } },
+                },
+              },
+              reactions: true,
+            },
+          },
+          reactions: true,
         },
       }),
-      prisma.comment.count({ where: { postId } }),
+      prisma.comment.count({ where: { postId, parentId: null } }),
     ]);
+
+    // Calculate reaction counts and user's reaction for each comment
+    const enrichedComments = comments.map((comment) => {
+      const reactionCounts = {
+        LIKE: 0,
+        LOVE: 0,
+        HELPFUL: 0,
+        INSIGHTFUL: 0,
+      };
+      let userReaction = null;
+
+      comment.reactions.forEach((reaction: any) => {
+        reactionCounts[reaction.type as keyof typeof reactionCounts]++;
+        if (reaction.userId === userId) {
+          userReaction = reaction.type;
+        }
+      });
+
+      // Process replies with same logic
+      const enrichedReplies = comment.replies.map((reply: any) => {
+        const replyReactionCounts = {
+          LIKE: 0,
+          LOVE: 0,
+          HELPFUL: 0,
+          INSIGHTFUL: 0,
+        };
+        let replyUserReaction = null;
+
+        reply.reactions.forEach((reaction: any) => {
+          replyReactionCounts[reaction.type as keyof typeof replyReactionCounts]++;
+          if (reaction.userId === userId) {
+            replyUserReaction = reaction.type;
+          }
+        });
+
+        const { reactions, ...replyWithoutReactions } = reply;
+        return {
+          ...replyWithoutReactions,
+          reactionCounts: replyReactionCounts,
+          userReaction: replyUserReaction,
+          repliesCount: 0, // Nested replies don't have sub-replies yet
+        };
+      });
+
+      const { reactions, replies, ...commentWithoutReactions } = comment;
+      return {
+        ...commentWithoutReactions,
+        reactionCounts,
+        userReaction,
+        replies: enrichedReplies,
+        repliesCount: enrichedReplies.length,
+      };
+    });
+
+    // Sort by "top" if requested (most reactions)
+    if (sort === "top") {
+      enrichedComments.sort((a, b) => {
+        const aTotal = Object.values(a.reactionCounts).reduce((sum: number, count) => sum + count, 0);
+        const bTotal = Object.values(b.reactionCounts).reduce((sum: number, count) => sum + count, 0);
+        return bTotal - aTotal;
+      });
+    }
 
     res.json({
       success: true,
-      data: comments,
+      data: enrichedComments,
       pagination: {
         page,
         limit,
@@ -677,7 +763,7 @@ export const addComment = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
     const { postId } = req.params;
-    const { content } = req.body;
+    const { content, parentId } = req.body;
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({
@@ -705,7 +791,63 @@ export const addComment = async (req: Request, res: Response) => {
       });
     }
 
-    // Create comment and update comment count
+    // If replying, check parent comment exists
+    if (parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: parentId },
+        include: { author: true },
+      });
+
+      if (!parentComment) {
+        return res.status(404).json({
+          success: false,
+          message: "Parent comment not found",
+        });
+      }
+
+      // Create reply and update comment count
+      const [comment] = await prisma.$transaction([
+        prisma.comment.create({
+          data: {
+            postId,
+            authorId: userId!,
+            content: content.trim(),
+            parentId, // Set parent for threading
+          },
+          include: {
+            author: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                profilePictureUrl: true,
+                role: true,
+                student: { select: { khmerName: true } },
+                teacher: { select: { khmerName: true } },
+                parent: { select: { khmerName: true } },
+              },
+            },
+          },
+        }),
+        prisma.post.update({
+          where: { id: postId },
+          data: { commentsCount: { increment: 1 } },
+        }),
+      ]);
+
+      // Send notification to parent comment author (reply notification)
+      if (parentComment.authorId !== userId) {
+        socialNotificationService.notifyCommentReply(parentId, userId!, comment.id).catch(console.error);
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: "Reply added successfully",
+        data: comment,
+      });
+    }
+
+    // Create top-level comment and update comment count
     const [comment] = await prisma.$transaction([
       prisma.comment.create({
         data: {
@@ -734,7 +876,7 @@ export const addComment = async (req: Request, res: Response) => {
       }),
     ]);
 
-    // Send real-time notification
+    // Send real-time notification to post author
     if (post.authorId !== userId) {
       socialNotificationService.notifyPostComment(postId, userId!, comment.id).catch(console.error);
     }
@@ -812,6 +954,163 @@ export const deleteComment = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to delete comment",
+    });
+  }
+};
+
+/**
+ * Toggle comment reaction
+ * POST /api/feed/comments/:commentId/react
+ */
+export const toggleCommentReaction = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId!;
+    const { commentId } = req.params;
+    const { type } = req.body; // LIKE, LOVE, HELPFUL, INSIGHTFUL
+
+    if (!type || !["LIKE", "LOVE", "HELPFUL", "INSIGHTFUL"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid reaction type",
+      });
+    }
+
+    // Check if comment exists
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    // Check if user already reacted with this type
+    const existingReaction = await prisma.commentReaction.findUnique({
+      where: {
+        commentId_userId_type: {
+          commentId,
+          userId,
+          type,
+        },
+      },
+    });
+
+    if (existingReaction) {
+      // Remove reaction (toggle off)
+      await prisma.commentReaction.delete({
+        where: {
+          id: existingReaction.id,
+        },
+      });
+
+      return res.json({
+        success: true,
+        message: "Reaction removed",
+        action: "removed",
+      });
+    } else {
+      // Add reaction
+      await prisma.commentReaction.create({
+        data: {
+          commentId,
+          userId,
+          type,
+        },
+      });
+
+      return res.json({
+        success: true,
+        message: "Reaction added",
+        action: "added",
+      });
+    }
+  } catch (error: any) {
+    console.error("Toggle comment reaction error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to toggle reaction",
+    });
+  }
+};
+
+/**
+ * Edit a comment
+ * PUT /api/feed/comments/:commentId
+ */
+export const editComment = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+    const { commentId } = req.params;
+    const { content } = req.body;
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment content is required",
+      });
+    }
+
+    if (content.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment must be 500 characters or less",
+      });
+    }
+
+    // Check if comment exists and user is author
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: "Comment not found",
+      });
+    }
+
+    if (comment.authorId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only edit your own comments",
+      });
+    }
+
+    // Update comment
+    const updatedComment = await prisma.comment.update({
+      where: { id: commentId },
+      data: {
+        content: content.trim(),
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profilePictureUrl: true,
+            role: true,
+            student: { select: { khmerName: true } },
+            teacher: { select: { khmerName: true } },
+            parent: { select: { khmerName: true } },
+          },
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Comment updated successfully",
+      data: updatedComment,
+    });
+  } catch (error: any) {
+    console.error("Edit comment error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to edit comment",
     });
   }
 };

@@ -36,9 +36,16 @@ import {
   Star,
   TrendingUp,
 } from "lucide-react";
-import { Post, PostType, toggleLike, deletePost, POST_TYPE_INFO } from "@/lib/api/feed";
+import {
+  Post,
+  PostType,
+  toggleLike,
+  deletePost,
+  POST_TYPE_INFO,
+} from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
 import PollCard from "./PollCard";
+import CommentsModal from "@/components/comments/CommentsModal";
 
 interface PostCardProps {
   post: Post;
@@ -81,6 +88,7 @@ export default function PostCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
 
   const isOwnPost = currentUserId === post.authorId;
   const PostTypeIcon = POST_TYPE_ICONS[post.postType];
@@ -135,13 +143,13 @@ export default function PostCard({
 
   const nextImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === post.mediaUrls.length - 1 ? 0 : prev + 1
+      prev === post.mediaUrls.length - 1 ? 0 : prev + 1,
     );
   };
 
   const prevImage = () => {
     setCurrentImageIndex((prev) =>
-      prev === 0 ? post.mediaUrls.length - 1 : prev - 1
+      prev === 0 ? post.mediaUrls.length - 1 : prev - 1,
     );
   };
 
@@ -207,7 +215,9 @@ export default function PostCard({
                   <Brain className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Quick Quiz</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Quick Quiz
+                  </p>
                   <p className="text-xs text-gray-600">10 questions • 15 min</p>
                 </div>
               </div>
@@ -232,7 +242,9 @@ export default function PostCard({
                   <BookOpen className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Assignment Due</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Assignment Due
+                  </p>
                   <div className="flex items-center gap-1.5 text-orange-600">
                     <Calendar className="w-3.5 h-3.5" />
                     <span className="text-xs font-medium">March 15, 2024</span>
@@ -240,7 +252,9 @@ export default function PostCard({
                 </div>
               </div>
               <div className="px-3 py-1 bg-orange-100 rounded-full">
-                <span className="text-xs font-bold text-orange-700">3 days left</span>
+                <span className="text-xs font-bold text-orange-700">
+                  3 days left
+                </span>
               </div>
             </div>
             <button className="w-full py-3 px-4 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
@@ -258,7 +272,9 @@ export default function PostCard({
                 <Megaphone className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-sm font-bold text-red-900">Important Announcement</p>
+                <p className="text-sm font-bold text-red-900">
+                  Important Announcement
+                </p>
                 <p className="text-xs text-red-700">Please read carefully</p>
               </div>
             </div>
@@ -283,8 +299,12 @@ export default function PostCard({
                 <Trophy className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <h4 className="font-bold text-amber-900">Achievement Unlocked!</h4>
-                <p className="text-sm text-amber-700">Celebrate this milestone 🎉</p>
+                <h4 className="font-bold text-amber-900">
+                  Achievement Unlocked!
+                </h4>
+                <p className="text-sm text-amber-700">
+                  Celebrate this milestone 🎉
+                </p>
               </div>
             </div>
           </div>
@@ -295,9 +315,10 @@ export default function PostCard({
 
   const contentText = post.content;
   const isLongContent = contentText.length > 300;
-  const displayContent = isLongContent && !showFullContent
-    ? contentText.slice(0, 300) + "..."
-    : contentText;
+  const displayContent =
+    isLongContent && !showFullContent
+      ? contentText.slice(0, 300) + "..."
+      : contentText;
 
   return (
     <article className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow mb-4">
@@ -316,7 +337,7 @@ export default function PostCard({
               {/* Online status indicator */}
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
             </button>
-            
+
             <div className="flex-1 min-w-0">
               <button
                 onClick={() => onProfileClick?.(post.authorId)}
@@ -325,8 +346,6 @@ export default function PostCard({
                 {getAuthorName()}
               </button>
               <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>{getAuthorSubtitle()}</span>
-                <span>•</span>
                 <span>{getTimeAgo()}</span>
               </div>
             </div>
@@ -334,15 +353,21 @@ export default function PostCard({
 
           {/* Post Type Badge & Menu */}
           <div className="flex items-center gap-2 ml-3">
-            <div 
+            <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm"
-              style={{ 
+              style={{
                 backgroundColor: postTypeInfo.color + "15",
-                border: `1.5px solid ${postTypeInfo.color}40`
+                border: `1.5px solid ${postTypeInfo.color}40`,
               }}
             >
-              <PostTypeIcon className="w-4 h-4" style={{ color: postTypeInfo.color }} />
-              <span className="text-xs font-bold" style={{ color: postTypeInfo.color }}>
+              <PostTypeIcon
+                className="w-4 h-4"
+                style={{ color: postTypeInfo.color }}
+              />
+              <span
+                className="text-xs font-bold"
+                style={{ color: postTypeInfo.color }}
+              >
                 {postTypeInfo.label}
               </span>
             </div>
@@ -414,9 +439,9 @@ export default function PostCard({
             src={post.mediaUrls[currentImageIndex]}
             alt="Post media"
             className="w-full h-auto object-cover"
-            style={{ maxHeight: '500px' }}
+            style={{ maxHeight: "500px" }}
           />
-          
+
           {post.mediaUrls.length > 1 && (
             <>
               <button
@@ -431,7 +456,7 @@ export default function PostCard({
               >
                 <ChevronRight className="w-5 h-5 text-gray-800" />
               </button>
-              
+
               {/* Dots Indicator */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm rounded-full">
                 {post.mediaUrls.map((_, idx) => (
@@ -440,8 +465,8 @@ export default function PostCard({
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`h-1.5 rounded-full transition-all ${
                       idx === currentImageIndex
-                        ? 'bg-white w-6'
-                        : 'bg-white/60 w-1.5 hover:bg-white/80'
+                        ? "bg-white w-6"
+                        : "bg-white/60 w-1.5 hover:bg-white/80"
                     }`}
                   />
                 ))}
@@ -455,16 +480,16 @@ export default function PostCard({
       <div className="px-4 py-4">
         {/* Title */}
         <div className="mb-3">
-          <h3 className="font-bold text-gray-900 text-base leading-tight">
-            {post.content.split('\n')[0] || postTypeInfo.label}
-          </h3>
+          <h4 className="font-bold font-koulen text-gray-800 text-base leading-tight">
+            {post.content.split("\n")[0] || postTypeInfo.label}
+          </h4>
         </div>
 
         {/* Description */}
-        {post.content.split('\n').slice(1).join('\n') && (
+        {post.content.split("\n").slice(1).join("\n") && (
           <div>
             <p className="text-[15px] text-gray-700 leading-relaxed">
-              {displayContent.split('\n').slice(1).join('\n')}
+              {displayContent.split("\n").slice(1).join("\n")}
             </p>
             {isLongContent && (
               <button
@@ -482,7 +507,7 @@ export default function PostCard({
         {renderTypeSpecificContent()}
 
         {/* Feature/Insights Buttons */}
-        {(post.postType === 'ARTICLE' || post.postType === 'COURSE') && (
+        {(post.postType === "ARTICLE" || post.postType === "COURSE") && (
           <div className="flex gap-2 mt-4">
             <button className="flex-1 py-2.5 px-3 bg-white border-2 border-gray-200 hover:border-amber-300 hover:bg-amber-50 rounded-lg text-sm font-semibold text-gray-700 hover:text-amber-700 flex items-center justify-center gap-2 transition-all group">
               <Star className="w-4 h-4 group-hover:fill-amber-400 group-hover:text-amber-500 transition-all" />
@@ -504,16 +529,18 @@ export default function PostCard({
             disabled={isLiking}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
               isLiked
-                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                : 'bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-600'
+                ? "bg-red-50 text-red-600 hover:bg-red-100"
+                : "bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-600"
             }`}
           >
-            <Heart className={`w-5 h-5 transition-all ${isLiked ? 'fill-red-500 scale-110' : 'hover:scale-110'}`} />
+            <Heart
+              className={`w-5 h-5 transition-all ${isLiked ? "fill-red-500 scale-110" : "hover:scale-110"}`}
+            />
             <span className="font-semibold">{likesCount}</span>
           </button>
 
           <button
-            onClick={() => onCommentClick?.(post.id)}
+            onClick={() => setShowCommentsModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all group"
           >
             <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -529,14 +556,24 @@ export default function PostCard({
             onClick={() => setIsBookmarked(!isBookmarked)}
             className={`p-2.5 rounded-lg transition-all ${
               isBookmarked
-                ? 'bg-amber-50 text-amber-600'
-                : 'bg-gray-50 text-gray-600 hover:bg-amber-50 hover:text-amber-600'
+                ? "bg-amber-50 text-amber-600"
+                : "bg-gray-50 text-gray-600 hover:bg-amber-50 hover:text-amber-600"
             }`}
           >
-            <Bookmark className={`w-5 h-5 transition-all ${isBookmarked ? 'fill-amber-500 scale-110' : 'hover:scale-110'}`} />
+            <Bookmark
+              className={`w-5 h-5 transition-all ${isBookmarked ? "fill-amber-500 scale-110" : "hover:scale-110"}`}
+            />
           </button>
         </div>
       </div>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        postId={post.id}
+        isOpen={showCommentsModal}
+        onClose={() => setShowCommentsModal(false)}
+        currentUserId={currentUserId}
+      />
     </article>
   );
 }

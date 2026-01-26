@@ -74,12 +74,25 @@ export interface Post {
   totalVotes?: number;
 }
 
+export type ReactionType = "LIKE" | "LOVE" | "HELPFUL" | "INSIGHTFUL";
+
 export interface Comment {
   id: string;
   postId: string;
   authorId: string;
   author: PostAuthor;
   content: string;
+  parentId: string | null;
+  replies: Comment[];
+  reactionCounts?: {
+    LIKE: number;
+    LOVE: number;
+    HELPFUL: number;
+    INSIGHTFUL: number;
+  };
+  userReaction: ReactionType | null;
+  repliesCount: number;
+  isEdited: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -319,22 +332,42 @@ export const getComments = async (
   params?: {
     page?: number;
     limit?: number;
+    sort?: "new" | "old" | "top";
   }
 ): Promise<CommentsResponse> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.set("page", params.page.toString());
   if (params?.limit) queryParams.set("limit", params.limit.toString());
+  if (params?.sort) queryParams.set("sort", params.sort);
 
   const response = await authFetch(`/feed/posts/${postId}/comments?${queryParams.toString()}`);
   return response;
 };
 
 /**
- * Add a comment to a post
+ * Add a comment to a post (or reply to a comment)
  */
-export const addComment = async (postId: string, content: string): Promise<Comment> => {
+export const addComment = async (
+  postId: string,
+  content: string,
+  parentId?: string
+): Promise<Comment> => {
   const response = await authFetch(`/feed/posts/${postId}/comments`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content, parentId }),
+  });
+  return response.data;
+};
+
+/**
+ * Edit a comment
+ */
+export const editComment = async (commentId: string, content: string): Promise<Comment> => {
+  const response = await authFetch(`/feed/comments/${commentId}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
@@ -350,6 +383,23 @@ export const deleteComment = async (commentId: string): Promise<void> => {
   await authFetch(`/feed/comments/${commentId}`, {
     method: "DELETE",
   });
+};
+
+/**
+ * Toggle comment reaction
+ */
+export const toggleCommentReaction = async (
+  commentId: string,
+  type: ReactionType
+): Promise<{ action: "added" | "removed" }> => {
+  const response = await authFetch(`/feed/comments/${commentId}/react`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type }),
+  });
+  return response;
 };
 
 // ==================== SOCIAL FUNCTIONS ====================

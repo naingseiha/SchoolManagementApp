@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { LogOut, User, Bell, Settings, X } from "lucide-react";
+import React from "react";
+import { LogOut, User, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function Header() {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
-  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -59,81 +59,11 @@ export default function Header() {
 
         {/* Right Section - User Info & Actions */}
         <div className="flex items-center space-x-2 md:space-x-3">
-          {/* Notifications Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2.5 text-gray-600 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 group"
-              aria-label="ការជូនដំណឹង"
-            >
-              <Bell className="h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-[10px] text-white font-bold animate-pulse shadow-lg">
-                3
-              </span>
-            </button>
-
-            {/* Notifications Dropdown */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4">
-                  <h3 className="font-khmer-body text-white font-semibold flex items-center justify-between">
-                    <span>ការជូនដំណឹង</span>
-                    <button
-                      onClick={() => setShowNotifications(false)}
-                      className="text-white/80 hover:text-white transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {[
-                    {
-                      title: "សិស្សថ្មីបានចុះឈ្មោះ",
-                      time: "២ នាទីមុន",
-                      icon: "👤",
-                    },
-                    {
-                      title: "ពិន្ទុថ្នាក់ទី១០A បានធ្វើបច្ចុប្បន្នភាព",
-                      time: "១ ម៉ោងមុន",
-                      icon: "📝",
-                    },
-                    {
-                      title: "គ្រូថ្មីបានចាត់តាំងមុខវិជ្ជាគណិតវិទ្យា",
-                      time: "៣ ម៉ោងមុន",
-                      icon: "👨‍🏫",
-                    },
-                  ].map((notif, i) => (
-                    <div
-                      key={i}
-                      className="p-4 border-b border-gray-100 hover:bg-indigo-50 transition-colors duration-200 cursor-pointer group"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <span className="text-2xl font-koulen">{notif.icon}</span>
-                        <div className="flex-1">
-                          <p className="font-khmer-body text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
-                            {notif.title}
-                          </p>
-                          <p className="font-khmer-body text-xs text-gray-500 mt-1">
-                            {notif.time}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-3 bg-gray-50 text-center">
-                  <button className="font-khmer-body text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                    មើលការជូនដំណឹងទាំងអស់
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Notifications Bell - Real-time Component */}
+          <NotificationBell />
 
           {/* Settings Button */}
           <button
-            onClick={() => router.push("/settings")}
             className="p-2.5 text-gray-600 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 group hidden md:block"
             aria-label="ការកំណត់"
           >
