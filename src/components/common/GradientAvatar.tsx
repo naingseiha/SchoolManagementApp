@@ -44,14 +44,15 @@ export default function GradientAvatar({
         onClick ? "cursor-pointer" : "cursor-default"
       } flex-shrink-0`}
     >
-      {/* Simple Instagram-style avatar */}
-      <div
-        className={`w-full h-full rounded-full overflow-hidden ring-1 ring-gray-200 ${
-          !shouldShowImage
-            ? "bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold"
-            : ""
-        } hover:opacity-90 transition-opacity`}
-      >
+      {/* Beautiful avatar with gradient border effect */}
+      <div className="relative w-full h-full rounded-full p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all">
+        <div
+          className={`w-full h-full rounded-full overflow-hidden ${
+            !shouldShowImage
+              ? "bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold"
+              : "bg-white"
+          }`}
+        >
         {shouldShowImage ? (
           <img
             src={imageUrl}
@@ -62,6 +63,7 @@ export default function GradientAvatar({
         ) : (
           <span>{initial}</span>
         )}
+        </div>
       </div>
 
       {/* Minimal online indicator */}

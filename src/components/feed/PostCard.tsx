@@ -327,13 +327,14 @@ export default function PostCard({
   // Generate random XP and streak for demo (you should get this from backend)
   const demoXP = Math.floor(Math.random() * 100) + 10;
   const demoStreak = Math.floor(Math.random() * 10) + 1;
-  const isVerifiedUser = post.author.role === "TEACHER" || post.author.role === "ADMIN";
+  const isVerifiedUser =
+    post.author.role === "TEACHER" || post.author.role === "ADMIN";
   const userLevel = Math.floor(Math.random() * 10) + 1;
 
   return (
     <article className="relative group mb-4 animate-fade-in">
-      {/* Clean Instagram-style Card */}
-      <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      {/* Card with beautiful shadow */}
+      <div className="relative bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden">
         {/* Header */}
         <div className="relative px-4 py-3">
           <div className="flex items-center justify-between gap-3">
@@ -351,26 +352,28 @@ export default function PostCard({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onProfileClick?.(post.authorId)}
-                    className="font-semibold text-gray-900 hover:text-gray-600 transition-colors text-sm truncate"
+                    className="font-semibold text-gray-900 font-koulen hover:text-gray-600 transition-colors text-sm truncate"
                   >
                     {getAuthorName()}
                   </button>
                   {isVerifiedUser && (
-                    <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <svg
+                      className="w-3.5 h-3.5 text-blue-500 flex-shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   )}
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <span>{getAuthorSubtitle()}</span>
-                  <span>•</span>
                   <span>{getTimeAgo()}</span>
                 </div>
               </div>
             </div>
 
-            {/* Post Type Badge & Menu - Better Balance */}
-            <div className="flex items-center gap-2">
+            {/* Post Type Badge & Menu - Balanced padding */}
+            <div className="flex items-center gap-2 -mr-1">
               {/* Minimal Type Badge */}
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-full border border-gray-200">
                 <PostTypeIcon
@@ -443,47 +446,51 @@ export default function PostCard({
           </div>
         </div>
 
-        {/* Media Gallery - Instagram style with consistent height */}
+        {/* Media Gallery - YouTube thumbnail style (16:9 landscape) */}
         {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <div className="relative w-full bg-black">
-            <img
-              src={post.mediaUrls[currentImageIndex]}
-              alt="Post media"
-              className="w-full object-cover"
-              style={{ maxHeight: "500px", objectFit: "cover" }}
-            />
+          <div className="px-4">
+            <div
+              className="relative w-full bg-black rounded-2xl overflow-hidden"
+              style={{ height: "220px" }}
+            >
+              <img
+                src={post.mediaUrls[currentImageIndex]}
+                alt="Post media"
+                className="w-full h-full object-cover"
+              />
 
-            {post.mediaUrls.length > 1 && (
-              <>
-                <button
-                  onClick={prevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-all"
-                >
-                  <ChevronLeft className="w-5 h-5 text-white" />
-                </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-all"
-                >
-                  <ChevronRight className="w-5 h-5 text-white" />
-                </button>
+              {post.mediaUrls.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-all"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-all"
+                  >
+                    <ChevronRight className="w-5 h-5 text-white" />
+                  </button>
 
-                {/* Minimal dots */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {post.mediaUrls.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === currentImageIndex
-                          ? "bg-white w-6"
-                          : "bg-white/60 w-1.5 hover:bg-white/80"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+                  {/* Minimal dots */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {post.mediaUrls.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentImageIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          idx === currentImageIndex
+                            ? "bg-white w-6"
+                            : "bg-white/60 w-1.5 hover:bg-white/80"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 
@@ -512,7 +519,7 @@ export default function PostCard({
           )}
 
           {/* Minimal Knowledge Points */}
-          <KnowledgePoints 
+          <KnowledgePoints
             xp={demoXP}
             streak={demoStreak}
             isVerified={isVerifiedUser}
@@ -538,50 +545,64 @@ export default function PostCard({
           )}
         </div>
 
-        {/* Enhanced Engagement Section - Instagram style */}
+        {/* Enhanced Engagement Section - Beautiful with gradients */}
         <div className="relative px-4 pb-3 pt-2 border-t border-gray-100">
           <div className="flex items-center gap-1">
-            {/* Like Button */}
+            {/* Like Button - Gradient background */}
             <button
               onClick={handleLike}
               disabled={isLiking}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-all hover:bg-gray-50 active:scale-95"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-sm transition-all duration-300 ${
+                isLiked
+                  ? "bg-gradient-to-r from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100"
+                  : "hover:bg-gray-50"
+              }`}
             >
               <Heart
                 className={`w-5 h-5 transition-all ${
                   isLiked
-                    ? "fill-red-500 text-red-500"
-                    : "text-gray-700 hover:text-red-500"
+                    ? "fill-red-500 text-red-500 animate-heart-beat"
+                    : "text-gray-700"
                 }`}
               />
-              <span className={`font-semibold ${isLiked ? "text-red-500" : "text-gray-900"}`}>
+              <span
+                className={`font-semibold ${isLiked ? "text-red-600" : "text-gray-900"}`}
+              >
                 {likesCount}
               </span>
             </button>
 
-            {/* Comment Button */}
+            {/* Comment Button - Gradient background */}
             <button
               onClick={() => setShowCommentsModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm text-gray-700 hover:bg-gray-50 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-sm transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50"
             >
-              <MessageCircle className="w-5 h-5" />
-              <span className="font-semibold text-gray-900">{post.commentsCount}</span>
+              <MessageCircle className="w-5 h-5 text-gray-700" />
+              <span className="font-semibold text-gray-900">
+                {post.commentsCount}
+              </span>
             </button>
 
-            {/* Share Button */}
-            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm text-gray-700 hover:bg-gray-50 transition-all active:scale-95">
-              <Share2 className="w-5 h-5" />
-              <span className="font-semibold text-gray-900">{post.sharesCount}</span>
+            {/* Share Button - Gradient background */}
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-sm transition-all duration-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50">
+              <Share2 className="w-5 h-5 text-gray-700" />
+              <span className="font-semibold text-gray-900">
+                {post.sharesCount}
+              </span>
             </button>
 
-            {/* Bookmark Button - Right aligned */}
+            {/* Bookmark Button - Right aligned with gradient */}
             <button
               onClick={() => setIsBookmarked(!isBookmarked)}
-              className="ml-auto p-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-all active:scale-95"
+              className={`ml-auto p-2 rounded-xl transition-all duration-300 ${
+                isBookmarked
+                  ? "bg-gradient-to-r from-amber-50 to-yellow-50 hover:from-amber-100 hover:to-yellow-100"
+                  : "hover:bg-gray-50"
+              }`}
             >
               <Bookmark
                 className={`w-5 h-5 ${
-                  isBookmarked ? "fill-gray-900 text-gray-900" : ""
+                  isBookmarked ? "fill-amber-500 text-amber-500" : ""
                 }`}
               />
             </button>

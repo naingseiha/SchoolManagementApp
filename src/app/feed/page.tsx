@@ -84,30 +84,35 @@ export default function FeedRoute() {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50">
-      {/* Header and Filters - Fixed at top */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200">
+      {/* Header and Filters - Fixed at top with beautiful gradient */}
+      <div className="flex-shrink-0">
         <FeedHeader />
-        {/* Filter Bar */}
-        <div className="px-4 py-2 overflow-x-auto hide-scrollbar">
-          <div className="flex items-center gap-2">
-            {POST_TYPE_FILTERS.map((filter) => {
-              const Icon = filter.icon;
-              const isActive = selectedFilter === filter.value;
-              return (
-                <button
-                  key={filter.value}
-                  onClick={() => handleFilterChange(filter.value)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
-                    isActive
-                      ? "bg-gray-900 text-white"
-                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{filter.labelKh}</span>
-                </button>
-              );
-            })}
+        {/* Beautiful Filter Bar with animations */}
+        <div className="backdrop-blur-xl bg-white/70 border-b border-white/50 shadow-sm">
+          <div className="px-4 py-3 overflow-x-auto hide-scrollbar">
+            <div className="flex items-center gap-2">
+              {POST_TYPE_FILTERS.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = selectedFilter === filter.value;
+                return (
+                  <button
+                    key={filter.value}
+                    onClick={() => handleFilterChange(filter.value)}
+                    className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 ${
+                      isActive
+                        ? "bg-gradient-stunity text-white shadow-lg shadow-stunity-primary-500/30 scale-105"
+                        : "bg-white/80 border border-gray-200 text-gray-700 hover:bg-white hover:shadow-md hover:scale-[1.02]"
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? "animate-bounce-soft" : ""}`} />
+                    <span>{filter.labelKh}</span>
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-full bg-white/20 animate-pulse-ring" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
