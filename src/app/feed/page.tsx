@@ -83,13 +83,13 @@ export default function FeedRoute() {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white">
+    <div className="fixed inset-0 flex flex-col bg-gray-50">
       {/* Header and Filters - Fixed at top */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 bg-white border-b border-gray-200">
         <FeedHeader />
-        {/* Filter Bar - No gap under header */}
-        <div className="bg-white border-b border-gray-100">
-          <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto hide-scrollbar">
+        {/* Filter Bar */}
+        <div className="px-4 py-2 overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-2">
             {POST_TYPE_FILTERS.map((filter) => {
               const Icon = filter.icon;
               const isActive = selectedFilter === filter.value;
@@ -97,13 +97,13 @@ export default function FeedRoute() {
                 <button
                   key={filter.value}
                   onClick={() => handleFilterChange(filter.value)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
                     isActive
-                      ? "bg-indigo-600 text-white"
-                      : "bg-transparent text-gray-700 hover:bg-gray-100"
+                      ? "bg-gray-900 text-white"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" />
                   <span>{filter.labelKh}</span>
                 </button>
               );
@@ -114,7 +114,7 @@ export default function FeedRoute() {
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto px-4 pb-20">
+        <div className="max-w-2xl mx-auto px-4 pb-20 pt-2">
           <FeedPage 
             onProfileClick={handleProfileClick}
             selectedFilter={selectedFilter}

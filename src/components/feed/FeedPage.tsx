@@ -131,10 +131,10 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
   };
 
   return (
-    <div className="w-full pt-4">
+    <div className="w-full pt-2">
       {/* Create Post */}
         {showCreatePost && (
-          <div className="mb-4">
+          <div className="mb-4 animate-fade-in">
             <CreatePost
               userProfilePicture={null}
               userName={getUserName()}
@@ -146,17 +146,15 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         {/* Error */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-full">
-              <X className="w-5 h-5 text-red-600" />
-            </div>
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+            <X className="w-5 h-5 text-red-600 flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-red-800 font-medium">{error}</p>
+              <p className="text-red-800 font-medium text-sm">{error}</p>
               <button
                 onClick={handleRefresh}
-                className="text-red-600 text-sm underline mt-1"
+                className="text-red-600 text-sm font-medium underline mt-0.5"
               >
-                ព្យាយាមម្តងទៀត
+                Try again
               </button>
             </div>
           </div>
@@ -164,28 +162,26 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12 bg-white">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-3" />
-            <p className="text-gray-500">កំពុងផ្ទុកមតិព័ត៌មាន...</p>
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-gray-400 animate-spin mb-3" />
+            <p className="text-gray-500 text-sm">Loading posts...</p>
           </div>
         )}
 
-        {/* Posts List - No spacing between cards */}
+        {/* Posts List */}
         {!isLoading && posts.length === 0 && !error && (
-          <div className="text-center py-12 bg-white border-t border-b border-gray-100">
-            <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Rss className="w-8 h-8 text-indigo-600" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">
-              មិនមានការផ្សាយនៅឡើយទេ
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+            <Rss className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-base font-semibold text-gray-900 mb-1">
+              No posts yet
             </h3>
-            <p className="text-gray-500 text-sm">
-              ចាប់ផ្តើមចែករំលែកអ្វីមួយជាមួយសហគមន៍សិក្សា!
+            <p className="text-sm text-gray-500">
+              Be the first to share something!
             </p>
           </div>
         )}
 
-        <div className="bg-white">
+        <div>
           {!isLoading &&
             posts.map((post) => (
               <PostCard
@@ -200,10 +196,10 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         {/* Load More Trigger */}
         {hasMore && !isLoading && (
-          <div ref={loadMoreRef} className="py-4 bg-white">
+          <div ref={loadMoreRef} className="py-4">
             {isLoadingMore && (
-              <div className="flex justify-center">
-                <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
+              <div className="flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
               </div>
             )}
           </div>
@@ -211,9 +207,9 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         {/* No More Posts */}
         {!hasMore && posts.length > 0 && (
-          <div className="text-center py-6 bg-white">
-            <p className="text-gray-400 text-sm">
-              អ្នកបានមើលការផ្សាយទាំងអស់ហើយ
+          <div className="text-center py-6">
+            <p className="text-gray-400 text-xs">
+              You've seen all posts
             </p>
           </div>
         )}

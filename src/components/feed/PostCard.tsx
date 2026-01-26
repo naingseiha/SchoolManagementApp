@@ -35,6 +35,8 @@ import {
   AlertCircle,
   Star,
   TrendingUp,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import {
   Post,
@@ -46,6 +48,8 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import PollCard from "./PollCard";
 import CommentsModal from "@/components/comments/CommentsModal";
+import GradientAvatar from "@/components/common/GradientAvatar";
+import KnowledgePoints from "./KnowledgePoints";
 
 interface PostCardProps {
   post: Post;
@@ -320,63 +324,71 @@ export default function PostCard({
       ? contentText.slice(0, 300) + "..."
       : contentText;
 
+  // Generate random XP and streak for demo (you should get this from backend)
+  const demoXP = Math.floor(Math.random() * 100) + 10;
+  const demoStreak = Math.floor(Math.random() * 10) + 1;
+  const isVerifiedUser = post.author.role === "TEACHER" || post.author.role === "ADMIN";
+  const userLevel = Math.floor(Math.random() * 10) + 1;
+
   return (
-    <article className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow mb-4">
-      {/* Header */}
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Author Info */}
-          <div className="flex gap-3 flex-1 min-w-0">
-            <button
-              onClick={() => onProfileClick?.(post.authorId)}
-              className="flex-shrink-0 relative group"
-            >
-              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-md group-hover:shadow-lg transition-shadow">
-                {getAuthorName().charAt(0).toUpperCase()}
-              </div>
-              {/* Online status indicator */}
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-            </button>
-
-            <div className="flex-1 min-w-0">
-              <button
+    <article className="relative group mb-4 animate-fade-in">
+      {/* Clean Instagram-style Card */}
+      <div className="relative bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        {/* Header */}
+        <div className="relative px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            {/* Author Info - Instagram style */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <GradientAvatar
+                name={getAuthorName()}
+                imageUrl={null}
+                size="md"
+                isOnline={true}
                 onClick={() => onProfileClick?.(post.authorId)}
-                className="font-bold text-gray-900 hover:text-blue-600 transition-colors text-[15px] block truncate"
-              >
-                {getAuthorName()}
-              </button>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>{getTimeAgo()}</span>
+              />
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onProfileClick?.(post.authorId)}
+                    className="font-semibold text-gray-900 hover:text-gray-600 transition-colors text-sm truncate"
+                  >
+                    {getAuthorName()}
+                  </button>
+                  {isVerifiedUser && (
+                    <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span>{getAuthorSubtitle()}</span>
+                  <span>•</span>
+                  <span>{getTimeAgo()}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Post Type Badge & Menu */}
-          <div className="flex items-center gap-2 ml-3">
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-sm"
-              style={{
-                backgroundColor: postTypeInfo.color + "15",
-                border: `1.5px solid ${postTypeInfo.color}40`,
-              }}
-            >
-              <PostTypeIcon
-                className="w-4 h-4"
-                style={{ color: postTypeInfo.color }}
-              />
-              <span
-                className="text-xs font-bold"
-                style={{ color: postTypeInfo.color }}
-              >
-                {postTypeInfo.label}
-              </span>
-            </div>
+            {/* Post Type Badge & Menu - Better Balance */}
+            <div className="flex items-center gap-2">
+              {/* Minimal Type Badge */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-full border border-gray-200">
+                <PostTypeIcon
+                  className="w-3.5 h-3.5"
+                  style={{ color: postTypeInfo.color }}
+                />
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: postTypeInfo.color }}
+                >
+                  {postTypeInfo.label}
+                </span>
+              </div>
 
-            {/* Menu */}
-            <div className="relative">
+              {/* Menu - Cleaner */}
               <button
                 onClick={() => setShowMenu(!showMenu)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <MoreVertical className="w-5 h-5 text-gray-600" />
               </button>
@@ -387,7 +399,7 @@ export default function PostCard({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowMenu(false)}
                   />
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 min-w-[180px]">
+                  <div className="absolute right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 z-20 min-w-[200px]">
                     {isOwnPost ? (
                       <>
                         <button
@@ -395,7 +407,7 @@ export default function PostCard({
                           onClick={() => setShowMenu(false)}
                         >
                           <Edit className="w-4 h-4" />
-                          Edit Post
+                          Edit
                         </button>
                         <button
                           className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-3 text-red-600 transition-colors"
@@ -403,7 +415,7 @@ export default function PostCard({
                           disabled={isDeleting}
                         >
                           <Trash2 className="w-4 h-4" />
-                          {isDeleting ? "Deleting..." : "Delete Post"}
+                          {isDeleting ? "Deleting..." : "Delete"}
                         </button>
                       </>
                     ) : (
@@ -413,14 +425,14 @@ export default function PostCard({
                           onClick={() => setShowMenu(false)}
                         >
                           <Flag className="w-4 h-4" />
-                          Report Post
+                          Report
                         </button>
                         <button
                           className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700 transition-colors"
                           onClick={() => setShowMenu(false)}
                         >
                           <Bookmark className="w-4 h-4" />
-                          Save Post
+                          Save
                         </button>
                       </>
                     )}
@@ -430,140 +442,150 @@ export default function PostCard({
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Media Gallery */}
-      {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div className="relative w-full bg-gray-100">
-          <img
-            src={post.mediaUrls[currentImageIndex]}
-            alt="Post media"
-            className="w-full h-auto object-cover"
-            style={{ maxHeight: "500px" }}
-          />
+        {/* Media Gallery - Instagram style with consistent height */}
+        {post.mediaUrls && post.mediaUrls.length > 0 && (
+          <div className="relative w-full bg-black">
+            <img
+              src={post.mediaUrls[currentImageIndex]}
+              alt="Post media"
+              className="w-full object-cover"
+              style={{ maxHeight: "500px", objectFit: "cover" }}
+            />
 
-          {post.mediaUrls.length > 1 && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-800" />
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/95 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all"
-              >
-                <ChevronRight className="w-5 h-5 text-gray-800" />
-              </button>
+            {post.mediaUrls.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-all"
+                >
+                  <ChevronLeft className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-all"
+                >
+                  <ChevronRight className="w-5 h-5 text-white" />
+                </button>
 
-              {/* Dots Indicator */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-2 bg-black/60 backdrop-blur-sm rounded-full">
-                {post.mediaUrls.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentImageIndex(idx)}
-                    className={`h-1.5 rounded-full transition-all ${
-                      idx === currentImageIndex
-                        ? "bg-white w-6"
-                        : "bg-white/60 w-1.5 hover:bg-white/80"
-                    }`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* Content Section */}
-      <div className="px-4 py-4">
-        {/* Title */}
-        <div className="mb-3">
-          <h4 className="font-bold font-koulen text-gray-800 text-base leading-tight">
-            {post.content.split("\n")[0] || postTypeInfo.label}
-          </h4>
-        </div>
-
-        {/* Description */}
-        {post.content.split("\n").slice(1).join("\n") && (
-          <div>
-            <p className="text-[15px] text-gray-700 leading-relaxed">
-              {displayContent.split("\n").slice(1).join("\n")}
-            </p>
-            {isLongContent && (
-              <button
-                onClick={() => setShowFullContent(!showFullContent)}
-                className="text-blue-600 hover:text-blue-700 font-semibold text-sm mt-2 flex items-center gap-1"
-              >
-                {showFullContent ? "Show less" : "Show more"}
-                <TrendingUp className="w-3.5 h-3.5" />
-              </button>
+                {/* Minimal dots */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {post.mediaUrls.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentImageIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === currentImageIndex
+                          ? "bg-white w-6"
+                          : "bg-white/60 w-1.5 hover:bg-white/80"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
 
-        {/* Type-Specific Content */}
-        {renderTypeSpecificContent()}
+        {/* Content Section - Cleaner */}
+        <div className="relative px-4 py-3">
+          {/* Title - Cleaner typography */}
+          <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1">
+            {post.content.split("\n")[0] || postTypeInfo.label}
+          </h4>
 
-        {/* Feature/Insights Buttons */}
-        {(post.postType === "ARTICLE" || post.postType === "COURSE") && (
-          <div className="flex gap-2 mt-4">
-            <button className="flex-1 py-2.5 px-3 bg-white border-2 border-gray-200 hover:border-amber-300 hover:bg-amber-50 rounded-lg text-sm font-semibold text-gray-700 hover:text-amber-700 flex items-center justify-center gap-2 transition-all group">
-              <Star className="w-4 h-4 group-hover:fill-amber-400 group-hover:text-amber-500 transition-all" />
-              Feature
+          {/* Description */}
+          {post.content.split("\n").slice(1).join("\n") && (
+            <div>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {displayContent.split("\n").slice(1).join("\n")}
+              </p>
+              {isLongContent && (
+                <button
+                  onClick={() => setShowFullContent(!showFullContent)}
+                  className="text-gray-500 hover:text-gray-700 font-medium text-sm mt-1"
+                >
+                  {showFullContent ? "less" : "more"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Minimal Knowledge Points */}
+          <KnowledgePoints 
+            xp={demoXP}
+            streak={demoStreak}
+            isVerified={isVerifiedUser}
+            isTrending={likesCount > 20}
+            className="mt-2"
+          />
+
+          {/* Type-Specific Content */}
+          {renderTypeSpecificContent()}
+
+          {/* Feature/Insights Buttons */}
+          {(post.postType === "ARTICLE" || post.postType === "COURSE") && (
+            <div className="flex gap-2 mt-4">
+              <button className="flex-1 py-2.5 px-3 bg-white/80 backdrop-blur-sm border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 rounded-xl text-sm font-semibold text-gray-700 hover:text-amber-700 flex items-center justify-center gap-2 transition-all group hover:scale-105 hover:shadow-md">
+                <Star className="w-4 h-4 group-hover:fill-amber-400 group-hover:text-amber-500 group-hover:rotate-12 transition-all" />
+                Feature
+              </button>
+              <button className="flex-1 py-2.5 px-3 bg-white/80 backdrop-blur-sm border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl text-sm font-semibold text-gray-700 hover:text-blue-700 flex items-center justify-center gap-2 transition-all group hover:scale-105 hover:shadow-md">
+                <BarChart3 className="w-4 h-4 group-hover:text-blue-600 group-hover:scale-110 transition-all" />
+                Insights
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Enhanced Engagement Section - Instagram style */}
+        <div className="relative px-4 pb-3 pt-2 border-t border-gray-100">
+          <div className="flex items-center gap-1">
+            {/* Like Button */}
+            <button
+              onClick={handleLike}
+              disabled={isLiking}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm transition-all hover:bg-gray-50 active:scale-95"
+            >
+              <Heart
+                className={`w-5 h-5 transition-all ${
+                  isLiked
+                    ? "fill-red-500 text-red-500"
+                    : "text-gray-700 hover:text-red-500"
+                }`}
+              />
+              <span className={`font-semibold ${isLiked ? "text-red-500" : "text-gray-900"}`}>
+                {likesCount}
+              </span>
             </button>
-            <button className="flex-1 py-2.5 px-3 bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 rounded-lg text-sm font-semibold text-gray-700 hover:text-blue-700 flex items-center justify-center gap-2 transition-all group">
-              <BarChart3 className="w-4 h-4 group-hover:text-blue-600 transition-colors" />
-              Insights
+
+            {/* Comment Button */}
+            <button
+              onClick={() => setShowCommentsModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm text-gray-700 hover:bg-gray-50 transition-all active:scale-95"
+            >
+              <MessageCircle className="w-5 h-5" />
+              <span className="font-semibold text-gray-900">{post.commentsCount}</span>
+            </button>
+
+            {/* Share Button */}
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium text-sm text-gray-700 hover:bg-gray-50 transition-all active:scale-95">
+              <Share2 className="w-5 h-5" />
+              <span className="font-semibold text-gray-900">{post.sharesCount}</span>
+            </button>
+
+            {/* Bookmark Button - Right aligned */}
+            <button
+              onClick={() => setIsBookmarked(!isBookmarked)}
+              className="ml-auto p-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-all active:scale-95"
+            >
+              <Bookmark
+                className={`w-5 h-5 ${
+                  isBookmarked ? "fill-gray-900 text-gray-900" : ""
+                }`}
+              />
             </button>
           </div>
-        )}
-      </div>
-
-      {/* Engagement Section */}
-      <div className="px-4 pb-4 pt-3 border-t border-gray-100">
-        <div className="flex items-center justify-between gap-1">
-          <button
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all ${
-              isLiked
-                ? "bg-red-50 text-red-600 hover:bg-red-100"
-                : "bg-gray-50 text-gray-700 hover:bg-red-50 hover:text-red-600"
-            }`}
-          >
-            <Heart
-              className={`w-5 h-5 transition-all ${isLiked ? "fill-red-500 scale-110" : "hover:scale-110"}`}
-            />
-            <span className="font-semibold">{likesCount}</span>
-          </button>
-
-          <button
-            onClick={() => setShowCommentsModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all group"
-          >
-            <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span className="font-semibold">{post.commentsCount}</span>
-          </button>
-
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm bg-gray-50 text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all group">
-            <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            <span className="font-semibold">{post.sharesCount}</span>
-          </button>
-
-          <button
-            onClick={() => setIsBookmarked(!isBookmarked)}
-            className={`p-2.5 rounded-lg transition-all ${
-              isBookmarked
-                ? "bg-amber-50 text-amber-600"
-                : "bg-gray-50 text-gray-600 hover:bg-amber-50 hover:text-amber-600"
-            }`}
-          >
-            <Bookmark
-              className={`w-5 h-5 transition-all ${isBookmarked ? "fill-amber-500 scale-110" : "hover:scale-110"}`}
-            />
-          </button>
         </div>
       </div>
 
