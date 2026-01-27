@@ -28,7 +28,7 @@ export default function StudentLoginPage() {
   useEffect(() => {
     if (isAuthenticated && !isLoading && currentUser) {
       if (currentUser.role === "STUDENT") {
-        router.push("/student-portal");
+        router.push("/feed");
       } else {
         router.push("/");
       }

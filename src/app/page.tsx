@@ -17,7 +17,7 @@ export default function RootPage() {
     } else {
       // Logged in - redirect based on role
       if (currentUser?.role === "STUDENT") {
-        router.replace("/student-portal");
+        router.replace("/feed");
       } else if (currentUser?.role === "PARENT") {
         router.replace("/parent-portal");
       } else {

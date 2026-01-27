@@ -44,8 +44,8 @@ export default function LoginPage() {
     if (isAuthenticated && !isLoading && currentUser) {
       console.log("✅ User already authenticated, redirecting...");
       if (currentUser.role === "STUDENT") {
-        console.log("→ Redirecting student to student portal");
-        router.push("/student-portal");
+        console.log("→ Redirecting student to feed");
+        router.push("/feed");
       } else if (currentUser.role === "PARENT") {
         console.log("→ Redirecting parent to parent portal");
         router.push("/parent-portal");

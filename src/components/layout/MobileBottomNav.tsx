@@ -26,6 +26,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  // Common: Feed/Home for all users
   {
     id: "feed",
     label: "Feed",
@@ -35,6 +36,8 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "TEACHER", "STUDENT", "PARENT"],
     color: "from-indigo-500 to-purple-500",
   },
+
+  // Teacher/Admin Navigation
   {
     id: "dashboard",
     label: "Dashboard",
@@ -62,6 +65,37 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "TEACHER"],
     color: "from-green-500 to-emerald-500",
   },
+
+  // Student Navigation
+  {
+    id: "my-courses",
+    label: "My Courses",
+    labelKh: "កម្មវិធី",
+    icon: GraduationCap,
+    href: "/student/courses",
+    roles: ["STUDENT"],
+    color: "from-blue-500 to-cyan-500",
+  },
+  {
+    id: "assignments",
+    label: "Assignments",
+    labelKh: "កិច្ចការ",
+    icon: PenTool,
+    href: "/student/assignments",
+    roles: ["STUDENT"],
+    color: "from-purple-500 to-pink-500",
+  },
+  {
+    id: "progress",
+    label: "Progress",
+    labelKh: "ឧត្តុន",
+    icon: BarChart3,
+    href: "/student/progress",
+    roles: ["STUDENT"],
+    color: "from-green-500 to-emerald-500",
+  },
+
+  // Common: Profile for all users
   {
     id: "profile",
     label: "Profile",
