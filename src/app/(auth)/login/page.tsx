@@ -14,9 +14,10 @@ import {
   EyeOff,
   UserCircle,
   GraduationCap,
-  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import StunityLogo from "@/components/common/StunityLogo";
+import Image from "next/image";
 
 type LoginMode = "teacher" | "student";
 
@@ -119,59 +120,31 @@ export default function LoginPage() {
   const displayError = error || authError;
 
   return (
-    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 safe-area-inset">
-      {/* Optimized Animated Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Gradient Mesh Background */}
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-400/30 via-purple-400/30 to-pink-400/30"></div>
-          <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-indigo-300 to-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-float"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-r from-pink-300 to-rose-300 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-float-delayed"></div>
-        </div>
-
-        {/* Decorative Elements - Hidden on small mobile */}
-        <div className="hidden sm:block absolute top-10 right-10 w-20 h-20 border-2 border-white/20 rounded-full animate-pulse"></div>
-        <div className="hidden sm:block absolute bottom-20 left-10 w-32 h-32 border-2 border-white/10 rounded-full"></div>
-        <div className="hidden md:block absolute top-1/2 right-1/4 w-16 h-16 border-2 border-white/20 rounded-full"></div>
-      </div>
-
+    <div className="min-h-screen min-h-[100dvh] flex items-center justify-center bg-white safe-area-inset">
       {/* Login Card */}
-      <div className="relative w-full max-w-md mx-4 sm:mx-6 my-4 sm:my-8">
-        {/* Glassmorphism Card */}
-        <div className="backdrop-blur-xl bg-white/95 rounded-3xl shadow-2xl border border-white/20 overflow-hidden transform transition-all duration-500 hover:scale-[1.01]">
-          {/* Compact Header Section - Mobile Optimized */}
-          <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-6 py-8 sm:px-8 sm:py-10 text-center overflow-hidden">
-            {/* Animated Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
-
-            {/* Sparkle Effect */}
-            <div className="absolute top-4 right-4 text-white/30 animate-pulse">
-              <Sparkles className="w-5 h-5" />
-            </div>
-
-            <div className="relative">
-              {/* Stunity Logo - Mobile Optimized */}
+      <div className="w-full max-w-md mx-4 sm:mx-6 my-4 sm:my-8">
+        {/* Card Container */}
+        <div className="bg-white overflow-hidden">
+          {/* Header Section */}
+          <div className="px-6 py-8 sm:px-8 sm:py-10 text-center border-b border-gray-100">
+            <div>
+              {/* Stunity Logo */}
               <div className="flex justify-center mb-4 sm:mb-5">
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                  <div className="relative bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-2xl shadow-lg transform transition-transform duration-300 group-hover:scale-110">
-                    <StunityLogo size="md" />
-                  </div>
-                </div>
+                <StunityLogo size="md" />
               </div>
 
-              {/* Compact Title */}
-              <h1 className="font-moul text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg tracking-wide">
+              {/* Title */}
+              <h1 className="font-moul text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-500 via-orange-600 to-yellow-500 bg-clip-text text-transparent mb-2 tracking-wide">
                 ប្រព័ន្ធគ្រប់គ្រងសាលា
               </h1>
-              <p className="text-white/90 text-xs sm:text-sm font-poppins tracking-wider mb-2">
+              <p className="text-gray-600 text-xs sm:text-sm font-poppins tracking-wider mb-2">
                 School Management System
               </p>
-              <div className="w-16 h-1 bg-white/50 mx-auto rounded-full"></div>
+              <div className="w-16 h-1 bg-gradient-to-r from-orange-500 to-yellow-500 mx-auto rounded-full"></div>
             </div>
           </div>
 
-          {/* Form Section - Enhanced Spacing */}
+          {/* Form Section */}
           <div className="px-5 py-6 sm:px-8 sm:py-8">
             {/* Modern Login Mode Toggle */}
             <div className="flex gap-2 mb-6 bg-gradient-to-r from-gray-100 to-gray-50 rounded-2xl p-1.5 shadow-inner">
@@ -184,7 +157,7 @@ export default function LoginPage() {
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-4 px-3 sm:px-4 rounded-xl font-koulen font-semibold text-sm sm:text-base transition-all duration-300 touch-manipulation ${
                   loginMode === "teacher"
-                    ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105"
+                    ? "bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg scale-105"
                     : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
                 }`}
               >
@@ -200,7 +173,7 @@ export default function LoginPage() {
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-4 px-3 sm:px-4 rounded-xl font-koulen font-semibold text-sm sm:text-base transition-all duration-300 touch-manipulation ${
                   loginMode === "student"
-                    ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-105"
+                    ? "bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg scale-105"
                     : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
                 }`}
               >
@@ -231,7 +204,7 @@ export default function LoginPage() {
                   {getInputLabel()}
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 group-focus-within:text-indigo-600">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 group-focus-within:text-orange-600">
                     {getInputIcon()}
                   </div>
                   <input
@@ -242,7 +215,7 @@ export default function LoginPage() {
                     required
                     value={formData.identifier}
                     onChange={handleChange}
-                    className="font-battambang block w-full pl-12 pr-4 py-4 sm:py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
+                    className="font-battambang block w-full pl-12 pr-4 py-4 sm:py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
                     placeholder={getPlaceholder()}
                   />
                 </div>
@@ -262,7 +235,7 @@ export default function LoginPage() {
                   ពាក្យសម្ងាត់
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 group-focus-within:text-indigo-600">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors duration-200 group-focus-within:text-orange-600">
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
@@ -273,13 +246,13 @@ export default function LoginPage() {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="font-battambang block w-full pl-12 pr-14 py-4 sm:py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
+                    className="font-battambang block w-full pl-12 pr-14 py-4 sm:py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl text-gray-900 text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all duration-300 shadow-sm hover:shadow-md touch-manipulation"
                     placeholder="បញ្ចូលពាក្យសម្ងាត់"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-indigo-600 transition-all duration-200 touch-manipulation active:scale-95"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-orange-600 transition-all duration-200 touch-manipulation active:scale-95"
                     aria-label={
                       showPassword ? "Hide password" : "Show password"
                     }
@@ -293,11 +266,11 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Enhanced Submit Button - Mobile Optimized */}
+              {/* Enhanced Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting || isLoading}
-                className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white font-koulen font-bold py-4 sm:py-5 px-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center text-base sm:text-lg touch-manipulation relative overflow-hidden group"
+                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-yellow-500 hover:from-orange-600 hover:via-orange-700 hover:to-yellow-600 text-white font-koulen font-bold py-4 sm:py-5 px-6 rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center text-base sm:text-lg touch-manipulation relative overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                 {isSubmitting || isLoading ? (
@@ -316,8 +289,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Footer - Compact on Mobile */}
-        <p className="font-battambang text-center text-xs sm:text-sm text-white/90 mt-4 sm:mt-6 drop-shadow-lg px-4">
+        {/* Footer */}
+        <p className="font-battambang text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6 px-4">
           © ២០២៥ ប្រព័ន្ធគ្រប់គ្រងសាលា។ រក្សាសិទ្ធិគ្រប់យ៉ាង។
         </p>
       </div>
