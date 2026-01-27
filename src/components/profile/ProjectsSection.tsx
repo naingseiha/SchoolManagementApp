@@ -16,24 +16,15 @@ import {
   Award,
   Link as LinkIcon,
 } from "lucide-react";
-
-interface Project {
-  id: string;
-  userId: string;
-  title: string;
-  description: string;
-  technologies: string[];
-  githubUrl?: string;
-  liveUrl?: string;
-  media?: string[];
-  featured: boolean;
-  visibility: string;
-  likes: number;
-  views: number;
-  createdAt: string;
-  updatedAt: string;
-  userLiked?: boolean;
-}
+import {
+  getUserProjects,
+  createProject,
+  updateProject,
+  deleteProject as deleteProjectAPI,
+  likeProject,
+  toggleFeaturedProject,
+  Project,
+} from "@/lib/api/profile";
 
 interface ProjectsSectionProps {
   userId: string;
@@ -46,15 +37,20 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    category: "SOFTWARE",
+    status: "IN_PROGRESS",
     technologies: "",
+    skills: "",
     githubUrl: "",
     liveUrl: "",
-    visibility: "PUBLIC",
+    projectUrl: "",
+    privacy: "PUBLIC",
   });
 
   useEffect(() => {
@@ -63,17 +59,9 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
 
   const fetchProjects = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5001/api/profile/${userId}/projects`, {
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data.projects || []);
-      }
+      setLoading(true);
+      const data = await getUserProjects(userId);
+      setProjects(data);
     } catch (error) {
       console.error("Failed to fetch projects:", error);
     } finally {
@@ -83,115 +71,74 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("technologies", formData.technologies);
-      formDataToSend.append("visibility", formData.visibility);
+      setSubmitting(true);
       
-      if (formData.githubUrl) formDataToSend.append("githubUrl", formData.githubUrl);
-      if (formData.liveUrl) formDataToSend.append("liveUrl", formData.liveUrl);
-      
-      selectedFiles.forEach((file) => {
-        formDataToSend.append("media", file);
-      });
+      const projectData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        status: formData.status,
+        technologies: formData.technologies.split(',').map(t => t.trim()).filter(Boolean),
+        skills: formData.skills.split(',').map(s => s.trim()).filter(Boolean),
+        githubUrl: formData.githubUrl || undefined,
+        liveUrl: formData.liveUrl || undefined,
+        projectUrl: formData.projectUrl || undefined,
+        privacy: formData.privacy,
+        media: selectedFiles.length > 0 ? selectedFiles : undefined,
+      };
 
-      const url = editingProject
-        ? `http://localhost:5001/api/profile/projects/${editingProject.id}`
-        : "http://localhost:5001/api/profile/projects";
-      
-      const method = editingProject ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (response.ok) {
-        await fetchProjects();
-        handleCloseModal();
+      if (editingProject) {
+        await updateProject(editingProject.id, projectData);
+      } else {
+        await createProject(projectData);
       }
+      
+      await fetchProjects();
+      handleCloseModal();
     } catch (error) {
       console.error("Failed to save project:", error);
+      alert("Failed to save project. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async (projectId: string) => {
     if (!confirm("តើអ្នកប្រាកដថាចង់លុបគម្រោងនេះ?")) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
-      const response = await fetch(
-        `http://localhost:5001/api/profile/projects/${projectId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setProjects(projects.filter((p) => p.id !== projectId));
-      }
+      await deleteProjectAPI(projectId);
+      setProjects(projects.filter((p) => p.id !== projectId));
     } catch (error) {
       console.error("Failed to delete project:", error);
+      alert("Failed to delete project.");
     }
   };
 
   const handleLike = async (projectId: string) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
     try {
-      const response = await fetch(
-        `http://localhost:5001/api/profile/projects/${projectId}/like`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        await fetchProjects();
-      }
+      const result = await likeProject(projectId);
+      setProjects(projects.map(p => 
+        p.id === projectId 
+          ? { ...p, isLiked: result.isLiked, likesCount: result.likesCount }
+          : p
+      ));
     } catch (error) {
       console.error("Failed to like project:", error);
     }
   };
 
-  const handleFeature = async (projectId: string, featured: boolean) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
+  const handleFeature = async (projectId: string) => {
     try {
-      const response = await fetch(
-        `http://localhost:5001/api/profile/projects/${projectId}/feature`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ featured: !featured }),
-        }
-      );
-
-      if (response.ok) {
-        await fetchProjects();
-      }
+      const result = await toggleFeaturedProject(projectId);
+      setProjects(projects.map(p =>
+        p.id === projectId
+          ? { ...p, isFeatured: result.isFeatured }
+          : p
+      ));
     } catch (error) {
       console.error("Failed to feature project:", error);
     }
@@ -202,10 +149,14 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
     setFormData({
       title: project.title,
       description: project.description,
+      category: project.category,
+      status: project.status,
       technologies: project.technologies.join(", "),
+      skills: project.skills.join(", "),
       githubUrl: project.githubUrl || "",
       liveUrl: project.liveUrl || "",
-      visibility: project.visibility,
+      projectUrl: project.projectUrl || "",
+      privacy: project.privacy,
     });
     setShowModal(true);
   };
@@ -217,16 +168,25 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
     setFormData({
       title: "",
       description: "",
+      category: "SOFTWARE",
+      status: "IN_PROGRESS",
       technologies: "",
+      skills: "",
       githubUrl: "",
       liveUrl: "",
-      visibility: "PUBLIC",
+      projectUrl: "",
+      privacy: "PUBLIC",
     });
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      if (files.length > 10) {
+        alert("Maximum 10 files allowed");
+        return;
+      }
+      setSelectedFiles(files);
     }
   };
 
@@ -281,14 +241,14 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
               className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-all group"
             >
               {/* Project Image/Media */}
-              {project.media && project.media.length > 0 ? (
+              {project.mediaUrls && project.mediaUrls.length > 0 ? (
                 <div className="h-48 bg-gradient-to-br from-indigo-500 to-purple-600 relative overflow-hidden">
                   <img
-                    src={project.media[0]}
+                    src={project.mediaUrls[0]}
                     alt={project.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  {project.featured && (
+                  {project.isFeatured && (
                     <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                       <Star className="w-3 h-3 fill-current" />
                       លេចធ្លោ
@@ -298,7 +258,7 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
               ) : (
                 <div className="h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center relative">
                   <Sparkles className="w-16 h-16 text-white/30" />
-                  {project.featured && (
+                  {project.isFeatured && (
                     <div className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                       <Star className="w-3 h-3 fill-current" />
                       លេចធ្លោ
@@ -365,16 +325,16 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                     <div className="flex items-center gap-1">
                       <Heart
                         className={`w-4 h-4 ${
-                          project.userLiked
+                          project.isLiked
                             ? "fill-red-500 text-red-500"
                             : "text-gray-400"
                         }`}
                       />
-                      <span>{project.likes || 0}</span>
+                      <span>{project.likesCount || 0}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Eye className="w-4 h-4 text-gray-400" />
-                      <span>{project.views || 0}</span>
+                      <span>{project.viewsCount || 0}</span>
                     </div>
                   </div>
 
@@ -387,7 +347,7 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                       >
                         <Heart
                           className={`w-4 h-4 ${
-                            project.userLiked
+                            project.isLiked
                               ? "fill-red-500 text-red-500"
                               : "text-gray-400"
                           }`}
@@ -398,17 +358,17 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                     {isOwnProfile && (
                       <>
                         <button
-                          onClick={() => handleFeature(project.id, project.featured)}
+                          onClick={() => handleFeature(project.id)}
                           className={`p-2 rounded-lg transition-colors ${
-                            project.featured
+                            project.isFeatured
                               ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                               : "hover:bg-gray-100 text-gray-400"
                           }`}
-                          title={project.featured ? "លុបចេញពីលេចធ្លោ" : "កំណត់ជាលេចធ្លោ"}
+                          title={project.isFeatured ? "លុបចេញពីលេចធ្លោ" : "កំណត់ជាលេចធ្លោ"}
                         >
                           <Star
                             className={`w-4 h-4 ${
-                              project.featured ? "fill-current" : ""
+                              project.isFeatured ? "fill-current" : ""
                             }`}
                           />
                         </button>
@@ -468,6 +428,49 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                 />
               </div>
 
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ប្រភេទ *
+                </label>
+                <select
+                  required
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="SOFTWARE">Software Development</option>
+                  <option value="WEB">Web Development</option>
+                  <option value="MOBILE">Mobile App</option>
+                  <option value="DATA_SCIENCE">Data Science</option>
+                  <option value="DESIGN">Design</option>
+                  <option value="RESEARCH">Research</option>
+                  <option value="HARDWARE">Hardware</option>
+                  <option value="BUSINESS">Business</option>
+                  <option value="EDUCATION">Education</option>
+                  <option value="ART">Art</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ស្ថានភាព *
+                </label>
+                <select
+                  required
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="PLANNING">Planning</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="ON_HOLD">On Hold</option>
+                </select>
+              </div>
+
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -502,8 +505,24 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                 />
               </div>
 
+              {/* Skills */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Skills Used (ប្រើ comma ដើម្បីបំបែក)
+                </label>
+                <input
+                  type="text"
+                  value={formData.skills}
+                  onChange={(e) =>
+                    setFormData({ ...formData, skills: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="JavaScript, API Design, Database Design"
+                />
+              </div>
+
               {/* URLs */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     GitHub URL
@@ -529,24 +548,40 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                       setFormData({ ...formData, liveUrl: e.target.value })
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="https://example.com"
+                    placeholder="https://demo.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Project URL
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.projectUrl}
+                    onChange={(e) =>
+                      setFormData({ ...formData, projectUrl: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="https://project.com"
                   />
                 </div>
               </div>
 
-              {/* Visibility */}
+              {/* Privacy */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   មើលឃើញ
                 </label>
                 <select
-                  value={formData.visibility}
+                  value={formData.privacy}
                   onChange={(e) =>
-                    setFormData({ ...formData, visibility: e.target.value })
+                    setFormData({ ...formData, privacy: e.target.value })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="PUBLIC">សាធារណៈ</option>
+                  <option value="SCHOOL">សាលា</option>
+                  <option value="CLASS">ថ្នាក់</option>
                   <option value="PRIVATE">ឯកជន</option>
                 </select>
               </div>
@@ -593,9 +628,10 @@ export default function ProjectsSection({ userId, isOwnProfile }: ProjectsSectio
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingProject ? "រក្សាទុកការផ្លាស់ប្តូរ" : "បន្ថែមគម្រោង"}
+                  {submitting ? "កំពុងរក្សាទុក..." : editingProject ? "រក្សាទុកការផ្លាស់ប្តូរ" : "បន្ថែមគម្រោង"}
                 </button>
               </div>
             </form>

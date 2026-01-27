@@ -1,8 +1,9 @@
 "use client";
 
-import { Search, Bell } from "lucide-react";
+import { Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import StunityLogo from "@/components/common/StunityLogo";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 export default function FeedHeader() {
   const { currentUser } = useAuth();
@@ -39,13 +40,18 @@ export default function FeedHeader() {
           )}
         </button>
 
-        {/* Stunity Logo with Text */}
-        <StunityLogo size="sm" showText={true} />
+        {/* Logo & Actions */}
+        <div className="flex items-center gap-2">
+          <StunityLogo size="sm" showText={true} />
+        </div>
 
-        {/* Search Icon */}
-        <button className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <Search className="w-5 h-5 text-gray-700" />
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <Search className="w-5 h-5 text-gray-700" />
+          </button>
+        </div>
       </div>
     </div>
   );

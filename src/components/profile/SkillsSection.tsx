@@ -11,55 +11,40 @@ import {
   ChevronDown,
   Award,
   MessageSquare,
+  Trash2,
+  Edit2,
+  ThumbsUp,
 } from "lucide-react";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
-interface Skill {
-  id: string;
-  skillName: string;
-  category: string;
-  level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
-  yearsOfExp?: number;
-  description?: string;
-  isVerified: boolean;
-  endorsementCount: number;
-  recentEndorsements: {
-    id: string;
-    endorser: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      profilePictureUrl?: string;
-      student?: { khmerName: string };
-      teacher?: { khmerName: string };
-    };
-    comment?: string;
-    createdAt: string;
-  }[];
-}
+import {
+  getUserSkills,
+  addSkill,
+  updateSkill,
+  deleteSkill as deleteSkillAPI,
+  endorseSkill,
+  UserSkill,
+} from "@/lib/api/profile";
 
 const SKILL_CATEGORIES = {
-  PROGRAMMING: { label: "Programming", color: "bg-blue-100 text-blue-700" },
-  LANGUAGES: { label: "Languages", color: "bg-green-100 text-green-700" },
-  MATHEMATICS: { label: "Mathematics", color: "bg-purple-100 text-purple-700" },
-  SCIENCE: { label: "Science", color: "bg-pink-100 text-pink-700" },
-  HUMANITIES: { label: "Humanities", color: "bg-yellow-100 text-yellow-700" },
-  ARTS: { label: "Arts", color: "bg-red-100 text-red-700" },
-  SPORTS: { label: "Sports", color: "bg-orange-100 text-orange-700" },
-  TEACHING: { label: "Teaching", color: "bg-indigo-100 text-indigo-700" },
-  LEADERSHIP: { label: "Leadership", color: "bg-teal-100 text-teal-700" },
-  COMMUNICATION: { label: "Communication", color: "bg-cyan-100 text-cyan-700" },
-  TECHNICAL: { label: "Technical", color: "bg-violet-100 text-violet-700" },
-  BUSINESS: { label: "Business", color: "bg-emerald-100 text-emerald-700" },
-  OTHER: { label: "Other", color: "bg-gray-100 text-gray-700" },
+  PROGRAMMING: { label: "Programming", labelKh: "កម្មវិធី", color: "bg-blue-100 text-blue-700" },
+  LANGUAGES: { label: "Languages", labelKh: "ភាសា", color: "bg-green-100 text-green-700" },
+  MATHEMATICS: { label: "Mathematics", labelKh: "គណិតវិទ្យា", color: "bg-purple-100 text-purple-700" },
+  SCIENCE: { label: "Science", labelKh: "វិទ្យាសាស្ត្រ", color: "bg-pink-100 text-pink-700" },
+  HUMANITIES: { label: "Humanities", labelKh: "មនុស្សសាស្ត្រ", color: "bg-yellow-100 text-yellow-700" },
+  ARTS: { label: "Arts", labelKh: "សិល្បៈ", color: "bg-red-100 text-red-700" },
+  SPORTS: { label: "Sports", labelKh: "កីឡា", color: "bg-orange-100 text-orange-700" },
+  TEACHING: { label: "Teaching", labelKh: "បង្រៀន", color: "bg-indigo-100 text-indigo-700" },
+  LEADERSHIP: { label: "Leadership", labelKh: "ភាពជាអ្នកដឹកនាំ", color: "bg-teal-100 text-teal-700" },
+  COMMUNICATION: { label: "Communication", labelKh: "ទំនាក់ទំនង", color: "bg-cyan-100 text-cyan-700" },
+  TECHNICAL: { label: "Technical", labelKh: "បច្ចេកទេស", color: "bg-violet-100 text-violet-700" },
+  BUSINESS: { label: "Business", labelKh: "អាជីវកម្ម", color: "bg-emerald-100 text-emerald-700" },
+  OTHER: { label: "Other", labelKh: "ផ្សេងៗ", color: "bg-gray-100 text-gray-700" },
 };
 
 const SKILL_LEVELS = {
-  BEGINNER: { label: "Beginner", width: "25%", color: "bg-yellow-400" },
-  INTERMEDIATE: { label: "Intermediate", width: "50%", color: "bg-blue-400" },
-  ADVANCED: { label: "Advanced", width: "75%", color: "bg-purple-400" },
-  EXPERT: { label: "Expert", width: "100%", color: "bg-green-400" },
+  BEGINNER: { label: "Beginner", labelKh: "ចាប់ផ្តើម", width: "25%", color: "bg-yellow-400" },
+  INTERMEDIATE: { label: "Intermediate", labelKh: "មធ្យម", width: "50%", color: "bg-blue-400" },
+  ADVANCED: { label: "Advanced", labelKh: "ខ្ពស់", width: "75%", color: "bg-purple-400" },
+  EXPERT: { label: "Expert", labelKh: "ជំនាញ", width: "100%", color: "bg-green-400" },
 };
 
 interface SkillsSectionProps {
@@ -68,10 +53,21 @@ interface SkillsSectionProps {
 }
 
 export default function SkillsSection({ userId, isOwnProfile }: SkillsSectionProps) {
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [skills, setSkills] = useState<UserSkill[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingSkill, setEditingSkill] = useState<UserSkill | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    skillName: "",
+    category: "PROGRAMMING",
+    level: "BEGINNER",
+    yearsOfExp: 0,
+    description: "",
+  });
 
   useEffect(() => {
     fetchSkills();
@@ -79,14 +75,9 @@ export default function SkillsSection({ userId, isOwnProfile }: SkillsSectionPro
 
   const fetchSkills = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/profile/${userId}/skills`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      setSkills(data.skills || []);
+      setLoading(true);
+      const data = await getUserSkills(userId);
+      setSkills(data);
     } catch (error) {
       console.error("Error fetching skills:", error);
     } finally {
@@ -94,21 +85,83 @@ export default function SkillsSection({ userId, isOwnProfile }: SkillsSectionPro
     }
   };
 
-  const handleEndorseSkill = async (skillId: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting) return;
+
     try {
-      const token = localStorage.getItem("token");
-      await fetch(`${API_BASE_URL}/profile/skills/${skillId}/endorse`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ comment: "" }),
-      });
-      fetchSkills(); // Refresh
+      setSubmitting(true);
+      
+      if (editingSkill) {
+        await updateSkill(editingSkill.id, {
+          level: formData.level,
+          yearsOfExp: formData.yearsOfExp || undefined,
+          description: formData.description || undefined,
+        });
+      } else {
+        await addSkill({
+          skillName: formData.skillName,
+          category: formData.category,
+          level: formData.level,
+          yearsOfExp: formData.yearsOfExp || undefined,
+          description: formData.description || undefined,
+        });
+      }
+      
+      await fetchSkills();
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error saving skill:", error);
+      alert("Failed to save skill. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (skillId: string) => {
+    if (!confirm("តើអ្នកប្រាកដថាចង់លុបជំនាញនេះ?")) return;
+
+    try {
+      await deleteSkillAPI(skillId);
+      setSkills(skills.filter(s => s.id !== skillId));
+    } catch (error) {
+      console.error("Error deleting skill:", error);
+      alert("Failed to delete skill.");
+    }
+  };
+
+  const handleEndorse = async (skillId: string) => {
+    try {
+      await endorseSkill(skillId);
+      await fetchSkills(); // Refresh to show new endorsement
     } catch (error) {
       console.error("Error endorsing skill:", error);
+      alert("Failed to endorse skill.");
     }
+  };
+
+  const handleEdit = (skill: UserSkill) => {
+    setEditingSkill(skill);
+    setFormData({
+      skillName: skill.skillName,
+      category: skill.category,
+      level: skill.level,
+      yearsOfExp: skill.yearsOfExp || 0,
+      description: skill.description || "",
+    });
+    setShowAddModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingSkill(null);
+    setFormData({
+      skillName: "",
+      category: "PROGRAMMING",
+      level: "BEGINNER",
+      yearsOfExp: 0,
+      description: "",
+    });
   };
 
   const filteredSkills =
