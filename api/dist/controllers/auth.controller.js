@@ -344,6 +344,8 @@ const login = async (req, res) => {
                     role: user.role,
                     isSuperAdmin: user.isSuperAdmin,
                     permissions: user.permissions,
+                    profilePictureUrl: user.profilePictureUrl, // ✅ ADDED: For profile picture display
+                    coverPhotoUrl: user.coverPhotoUrl, // ✅ ADDED: For cover photo display
                     student: user.student,
                     teacher: user.teacher,
                     parent: user.parent,
@@ -433,6 +435,8 @@ const getCurrentUser = async (req, res) => {
                 updatedAt: true,
                 isSuperAdmin: true,
                 permissions: true,
+                profilePictureUrl: true, // ✅ ADDED: For profile picture display
+                coverPhotoUrl: true, // ✅ ADDED: For cover photo display
                 student: {
                     select: {
                         id: true,

@@ -18,6 +18,7 @@ import EditAvatarModal from "./EditAvatarModal";
 import EditCoverModal from "./EditCoverModal";
 import EditProfileModal from "./EditProfileModal";
 import { getUserProfile } from "@/lib/api/profile";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProfileData {
   user: {
@@ -73,6 +74,7 @@ interface ProfilePageProps {
 }
 
 export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePageProps) {
+  const { refreshUser } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"performance" | "skills" | "projects" | "achievements" | "progress">("performance");
@@ -110,26 +112,32 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
     }
   };
 
-  const handleAvatarSuccess = (newAvatarUrl: string) => {
+  const handleAvatarSuccess = async (newAvatarUrl: string) => {
     if (profile) {
       setProfile({
         ...profile,
         user: { ...profile.user, profilePictureUrl: newAvatarUrl }
       });
     }
+    // Refresh AuthContext user data
+    await refreshUser();
   };
 
-  const handleCoverSuccess = (newCoverUrl: string) => {
+  const handleCoverSuccess = async (newCoverUrl: string) => {
     if (profile) {
       setProfile({
         ...profile,
         user: { ...profile.user, coverPhotoUrl: newCoverUrl }
       });
     }
+    // Refresh AuthContext user data
+    await refreshUser();
   };
 
-  const handleProfileSuccess = () => {
-    fetchProfile(); // Refresh profile data
+  const handleProfileSuccess = async () => {
+    await fetchProfile(); // Refresh profile data
+    // Refresh AuthContext user data
+    await refreshUser();
   };
 
   if (loading) {

@@ -12,8 +12,9 @@ interface AuthContextType {
     credentials: LoginCredentials
   ) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>; // NEW: Refresh user data
   isLoading: boolean;
-  isVerifyingWithServer: boolean; // ✅ NEW: Track server verification status
+  isVerifyingWithServer: boolean;
   error: string | null;
 }
 
@@ -292,11 +293,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("auth-change"));
     }
-
-    console.log("✅ Logout complete, redirecting to /login");
+    
+    console.log("✅ Logged out successfully");
     console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    router.push("/login");
+    router.push("/");
+  };
+
+  // NEW: Refresh user data
+  const refreshUser = async () => {
+    try {
+      console.log("🔄 Refreshing user data...");
+      apiClient.clearCache();
+      const user = await authApi.getCurrentUser(false);
+      setCurrentUser(user);
+      localStorage.setItem("user", JSON.stringify(user));
+      console.log("✅ User data refreshed");
+    } catch (error) {
+      console.error("❌ Failed to refresh user:", error);
+    }
   };
 
   return (
@@ -306,9 +321,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         login,
         logout,
+        refreshUser, // NEW: Add refresh function
         isLoading,
-        isVerifyingWithServer, // ✅ NEW: Add server verification flag
-        error, // ✅ ADDED:  Provide error
+        isVerifyingWithServer,
+        error,
       }}
     >
       {children}

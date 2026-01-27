@@ -351,7 +351,7 @@ export default function PostCard({
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <GradientAvatar
                 name={getAuthorName()}
-                imageUrl={null}
+                imageUrl={post.author.profilePictureUrl || null} // ✅ FIXED: Use actual profile picture
                 size="md"
                 isOnline={true}
                 onClick={() => onProfileClick?.(post.authorId)}

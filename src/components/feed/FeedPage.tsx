@@ -172,7 +172,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
         {showCreatePost && (
           <div className="mb-4 animate-fade-in">
             <CreatePost
-              userProfilePicture={null}
+              userProfilePicture={currentUser?.profilePictureUrl || null} // ✅ FIXED: Use actual profile picture
               userName={getUserName()}
               onPostCreated={handlePostCreated}
               onError={(error) => setError(error)}

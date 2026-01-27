@@ -13,6 +13,8 @@ export interface User {
   firstName: string;
   lastName: string;
   role: string;
+  profilePictureUrl?: string; // ✅ ADDED: Profile picture URL
+  coverPhotoUrl?: string; // ✅ ADDED: Cover photo URL
   teacher?: any;
   student?: any;
   permissions?: any;
@@ -68,6 +70,8 @@ export const authApi = {
       console.log("  - Token length:", data.token?.length || 0);
       console.log("  - User:", data.user?.email || data.user?.phone);
       console.log("  - Role:", data.user?.role);
+      console.log("  - profilePictureUrl:", data.user?.profilePictureUrl || "❌ MISSING"); // DEBUG
+      console.log("  - coverPhotoUrl:", data.user?.coverPhotoUrl || "❌ MISSING"); // DEBUG
       console.log("  - Expires in:", data.expiresIn);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 

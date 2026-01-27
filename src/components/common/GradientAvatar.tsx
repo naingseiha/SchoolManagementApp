@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image"; // ✅ ADDED: Next.js Image
 
 interface GradientAvatarProps {
   name: string;
@@ -17,6 +18,12 @@ const SIZE_CLASSES = {
   sm: "w-8 h-8 text-sm",
   md: "w-10 h-10 text-base",
   lg: "w-14 h-14 text-xl",
+};
+
+const SIZE_PIXELS = {
+  sm: 32,
+  md: 40,
+  lg: 56,
 };
 
 export default function GradientAvatar({
@@ -54,11 +61,14 @@ export default function GradientAvatar({
           }`}
         >
         {shouldShowImage ? (
-          <img
+          <Image
             src={imageUrl}
             alt={name}
+            width={SIZE_PIXELS[size]}
+            height={SIZE_PIXELS[size]}
             className="w-full h-full object-cover"
             onError={() => setImageError(true)}
+            unoptimized // ✅ Skip optimization for R2 URLs
           />
         ) : (
           <span>{initial}</span>

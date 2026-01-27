@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, memo } from "react";
+import Image from "next/image"; // ✅ ADDED: Next.js Image
 import {
   Image as ImageIcon,
   X,
@@ -280,10 +281,13 @@ function CreatePost({
         <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all flex-shrink-0">
           <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
             {userProfilePicture ? (
-              <img
+              <Image
                 src={userProfilePicture}
                 alt={userName}
+                width={40}
+                height={40}
                 className="w-full h-full object-cover"
+                unoptimized // ✅ Skip optimization for R2 URLs
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">

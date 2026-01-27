@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const express_1 = __importDefault(require("express"));
+const http_1 = require("http");
 const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const compression_1 = __importDefault(require("compression")); // ✅ OPTIMIZED: Add gzip compression
@@ -15,6 +16,7 @@ const errorHandler_1 = require("./middleware/errorHandler");
 const password_expiration_job_1 = require("./jobs/password-expiration.job");
 const notification_job_1 = require("./jobs/notification.job");
 const email_service_1 = require("./services/email.service");
+const socket_service_1 = require("./services/socket.service");
 // Import Routes
 const auth_routes_1 = __importDefault(require("./routes/auth.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
@@ -38,9 +40,13 @@ const feed_routes_1 = __importDefault(require("./routes/feed.routes"));
 const social_routes_1 = __importDefault(require("./routes/social.routes"));
 const skills_routes_1 = __importDefault(require("./routes/skills.routes"));
 const projects_routes_1 = __importDefault(require("./routes/projects.routes"));
+const achievements_routes_1 = __importDefault(require("./routes/achievements.routes"));
+const notification_routes_1 = __importDefault(require("./routes/notification.routes"));
 // Initialize Express app
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5001;
+// Create HTTP server for Socket.IO
+const httpServer = (0, http_1.createServer)(app);
 // CORS Configuration
 const allowedOrigins = [
     "http://localhost:3000",
@@ -127,6 +133,8 @@ app.use("/api/feed", feed_routes_1.default);
 app.use("/api/social", social_routes_1.default);
 app.use("/api/profile", skills_routes_1.default);
 app.use("/api/profile", projects_routes_1.default);
+app.use("/api", achievements_routes_1.default);
+app.use("/api/notifications", notification_routes_1.default);
 // API Documentation Route
 app.get("/api", (req, res) => {
     res.json({
@@ -199,6 +207,9 @@ const startServer = async () => {
         await (0, database_1.connectDatabase)();
         console.log("✅ Database connected successfully");
         (0, database_1.startKeepAlive)();
+        // Initialize Socket.IO
+        socket_service_1.socketService.init(httpServer);
+        console.log("✅ Socket.IO initialized");
         // Start background jobs
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         console.log("📋 Starting background jobs...");
@@ -211,7 +222,7 @@ const startServer = async () => {
         (0, password_expiration_job_1.startPasswordExpirationJob)();
         (0, notification_job_1.startNotificationJob)();
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        const server = app.listen(PORT, () => {
+        const server = httpServer.listen(PORT, () => {
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -219,6 +230,7 @@ const startServer = async () => {
             console.log(`📚 API Docs: http://localhost:${PORT}/api`);
             console.log(`💓 Database keep-alive: Active (ping every 4 min)`);
             console.log(`🔌 Connection pool: 20 connections available`);
+            console.log(`⚡ Socket.IO: Active (real-time notifications)`);
             console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         });
         // Handle port conflict
