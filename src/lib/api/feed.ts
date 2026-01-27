@@ -1,4 +1,5 @@
 // Feed API Client for activity feed and social features
+import { apiCache, generateCacheKey } from "../cache";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -193,7 +194,7 @@ const authFetch = async (url: string, options: RequestInit = {}) => {
 // ==================== POST FUNCTIONS ====================
 
 /**
- * Create a new post
+ * Create a new post (invalidates cache)
  */
 export const createPost = async (data: {
   content: string;
@@ -234,24 +235,40 @@ export const createPost = async (data: {
   }
 
   const result = await response.json();
+  
+  // Invalidate feed cache after creating post
+  apiCache.clear();
+  
   return result.data;
 };
 
 /**
- * Get feed posts (paginated)
+ * Get feed posts (paginated) with caching
  */
 export const getFeedPosts = async (params?: {
   page?: number;
   limit?: number;
   postType?: PostType | "ALL";
 }): Promise<FeedResponse> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.set("page", params.page.toString());
-  if (params?.limit) queryParams.set("limit", params.limit.toString());
-  if (params?.postType) queryParams.set("postType", params.postType);
+  const cacheKey = generateCacheKey("feed", {
+    page: params?.page || 1,
+    limit: params?.limit || 10,
+    postType: params?.postType || "ALL",
+  });
 
-  const response = await authFetch(`/feed/posts?${queryParams.toString()}`);
-  return response;
+  return apiCache.getOrFetch(
+    cacheKey,
+    async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.set("page", params.page.toString());
+      if (params?.limit) queryParams.set("limit", params.limit.toString());
+      if (params?.postType) queryParams.set("postType", params.postType);
+
+      const response = await authFetch(`/feed/posts?${queryParams.toString()}`);
+      return response;
+    },
+    30000 // Cache for 30 seconds
+  );
 };
 
 /**
@@ -283,12 +300,15 @@ export const updatePost = async (
 };
 
 /**
- * Delete a post
+ * Delete a post (invalidates cache)
  */
 export const deletePost = async (postId: string): Promise<void> => {
   await authFetch(`/feed/posts/${postId}`, {
     method: "DELETE",
   });
+  
+  // Invalidate feed cache after deleting post
+  apiCache.clear();
 };
 
 /**

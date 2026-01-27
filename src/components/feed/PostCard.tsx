@@ -119,13 +119,22 @@ export default function PostCard({
 
   const handleLike = async () => {
     if (isLiking) return;
+    
+    // Optimistic update - update UI immediately
+    const wasLiked = isLiked;
+    const previousCount = likesCount;
+    setIsLiked(!isLiked);
+    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
     setIsLiking(true);
+    
     try {
       await toggleLike(post.id);
-      setIsLiked(!isLiked);
-      setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
+      // Success - optimistic update was correct
     } catch (error) {
+      // Revert on error
       console.error("Toggle like error:", error);
+      setIsLiked(wasLiked);
+      setLikesCount(previousCount);
     } finally {
       setIsLiking(false);
     }

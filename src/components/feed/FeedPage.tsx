@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/feed";
 import CreatePost from "./CreatePost";
 import PostCard from "./PostCard";
+import PostCardSkeleton from "./PostCardSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import StunityLoader from "@/components/common/StunityLoader";
 
@@ -36,6 +37,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch posts
   const fetchPosts = useCallback(
@@ -97,12 +99,27 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }, []);
 
-  // Infinite scroll observer
+  // Prefetch next page (80% scroll threshold)
+  const prefetchNextPage = useCallback(() => {
+    if (hasMore && !isLoadingMore && !isLoading) {
+      // Clear existing timeout
+      if (prefetchTimeoutRef.current) {
+        clearTimeout(prefetchTimeoutRef.current);
+      }
+      // Prefetch with small delay to batch multiple scroll events
+      prefetchTimeoutRef.current = setTimeout(() => {
+        fetchPosts(currentPage + 1);
+      }, 100);
+    }
+  }, [hasMore, isLoadingMore, isLoading, currentPage, fetchPosts]);
+
+  // Infinite scroll observer with prefetching
   useEffect(() => {
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
+    // Observer for load more trigger at bottom
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isLoading) {
@@ -116,12 +133,30 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
       observerRef.current.observe(loadMoreRef.current);
     }
 
+    // Prefetch observer (triggers earlier)
+    const prefetchObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          prefetchNextPage();
+        }
+      },
+      { rootMargin: '400px' } // Prefetch when 400px away
+    );
+
+    if (loadMoreRef.current) {
+      prefetchObserver.observe(loadMoreRef.current);
+    }
+
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+      prefetchObserver.disconnect();
+      if (prefetchTimeoutRef.current) {
+        clearTimeout(prefetchTimeoutRef.current);
+      }
     };
-  }, [hasMore, isLoadingMore, isLoading, currentPage, fetchPosts]);
+  }, [hasMore, isLoadingMore, isLoading, currentPage, fetchPosts, prefetchNextPage]);
 
   // Get user info for create post
   const getUserName = () => {
@@ -161,10 +196,12 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Loading State with Skeletons */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-16">
-            <StunityLoader size="lg" showText={true} />
+          <div className="space-y-3">
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+            <PostCardSkeleton />
           </div>
         )}
 
