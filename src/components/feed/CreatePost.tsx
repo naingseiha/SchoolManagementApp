@@ -28,6 +28,7 @@ import {
   Lightbulb,
   Plus,
   Minus,
+  Calendar,
 } from "lucide-react";
 import {
   createPost,
@@ -147,6 +148,33 @@ function CreatePost({
   );
   const [pollDuration, setPollDuration] = useState<number>(7); // days
 
+  // ASSIGNMENT-specific state
+  const [assignmentDueDate, setAssignmentDueDate] = useState<string>("");
+  const [assignmentPoints, setAssignmentPoints] = useState<number>(100);
+  const [assignmentSubmissionType, setAssignmentSubmissionType] = useState<"file" | "text" | "link">("file");
+
+  // QUIZ-specific state
+  const [quizQuestions, setQuizQuestions] = useState<Array<{
+    question: string;
+    options: string[];
+    correctAnswer: number;
+    points: number;
+  }>>([{ question: "", options: ["", "", "", ""], correctAnswer: 0, points: 10 }]);
+
+  // ANNOUNCEMENT-specific state
+  const [announcementUrgency, setAnnouncementUrgency] = useState<"low" | "medium" | "high" | "urgent">("medium");
+  const [announcementExpiryDate, setAnnouncementExpiryDate] = useState<string>("");
+
+  // COURSE-specific state
+  const [courseCode, setCourseCode] = useState<string>("");
+  const [courseLevel, setCourseLevel] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [courseDuration, setCourseDuration] = useState<string>("");
+
+  // TUTORIAL-specific state
+  const [tutorialDifficulty, setTutorialDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [tutorialEstimatedTime, setTutorialEstimatedTime] = useState<string>("");
+  const [tutorialPrerequisites, setTutorialPrerequisites] = useState<string>("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -177,6 +205,18 @@ function CreatePost({
     setShowVisibilitySelector(false);
     setPollOptions(["", ""]);
     setPollDuration(7);
+    // Reset type-specific fields
+    setAssignmentDueDate("");
+    setAssignmentPoints(100);
+    setAssignmentSubmissionType("file");
+    setAnnouncementUrgency("medium");
+    setAnnouncementExpiryDate("");
+    setCourseCode("");
+    setCourseLevel("beginner");
+    setCourseDuration("");
+    setTutorialDifficulty("medium");
+    setTutorialEstimatedTime("");
+    setTutorialPrerequisites("");
   };
 
   // Poll option handlers
@@ -202,8 +242,9 @@ function CreatePost({
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Limit to 4 images
-    const remainingSlots = 4 - mediaFiles.length;
+    // Limit to 4 images total (existing + new)
+    const totalImages = mediaFiles.length + mediaPreviews.length;
+    const remainingSlots = 4 - totalImages;
     const filesToAdd = files.slice(0, remainingSlots);
 
     for (const file of filesToAdd) {
@@ -551,6 +592,246 @@ function CreatePost({
         </div>
       )}
 
+      {/* ASSIGNMENT Fields */}
+      {postType === "ASSIGNMENT" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Assignment Details:</p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {/* Due Date */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                📅 Due Date
+              </label>
+              <input
+                type="datetime-local"
+                value={assignmentDueDate}
+                onChange={(e) => setAssignmentDueDate(e.target.value)}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+
+            {/* Points */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ⭐ Points
+              </label>
+              <input
+                type="number"
+                value={assignmentPoints}
+                onChange={(e) => setAssignmentPoints(Number(e.target.value))}
+                min="0"
+                max="100"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Submission Type */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              📤 Submission Type
+            </label>
+            <div className="flex gap-2">
+              {[
+                { value: "file", label: "File Upload", icon: "📎" },
+                { value: "text", label: "Text", icon: "📝" },
+                { value: "link", label: "Link", icon: "🔗" },
+              ].map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setAssignmentSubmissionType(type.value as any)}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    assignmentSubmissionType === type.value
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  <span className="mr-1">{type.icon}</span>
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENT Fields */}
+      {postType === "ANNOUNCEMENT" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Announcement Settings:</p>
+          </div>
+
+          {/* Urgency Level */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">
+              🚨 Urgency Level
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: "low", label: "Low", color: "bg-gray-100 text-gray-700", icon: "ℹ️" },
+                { value: "medium", label: "Medium", color: "bg-blue-100 text-blue-700", icon: "📢" },
+                { value: "high", label: "High", color: "bg-orange-100 text-orange-700", icon: "⚠️" },
+                { value: "urgent", label: "Urgent", color: "bg-red-100 text-red-700", icon: "🚨" },
+              ].map((level) => (
+                <button
+                  key={level.value}
+                  type="button"
+                  onClick={() => setAnnouncementUrgency(level.value as any)}
+                  className={`px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+                    announcementUrgency === level.value
+                      ? `${level.color} ring-2 ring-offset-2`
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <span className="mr-1.5">{level.icon}</span>
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Expiry Date */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              ⏰ Expiry Date (Optional)
+            </label>
+            <input
+              type="datetime-local"
+              value={announcementExpiryDate}
+              onChange={(e) => setAnnouncementExpiryDate(e.target.value)}
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* COURSE Fields */}
+      {postType === "COURSE" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Course Information:</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Course Code */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                🔢 Course Code
+              </label>
+              <input
+                type="text"
+                value={courseCode}
+                onChange={(e) => setCourseCode(e.target.value)}
+                placeholder="e.g., CS101"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+              />
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ⏱️ Duration
+              </label>
+              <input
+                type="text"
+                value={courseDuration}
+                onChange={(e) => setCourseDuration(e.target.value)}
+                placeholder="e.g., 8 weeks"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Course Level */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-2">
+              📊 Course Level
+            </label>
+            <div className="flex gap-2">
+              {[
+                { value: "beginner", label: "Beginner", icon: "🌱" },
+                { value: "intermediate", label: "Intermediate", icon: "🌿" },
+                { value: "advanced", label: "Advanced", icon: "🌳" },
+              ].map((level) => (
+                <button
+                  key={level.value}
+                  type="button"
+                  onClick={() => setCourseLevel(level.value as any)}
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                    courseLevel === level.value
+                      ? "bg-purple-500 text-white shadow-md"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  <span className="mr-1">{level.icon}</span>
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TUTORIAL Fields */}
+      {postType === "TUTORIAL" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Tutorial Details:</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Estimated Time */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ⏰ Estimated Time
+              </label>
+              <input
+                type="text"
+                value={tutorialEstimatedTime}
+                onChange={(e) => setTutorialEstimatedTime(e.target.value)}
+                placeholder="e.g., 30 min"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+              />
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-2">
+                📈 Difficulty
+              </label>
+              <select
+                value={tutorialDifficulty}
+                onChange={(e) => setTutorialDifficulty(e.target.value as any)}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+              >
+                <option value="easy">Easy 😊</option>
+                <option value="medium">Medium 🤔</option>
+                <option value="hard">Hard 💪</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Prerequisites */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              📚 Prerequisites (Optional)
+            </label>
+            <textarea
+              value={tutorialPrerequisites}
+              onChange={(e) => setTutorialPrerequisites(e.target.value)}
+              placeholder="What should learners know before starting?"
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm resize-none"
+              rows={2}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Media Previews */}
       {mediaPreviews.length > 0 && (
         <div className="px-4 pb-3">
@@ -592,10 +873,15 @@ function CreatePost({
         <div className="flex items-center gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            disabled={mediaFiles.length >= 4}
-            className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+            disabled={mediaFiles.length + mediaPreviews.length >= 4}
+            className="p-3 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md relative"
           >
             <ImageIcon className="w-5 h-5 text-green-600" />
+            {(mediaFiles.length + mediaPreviews.length > 0) && (
+              <span className="absolute -top-1 -right-1 bg-green-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {mediaFiles.length + mediaPreviews.length}
+              </span>
+            )}
           </button>
           <input
             ref={fileInputRef}

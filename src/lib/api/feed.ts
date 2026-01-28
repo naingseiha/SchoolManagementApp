@@ -279,6 +279,9 @@ export const getPost = async (postId: string): Promise<Post> => {
   return response.data;
 };
 
+// Alias for consistency
+export const getPostById = getPost;
+
 /**
  * Update a post
  */
