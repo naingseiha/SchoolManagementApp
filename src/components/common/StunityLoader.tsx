@@ -54,7 +54,7 @@ const StunityLoader: React.FC<StunityLoaderProps> = ({
         {/* Circular Background with Gradient */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400 via-orange-500 to-yellow-500 shadow-2xl animate-subtle-rotate" />
 
-        {/* SVG S Letter with 2-Line Drawing Animation */}
+        {/* SVG S Letter - Arial Style with Smooth Parallel Lines */}
         <div className="absolute inset-0 flex items-center justify-center p-3">
           <svg
             width="100%"
@@ -63,11 +63,11 @@ const StunityLoader: React.FC<StunityLoaderProps> = ({
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* First S Outline - Outer Line */}
+            {/* Outer S Line - Smooth Arial Style */}
             <path
-              d="M 70 22 C 70 10, 60 5, 50 5 C 35 5, 22 15, 22 28 C 22 40, 32 46, 50 52 C 68 58, 78 64, 78 75 C 78 88, 65 95, 50 95 C 35 95, 22 85, 22 72"
+              d="M 72 24 C 72 12, 62 6, 50 6 C 36 6, 24 14, 24 26 C 24 36, 32 42, 50 48 C 68 54, 76 60, 76 72 C 76 84, 64 94, 50 94 C 36 94, 24 86, 24 74"
               stroke="white"
-              strokeWidth="5"
+              strokeWidth="5.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
@@ -78,11 +78,11 @@ const StunityLoader: React.FC<StunityLoaderProps> = ({
               }}
             />
 
-            {/* Second S Outline - Inner Line */}
+            {/* Inner S Line - Parallel to Outer with More Space */}
             <path
-              d="M 66 26 C 66 16, 58 11, 50 11 C 39 11, 30 19, 30 30 C 30 39, 38 44, 50 50 C 62 56, 70 61, 70 73 C 70 83, 61 89, 50 89 C 39 89, 30 81, 30 70"
+              d="M 65 28 C 65 18, 58 13, 50 13 C 40 13, 32 20, 32 30 C 32 38, 38 43, 50 48 C 62 53, 68 58, 68 68 C 68 78, 60 87, 50 87 C 40 87, 32 80, 32 70"
               stroke="white"
-              strokeWidth="4"
+              strokeWidth="4.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
@@ -93,9 +93,9 @@ const StunityLoader: React.FC<StunityLoaderProps> = ({
               }}
             />
 
-            {/* Inner Solid S - Fades In Smoothly */}
+            {/* Solid S Fill - Fades In */}
             <path
-              d="M 64 28 C 64 19, 57 14, 50 14 C 41 14, 34 21, 34 31 C 34 39, 41 43, 50 49 C 59 55, 66 59, 66 71 C 66 81, 59 86, 50 86 C 41 86, 34 79, 34 69"
+              d="M 62 30 C 62 21, 56 16, 50 16 C 42 16, 36 22, 36 32 C 36 39, 41 43, 50 48 C 59 53, 65 57, 65 66 C 65 75, 58 84, 50 84 C 42 84, 36 78, 36 68"
               fill="white"
               style={{
                 animation: "fadeInSmooth 2.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s infinite",
