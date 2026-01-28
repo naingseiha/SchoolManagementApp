@@ -20,6 +20,8 @@ import {
   GraduationCap,
   Book,
   AlertCircle,
+  Plus,
+  Minus,
 } from "lucide-react";
 import {
   updatePost,
@@ -27,6 +29,7 @@ import {
   PostType,
   PostVisibility,
   POST_TYPE_INFO,
+  PollOption,
 } from "@/lib/api/feed";
 import { compressImage } from "@/lib/utils/imageCompression";
 
@@ -37,6 +40,12 @@ interface EditPostFormProps {
     postType: PostType;
     visibility: PostVisibility;
     mediaUrls?: string[];
+    // Poll fields
+    pollOptions?: PollOption[];
+    pollExpiresAt?: string | null;
+    pollIsAnonymous?: boolean;
+    pollAllowMultiple?: boolean;
+    pollMaxChoices?: number | null;
   };
   userProfilePicture?: string | null;
   userName: string;
@@ -65,6 +74,17 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
   const [showVisibilitySelector, setShowVisibilitySelector] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  // Poll-specific state
+  const [pollOptions, setPollOptions] = useState<string[]>(
+    post.pollOptions?.map(opt => opt.text) || ["", ""]
+  );
+  const [pollExpiresAt, setPollExpiresAt] = useState<string>(
+    post.pollExpiresAt ? new Date(post.pollExpiresAt).toISOString().slice(0, 16) : ""
+  );
+  const [pollIsAnonymous, setPollIsAnonymous] = useState<boolean>(post.pollIsAnonymous || false);
+  const [pollAllowMultiple, setPollAllowMultiple] = useState<boolean>(post.pollAllowMultiple || false);
+  const [pollMaxChoices, setPollMaxChoices] = useState<number>(post.pollMaxChoices || 1);
+
   // Type-specific state
   const [assignmentDueDate, setAssignmentDueDate] = useState<string>("");
   const [assignmentPoints, setAssignmentPoints] = useState<number>(100);
@@ -84,6 +104,30 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Poll option handlers
+  const addPollOption = () => {
+    if (pollOptions.length < 6) {
+      setPollOptions([...pollOptions, ""]);
+    }
+  };
+
+  const removePollOption = (index: number) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, i) => i !== index));
+      // Adjust max choices if needed
+      if (pollAllowMultiple && pollMaxChoices > pollOptions.length - 1) {
+        setPollMaxChoices(pollOptions.length - 1);
+      }
+    }
+  };
+
+  const updatePollOption = (index: number, value: string) => {
+    const newOptions = [...pollOptions];
+    newOptions[index] = value;
+    setPollOptions(newOptions);
+  };
+
+
   useEffect(() => {
     textareaRef.current?.focus();
     console.log('📸 Edit Post - Media URLs:', post.mediaUrls);
@@ -99,19 +143,33 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
     const filesToAdd = files.slice(0, remainingSlots);
 
     for (const file of filesToAdd) {
-      if (file.type.startsWith("image/")) {
-        try {
-          const compressed = await compressImage(file);
-          setMediaFiles((prev) => [...prev, compressed]);
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            setMediaPreviews((prev) => [...prev, e.target?.result as string]);
-          };
-          reader.readAsDataURL(compressed);
-        } catch (error) {
-          console.error("Error compressing image:", error);
-        }
+      if (!file.type.startsWith("image/")) continue;
+
+      try {
+        // Compress image
+        const compressed = await compressImage(file, {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.85,
+          outputFormat: "image/jpeg",
+        });
+
+        // Convert data URL to File
+        const response = await fetch(compressed);
+        const blob = await response.blob();
+        const compressedFile = new File([blob], file.name, {
+          type: "image/jpeg",
+        });
+
+        setMediaFiles((prev) => [...prev, compressedFile]);
+        setMediaPreviews((prev) => [...prev, compressed]);
+      } catch (error) {
+        console.error("Error processing image:", error);
       }
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -150,6 +208,15 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
       return;
     }
 
+    // Poll validation
+    if (postType === "POLL") {
+      const validOptions = pollOptions.filter((opt) => opt.trim());
+      if (validOptions.length < 2) {
+        alert("សូមបញ្ចូលជម្រើសយ៉ាងតិច ២");
+        return;
+      }
+    }
+
     setIsPosting(true);
     try {
       // Check if images were modified
@@ -158,8 +225,8 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
         mediaPreviews.length !== originalImages.length ||
         mediaPreviews.some((url, index) => url !== originalImages[index]);
 
-      if (imagesChanged || mediaFiles.length > 0) {
-        // Media was modified - use FormData
+      if (imagesChanged || mediaFiles.length > 0 || postType === "POLL") {
+        // Media was modified OR poll data needs updating - use FormData
         const deletedUrls = originalImages.filter(
           url => !mediaPreviews.includes(url)
         );
@@ -180,6 +247,20 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
           formData.append("media", file);
         });
 
+        // Add poll data if POLL type
+        if (postType === "POLL") {
+          const validOptions = pollOptions.filter((opt) => opt.trim());
+          formData.append("pollOptions", JSON.stringify(validOptions));
+          if (pollExpiresAt) {
+            formData.append("pollExpiresAt", new Date(pollExpiresAt).toISOString());
+          }
+          formData.append("pollIsAnonymous", String(pollIsAnonymous));
+          formData.append("pollAllowMultiple", String(pollAllowMultiple));
+          if (pollAllowMultiple && pollMaxChoices) {
+            formData.append("pollMaxChoices", String(pollMaxChoices));
+          }
+        }
+
         await updatePostWithMedia(post.id, formData);
       } else {
         // Only text/visibility changed - use simple API
@@ -189,8 +270,12 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
         });
       }
 
-      // ✅ FIXED: Navigate back without forcing refresh
+      // Clear cache and navigate back to feed
       router.push("/feed");
+      // Force refresh to show updated data
+      setTimeout(() => {
+        window.location.href = "/feed";
+      }, 100);
     } catch (error) {
       console.error("Failed to update post:", error);
       alert("មានបញ្ហាក្នុងការកែសម្រួលការផ្សាយ!");
@@ -358,6 +443,134 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Poll Options Editor - Show only when POLL type */}
+        {postType === "POLL" && (
+          <div className="px-4 pb-3 space-y-3">
+            <div className="flex items-center justify-between mb-2 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-2 rounded-xl">
+              <p className="text-sm font-semibold text-gray-700">ជម្រើសមតិ:</p>
+              <span className="text-xs font-medium text-indigo-600 bg-white px-2 py-1 rounded-full">
+                {pollOptions.length}/6
+              </span>
+            </div>
+
+            {pollOptions.map((option, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => updatePollOption(index, e.target.value)}
+                    placeholder={`ជម្រើសទី ${index + 1}`}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-medium transition-all"
+                    maxLength={100}
+                  />
+                </div>
+                {pollOptions.length > 2 && (
+                  <button
+                    onClick={() => removePollOption(index)}
+                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                    type="button"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {pollOptions.length < 6 && (
+              <button
+                onClick={addPollOption}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-2 border-dashed border-indigo-200 hover:border-indigo-300 w-full justify-center"
+                type="button"
+              >
+                <Plus className="w-4 h-4" />
+                បន្ថែមជម្រើស
+              </button>
+            )}
+
+            {/* Poll Settings */}
+            <div className="mt-4 space-y-3 p-4 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-indigo-100">
+              <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-indigo-600" />
+                ការកំណត់សំណួរមតិ
+              </h4>
+              
+              {/* Expiry Date */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  ⏰ ថ្ងៃផុតកំណត់ (ជាប់ខ្លួន)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={pollExpiresAt}
+                  onChange={(e) => setPollExpiresAt(e.target.value)}
+                  className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">បើទទេ មតិនឹងមិនផុតកំណត់</p>
+              </div>
+              
+              {/* Anonymous Voting */}
+              <label className="flex items-start gap-3 p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-indigo-300 cursor-pointer transition-all group">
+                <input
+                  type="checkbox"
+                  checked={pollIsAnonymous}
+                  onChange={(e) => setPollIsAnonymous(e.target.checked)}
+                  className="w-5 h-5 mt-0.5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">
+                    🔒 ការបោះឆ្នោតអនាមិក
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">លាក់ឈ្មោះអ្នកបោះឆ្នោត</p>
+                </div>
+              </label>
+              
+              {/* Multiple Choice */}
+              <label className="flex items-start gap-3 p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-indigo-300 cursor-pointer transition-all group">
+                <input
+                  type="checkbox"
+                  checked={pollAllowMultiple}
+                  onChange={(e) => {
+                    setPollAllowMultiple(e.target.checked);
+                    if (!e.target.checked) {
+                      setPollMaxChoices(1);
+                    }
+                  }}
+                  className="w-5 h-5 mt-0.5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">
+                    ☑️ អនុញ្ញាតឱ្យជ្រើសរើសច្រើន
+                  </span>
+                  <p className="text-xs text-gray-500 mt-0.5">អនុញ្ញាតឱ្យជ្រើសរើសច្រើនជាងមួយ</p>
+                </div>
+              </label>
+              
+              {/* Max Choices */}
+              {pollAllowMultiple && (
+                <div className="pl-8">
+                  <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                    ចំនួនជម្រើសអតិបរមា (1-{pollOptions.length})
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={pollOptions.length}
+                    value={pollMaxChoices}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val >= 1 && val <= pollOptions.length) {
+                        setPollMaxChoices(val);
+                      }
+                    }}
+                    className="w-24 px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-semibold text-center"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}

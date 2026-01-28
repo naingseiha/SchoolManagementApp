@@ -48,7 +48,7 @@ import {
   POST_TYPE_INFO,
 } from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
-import PollCard from "./PollCard";
+import EnhancedPollCard from "./EnhancedPollCard";
 import CommentsDrawer from "@/components/comments/CommentsDrawer";
 import GradientAvatar from "@/components/common/GradientAvatar";
 import KnowledgePoints from "./KnowledgePoints";
@@ -59,6 +59,7 @@ interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onPostDeleted?: (postId: string) => void;
+  onPostUpdated?: (postId: string, updatedData: Partial<Post>) => void;
   onCommentClick?: (postId: string) => void;
   onProfileClick?: (userId: string) => void;
 }
@@ -85,7 +86,7 @@ export default function PostCard({
   post,
   currentUserId,
   onPostDeleted,
-  onPostEdited,
+  onPostUpdated,
   onCommentClick,
   onProfileClick,
 }: PostCardProps) {
@@ -233,12 +234,24 @@ export default function PostCard({
     switch (post.postType) {
       case "POLL":
         if (post.pollOptions && post.pollOptions.length > 0) {
+          const isPollExpired = post.pollExpiresAt && new Date() > new Date(post.pollExpiresAt);
           return (
-            <PollCard
+            <EnhancedPollCard
               postId={post.id}
               pollOptions={post.pollOptions}
               userVotes={post.userVotes || []}
               totalVotes={post.totalVotes || 0}
+              pollExpiresAt={post.pollExpiresAt}
+              pollAllowMultiple={post.pollAllowMultiple}
+              pollMaxChoices={post.pollMaxChoices}
+              pollIsAnonymous={post.pollIsAnonymous}
+              isPollExpired={isPollExpired}
+              onVoteSuccess={(data) => {
+                // Update post data after vote
+                if (onPostUpdated) {
+                  onPostUpdated(post.id, data);
+                }
+              }}
             />
           );
         }

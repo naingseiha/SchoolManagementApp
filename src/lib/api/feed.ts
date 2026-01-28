@@ -335,6 +335,10 @@ export const updatePost = async (
     },
     body: JSON.stringify(data),
   });
+  
+  // Invalidate cache after updating post
+  apiCache.clear();
+  
   return response.data;
 };
 
@@ -768,5 +772,9 @@ export const votePoll = async (optionId: string): Promise<any> => {
   const response = await authFetch(`/feed/polls/${optionId}/vote`, {
     method: "POST",
   });
+  
+  // Clear cache after voting to show updated results
+  apiCache.clear();
+  
   return response;
 };

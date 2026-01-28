@@ -100,6 +100,15 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }, []);
 
+  // Handle post updated (for poll votes, etc.)
+  const handlePostUpdated = useCallback((postId: string, updatedData: Partial<Post>) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, ...updatedData } : post
+      )
+    );
+  }, []);
+
   // Real-time post updates via Socket.IO
   useEffect(() => {
     if (!currentUser) return;
@@ -280,6 +289,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
                 post={post}
                 currentUserId={currentUser?.id}
                 onPostDeleted={handlePostDeleted}
+                onPostUpdated={handlePostUpdated}
                 onProfileClick={onProfileClick}
               />
           ))}

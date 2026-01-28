@@ -50,10 +50,50 @@ export default function EditPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-          <p className="mt-4 text-gray-600">កំពុងផ្ទុក...</p>
+      <div className="h-screen flex flex-col bg-white">
+        {/* Header Skeleton */}
+        <div className="flex-shrink-0 border-b border-gray-200 bg-white">
+          <div className="px-4 py-3 flex items-center justify-between">
+            <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
+            <div className="w-32 h-6 bg-gray-200 rounded animate-pulse" />
+            <div className="w-20 h-9 bg-gray-200 rounded-lg animate-pulse" />
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* User info skeleton */}
+          <div className="flex items-center gap-3 pb-4 border-b">
+            <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse" />
+            <div className="space-y-2">
+              <div className="w-32 h-4 bg-gray-200 rounded animate-pulse" />
+              <div className="w-24 h-3 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </div>
+
+          {/* Type badge skeleton */}
+          <div className="w-32 h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse" />
+
+          {/* Content skeleton */}
+          <div className="space-y-2">
+            <div className="w-full h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="w-full h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="w-3/4 h-4 bg-gray-200 rounded animate-pulse" />
+          </div>
+
+          {/* Image skeleton */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="w-full aspect-square bg-gray-200 rounded-lg animate-pulse" />
+            <div className="w-full aspect-square bg-gray-200 rounded-lg animate-pulse" />
+          </div>
+        </div>
+
+        {/* Footer skeleton */}
+        <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="w-32 h-10 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="w-16 h-4 bg-gray-200 rounded animate-pulse" />
+          </div>
         </div>
       </div>
     );

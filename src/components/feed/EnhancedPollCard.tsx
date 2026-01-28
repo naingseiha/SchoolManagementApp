@@ -39,8 +39,15 @@ export default function EnhancedPollCard({
   const handleVote = async (optionId: string) => {
     if (isPollExpired || isVoting) return;
 
-    // If single choice and already voted, don't allow voting again
-    if (!pollAllowMultiple && hasVoted) return;
+    // For single choice polls, if user clicks same option they already voted, do nothing
+    if (!pollAllowMultiple && userVotes.includes(optionId)) {
+      return; // Already voted for this option
+    }
+
+    // If multiple choice, check if already voted for this specific option
+    if (pollAllowMultiple && userVotes.includes(optionId)) {
+      return; // Already voted for this option
+    }
 
     // If multiple choice, check if max choices reached
     if (pollAllowMultiple && pollMaxChoices && userVotes.length >= pollMaxChoices) {
@@ -48,21 +55,93 @@ export default function EnhancedPollCard({
       return;
     }
 
+    // ✅ OPTIMISTIC UPDATE: Update UI immediately
+    const previousOptions = [...pollOptions];
+    const previousUserVotes = [...userVotes];
+    const previousTotalVotes = totalVotes;
+
+    // Calculate optimistic updates
+    const newOptions = pollOptions.map((option) => {
+      if (!pollAllowMultiple && userVotes.length > 0) {
+        // Single choice: remove vote from old option
+        const oldVoteId = userVotes[0];
+        if (option.id === oldVoteId) {
+          return { ...option, votesCount: option.votesCount - 1 };
+        }
+      }
+      if (option.id === optionId) {
+        // Add vote to new option
+        return { ...option, votesCount: option.votesCount + 1 };
+      }
+      return option;
+    });
+
+    const newUserVotes = pollAllowMultiple
+      ? [...userVotes, optionId]
+      : [optionId];
+
+    const newTotalVotes = !pollAllowMultiple && userVotes.length > 0
+      ? totalVotes // No change in total for single choice vote change
+      : totalVotes + 1; // Increase total for new vote
+
+    // Apply optimistic updates
+    setPollOptions(newOptions);
+    setUserVotes(newUserVotes);
+    setTotalVotes(newTotalVotes);
+
+    // ✅ Notify parent immediately with optimistic data
+    if (onVoteSuccess) {
+      onVoteSuccess({
+        pollOptions: newOptions,
+        userVotes: newUserVotes,
+        totalVotes: newTotalVotes,
+      });
+    }
+
     setIsVoting(true);
     try {
       const response = await votePoll(optionId);
 
       if (response.success) {
+        // ✅ Update with real data from server (should match optimistic)
         setPollOptions(response.data.pollOptions);
         setUserVotes(response.data.userVotes || []);
         setTotalVotes(response.data.totalVotes);
 
+        // Update parent with real data
         if (onVoteSuccess) {
           onVoteSuccess(response.data);
+        }
+      } else {
+        // ❌ Rollback on failure
+        setPollOptions(previousOptions);
+        setUserVotes(previousUserVotes);
+        setTotalVotes(previousTotalVotes);
+        
+        // Rollback parent state
+        if (onVoteSuccess) {
+          onVoteSuccess({
+            pollOptions: previousOptions,
+            userVotes: previousUserVotes,
+            totalVotes: previousTotalVotes,
+          });
         }
       }
     } catch (error: any) {
       console.error("Vote error:", error);
+      // ❌ Rollback on error
+      setPollOptions(previousOptions);
+      setUserVotes(previousUserVotes);
+      setTotalVotes(previousTotalVotes);
+      
+      // Rollback parent state
+      if (onVoteSuccess) {
+        onVoteSuccess({
+          pollOptions: previousOptions,
+          userVotes: previousUserVotes,
+          totalVotes: previousTotalVotes,
+        });
+      }
       // Show error toast if available
     } finally {
       setIsVoting(false);
@@ -137,8 +216,12 @@ export default function EnhancedPollCard({
         const isUserVote = userVotes.includes(option.id);
         const isWinner = hasVoted && option.votesCount === maxVotes && maxVotes > 0;
 
-        if (hasVoted || isPollExpired) {
-          // Show results
+        // For single choice polls that are not expired, show clickable options
+        // This allows users to change their vote
+        const showClickableOptions = !isPollExpired && !pollAllowMultiple;
+        
+        if (hasVoted && !showClickableOptions) {
+          // Show results (for multiple choice or expired polls)
           return (
             <div
               key={option.id}
@@ -186,8 +269,61 @@ export default function EnhancedPollCard({
               </div>
             </div>
           );
+        } else if (showClickableOptions && hasVoted) {
+          // Single choice poll after voting - show results but clickable to change vote
+          return (
+            <button
+              key={option.id}
+              onClick={() => handleVote(option.id)}
+              disabled={isVoting || isUserVote}
+              className={`relative overflow-hidden rounded-xl border-2 transition-all w-full text-left ${
+                isUserVote
+                  ? "border-blue-500 bg-blue-50 cursor-default"
+                  : isVoting
+                  ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                  : "border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50 cursor-pointer"
+              }`}
+            >
+              {/* Progress bar */}
+              <div
+                className={`absolute inset-y-0 left-0 transition-all duration-500 ${
+                  isUserVote ? "bg-blue-100" : "bg-gray-100"
+                }`}
+                style={{ width: `${percentage}%` }}
+              />
+
+              {/* Content */}
+              <div className="relative px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 flex-1">
+                  {isUserVote && (
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    </div>
+                  )}
+                  <span
+                    className={`text-sm font-medium ${
+                      isUserVote ? "text-blue-900" : "text-gray-900"
+                    }`}
+                  >
+                    {option.text}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm font-bold ${
+                      isUserVote ? "text-blue-700" : "text-gray-700"
+                    }`}
+                  >
+                    {percentage}%
+                  </span>
+                  {isWinner && <span className="text-xs">🏆</span>}
+                </div>
+              </div>
+            </button>
+          );
         } else {
-          // Show vote buttons
+          // Show vote buttons (before any vote or multiple choice)
           const canVoteMore =
             !pollMaxChoices || userVotes.length < pollMaxChoices;
 

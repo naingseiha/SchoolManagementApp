@@ -147,6 +147,10 @@ function CreatePost({
     editPost?.pollOptions?.map(opt => opt.text) || ["", ""]
   );
   const [pollDuration, setPollDuration] = useState<number>(7); // days
+  const [pollExpiresAt, setPollExpiresAt] = useState<string>("");
+  const [pollIsAnonymous, setPollIsAnonymous] = useState<boolean>(editPost?.pollIsAnonymous || false);
+  const [pollAllowMultiple, setPollAllowMultiple] = useState<boolean>(editPost?.pollAllowMultiple || false);
+  const [pollMaxChoices, setPollMaxChoices] = useState<number>(1);
 
   // ASSIGNMENT-specific state
   const [assignmentDueDate, setAssignmentDueDate] = useState<string>("");
@@ -205,6 +209,10 @@ function CreatePost({
     setShowVisibilitySelector(false);
     setPollOptions(["", ""]);
     setPollDuration(7);
+    setPollExpiresAt("");
+    setPollIsAnonymous(false);
+    setPollAllowMultiple(false);
+    setPollMaxChoices(1);
     // Reset type-specific fields
     setAssignmentDueDate("");
     setAssignmentPoints(100);
@@ -320,6 +328,15 @@ function CreatePost({
         // Add poll options if POLL type
         if (postType === "POLL") {
           postData.pollOptions = pollOptions.filter((opt) => opt.trim());
+          // Add enhanced poll settings
+          if (pollExpiresAt) {
+            postData.pollExpiresAt = new Date(pollExpiresAt).toISOString();
+          }
+          postData.pollIsAnonymous = pollIsAnonymous;
+          postData.pollAllowMultiple = pollAllowMultiple;
+          if (pollAllowMultiple && pollMaxChoices) {
+            postData.pollMaxChoices = pollMaxChoices;
+          }
         }
 
         await createPost(postData);
@@ -589,6 +606,87 @@ function CreatePost({
               បន្ថែមជម្រើស
             </button>
           )}
+
+          {/* Poll Settings */}
+          <div className="mt-4 space-y-3 p-4 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-indigo-100">
+            <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-600" />
+              ការកំណត់សំណួរមតិ
+            </h4>
+            
+            {/* Expiry Date */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ⏰ ថ្ងៃផុតកំណត់ (ជាប់ខ្លួន)
+              </label>
+              <input
+                type="datetime-local"
+                value={pollExpiresAt}
+                onChange={(e) => setPollExpiresAt(e.target.value)}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">បើទទេ មតិនឹងមិនផុតកំណត់</p>
+            </div>
+            
+            {/* Anonymous Voting */}
+            <label className="flex items-start gap-3 p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-indigo-300 cursor-pointer transition-all group">
+              <input
+                type="checkbox"
+                checked={pollIsAnonymous}
+                onChange={(e) => setPollIsAnonymous(e.target.checked)}
+                className="w-5 h-5 mt-0.5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">
+                  🔒 ការបោះឆ្នោតអនាមិក
+                </span>
+                <p className="text-xs text-gray-500 mt-0.5">លាក់ឈ្មោះអ្នកបោះឆ្នោត</p>
+              </div>
+            </label>
+            
+            {/* Multiple Choice */}
+            <label className="flex items-start gap-3 p-3 bg-white rounded-lg border-2 border-gray-200 hover:border-indigo-300 cursor-pointer transition-all group">
+              <input
+                type="checkbox"
+                checked={pollAllowMultiple}
+                onChange={(e) => {
+                  setPollAllowMultiple(e.target.checked);
+                  if (!e.target.checked) {
+                    setPollMaxChoices(1);
+                  }
+                }}
+                className="w-5 h-5 mt-0.5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-semibold text-gray-800 group-hover:text-indigo-700">
+                  ☑️ អនុញ្ញាតឱ្យជ្រើសរើសច្រើន
+                </span>
+                <p className="text-xs text-gray-500 mt-0.5">អនុញ្ញាតឱ្យជ្រើសរើសច្រើនជាងមួយ</p>
+              </div>
+            </label>
+            
+            {/* Max Choices */}
+            {pollAllowMultiple && (
+              <div className="pl-8">
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  ចំនួនជម្រើសអតិបរមា (1-{pollOptions.length})
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={pollOptions.length}
+                  value={pollMaxChoices}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val >= 1 && val <= pollOptions.length) {
+                      setPollMaxChoices(val);
+                    }
+                  }}
+                  className="w-24 px-3 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-semibold text-center"
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -481,7 +481,18 @@ export const updatePost = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
     const { postId } = req.params;
-    const { content, visibility, mediaUrls, mediaDeleted } = req.body;
+    const { 
+      content, 
+      visibility, 
+      mediaUrls, 
+      mediaDeleted,
+      // Poll fields
+      pollOptions,
+      pollExpiresAt,
+      pollIsAnonymous,
+      pollAllowMultiple,
+      pollMaxChoices
+    } = req.body;
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -582,6 +593,51 @@ export const updatePost = async (req: Request, res: Response) => {
       updateData.mediaKeys = finalMediaKeys;
     }
 
+    // Handle poll options update for POLL type posts
+    if (post.postType === "POLL") {
+      // Parse pollOptions if it's a JSON string
+      let parsedPollOptions = pollOptions;
+      if (typeof pollOptions === 'string') {
+        try {
+          parsedPollOptions = JSON.parse(pollOptions);
+        } catch (e) {
+          console.error("Failed to parse pollOptions:", e);
+        }
+      }
+
+      // Update poll options if provided
+      if (parsedPollOptions && Array.isArray(parsedPollOptions)) {
+        // Delete existing poll options
+        await prisma.pollOption.deleteMany({
+          where: { postId },
+        });
+
+        // Create new poll options
+        await prisma.pollOption.createMany({
+          data: parsedPollOptions.map((optionText: string, index: number) => ({
+            postId,
+            text: optionText,
+            position: index,
+            votesCount: 0,
+          })),
+        });
+      }
+
+      // Update poll settings
+      if (pollExpiresAt !== undefined) {
+        updateData.pollExpiresAt = pollExpiresAt ? new Date(pollExpiresAt) : null;
+      }
+      if (pollIsAnonymous !== undefined) {
+        updateData.pollIsAnonymous = pollIsAnonymous === true || pollIsAnonymous === 'true';
+      }
+      if (pollAllowMultiple !== undefined) {
+        updateData.pollAllowMultiple = pollAllowMultiple === true || pollAllowMultiple === 'true';
+      }
+      if (pollMaxChoices !== undefined) {
+        updateData.pollMaxChoices = pollMaxChoices ? parseInt(pollMaxChoices as string) : null;
+      }
+    }
+
     const updatedPost = await prisma.post.update({
       where: { id: postId },
       data: updateData,
@@ -606,6 +662,9 @@ export const updatePost = async (req: Request, res: Response) => {
               select: { khmerName: true },
             },
           },
+        },
+        pollOptions: {
+          orderBy: { position: 'asc' },
         },
         _count: {
           select: { likes: true, comments: true },
@@ -824,7 +883,6 @@ export const getComments = async (req: Request, res: Response) => {
           postId: true,
           authorId: true,
           parentId: true,
-          isEdited: true,
           // ✅ Optimized author selection
           author: {
             select: {
@@ -850,7 +908,6 @@ export const getComments = async (req: Request, res: Response) => {
               postId: true,
               authorId: true,
               parentId: true,
-              isEdited: true,
               author: {
                 select: {
                   id: true,
@@ -911,7 +968,6 @@ export const getComments = async (req: Request, res: Response) => {
           postId: reply.postId,
           authorId: reply.authorId,
           parentId: reply.parentId,
-          isEdited: reply.isEdited,
           author: reply.author,
           reactionCounts: { LIKE: reply._count.reactions, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 },
           userReaction: replyUserReaction,
@@ -927,7 +983,6 @@ export const getComments = async (req: Request, res: Response) => {
         postId: comment.postId,
         authorId: comment.authorId,
         parentId: comment.parentId,
-        isEdited: comment.isEdited,
         author: comment.author,
         replies: enrichedReplies,
         reactionCounts: { LIKE: comment._count.reactions, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   MoreVertical,
@@ -29,6 +30,7 @@ export default function PostHeader({
   onBack,
   onPostDeleted,
 }: PostHeaderProps) {
+  const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -47,7 +49,7 @@ export default function PostHeader({
   };
 
   const handleEdit = () => {
-    toast("Edit coming soon!");
+    router.push(`/feed/edit/${postId}`);
     setShowMenu(false);
   };
 
