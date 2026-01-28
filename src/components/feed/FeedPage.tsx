@@ -17,6 +17,7 @@ import PostCard from "./PostCard";
 import PostCardSkeleton from "./PostCardSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import StunityLoader from "@/components/common/StunityLoader";
+import { socketClient } from "@/lib/socket";
 
 interface FeedPageProps {
   showCreatePost?: boolean;
@@ -98,6 +99,59 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
   const handlePostDeleted = useCallback((postId: string) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }, []);
+
+  // Real-time post updates via Socket.IO
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const handlePostUpdate = (data: {
+      postId: string;
+      likesCount?: number;
+      commentsCount?: number;
+      type: "like" | "unlike" | "comment";
+      userId: string;
+    }) => {
+      console.log("📬 Post update received:", data);
+
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === data.postId) {
+            const updates: Partial<Post> = {};
+
+            // Update like count
+            if (data.likesCount !== undefined) {
+              updates.likesCount = data.likesCount;
+            }
+
+            // Update comment count
+            if (data.commentsCount !== undefined) {
+              updates.commentsCount = data.commentsCount;
+            }
+
+            // Update isLiked status if this user performed the action
+            if (data.userId === currentUser.id) {
+              if (data.type === "like") {
+                updates.isLiked = true;
+              } else if (data.type === "unlike") {
+                updates.isLiked = false;
+              }
+            }
+
+            return { ...post, ...updates };
+          }
+          return post;
+        })
+      );
+    };
+
+    // Listen for post updates
+    socketClient.on("post:updated", handlePostUpdate);
+
+    // Cleanup
+    return () => {
+      socketClient.off("post:updated", handlePostUpdate);
+    };
+  }, [currentUser]);
 
   // Prefetch next page (80% scroll threshold)
   const prefetchNextPage = useCallback(() => {

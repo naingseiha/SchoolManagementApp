@@ -5,21 +5,28 @@ import { Bell, X, CheckCheck, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import NotificationItem from "./NotificationItem";
 import NotificationSettings from "./NotificationSettings";
+import NotificationToast from "./NotificationToast";
 import { Notification } from "@/types/notification";
 import * as notificationsApi from "@/lib/api/notifications";
+import { socketClient } from "@/lib/socket";
+import { useAuth } from "@/context/AuthContext";
 
 interface NotificationBellProps {
   onNotificationClick?: (notification: Notification) => void;
 }
 
 export default function NotificationBell({ onNotificationClick }: NotificationBellProps) {
+  const { currentUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hasNewNotification, setHasNewNotification] = useState(false);
+  const [toastNotification, setToastNotification] = useState<Notification | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Fetch notifications from API
   const fetchNotifications = async () => {
@@ -56,14 +63,69 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
     fetchNotifications();
   }, []);
 
-  // Real-time polling - check for new notifications every 30 seconds
+  // Real-time Socket.IO event listener for new notifications
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 30000); // 30 seconds
+    if (!currentUser) return;
 
-    return () => clearInterval(interval);
-  }, []);
+    // Handle new notification event from Socket.IO
+    const handleNewNotification = (notification: any) => {
+      console.log("📬 New notification received via Socket.IO:", notification);
+
+      // Map backend notification to frontend format
+      const mappedNotification: Notification = {
+        id: notification.id,
+        type: notification.type as any,
+        title: notification.title,
+        message: notification.message,
+        read: notification.isRead || false,
+        createdAt: notification.createdAt,
+        actor: notification.actor ? {
+          id: notification.actor.id,
+          name: `${notification.actor.firstName} ${notification.actor.lastName}`,
+          avatar: notification.actor.profilePictureUrl,
+        } : undefined,
+        link: notification.link,
+      };
+
+      // Add new notification to the top of the list
+      setNotifications((prev) => [mappedNotification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
+      setHasNewNotification(true);
+
+      // Show toast notification
+      setToastNotification(mappedNotification);
+
+      // Play notification sound
+      playNotificationSound();
+
+      // Show visual indicator for 3 seconds
+      setTimeout(() => setHasNewNotification(false), 3000);
+    };
+
+    // Listen to the Socket.IO event
+    socketClient.on("notification:new", handleNewNotification);
+
+    // Cleanup listener on unmount
+    return () => {
+      socketClient.off("notification:new", handleNewNotification);
+    };
+  }, [currentUser]);
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      // Create audio element if it doesn't exist
+      if (!audioRef.current) {
+        audioRef.current = new Audio("/sounds/notification.mp3");
+        audioRef.current.volume = 0.5;
+      }
+      audioRef.current.play().catch((error) => {
+        console.log("Could not play notification sound:", error);
+      });
+    } catch (error) {
+      console.log("Notification sound not available");
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -150,6 +212,10 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        animate={hasNewNotification ? {
+          rotate: [0, -15, 15, -15, 15, 0],
+          transition: { duration: 0.5 }
+        } : {}}
         className="relative p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       >
         <Bell className="w-6 h-6" />
@@ -159,25 +225,25 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1.5"
+            className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1.5 shadow-lg"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </motion.div>
         )}
 
         {/* Pulse animation for new notifications */}
-        {unreadCount > 0 && (
+        {hasNewNotification && (
           <motion.div
             animate={{
-              scale: [1, 1.2, 1],
-              opacity: [0.5, 0, 0.5]
+              scale: [1, 1.5, 1.5, 1.5, 1],
+              opacity: [0.7, 0, 0, 0, 0.7]
             }}
             transition={{
-              duration: 2,
-              repeat: Infinity,
+              duration: 1,
+              repeat: 3,
               ease: "easeInOut"
             }}
-            className="absolute inset-0 rounded-full bg-red-500"
+            className="absolute inset-0 rounded-full bg-blue-500"
           />
         )}
       </motion.button>
@@ -288,6 +354,12 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
       {showSettings && (
         <NotificationSettings onClose={() => setShowSettings(false)} />
       )}
+
+      {/* Toast Notification */}
+      <NotificationToast
+        notification={toastNotification}
+        onClose={() => setToastNotification(null)}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../config/database";
 import { storageService } from "../services/storage.service";
 import { socialNotificationService } from "../services/social-notification.service";
+import { socketService } from "../services/socket.service";
 
 /**
  * Create a new post
@@ -569,6 +570,14 @@ export const toggleLike = async (req: Request, res: Response) => {
       ]);
       isLiked = false;
       likesCount = post.likesCount - 1;
+
+      // Broadcast post update to all connected clients
+      socketService.broadcast("post:updated", {
+        postId,
+        likesCount,
+        type: "unlike",
+        userId,
+      });
     } else {
       // Like
       await prisma.$transaction([
@@ -590,6 +599,14 @@ export const toggleLike = async (req: Request, res: Response) => {
       if (post.authorId !== userId) {
         socialNotificationService.notifyPostLike(postId, userId!).catch(console.error);
       }
+
+      // Broadcast post update to all connected clients
+      socketService.broadcast("post:updated", {
+        postId,
+        likesCount,
+        type: "like",
+        userId,
+      });
     }
 
     res.json({
@@ -880,6 +897,14 @@ export const addComment = async (req: Request, res: Response) => {
     if (post.authorId !== userId) {
       socialNotificationService.notifyPostComment(postId, userId!, comment.id).catch(console.error);
     }
+
+    // Broadcast post comment count update
+    socketService.broadcast("post:updated", {
+      postId,
+      commentsCount: post.commentsCount + 1,
+      type: "comment",
+      userId,
+    });
 
     res.status(201).json({
       success: true,

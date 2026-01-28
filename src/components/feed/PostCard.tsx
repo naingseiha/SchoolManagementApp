@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Heart,
@@ -51,6 +51,8 @@ import PollCard from "./PollCard";
 import CommentsModal from "@/components/comments/CommentsModal";
 import GradientAvatar from "@/components/common/GradientAvatar";
 import KnowledgePoints from "./KnowledgePoints";
+import { socketClient } from "@/lib/socket";
+import { useAuth } from "@/context/AuthContext";
 
 interface PostCardProps {
   post: Post;
@@ -86,8 +88,10 @@ export default function PostCard({
   onProfileClick,
 }: PostCardProps) {
   const router = useRouter();
+  const { currentUser } = useAuth();
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [commentsCount, setCommentsCount] = useState(post.commentsCount);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -97,6 +101,45 @@ export default function PostCard({
   const [showCommentsModal, setShowCommentsModal] = useState(false);
 
   const isOwnPost = currentUserId === post.authorId;
+
+  // Listen for real-time post updates
+  useEffect(() => {
+    const handlePostUpdate = (data: {
+      postId: string;
+      likesCount?: number;
+      commentsCount?: number;
+      type: "like" | "unlike" | "comment";
+      userId: string;
+    }) => {
+      // Only update if this is the same post
+      if (data.postId !== post.id) return;
+
+      // Update like count
+      if (data.likesCount !== undefined) {
+        setLikesCount(data.likesCount);
+      }
+
+      // Update comment count
+      if (data.commentsCount !== undefined) {
+        setCommentsCount(data.commentsCount);
+      }
+
+      // Update isLiked status if this user performed the action
+      if (currentUser && data.userId === currentUser.id) {
+        if (data.type === "like") {
+          setIsLiked(true);
+        } else if (data.type === "unlike") {
+          setIsLiked(false);
+        }
+      }
+    };
+
+    socketClient.on("post:updated", handlePostUpdate);
+
+    return () => {
+      socketClient.off("post:updated", handlePostUpdate);
+    };
+  }, [post.id, currentUser]);
 
   const handlePostClick = (e: React.MouseEvent) => {
     // Don't navigate if clicking on interactive elements
@@ -604,7 +647,7 @@ export default function PostCard({
             >
               <MessageCircle className="w-5 h-5 text-gray-700" />
               <span className="font-semibold text-gray-900">
-                {post.commentsCount}
+                {commentsCount}
               </span>
             </button>
 

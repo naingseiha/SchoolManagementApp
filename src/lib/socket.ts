@@ -1,6 +1,7 @@
 import { io, Socket } from "socket.io-client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+// Remove /api suffix from API URL for Socket.IO connection
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api").replace(/\/api$/, "");
 
 class SocketClient {
   private socket: Socket | null = null;
@@ -14,6 +15,8 @@ class SocketClient {
       console.log("Socket already connected");
       return;
     }
+
+    console.log("🔌 Connecting to Socket.IO server:", API_BASE_URL);
 
     this.socket = io(API_BASE_URL, {
       auth: {
@@ -34,7 +37,8 @@ class SocketClient {
     });
 
     this.socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error.message);
+      console.error("❌ Socket connection error:", error.message);
+      console.error("   Trying to connect to:", API_BASE_URL);
     });
 
     // Re-attach all listeners
