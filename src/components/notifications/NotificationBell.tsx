@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import NotificationItem from "./NotificationItem";
 import NotificationSettings from "./NotificationSettings";
 import { Notification } from "@/types/notification";
+import * as notificationsApi from "@/lib/api/notifications";
 
 interface NotificationBellProps {
   onNotificationClick?: (notification: Notification) => void;
@@ -16,81 +17,52 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
   const [showSettings, setShowSettings] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Mock notifications - Replace with API call
-  useEffect(() => {
-    setTimeout(() => {
-      setNotifications([
-        {
-          id: "1",
-          type: "LIKE",
-          title: "New Like",
-          message: "liked your post about Mathematics",
-          read: false,
-          createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
-          actor: {
-            id: "user1",
-            name: "សុភា រដ្ឋ",
-          },
-          post: {
-            id: "post1",
-            content: "Just finished an amazing lecture on advanced calculus..."
-          },
-          link: "/feed#post1"
-        },
-        {
-          id: "2",
-          type: "COMMENT",
-          title: "New Comment",
-          message: "commented on your post",
-          read: false,
-          createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
-          actor: {
-            id: "user2",
-            name: "David Chen"
-          },
-          post: {
-            id: "post2",
-            content: "This is very helpful! Thanks for sharing."
-          },
-          link: "/feed#post2"
-        },
-        {
-          id: "3",
-          type: "POLL_RESULT",
-          title: "Poll Ended",
-          message: "The poll you voted in has ended. See results!",
-          read: true,
-          createdAt: new Date(Date.now() - 60 * 60000).toISOString(),
-          link: "/feed#poll1"
-        },
-        {
-          id: "4",
-          type: "MENTION",
-          title: "New Mention",
-          message: "mentioned you in a post",
-          read: true,
-          createdAt: new Date(Date.now() - 2 * 60 * 60000).toISOString(),
-          actor: {
-            id: "user3",
-            name: "Teacher John"
-          },
-          link: "/feed#post4"
-        },
-        {
-          id: "5",
-          type: "SYSTEM",
-          title: "Profile Complete!",
-          message: "Congratulations! You've completed your profile to 100%",
-          read: true,
-          createdAt: new Date(Date.now() - 24 * 60 * 60000).toISOString(),
-          link: "/profile"
-        }
-      ]);
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    try {
+      const response = await notificationsApi.getNotifications({ page: 1, limit: 20 });
+
+      // Map backend response to frontend format
+      const mappedNotifications: Notification[] = response.data.map((notif: any) => ({
+        id: notif.id,
+        type: notif.type as any,
+        title: notif.title,
+        message: notif.message,
+        read: notif.isRead,
+        createdAt: notif.createdAt,
+        actor: notif.actor ? {
+          id: notif.actor.id,
+          name: `${notif.actor.firstName} ${notif.actor.lastName}`,
+          avatar: notif.actor.profilePictureUrl,
+        } : undefined,
+        link: notif.link,
+      }));
+
+      setNotifications(mappedNotifications);
+      setUnreadCount(response.unreadCount);
       setLoading(false);
-    }, 500);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Real-time polling - check for new notifications every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   // Close dropdown when clicking outside
@@ -112,30 +84,55 @@ export default function NotificationBell({ onNotificationClick }: NotificationBe
     }
   }, [isOpen]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationsApi.markAllNotificationsAsRead();
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+    }
   };
 
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationsApi.markNotificationAsRead(id);
+      setNotifications(notifications.map(n =>
+        n.id === id ? { ...n, read: true } : n
+      ));
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+    }
   };
 
   const handleMarkAsUnread = (id: string) => {
-    setNotifications(notifications.map(n => 
+    // Optimistic update
+    setNotifications(notifications.map(n =>
       n.id === id ? { ...n, read: false } : n
     ));
+    setUnreadCount(unreadCount + 1);
   };
 
-  const handleDelete = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      await notificationsApi.deleteNotification(id);
+      const notification = notifications.find(n => n.id === id);
+      setNotifications(notifications.filter(n => n.id !== id));
+
+      // Update unread count if deleted notification was unread
+      if (notification && !notification.read) {
+        setUnreadCount(Math.max(0, unreadCount - 1));
+      }
+    } catch (error) {
+      console.error("Failed to delete notification:", error);
+    }
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    handleMarkAsRead(notification.id);
+    if (!notification.read) {
+      handleMarkAsRead(notification.id);
+    }
     if (onNotificationClick) {
       onNotificationClick(notification);
     }

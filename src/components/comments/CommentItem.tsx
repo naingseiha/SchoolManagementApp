@@ -22,6 +22,7 @@ import {
   type ReactionType,
 } from "@/lib/api/feed";
 import CommentReactions from "./CommentReactions";
+import RichText from "./RichText";
 
 interface CommentItemProps {
   comment: Comment;
@@ -172,7 +173,7 @@ export default function CommentItem({
             </div>
           ) : (
             <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap break-words">
-              {comment.content}
+              <RichText text={comment.content} />
             </p>
           )}
 

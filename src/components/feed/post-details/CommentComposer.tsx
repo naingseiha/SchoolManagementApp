@@ -6,6 +6,11 @@ import { Send, X, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import GradientAvatar from "@/components/common/GradientAvatar";
+import { useMentions } from "@/hooks/useMentions";
+import { useTextFormatting } from "@/hooks/useTextFormatting";
+import MentionSuggestions from "@/components/comments/MentionSuggestions";
+import FormattingToolbar from "@/components/comments/FormattingToolbar";
+import { AnimatePresence } from "framer-motion";
 
 interface CommentComposerProps {
   postId: string;
@@ -27,7 +32,23 @@ export default function CommentComposer({
   const { user } = useAuth();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mentionedUsers, setMentionedUsers] = useState<Array<{ id: string; name: string }>>([]);
+  const [showToolbar, setShowToolbar] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Mention functionality
+  const mentions = useMentions(textareaRef, {
+    onMention: (userId, userName) => {
+      setMentionedUsers((prev) => [...prev, { id: userId, name: userName }]);
+    },
+  });
+
+  // Formatting functionality
+  const formatting = useTextFormatting({
+    textareaRef,
+    value: content,
+    onChange: setContent,
+  });
 
   useEffect(() => {
     if (autoFocus && textareaRef.current) {
@@ -73,12 +94,26 @@ export default function CommentComposer({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle mention navigation first
+    const mentionHandled = mentions.handleKeyDown(e, content, setContent);
+    if (mentionHandled) return;
+
+    // Handle formatting shortcuts (Ctrl+B, Ctrl+I, etc.)
+    const formattingHandled = formatting.handleKeyDown(e);
+    if (formattingHandled) return;
+
     // Submit on Cmd/Ctrl + Enter
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       handleSubmit(e);
     }
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setContent(newValue);
+    mentions.handleInput(newValue);
   };
 
   const getDisplayName = () => {
@@ -115,18 +150,43 @@ export default function CommentComposer({
         </div>
 
         {/* Input Area */}
-        <div className="flex-1">
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            className="w-full px-4 py-3 bg-white md:bg-gray-100 border border-gray-200 md:border-0 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
-            rows={1}
-            maxLength={500}
-            disabled={isSubmitting}
-          />
+        <div className="flex-1 relative">
+          <div className={`rounded-xl border ${showToolbar ? 'border-blue-500' : 'border-gray-200 md:border-0'} bg-white md:bg-gray-100 overflow-hidden transition-all`}>
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleContentChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setShowToolbar(true)}
+              onBlur={() => {
+                // Delay to allow clicking toolbar buttons
+                setTimeout(() => setShowToolbar(false), 200);
+              }}
+              placeholder={placeholder}
+              className="w-full px-4 py-3 bg-transparent resize-none focus:outline-none text-sm"
+              rows={1}
+              maxLength={500}
+              disabled={isSubmitting}
+            />
+
+            {/* Formatting Toolbar */}
+            <FormattingToolbar
+              onFormat={formatting.applyFormat}
+              show={showToolbar}
+            />
+          </div>
+
+          {/* Mention Suggestions */}
+          <AnimatePresence>
+            {mentions.showSuggestions && (
+              <MentionSuggestions
+                suggestions={mentions.suggestions}
+                selectedIndex={mentions.selectedIndex}
+                onSelect={(user) => mentions.insertMention(user, content, setContent)}
+                position="top"
+              />
+            )}
+          </AnimatePresence>
 
           {/* Actions */}
           <div className="flex items-center justify-between mt-2">

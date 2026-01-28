@@ -17,6 +17,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 import GradientAvatar from "@/components/common/GradientAvatar";
 import CommentComposer from "./CommentComposer";
+import RichText from "@/components/comments/RichText";
 
 interface CommentItemProps {
   comment: Comment;
@@ -189,7 +190,7 @@ export default function CommentItem({
 
             {/* Comment Text */}
             <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap mb-3">
-              {comment.content}
+              <RichText text={comment.content} />
             </p>
 
             {/* Actions */}
