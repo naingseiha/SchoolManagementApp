@@ -667,6 +667,7 @@ export const getComments = async (req: Request, res: Response) => {
             },
           },
           replies: {
+            take: 5, // Only load first 5 replies for performance
             orderBy: { createdAt: "asc" },
             include: {
               author: {
@@ -683,6 +684,9 @@ export const getComments = async (req: Request, res: Response) => {
               },
               reactions: true,
             },
+          },
+          _count: {
+            select: { replies: true },
           },
           reactions: true,
         },
@@ -733,13 +737,13 @@ export const getComments = async (req: Request, res: Response) => {
         };
       });
 
-      const { reactions, replies, ...commentWithoutReactions } = comment;
+      const { reactions, replies, _count, ...commentWithoutReactions } = comment as any;
       return {
         ...commentWithoutReactions,
         reactionCounts,
         userReaction,
         replies: enrichedReplies,
-        repliesCount: enrichedReplies.length,
+        repliesCount: _count?.replies || enrichedReplies.length,
       };
     });
 
@@ -903,6 +907,13 @@ export const addComment = async (req: Request, res: Response) => {
       postId,
       commentsCount: post.commentsCount + 1,
       type: "comment",
+      userId,
+    });
+
+    // Broadcast new comment to all users viewing this post
+    socketService.broadcast("comment:added", {
+      postId,
+      comment,
       userId,
     });
 

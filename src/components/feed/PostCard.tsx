@@ -48,7 +48,7 @@ import {
 } from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
 import PollCard from "./PollCard";
-import CommentsModal from "@/components/comments/CommentsModal";
+import CommentsDrawer from "@/components/comments/CommentsDrawer";
 import GradientAvatar from "@/components/common/GradientAvatar";
 import KnowledgePoints from "./KnowledgePoints";
 import { socketClient } from "@/lib/socket";
@@ -679,11 +679,11 @@ export default function PostCard({
       </div>
 
       {/* Comments Modal */}
-      <CommentsModal
+      <CommentsDrawer
         postId={post.id}
         isOpen={showCommentsModal}
         onClose={() => setShowCommentsModal(false)}
-        currentUserId={currentUserId}
+        initialCommentsCount={commentsCount}
       />
     </article>
   );

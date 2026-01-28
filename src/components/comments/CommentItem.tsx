@@ -122,9 +122,17 @@ export default function CommentItem({
       <div className="flex gap-3">
         {/* Avatar */}
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-white" />
-          </div>
+          {comment.author.profilePictureUrl ? (
+            <img
+              src={comment.author.profilePictureUrl}
+              alt={getAuthorName()}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-white" />
+            </div>
+          )}
         </div>
 
         {/* Comment Content */}
