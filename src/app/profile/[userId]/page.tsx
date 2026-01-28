@@ -8,13 +8,13 @@ import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import FeedHeader from "@/components/feed/FeedHeader";
 
 export default function ProfileRoute({ params }: { params: { userId: string } }) {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, isLoading } = useAuth(); // ✅ FIXED: Use isLoading
   const router = useRouter();
 
   // Check if viewing own profile
   const isOwnProfile = currentUser?.id === params.userId;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>

@@ -1,5 +1,7 @@
 // Profile API Client for social media features
 
+import { apiCache, generateCacheKey } from "../cache";
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
@@ -112,10 +114,19 @@ export const getMyProfile = async (): Promise<ProfileData> => {
 
 /**
  * Get user profile by ID
+ * Cached for 60 seconds for better performance
  */
 export const getUserProfile = async (userId: string): Promise<ProfileData> => {
-  const response = await authFetch(`/profile/${userId}`);
-  return response.data;
+  const cacheKey = generateCacheKey("profile", { userId });
+  
+  return apiCache.getOrFetch(
+    cacheKey,
+    async () => {
+      const response = await authFetch(`/profile/${userId}`);
+      return response.data;
+    },
+    60 * 1000 // 60 second TTL
+  );
 };
 
 /**
@@ -143,6 +154,14 @@ export const uploadProfilePicture = async (file: File): Promise<{
   }
 
   const result = await response.json();
+  
+  // Invalidate profile cache after update
+  const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : null;
+  if (userId) {
+    const cacheKey = generateCacheKey("profile", { userId });
+    apiCache.invalidate(cacheKey);
+  }
+  
   return result.data;
 };
 
@@ -155,6 +174,15 @@ export const deleteProfilePicture = async (): Promise<{
   const response = await authFetch("/profile/picture", {
     method: "DELETE",
   });
+  
+  // Invalidate profile cache after deletion
+  const token = getAuthToken();
+  const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : null;
+  if (userId) {
+    const cacheKey = generateCacheKey("profile", { userId });
+    apiCache.invalidate(cacheKey);
+  }
+  
   return response.data;
 };
 
@@ -183,6 +211,14 @@ export const uploadCoverPhoto = async (file: File): Promise<{
   }
 
   const result = await response.json();
+  
+  // Invalidate profile cache after update
+  const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : null;
+  if (userId) {
+    const cacheKey = generateCacheKey("profile", { userId });
+    apiCache.invalidate(cacheKey);
+  }
+  
   return result.data;
 };
 
@@ -195,6 +231,15 @@ export const deleteCoverPhoto = async (): Promise<{
   const response = await authFetch("/profile/cover", {
     method: "DELETE",
   });
+  
+  // Invalidate profile cache after deletion
+  const token = getAuthToken();
+  const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : null;
+  if (userId) {
+    const cacheKey = generateCacheKey("profile", { userId });
+    apiCache.invalidate(cacheKey);
+  }
+  
   return response.data;
 };
 
@@ -231,6 +276,15 @@ export const updateBio = async (data: {
     },
     body: JSON.stringify(data),
   });
+  
+  // Invalidate profile cache after update
+  const token = getAuthToken();
+  const userId = token ? JSON.parse(atob(token.split('.')[1])).userId : null;
+  if (userId) {
+    const cacheKey = generateCacheKey("profile", { userId });
+    apiCache.invalidate(cacheKey);
+  }
+  
   return response.data;
 };
 

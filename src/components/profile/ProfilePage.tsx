@@ -20,6 +20,7 @@ import EducatorLevel from "./teacher/EducatorLevel";
 import EditAvatarModal from "./EditAvatarModal";
 import EditCoverModal from "./EditCoverModal";
 import EditProfileModal from "./EditProfileModal";
+import ProfileLoadingSkeleton from "./ProfileLoadingSkeleton";
 import { getUserProfile } from "@/lib/api/profile";
 import { useAuth } from "@/context/AuthContext";
 
@@ -188,24 +189,21 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <ProfileLoadingSkeleton />;
   }
 
   if (!profile || !profile.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Profile Not Found</h2>
-          <p className="text-gray-500">The user profile you're looking for doesn't exist.</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md"
+        >
+          <div className="text-6xl mb-4">😔</div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">Profile Not Found</h3>
+          <p className="text-gray-600">The profile you're looking for doesn't exist or has been removed.</p>
+        </motion.div>
       </div>
     );
   }

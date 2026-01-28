@@ -438,6 +438,15 @@ export const getUserProfile = async (req: Request, res: Response) => {
             following: true,
           },
         },
+        // Combine follow check into main query
+        followers: currentUserId && currentUserId !== targetUserId ? {
+          where: {
+            followerId: currentUserId,
+          },
+          select: {
+            followerId: true,
+          },
+        } : false,
       },
     });
 
@@ -457,26 +466,18 @@ export const getUserProfile = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if current user is following this user
-    let isFollowing = false;
-    if (currentUserId && currentUserId !== targetUserId) {
-      const follow = await prisma.follow.findUnique({
-        where: {
-          followerId_followingId: {
-            followerId: currentUserId,
-            followingId: targetUserId,
-          },
-        },
-      });
-      isFollowing = !!follow;
-    }
+    // Check if current user is following (from included data)
+    const isFollowing = user.followers && user.followers.length > 0;
+    
+    // Remove followers array from response (we only needed it for the check)
+    const { followers, ...userData } = user;
 
     res.json({
       success: true,
       data: {
-        ...user,
+        ...userData,
         isOwnProfile,
-        isFollowing,
+        isFollowing: !!isFollowing,
         postsCount: user._count.posts,
         followersCount: user._count.followers,
         followingCount: user._count.following,
