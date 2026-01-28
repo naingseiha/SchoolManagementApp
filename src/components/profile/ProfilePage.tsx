@@ -33,34 +33,34 @@ interface StatsCardProps {
 
 function StatsCard({ icon, value, label, color }: StatsCardProps) {
   const colorClasses = {
-    purple: "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800",
-    blue: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
-    green: "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
-    orange: "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800",
-    pink: "bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800",
-    yellow: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800",
-    teal: "bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800"
+    purple: "from-purple-500/10 to-pink-500/10 border-purple-200 dark:border-purple-800 hover:shadow-purple-500/20",
+    blue: "from-blue-500/10 to-cyan-500/10 border-blue-200 dark:border-blue-800 hover:shadow-blue-500/20",
+    green: "from-green-500/10 to-emerald-500/10 border-green-200 dark:border-green-800 hover:shadow-green-500/20",
+    orange: "from-orange-500/10 to-red-500/10 border-orange-200 dark:border-orange-800 hover:shadow-orange-500/20",
+    pink: "from-pink-500/10 to-rose-500/10 border-pink-200 dark:border-pink-800 hover:shadow-pink-500/20",
+    yellow: "from-yellow-500/10 to-orange-500/10 border-yellow-200 dark:border-yellow-800 hover:shadow-yellow-500/20",
+    teal: "from-teal-500/10 to-cyan-500/10 border-teal-200 dark:border-teal-800 hover:shadow-teal-500/20"
   };
 
-  const bgColor = colorClasses[color] || colorClasses.purple;
+  const gradientClass = colorClasses[color] || colorClasses.purple;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      whileHover={{ y: -4 }}
-      className={`${bgColor} rounded-xl p-4 border transition-all cursor-default`}
+      whileHover={{ y: -6, scale: 1.02 }}
+      className={`bg-gradient-to-br ${gradientClass} rounded-2xl p-5 border-2 shadow-md hover:shadow-xl transition-all cursor-pointer`}
     >
       <div className="flex items-center gap-3">
-        <div className="text-3xl">{icon}</div>
+        <div className="text-4xl drop-shadow-sm">{icon}</div>
         <div className="flex-1">
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="text-2xl font-black text-gray-900 dark:text-white">
             {value}
-        </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+          </div>
+          <div className="text-xs text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wide">
             {label}
-        </div>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -257,9 +257,14 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
   ];
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-900 min-h-screen pb-20">
-      {/* Profile Header */}
-      <ProfileHeader
+    <div className="relative bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 min-h-screen pb-32 overflow-hidden">
+      {/* Subtle decorative background */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-purple-100/30 to-transparent dark:from-purple-900/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-pink-100/30 to-transparent dark:from-pink-900/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="relative z-10">
+        {/* Profile Header */}
+        <ProfileHeader
         user={{
           ...user,
           bio: user.bio,
@@ -275,23 +280,27 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
         onEditProfile={() => setShowEditProfile(true)}
         onEditCover={() => setShowEditCover(true)}
         onEditAvatar={() => setShowEditAvatar(true)}
-      />
+        />
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 mt-10">
-        {/* Performance Highlights - Simplified clean design */}
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="mb-10"
-          >
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-purple-600" />
-            Performance Highlights
-          </h2>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto px-6 mt-10">
+          {/* Performance Highlights - Polished design */}
+          <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-lg">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Performance Highlights
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {role === "student" ? (
               <>
                 <StatsCard icon="📚" value={12} label="Courses" color="purple" />
@@ -311,12 +320,12 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
                 <StatsCard icon="🏆" value={stats.certifications} label="Certifications" color="pink" />
               </>
             )}
-        </div>
-        </motion.div>
+          </div>
+          </motion.div>
 
-        {/* Stats Grid */}
-        <div className="mb-10">
-          <RoleBasedStats
+          {/* Stats Grid */}
+          <div className="mb-12">
+            <RoleBasedStats
             stats={stats}
             role={role}
             additionalStats={
@@ -333,39 +342,41 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
                     teachingHours: mockTeachingData.teachingHours
                   }
             }
-          />
-        </div>
+            />
+          </div>
 
-        {/* Tabs Navigation */}
-        <motion.div
+          {/* Tabs Navigation */}
+          <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-2 mb-8"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-3 mb-10 border border-gray-100 dark:border-gray-700"
         >
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
-                <button
+                <motion.button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold transition-all ${
                     activeTab === tab.id
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-900/20 dark:hover:to-pink-900/20"
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  {tab.label}
-                </button>
+                  <span>{tab.label}</span>
+                </motion.button>
               );
             })}
           </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Tab Content */}
-        <motion.div
+          {/* Tab Content */}
+          <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -513,11 +524,11 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
           {activeTab === "recommendations" && (
             <RecommendationsSection userId={userId} isOwnProfile={isOwnProfile} />
           )}
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
 
-      {/* Edit Modals */}
-      <AnimatePresence>
+        {/* Edit Modals */}
+        <AnimatePresence>
         {showEditAvatar && (
           <EditAvatarModal
             currentAvatar={user.profilePictureUrl}
@@ -549,7 +560,8 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
             onSuccess={handleProfileSuccess}
           />
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

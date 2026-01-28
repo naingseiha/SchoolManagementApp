@@ -88,10 +88,14 @@ export default function RoleBasedStats({ stats, role, additionalStats = {} }: Ro
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-purple-600" />
-            Learning Performance
-          </h3>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shadow-md">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              Learning Performance
+            </h3>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               icon={Target}
@@ -136,17 +140,19 @@ export default function RoleBasedStats({ stats, role, additionalStats = {} }: Ro
               transition={{ duration: 0.4, delay: 0.7 }}
               className="mt-4"
             >
-              <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white shadow-xl">
-                <div className="flex items-center justify-between">
+              <div className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-2xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12" />
+                <div className="relative flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium opacity-90 mb-1">Overall Performance</p>
-                    <p className="text-4xl font-bold">
+                    <p className="text-sm font-semibold opacity-90 mb-2 uppercase tracking-wider">Overall Performance</p>
+                    <p className="text-5xl font-black mb-1">
                       {additionalStats.averageGrade.toFixed(1)}%
                     </p>
-                    <p className="text-sm opacity-90 mt-1">Average Grade</p>
+                    <p className="text-sm opacity-90 font-medium">Average Grade</p>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                    <TrendingUp className="w-8 h-8" />
+                  <div className="bg-white/20 backdrop-blur-md p-5 rounded-2xl shadow-lg">
+                    <TrendingUp className="w-10 h-10" />
                   </div>
                 </div>
               </div>
@@ -161,10 +167,14 @@ export default function RoleBasedStats({ stats, role, additionalStats = {} }: Ro
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Flame className="w-5 h-5 text-orange-600" />
-            Teaching Excellence
-          </h3>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg shadow-md">
+              <Flame className="w-5 h-5 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              Teaching Excellence
+            </h3>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {additionalStats.studentsTaught !== undefined && (
               <StatCard
@@ -212,20 +222,22 @@ export default function RoleBasedStats({ stats, role, additionalStats = {} }: Ro
               transition={{ duration: 0.4, delay: 0.7 }}
               className="mt-4"
             >
-              <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-6 text-white shadow-xl">
-                <div className="flex items-center justify-between">
+              <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 rounded-2xl p-8 text-white shadow-2xl">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12" />
+                <div className="relative flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium opacity-90 mb-1">Student Satisfaction</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-4xl font-bold">
+                    <p className="text-sm font-semibold opacity-90 mb-2 uppercase tracking-wider">Student Satisfaction</p>
+                    <div className="flex items-center gap-3 mb-1">
+                      <p className="text-5xl font-black">
                         {additionalStats.averageRating.toFixed(1)}
                       </p>
-                      <Star className="w-8 h-8 fill-white" />
+                      <Star className="w-10 h-10 fill-white" />
                     </div>
-                    <p className="text-sm opacity-90 mt-1">Average Rating</p>
+                    <p className="text-sm opacity-90 font-medium">Average Rating</p>
                   </div>
-                  <div className="bg-white/20 backdrop-blur-sm p-4 rounded-xl">
-                    <Trophy className="w-8 h-8" />
+                  <div className="bg-white/20 backdrop-blur-md p-5 rounded-2xl shadow-lg">
+                    <Trophy className="w-10 h-10" />
                   </div>
                 </div>
               </div>
