@@ -10,6 +10,7 @@ import PostContent from "./PostContent";
 import EngagementBar from "./EngagementBar";
 import CommentsSection from "./CommentsSection";
 import CommentComposer from "./CommentComposer";
+import PostDetailsLoadingSkeleton from "./PostDetailsLoadingSkeleton";
 import { AlertCircle } from "lucide-react";
 
 interface PostDetailsPageProps {
@@ -67,8 +68,9 @@ export default function PostDetailsPage({ postId }: PostDetailsPageProps) {
     setCommentsCount((prev) => prev + 1);
   };
 
+  // ✅ FIXED: Show beautiful loading skeleton instead of blank screen
   if (loading) {
-    return null; // Show loading skeleton from loading.tsx
+    return <PostDetailsLoadingSkeleton />;
   }
 
   if (error || !post) {
@@ -96,57 +98,129 @@ export default function PostDetailsPage({ postId }: PostDetailsPageProps) {
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50 overflow-hidden">
-      {/* Sticky Header */}
-      <PostHeader
-        postType={post.postType}
-        postId={post.id}
-        isOwnPost={user?.id === post.authorId}
-        onBack={handleBack}
-        onPostDeleted={() => router.push("/feed")}
-      />
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50 overflow-hidden animate-fade-in">
+      {/* Sticky Header - Slide in from top */}
+      <div className="animate-slide-down">
+        <PostHeader
+          postType={post.postType}
+          postId={post.id}
+          isOwnPost={user?.id === post.authorId}
+          onBack={handleBack}
+          onPostDeleted={() => router.push("/feed")}
+        />
+      </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        {/* Content Container */}
+        {/* Content Container - Staggered animations */}
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-4 pb-24 space-y-4">
-          {/* Author Section */}
-          <AuthorSection
-            author={post.author}
-            createdAt={post.createdAt}
-            isEdited={post.isEdited}
-            isOwnPost={user?.id === post.authorId}
-          />
+          {/* Author Section - Slide up animation */}
+          <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <AuthorSection
+              author={post.author}
+              createdAt={post.createdAt}
+              isEdited={post.isEdited}
+              isOwnPost={user?.id === post.authorId}
+            />
+          </div>
 
-          {/* Post Content */}
-          <PostContent post={post} />
+          {/* Post Content - Slide up animation */}
+          <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+            <PostContent post={post} />
+          </div>
 
-          {/* Engagement Bar */}
-          <EngagementBar
-            postId={post.id}
-            isLiked={isLiked}
-            likesCount={likesCount}
-            commentsCount={commentsCount}
-            viewsCount={viewsCount}
-            onLikeUpdate={handleLikeUpdate}
-          />
+          {/* Engagement Bar - Slide up animation */}
+          <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
+            <EngagementBar
+              postId={post.id}
+              isLiked={isLiked}
+              likesCount={likesCount}
+              commentsCount={commentsCount}
+              viewsCount={viewsCount}
+              onLikeUpdate={handleLikeUpdate}
+            />
+          </div>
 
-          {/* Comments Section */}
-          <CommentsSection
-            postId={post.id}
-            commentsCount={commentsCount}
-            onCommentAdded={handleCommentAdded}
-          />
+          {/* Comments Section - Slide up animation */}
+          <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            <CommentsSection
+              postId={post.id}
+              commentsCount={commentsCount}
+              onCommentAdded={handleCommentAdded}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Sticky Comment Composer (Mobile) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg">
+      {/* Sticky Comment Composer (Mobile) - Slide up from bottom */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg animate-slide-up-bottom">
         <CommentComposer
           postId={post.id}
           onCommentAdded={handleCommentAdded}
         />
       </div>
+
+      {/* Animation styles */}
+      <style jsx global>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slide-up-bottom {
+          from {
+            opacity: 0;
+            transform: translateY(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+
+        .animate-slide-up {
+          opacity: 0;
+          animation: slide-up 0.5s ease-out forwards;
+        }
+
+        .animate-slide-down {
+          animation: slide-down 0.4s ease-out forwards;
+        }
+
+        .animate-slide-up-bottom {
+          animation: slide-up-bottom 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

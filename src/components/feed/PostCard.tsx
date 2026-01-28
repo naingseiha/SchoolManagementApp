@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Heart,
   MessageCircle,
@@ -153,7 +154,8 @@ export default function PostCard({
     ) {
       return;
     }
-    router.push(`/feed/post/${post.id}`);
+    // ✅ FIXED: Use smooth client-side navigation instead of router.push
+    // The Link wrapper will handle navigation
   };
   const PostTypeIcon = POST_TYPE_ICONS[post.postType];
   const postTypeInfo = POST_TYPE_INFO[post.postType];
@@ -567,25 +569,25 @@ export default function PostCard({
         )}
 
         {/* Content Section - Cleaner - Clickable (except for polls) */}
-        <div 
-          className={`relative px-4 py-3 transition-colors ${
-            post.postType !== "POLL" ? "cursor-pointer hover:bg-gray-50/50" : ""
-          }`}
-          onClick={post.postType !== "POLL" ? handlePostClick : undefined}
-        >
-          {/* Title - Cleaner typography */}
-          <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1">
-            {post.content.split("\n")[0] || postTypeInfo.label}
-          </h4>
+        {post.postType !== "POLL" ? (
+          <Link 
+            href={`/feed/post/${post.id}`}
+            prefetch={true}
+            className="block relative px-4 py-3 transition-colors cursor-pointer hover:bg-gray-50/50"
+          >
+            {/* Title - Cleaner typography */}
+            <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1">
+              {post.content.split("\n")[0] || postTypeInfo.label}
+            </h4>
 
-          {/* Description */}
-          {post.content.split("\n").slice(1).join("\n") && (
-            <div>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {displayContent.split("\n").slice(1).join("\n")}
-              </p>
-              {isLongContent && (
-                <button
+            {/* Description */}
+            {post.content.split("\n").slice(1).join("\n") && (
+              <div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {displayContent.split("\n").slice(1).join("\n")}
+                </p>
+                {isLongContent && (
+                  <button
                   onClick={() => setShowFullContent(!showFullContent)}
                   className="text-gray-500 hover:text-gray-700 font-medium text-sm mt-1"
                 >
@@ -620,7 +622,58 @@ export default function PostCard({
               </button>
             </div>
           )}
-        </div>
+          </Link>
+        ) : (
+          <div className="relative px-4 py-3">
+            {/* Title - Cleaner typography */}
+            <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1">
+              {post.content.split("\n")[0] || postTypeInfo.label}
+            </h4>
+
+            {/* Description */}
+            {post.content.split("\n").slice(1).join("\n") && (
+              <div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {displayContent.split("\n").slice(1).join("\n")}
+                </p>
+                {isLongContent && (
+                  <button
+                    onClick={() => setShowFullContent(!showFullContent)}
+                    className="text-gray-500 hover:text-gray-700 font-medium text-sm mt-1"
+                  >
+                    {showFullContent ? "less" : "more"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Minimal Knowledge Points */}
+            <KnowledgePoints
+              xp={demoXP}
+              streak={demoStreak}
+              isVerified={isVerifiedUser}
+              isTrending={likesCount > 20}
+              className="mt-2"
+            />
+
+            {/* Type-Specific Content */}
+            {renderTypeSpecificContent()}
+
+            {/* Feature/Insights Buttons */}
+            {(post.postType === "ARTICLE" || post.postType === "COURSE") && (
+              <div className="flex gap-2 mt-4">
+                <button className="flex-1 py-2.5 px-3 bg-white/80 backdrop-blur-sm border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50 rounded-xl text-sm font-semibold text-gray-700 hover:text-amber-700 flex items-center justify-center gap-2 transition-all group hover:scale-105 hover:shadow-md">
+                  <Star className="w-4 h-4 group-hover:fill-amber-400 group-hover:text-amber-500 group-hover:rotate-12 transition-all" />
+                  Feature
+                </button>
+                <button className="flex-1 py-2.5 px-3 bg-white/80 backdrop-blur-sm border-2 border-blue-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl text-sm font-semibold text-gray-700 hover:text-blue-700 flex items-center justify-center gap-2 transition-all group hover:scale-105 hover:shadow-md">
+                  <BarChart3 className="w-4 h-4 group-hover:text-blue-600 group-hover:scale-110 transition-all" />
+                  Insights
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Enhanced Engagement Section - Beautiful with gradients */}
         <div className="relative px-4 pb-3 pt-2 border-t border-gray-100">

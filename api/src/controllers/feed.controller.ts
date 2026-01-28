@@ -381,6 +381,7 @@ export const getPost = async (req: Request, res: Response) => {
     const userId = req.userId;
     const { postId } = req.params;
 
+    // ✅ OPTIMIZED: Single query with all needed data
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: {
@@ -408,6 +409,26 @@ export const getPost = async (req: Request, res: Response) => {
         _count: {
           select: { likes: true, comments: true },
         },
+        // ✅ OPTIMIZED: Include like status in single query
+        likes: {
+          where: { userId: userId! },
+          select: { id: true },
+          take: 1,
+        },
+        // ✅ OPTIMIZED: Include poll options if it's a poll
+        pollOptions: {
+          orderBy: { position: 'asc' },
+          include: {
+            _count: {
+              select: { votes: true }
+            },
+            votes: {
+              where: { userId: userId! },
+              select: { id: true },
+              take: 1,
+            }
+          }
+        }
       },
     });
 
@@ -418,15 +439,18 @@ export const getPost = async (req: Request, res: Response) => {
       });
     }
 
-    // Check if user liked the post
-    const like = await prisma.like.findUnique({
-      where: {
-        postId_userId: {
-          postId,
-          userId: userId!,
-        },
-      },
-    });
+    // Format poll options
+    const formattedPollOptions = post.pollOptions?.map(option => ({
+      id: option.id,
+      text: option.text,
+      position: option.position,
+      votesCount: option._count.votes,
+    }));
+
+    // Get user's votes
+    const userVotes = post.pollOptions
+      ?.filter(option => option.votes.length > 0)
+      .map(option => option.id) || [];
 
     res.json({
       success: true,
@@ -434,7 +458,10 @@ export const getPost = async (req: Request, res: Response) => {
         ...post,
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
-        isLiked: !!like,
+        isLiked: post.likes.length > 0, // ✅ No separate query needed
+        pollOptions: formattedPollOptions,
+        userVotes,
+        totalVotes: formattedPollOptions?.reduce((sum, opt) => sum + opt.votesCount, 0),
       },
     });
   } catch (error: any) {

@@ -189,8 +189,8 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
         });
       }
 
+      // ✅ FIXED: Navigate back without forcing refresh
       router.push("/feed");
-      router.refresh();
     } catch (error) {
       console.error("Failed to update post:", error);
       alert("មានបញ្ហាក្នុងការកែសម្រួលការផ្សាយ!");

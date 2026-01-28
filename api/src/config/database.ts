@@ -65,7 +65,8 @@ let keepAliveInterval: NodeJS.Timeout | null = null;
 export const startKeepAlive = () => {
   if (keepAliveInterval) return;
 
-  console.log("🔄 Starting database keep-alive (ping every 4 minutes)");
+  // ✅ OPTIMIZED: Reduced from 4 to 3 minutes to prevent Neon cold starts (5min free tier timeout)
+  console.log("🔄 Starting database keep-alive (ping every 3 minutes)");
 
   keepAliveInterval = setInterval(async () => {
     try {
@@ -81,7 +82,7 @@ export const startKeepAlive = () => {
         console.error("❌ Reconnection failed");
       }
     }
-  }, 4 * 60 * 1000); // 4 minutes
+  }, 3 * 60 * 1000); // ✅ CHANGED: 3 minutes (was 4 minutes)
 };
 
 export const stopKeepAlive = () => {

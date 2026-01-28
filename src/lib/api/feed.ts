@@ -300,10 +300,19 @@ export const getFeedPosts = async (params?: {
 
 /**
  * Get single post by ID
+ * ✅ OPTIMIZED: Added caching for instant revisits
  */
 export const getPost = async (postId: string): Promise<Post> => {
-  const response = await authFetch(`/feed/posts/${postId}`);
-  return response.data;
+  const cacheKey = `post:${postId}`;
+  
+  return apiCache.getOrFetch(
+    cacheKey,
+    async () => {
+      const response = await authFetch(`/feed/posts/${postId}`);
+      return response.data;
+    },
+    60000 // Cache for 60 seconds
+  );
 };
 
 // Alias for consistency
