@@ -58,6 +58,7 @@ interface PostCardProps {
   post: Post;
   currentUserId?: string;
   onPostDeleted?: (postId: string) => void;
+  onPostEdited?: (post: Post) => void;
   onCommentClick?: (postId: string) => void;
   onProfileClick?: (userId: string) => void;
 }
@@ -84,6 +85,7 @@ export default function PostCard({
   post,
   currentUserId,
   onPostDeleted,
+  onPostEdited,
   onCommentClick,
   onProfileClick,
 }: PostCardProps) {
@@ -475,7 +477,10 @@ export default function PostCard({
                       <>
                         <button
                           className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700 transition-colors"
-                          onClick={() => setShowMenu(false)}
+                          onClick={() => {
+                            setShowMenu(false);
+                            onPostEdited?.(post);
+                          }}
                         >
                           <Edit className="w-4 h-4" />
                           Edit

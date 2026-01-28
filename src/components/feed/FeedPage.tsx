@@ -34,6 +34,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const selectedFilter = externalFilter || "ALL";
 
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -234,6 +235,35 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
           </div>
         )}
 
+      {/* Edit Post Modal */}
+      {editingPost && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CreatePost
+              userProfilePicture={currentUser?.profilePictureUrl || null}
+              userName={getUserName()}
+              editMode={true}
+              editPost={{
+                id: editingPost.id,
+                content: editingPost.content,
+                postType: editingPost.postType,
+                visibility: editingPost.visibility,
+                media: editingPost.media,
+                pollOptions: editingPost.pollOptions,
+              }}
+              onPostCreated={() => {
+                setEditingPost(null);
+                fetchPosts(1, true);
+              }}
+              onError={(error) => {
+                setError(error);
+                setEditingPost(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
         {/* Error */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
@@ -280,6 +310,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
                 post={post}
                 currentUserId={currentUser?.id}
                 onPostDeleted={handlePostDeleted}
+                onPostEdited={setEditingPost}
                 onProfileClick={onProfileClick}
               />
           ))}

@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import {
   createPost,
+  updatePost,
   PostType,
   PostVisibility,
   POST_TYPE_INFO,
@@ -42,6 +43,15 @@ interface CreatePostProps {
   userName: string;
   onPostCreated?: () => void;
   onError?: (error: string) => void;
+  editMode?: boolean;
+  editPost?: {
+    id: string;
+    content: string;
+    postType: PostType;
+    visibility: PostVisibility;
+    media?: string[];
+    pollOptions?: Array<{ id: string; text: string }>;
+  };
 }
 
 const POST_TYPES: {
@@ -119,18 +129,22 @@ function CreatePost({
   userName,
   onPostCreated,
   onError,
+  editMode = false,
+  editPost,
 }: CreatePostProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [content, setContent] = useState("");
-  const [postType, setPostType] = useState<PostType>("ARTICLE");
-  const [visibility, setVisibility] = useState<PostVisibility>("SCHOOL");
+  const [isExpanded, setIsExpanded] = useState(editMode); // Auto-expand if editing
+  const [content, setContent] = useState(editPost?.content || "");
+  const [postType, setPostType] = useState<PostType>(editPost?.postType || "ARTICLE");
+  const [visibility, setVisibility] = useState<PostVisibility>(editPost?.visibility || "SCHOOL");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>(editPost?.media || []);
   const [isPosting, setIsPosting] = useState(false);
   const [showVisibilitySelector, setShowVisibilitySelector] = useState(false);
 
   // Poll-specific state
-  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollOptions, setPollOptions] = useState<string[]>(
+    editPost?.pollOptions?.map(opt => opt.text) || ["", ""]
+  );
   const [pollDuration, setPollDuration] = useState<number>(7); // days
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,6 +156,12 @@ function CreatePost({
   };
 
   const handleCollapse = () => {
+    if (editMode) {
+      // In edit mode, just close the modal
+      onPostCreated?.(); // This will close the modal
+      return;
+    }
+    
     if (content.trim() || mediaFiles.length > 0) {
       if (!confirm("តើអ្នកពិតជាចង់បោះបង់ការផ្សាយនេះមែនទេ?")) return;
     }
@@ -224,7 +244,7 @@ function CreatePost({
 
   const handlePost = async () => {
     // Validation
-    if (!content.trim() && mediaFiles.length === 0) {
+    if (!content.trim() && mediaFiles.length === 0 && mediaPreviews.length === 0) {
       onError?.("សូមបញ្ចូលខ្លឹមសារឬរូបភាព");
       return;
     }
@@ -241,25 +261,34 @@ function CreatePost({
     setIsPosting(true);
 
     try {
-      const postData: any = {
-        content: content.trim(),
-        postType,
-        visibility,
-        media: mediaFiles.length > 0 ? mediaFiles : undefined,
-      };
+      if (editMode && editPost) {
+        // Update existing post
+        await updatePost(editPost.id, {
+          content: content.trim(),
+          visibility,
+        });
+      } else {
+        // Create new post
+        const postData: any = {
+          content: content.trim(),
+          postType,
+          visibility,
+          media: mediaFiles.length > 0 ? mediaFiles : undefined,
+        };
 
-      // Add poll options if POLL type
-      if (postType === "POLL") {
-        postData.pollOptions = pollOptions.filter((opt) => opt.trim());
+        // Add poll options if POLL type
+        if (postType === "POLL") {
+          postData.pollOptions = pollOptions.filter((opt) => opt.trim());
+        }
+
+        await createPost(postData);
       }
-
-      await createPost(postData);
 
       resetForm();
       onPostCreated?.();
     } catch (error: any) {
-      console.error("Failed to create post:", error);
-      onError?.(error.message || "មិនអាចបង្កើតការផ្សាយបានទេ");
+      console.error("Failed to save post:", error);
+      onError?.(error.message || "មិនអាចរក្សាទុកការផ្សាយបានទេ");
     } finally {
       setIsPosting(false);
     }
@@ -319,7 +348,7 @@ function CreatePost({
       <div className="relative px-4 py-3 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50">
         <div className="flex items-center justify-between">
           <h4 className="font-bold font-koulen text-gray-900 text-lg">
-            បង្កើតការផ្សាយ
+            {editMode ? "កែសម្រួលការផ្សាយ" : "បង្កើតការផ្សាយ"}
           </h4>
           <button
             onClick={handleCollapse}
@@ -584,18 +613,18 @@ function CreatePost({
           </span>
           <button
             onClick={handlePost}
-            disabled={isPosting || (!content.trim() && mediaFiles.length === 0)}
+            disabled={isPosting || (!content.trim() && mediaFiles.length === 0 && mediaPreviews.length === 0)}
             className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
           >
             {isPosting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>កំពុងផ្សាយ...</span>
+                <span>{editMode ? "កំពុងរក្សាទុក..." : "កំពុងផ្សាយ..."}</span>
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                <span>ផ្សាយ</span>
+                <span>{editMode ? "រក្សាទុក" : "ផ្សាយ"}</span>
               </>
             )}
           </button>
