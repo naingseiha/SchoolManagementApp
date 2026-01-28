@@ -83,18 +83,18 @@ const mockAssignments: Assignment[] = [
 ];
 
 export default function AssignmentsPage() {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, isLoading } = useAuth(); // ✅ FIXED: Use isLoading instead of loading
   const router = useRouter();
   const [assignments] = useState<Assignment[]>(mockAssignments);
   const [filter, setFilter] = useState<"all" | "pending" | "submitted" | "graded">("all");
 
   useEffect(() => {
-    if (!loading && (!currentUser || currentUser.role !== "STUDENT")) {
+    if (!isLoading && (!currentUser || currentUser.role !== "STUDENT")) {
       router.push("/feed");
     }
-  }, [currentUser, loading, router]);
+  }, [currentUser, isLoading, router]);
 
-  if (loading || !currentUser) {
+  if (isLoading || !currentUser) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>

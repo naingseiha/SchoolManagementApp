@@ -5,6 +5,7 @@ import { Comment, getComments } from "@/lib/api/feed";
 import { MessageCircle, TrendingUp, Clock, Loader2 } from "lucide-react";
 import CommentItem from "./CommentItem";
 import CommentComposer from "./CommentComposer";
+import CommentsLoadingSkeleton from "./CommentsLoadingSkeleton";
 
 interface CommentsSectionProps {
   postId: string;
@@ -42,7 +43,7 @@ export default function CommentsSection({
       const response = await getComments(postId, {
         page: reset ? 1 : page,
         limit: 10,
-        sort: sortBy,
+        sort: sortBy === "newest" ? "new" : sortBy === "oldest" ? "old" : "top",
       });
 
       if (reset) {
@@ -132,9 +133,7 @@ export default function CommentsSection({
 
       {/* Comments List */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-        </div>
+        <CommentsLoadingSkeleton />
       ) : comments.length === 0 ? (
         <div className="text-center py-12">
           <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />

@@ -419,6 +419,10 @@ export const getUserPosts = async (
 /**
  * Get comments for a post
  */
+/**
+ * Get comments for a post
+ * ✅ OPTIMIZED: Added caching for faster repeated loads
+ */
 export const getComments = async (
   postId: string,
   params?: {
@@ -427,17 +431,31 @@ export const getComments = async (
     sort?: "new" | "old" | "top";
   }
 ): Promise<CommentsResponse> => {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.set("page", params.page.toString());
-  if (params?.limit) queryParams.set("limit", params.limit.toString());
-  if (params?.sort) queryParams.set("sort", params.sort);
+  const cacheKey = generateCacheKey("comments", {
+    postId,
+    page: params?.page || 1,
+    limit: params?.limit || 20,
+    sort: params?.sort || "new",
+  });
 
-  const response = await authFetch(`/feed/posts/${postId}/comments?${queryParams.toString()}`);
-  return response;
+  return apiCache.getOrFetch(
+    cacheKey,
+    async () => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.set("page", params.page.toString());
+      if (params?.limit) queryParams.set("limit", params.limit.toString());
+      if (params?.sort) queryParams.set("sort", params.sort);
+
+      const response = await authFetch(`/feed/posts/${postId}/comments?${queryParams.toString()}`);
+      return response;
+    },
+    30000 // ✅ Cache for 30 seconds
+  );
 };
 
 /**
  * Add a comment to a post (or reply to a comment)
+ * ✅ OPTIMIZED: Invalidate cache after adding comment
  */
 export const addComment = async (
   postId: string,
@@ -451,6 +469,21 @@ export const addComment = async (
     },
     body: JSON.stringify({ content, parentId }),
   });
+
+  // ✅ Invalidate comments cache for this post
+  const cacheKeys = Array.from({ length: 10 }, (_, i) => 
+    generateCacheKey("comments", {
+      postId,
+      page: i + 1,
+      limit: 20,
+      sort: "new",
+    })
+  );
+  cacheKeys.forEach(key => apiCache.delete(key));
+
+  // ✅ Also invalidate post cache to update comment count
+  apiCache.delete(`post:${postId}`);
+
   return response.data;
 };
 
