@@ -43,6 +43,8 @@ import socialRoutes from "./routes/social.routes";
 import skillsRoutes from "./routes/skills.routes";
 import projectsRoutes from "./routes/projects.routes";
 import achievementsRoutes from "./routes/achievements.routes";
+import experiencesRoutes from "./routes/experiences.routes";
+import recommendationsRoutes from "./routes/recommendations.routes";
 import notificationRoutes from "./routes/notification.routes";
 
 // Initialize Express app
@@ -149,6 +151,8 @@ app.use("/api/feed", feedRoutes);
 app.use("/api/social", socialRoutes);
 app.use("/api/profile", skillsRoutes);
 app.use("/api/profile", projectsRoutes);
+app.use("/api/profile", experiencesRoutes);
+app.use("/api/profile", recommendationsRoutes);
 app.use("/api", achievementsRoutes);
 app.use("/api/notifications", notificationRoutes);
 

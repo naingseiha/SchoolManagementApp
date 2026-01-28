@@ -59,7 +59,7 @@ export default function PostContent({ post }: PostContentProps) {
             <PollCard
               postId={post.id}
               pollOptions={post.pollOptions}
-              userVote={post.userVote}
+              userVotes={post.userVotes || []}
               totalVotes={post.totalVotes || 0}
             />
           </div>

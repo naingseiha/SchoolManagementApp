@@ -7,7 +7,7 @@ import { votePoll, PollOption } from "@/lib/api/feed";
 interface PollCardProps {
   postId: string;
   pollOptions: PollOption[];
-  userVote: string | null;
+  userVotes: string[];
   totalVotes: number;
   onVoteSuccess?: (data: any) => void;
 }
@@ -15,27 +15,50 @@ interface PollCardProps {
 export default function PollCard({
   postId,
   pollOptions: initialOptions,
-  userVote: initialUserVote,
+  userVotes: initialUserVotes = [],
   totalVotes: initialTotalVotes,
   onVoteSuccess,
 }: PollCardProps) {
   const [pollOptions, setPollOptions] = useState(initialOptions);
-  const [userVote, setUserVote] = useState(initialUserVote);
+  const [userVotes, setUserVotes] = useState<string[]>(initialUserVotes || []);
   const [totalVotes, setTotalVotes] = useState(initialTotalVotes);
   const [isVoting, setIsVoting] = useState(false);
 
-  const hasVoted = !!userVote;
+  const hasVoted = userVotes && userVotes.length > 0;
 
   const handleVote = async (optionId: string) => {
-    if (hasVoted || isVoting) return;
+    if (isVoting) return;
+
+    // Optimistic update - update UI immediately
+    const previousOptions = [...pollOptions];
+    const previousUserVotes = [...userVotes];
+    const previousTotalVotes = totalVotes;
+
+    // Calculate new state optimistically
+    const newOptions = pollOptions.map(opt => {
+      if (userVotes.includes(opt.id)) {
+        // Remove vote from previously selected option
+        return { ...opt, votesCount: opt.votesCount - 1 };
+      } else if (opt.id === optionId) {
+        // Add vote to newly selected option
+        return { ...opt, votesCount: opt.votesCount + 1 };
+      }
+      return opt;
+    });
+
+    // Update UI immediately
+    setPollOptions(newOptions);
+    setUserVotes([optionId]);
+    // Total votes stay the same when changing vote
 
     setIsVoting(true);
     try {
       const response = await votePoll(optionId);
       
       if (response.success) {
+        // Update with actual server data
         setPollOptions(response.data.pollOptions);
-        setUserVote(response.data.userVote);
+        setUserVotes(response.data.userVotes);
         setTotalVotes(response.data.totalVotes);
         
         if (onVoteSuccess) {
@@ -44,6 +67,10 @@ export default function PollCard({
       }
     } catch (error: any) {
       console.error("Vote error:", error);
+      // Revert optimistic update on error
+      setPollOptions(previousOptions);
+      setUserVotes(previousUserVotes);
+      setTotalVotes(previousTotalVotes);
     } finally {
       setIsVoting(false);
     }
@@ -60,19 +87,21 @@ export default function PollCard({
     <div className="mt-3 space-y-2">
       {pollOptions.map((option) => {
         const percentage = getPercentage(option.votesCount);
-        const isUserVote = userVote === option.id;
+        const isUserVote = userVotes && userVotes.includes(option.id);
         const isWinner = hasVoted && option.votesCount === maxVotes && maxVotes > 0;
 
         if (hasVoted) {
-          // Show results - Clean Instagram style
+          // Show results - Clickable to change vote
           return (
-            <div
+            <button
               key={option.id}
-              className={`relative overflow-hidden rounded-xl border-2 transition-all ${
+              onClick={() => handleVote(option.id)}
+              disabled={isVoting}
+              className={`w-full relative overflow-hidden rounded-xl border-2 transition-all text-left ${
                 isUserVote
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 bg-gray-50"
-              }`}
+                  ? "border-blue-500 bg-blue-50 hover:bg-blue-100"
+                  : "border-gray-200 bg-gray-50 hover:bg-gray-100"
+              } ${isVoting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
               {/* Progress bar */}
               <div
@@ -112,15 +141,16 @@ export default function PollCard({
                   )}
                 </div>
               </div>
-            </div>
+            </button>
           );
         } else {
-          // Show vote buttons - Clean style
+          // Show vote buttons
           return (
             <button
               key={option.id}
               onClick={() => handleVote(option.id)}
               disabled={isVoting}
+              type="button"
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 hover:border-gray-400 bg-white hover:bg-gray-50 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="text-sm font-medium text-gray-900">
@@ -134,7 +164,7 @@ export default function PollCard({
       {/* Total votes */}
       {hasVoted && (
         <p className="text-xs text-gray-500 mt-2 px-1">
-          {totalVotes} {totalVotes === 1 ? "vote" : "votes"}
+          {totalVotes} {totalVotes === 1 ? "vote" : "votes"} • Click to change your vote
         </p>
       )}
     </div>

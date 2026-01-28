@@ -1,13 +1,17 @@
 "use client";
 
 import React from "react";
-import { LogOut, User, Settings } from "lucide-react";
+import { LogOut, User, Settings, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import StunityLogo from "@/components/common/StunityLogo";
 
-export default function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export default function Header({ onMenuClick }: HeaderProps) {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
 
@@ -33,6 +37,17 @@ export default function Header() {
       <div className="flex h-20 items-center justify-between px-4 md:px-8">
         {/* Left Section - Brand & Title */}
         <div className="flex items-center space-x-4">
+          {/* Hamburger Menu Button - Mobile Only */}
+          {onMenuClick && (
+            <button
+              onClick={onMenuClick}
+              className="lg:hidden p-2.5 text-gray-600 hover:text-indigo-600 bg-gray-50 hover:bg-indigo-50 rounded-xl transition-all duration-300 hover:scale-110 group"
+              aria-label="បើកម៉ឺនុយ"
+            >
+              <Menu className="h-5 w-5 transition-transform duration-300 group-hover:rotate-90" />
+            </button>
+          )}
+
           {/* Stunity Logo */}
           <div className="hidden md:flex">
             <StunityLogo size="md" />

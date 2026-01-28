@@ -178,16 +178,17 @@ export default function CommentsDrawer({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={handleBackdropClick}
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        />
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={handleBackdropClick}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          />
 
         {/* Drawer */}
         <motion.div
@@ -363,6 +364,7 @@ export default function CommentsDrawer({
           </form>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   );
 }

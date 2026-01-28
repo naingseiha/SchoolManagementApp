@@ -111,7 +111,8 @@
       "Bash(node:*)",
       "Bash(timeout 5 tail:*)",
       "Bash(tree:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(psql:*)"
     ]
   }
 }

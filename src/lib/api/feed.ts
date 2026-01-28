@@ -71,8 +71,16 @@ export interface Post {
   updatedAt: string;
   // Poll fields
   pollOptions?: PollOption[];
-  userVote?: string | null;
+  userVotes?: string[]; // Array of option IDs (for multiple choice)
   totalVotes?: number;
+  // Enhanced poll fields
+  pollExpiresAt?: string | null;
+  pollAllowMultiple?: boolean;
+  pollMaxChoices?: number | null;
+  pollIsAnonymous?: boolean;
+  isPollExpired?: boolean;
+  // Legacy field (kept for backwards compatibility)
+  userVote?: string | null;
 }
 
 export type ReactionType = "LIKE" | "LOVE" | "HELPFUL" | "INSIGHTFUL";
@@ -201,7 +209,12 @@ export const createPost = async (data: {
   postType?: PostType;
   visibility?: PostVisibility;
   media?: File[];
-  pollOptions?: string[]; // ✅ Added for polls
+  pollOptions?: string[];
+  // Enhanced poll fields
+  pollExpiresAt?: string;
+  pollAllowMultiple?: boolean;
+  pollMaxChoices?: number;
+  pollIsAnonymous?: boolean;
 }): Promise<Post> => {
   const token = getAuthToken();
   const formData = new FormData();
@@ -213,6 +226,20 @@ export const createPost = async (data: {
   // ✅ Add poll options if present
   if (data.pollOptions && Array.isArray(data.pollOptions)) {
     formData.append("pollOptions", JSON.stringify(data.pollOptions));
+  }
+
+  // ✅ Add enhanced poll fields
+  if (data.pollExpiresAt) {
+    formData.append("pollExpiresAt", data.pollExpiresAt);
+  }
+  if (data.pollAllowMultiple !== undefined) {
+    formData.append("pollAllowMultiple", String(data.pollAllowMultiple));
+  }
+  if (data.pollMaxChoices) {
+    formData.append("pollMaxChoices", String(data.pollMaxChoices));
+  }
+  if (data.pollIsAnonymous !== undefined) {
+    formData.append("pollIsAnonymous", String(data.pollIsAnonymous));
   }
 
   if (data.media) {

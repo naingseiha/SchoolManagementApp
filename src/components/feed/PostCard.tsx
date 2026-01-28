@@ -235,7 +235,7 @@ export default function PostCard({
             <PollCard
               postId={post.id}
               pollOptions={post.pollOptions}
-              userVote={post.userVote || null}
+              userVotes={post.userVotes || []}
               totalVotes={post.totalVotes || 0}
             />
           );
@@ -566,8 +566,13 @@ export default function PostCard({
           </div>
         )}
 
-        {/* Content Section - Cleaner - Clickable */}
-        <div className="relative px-4 py-3 cursor-pointer hover:bg-gray-50/50 transition-colors" onClick={handlePostClick}>
+        {/* Content Section - Cleaner - Clickable (except for polls) */}
+        <div 
+          className={`relative px-4 py-3 transition-colors ${
+            post.postType !== "POLL" ? "cursor-pointer hover:bg-gray-50/50" : ""
+          }`}
+          onClick={post.postType !== "POLL" ? handlePostClick : undefined}
+        >
           {/* Title - Cleaner typography */}
           <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1">
             {post.content.split("\n")[0] || postTypeInfo.label}
