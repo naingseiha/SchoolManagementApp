@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Heart,
   MessageCircle,
@@ -84,6 +85,7 @@ export default function PostCard({
   onCommentClick,
   onProfileClick,
 }: PostCardProps) {
+  const router = useRouter();
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -95,6 +97,20 @@ export default function PostCard({
   const [showCommentsModal, setShowCommentsModal] = useState(false);
 
   const isOwnPost = currentUserId === post.authorId;
+
+  const handlePostClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.closest("button") ||
+      target.closest("a") ||
+      target.closest("input") ||
+      target.closest("textarea")
+    ) {
+      return;
+    }
+    router.push(`/feed/post/${post.id}`);
+  };
   const PostTypeIcon = POST_TYPE_ICONS[post.postType];
   const postTypeInfo = POST_TYPE_INFO[post.postType];
 
@@ -503,8 +519,8 @@ export default function PostCard({
           </div>
         )}
 
-        {/* Content Section - Cleaner */}
-        <div className="relative px-4 py-3">
+        {/* Content Section - Cleaner - Clickable */}
+        <div className="relative px-4 py-3 cursor-pointer hover:bg-gray-50/50 transition-colors" onClick={handlePostClick}>
           {/* Title - Cleaner typography */}
           <h4 className="font-semibold text-gray-900 text-sm leading-snug mb-1">
             {post.content.split("\n")[0] || postTypeInfo.label}

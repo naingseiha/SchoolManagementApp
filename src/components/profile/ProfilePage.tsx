@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, Award, Sparkles, Code, Target } from "lucide-react";
+import { TrendingUp, Award, Sparkles, Code, Target, Briefcase, MessageSquare } from "lucide-react";
 import SkillsSection from "./SkillsSection";
 import ProjectsSection from "./ProjectsSection";
 import AchievementsSection from "./AchievementsSection";
+import ExperienceTimeline from "./ExperienceTimeline";
+import RecommendationsSection from "./RecommendationsSection";
 import ProfileHeader from "./ProfileHeader";
 import RoleBasedStats from "./RoleBasedStats";
 import LearningPerformance from "./student/LearningPerformance";
@@ -77,7 +79,7 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
   const { refreshUser } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"performance" | "skills" | "projects" | "achievements" | "progress">("performance");
+  const [activeTab, setActiveTab] = useState<"performance" | "skills" | "projects" | "achievements" | "progress" | "experience" | "recommendations">("performance");
   
   // Modal states
   const [showEditAvatar, setShowEditAvatar] = useState(false);
@@ -202,15 +204,21 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
     { id: "performance", label: role === "student" ? "Learning" : "Teaching", icon: TrendingUp },
     { id: "progress", label: role === "student" ? "Goals & Activity" : "Level & Growth", icon: Target },
     { id: "skills", label: "Skills", icon: Sparkles },
+    { id: "experience", label: "Experience", icon: Briefcase },
     { id: "projects", label: "Projects", icon: Code },
-    { id: "achievements", label: "Achievements", icon: Award }
+    { id: "achievements", label: "Achievements", icon: Award },
+    { id: "recommendations", label: "Recommendations", icon: MessageSquare }
   ];
 
   return (
     <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen pb-20">
       {/* Profile Header */}
       <ProfileHeader
-        user={user}
+        user={{
+          ...user,
+          bio: user.bio,
+          interests: user.interests,
+        }}
         isOwnProfile={isOwnProfile}
         onEditProfile={() => setShowEditProfile(true)}
         onEditCover={() => setShowEditCover(true)}
@@ -341,12 +349,20 @@ export default function ProfilePage({ userId, isOwnProfile = false }: ProfilePag
             <SkillsSection userId={userId} isOwnProfile={isOwnProfile} />
           )}
 
+          {activeTab === "experience" && (
+            <ExperienceTimeline userId={userId} isOwnProfile={isOwnProfile} />
+          )}
+
           {activeTab === "projects" && (
             <ProjectsSection userId={userId} isOwnProfile={isOwnProfile} />
           )}
 
           {activeTab === "achievements" && (
             <AchievementsSection userId={userId} isOwnProfile={isOwnProfile} />
+          )}
+
+          {activeTab === "recommendations" && (
+            <RecommendationsSection userId={userId} isOwnProfile={isOwnProfile} />
           )}
         </motion.div>
       </div>

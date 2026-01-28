@@ -7,6 +7,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { NetworkStatus } from "@/components/NetworkStatus";
 import SplashScreen from "@/components/common/SplashScreen";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
@@ -271,6 +272,30 @@ export default function RootLayout({
             </DataProvider>
           </SocketProvider>
         </AuthProvider>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#333',
+              color: '#fff',
+              borderRadius: '12px',
+              padding: '12px 16px',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10B981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
       </body>
     </html>
   );

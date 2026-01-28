@@ -204,6 +204,7 @@ export const deleteCoverPhoto = async (): Promise<{
 export const updateBio = async (data: {
   bio?: string;
   headline?: string;
+  location?: string;
   interests?: string[];
   skills?: string[];
   socialLinks?: {
@@ -216,6 +217,7 @@ export const updateBio = async (data: {
 }): Promise<{
   bio?: string;
   headline?: string;
+  location?: string;
   interests?: string[];
   skills?: string[];
   socialLinks?: any;

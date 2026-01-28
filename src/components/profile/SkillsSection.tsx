@@ -173,7 +173,7 @@ export default function SkillsSection({ userId, isOwnProfile }: SkillsSectionPro
     if (!acc[skill.category]) acc[skill.category] = [];
     acc[skill.category].push(skill);
     return acc;
-  }, {} as Record<string, Skill[]>);
+  }, {} as Record<string, UserSkill[]>);
 
   if (loading) {
     return (
@@ -270,7 +270,9 @@ export default function SkillsSection({ userId, isOwnProfile }: SkillsSectionPro
                   key={skill.id}
                   skill={skill}
                   isOwnProfile={isOwnProfile}
-                  onEndorse={() => handleEndorseSkill(skill.id)}
+                  onEndorse={() => handleEndorse(skill.id)}
+                  onEdit={() => handleEdit(skill)}
+                  onDelete={() => handleDelete(skill.id)}
                 />
               ))}
             </div>
@@ -297,10 +299,14 @@ function SkillCard({
   skill,
   isOwnProfile,
   onEndorse,
+  onEdit,
+  onDelete,
 }: {
-  skill: Skill;
+  skill: UserSkill;
   isOwnProfile: boolean;
   onEndorse: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const [showEndorsements, setShowEndorsements] = useState(false);
   const level = SKILL_LEVELS[skill.level];
@@ -325,15 +331,35 @@ function SkillCard({
             <p className="text-xs text-gray-500">{skill.yearsOfExp} years of experience</p>
           )}
         </div>
-        {!isOwnProfile && (
-          <button
-            onClick={onEndorse}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition-colors"
-          >
-            <Star className="w-4 h-4" />
-            Endorse
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isOwnProfile && (
+            <button
+              onClick={onEndorse}
+              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Star className="w-4 h-4" />
+              Endorse
+            </button>
+          )}
+          {isOwnProfile && (
+            <>
+              <button
+                onClick={onEdit}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-indigo-600"
+                title="Edit skill"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-600"
+                title="Delete skill"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Skill Level Progress */}
@@ -364,7 +390,7 @@ function SkillCard({
             />
           </button>
 
-          {showEndorsements && skill.recentEndorsements.length > 0 && (
+          {showEndorsements && skill.recentEndorsements && skill.recentEndorsements.length > 0 && (
             <div className="space-y-2 mt-2 pl-6 border-l-2 border-gray-200">
               {skill.recentEndorsements.map((endorsement) => {
                 const name =
@@ -408,6 +434,8 @@ function AddSkillModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
   const [skillName, setSkillName] = useState("");
   const [category, setCategory] = useState("PROGRAMMING");
   const [level, setLevel] = useState("BEGINNER");
+  const [yearsOfExp, setYearsOfExp] = useState("");
+  const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -415,21 +443,17 @@ function AddSkillModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
     setSaving(true);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/profile/skills`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ skillName, category, level }),
+      await addSkill({
+        skillName,
+        category,
+        level,
+        yearsOfExp: yearsOfExp ? parseFloat(yearsOfExp) : undefined,
+        description: description || undefined,
       });
-
-      if (response.ok) {
-        onSuccess();
-      }
+      onSuccess();
     } catch (error) {
       console.error("Error adding skill:", error);
+      alert("Failed to add skill. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -489,6 +513,30 @@ function AddSkillModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+            <input
+              type="number"
+              step="0.5"
+              min="0"
+              value={yearsOfExp}
+              onChange={(e) => setYearsOfExp(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Optional"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              placeholder="Optional: Describe your proficiency..."
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
