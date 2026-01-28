@@ -19,9 +19,11 @@ import {
   Megaphone,
   GraduationCap,
   Book,
+  AlertCircle,
 } from "lucide-react";
 import {
   updatePost,
+  updatePostWithMedia,
   PostType,
   PostVisibility,
   POST_TYPE_INFO,
@@ -150,10 +152,43 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
 
     setIsPosting(true);
     try {
-      await updatePost(post.id, {
-        content: content.trim(),
-        visibility,
-      });
+      // Check if images were modified
+      const originalImages = post.mediaUrls || [];
+      const imagesChanged = 
+        mediaPreviews.length !== originalImages.length ||
+        mediaPreviews.some((url, index) => url !== originalImages[index]);
+
+      if (imagesChanged || mediaFiles.length > 0) {
+        // Media was modified - use FormData
+        const deletedUrls = originalImages.filter(
+          url => !mediaPreviews.includes(url)
+        );
+
+        // Separate existing URLs from new files
+        const existingUrls = mediaPreviews.filter(
+          url => originalImages.includes(url)
+        );
+
+        const formData = new FormData();
+        formData.append("content", content.trim());
+        formData.append("visibility", visibility);
+        formData.append("mediaUrls", JSON.stringify(existingUrls));
+        formData.append("mediaDeleted", JSON.stringify(deletedUrls));
+        
+        // Append new image files
+        mediaFiles.forEach(file => {
+          formData.append("media", file);
+        });
+
+        await updatePostWithMedia(post.id, formData);
+      } else {
+        // Only text/visibility changed - use simple API
+        await updatePost(post.id, {
+          content: content.trim(),
+          visibility,
+        });
+      }
+
       router.push("/feed");
       router.refresh();
     } catch (error) {

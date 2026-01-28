@@ -283,7 +283,7 @@ export const getPost = async (postId: string): Promise<Post> => {
 export const getPostById = getPost;
 
 /**
- * Update a post
+ * Update a post (text and visibility only)
  */
 export const updatePost = async (
   postId: string,
@@ -300,6 +300,39 @@ export const updatePost = async (
     body: JSON.stringify(data),
   });
   return response.data;
+};
+
+/**
+ * Update a post with media (images can be added, removed, reordered)
+ */
+export const updatePostWithMedia = async (
+  postId: string,
+  formData: FormData
+): Promise<Post> => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${API_BASE_URL}/feed/posts/${postId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      // Don't set Content-Type - let browser set it with boundary for FormData
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ 
+      message: "Failed to update post" 
+    }));
+    throw new Error(error.message);
+  }
+
+  const result = await response.json();
+  
+  // Invalidate cache after updating post
+  apiCache.clear();
+  
+  return result.data;
 };
 
 /**

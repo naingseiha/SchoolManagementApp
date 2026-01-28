@@ -26,7 +26,7 @@ router.use(authMiddleware);
 router.post("/posts", postMediaUpload, createPost);
 router.get("/posts", getFeedPosts);
 router.get("/posts/:postId", getPost);
-router.put("/posts/:postId", updatePost);
+router.put("/posts/:postId", postMediaUpload, updatePost);
 router.delete("/posts/:postId", deletePost);
 
 // Like system

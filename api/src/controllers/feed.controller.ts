@@ -407,7 +407,7 @@ export const updatePost = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
     const { postId } = req.params;
-    const { content, visibility } = req.body;
+    const { content, visibility, mediaUrls, mediaDeleted } = req.body;
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -427,9 +427,86 @@ export const updatePost = async (req: Request, res: Response) => {
       });
     }
 
+    // Parse mediaUrls and mediaDeleted if they're strings
+    let parsedMediaUrls: string[] = [];
+    let parsedMediaDeleted: string[] = [];
+
+    try {
+      if (mediaUrls) {
+        parsedMediaUrls = typeof mediaUrls === 'string' ? JSON.parse(mediaUrls) : mediaUrls;
+      }
+      if (mediaDeleted) {
+        parsedMediaDeleted = typeof mediaDeleted === 'string' ? JSON.parse(mediaDeleted) : mediaDeleted;
+      }
+    } catch (error) {
+      console.error("Error parsing media data:", error);
+    }
+
+    // Handle media deletions from storage
+    if (parsedMediaDeleted && parsedMediaDeleted.length > 0) {
+      for (const url of parsedMediaDeleted) {
+        const keyIndex = post.mediaUrls.indexOf(url);
+        if (keyIndex >= 0 && post.mediaKeys[keyIndex]) {
+          try {
+            await storageService.deleteFile(post.mediaKeys[keyIndex]);
+            console.log(`Deleted media file: ${post.mediaKeys[keyIndex]}`);
+          } catch (error) {
+            console.error(`Failed to delete media file: ${post.mediaKeys[keyIndex]}`, error);
+          }
+        }
+      }
+    }
+
+    // Handle new media uploads
+    let newMediaUrls: string[] = [];
+    let newMediaKeys: string[] = [];
+    
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const result = await storageService.uploadPostMedia(
+          file.buffer,
+          userId!,
+          file.originalname,
+          file.mimetype
+        );
+        if (result.success && result.url && result.key) {
+          newMediaUrls.push(result.url);
+          newMediaKeys.push(result.key);
+        }
+      }
+    }
+
+    // Build final media arrays
+    let finalMediaUrls: string[] = [];
+    let finalMediaKeys: string[] = [];
+
+    if (parsedMediaUrls.length > 0 || newMediaUrls.length > 0) {
+      // Keep existing media in the order specified
+      for (const url of parsedMediaUrls) {
+        const originalIndex = post.mediaUrls.indexOf(url);
+        if (originalIndex >= 0) {
+          finalMediaUrls.push(url);
+          finalMediaKeys.push(post.mediaKeys[originalIndex]);
+        }
+      }
+      // Add new media
+      finalMediaUrls.push(...newMediaUrls);
+      finalMediaKeys.push(...newMediaKeys);
+    } else {
+      // If no media specified, keep original
+      finalMediaUrls = post.mediaUrls;
+      finalMediaKeys = post.mediaKeys;
+    }
+
     const updateData: any = { isEdited: true };
     if (content !== undefined) updateData.content = content.trim();
     if (visibility !== undefined) updateData.visibility = visibility;
+    
+    // Update media if changes were made
+    if (parsedMediaUrls.length > 0 || parsedMediaDeleted.length > 0 || newMediaUrls.length > 0) {
+      updateData.mediaUrls = finalMediaUrls;
+      updateData.mediaKeys = finalMediaKeys;
+    }
 
     const updatedPost = await prisma.post.update({
       where: { id: postId },
@@ -442,6 +519,18 @@ export const updatePost = async (req: Request, res: Response) => {
             lastName: true,
             profilePictureUrl: true,
             role: true,
+            student: {
+              select: {
+                khmerName: true,
+                class: { select: { name: true, grade: true } },
+              },
+            },
+            teacher: {
+              select: { khmerName: true, position: true },
+            },
+            parent: {
+              select: { khmerName: true },
+            },
           },
         },
         _count: {
