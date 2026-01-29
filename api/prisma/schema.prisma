@@ -398,10 +398,10 @@ model User {
 
   // Relations - New Features
   commentReactions CommentReaction[]
-  reportedPosts    PostReport[]     @relation("PostReporter")
-  reviewedReports  PostReport[]     @relation("ReportReviewer")
-  blocking         UserBlock[]      @relation("Blocker")
-  blockedBy        UserBlock[]      @relation("Blocked")
+  reportedPosts    PostReport[]      @relation("PostReporter")
+  reviewedReports  PostReport[]      @relation("ReportReviewer")
+  blocking         UserBlock[]       @relation("Blocker")
+  blockedBy        UserBlock[]       @relation("Blocked")
   postViews        PostView[]
 
   @@index([email, isActive])
@@ -685,14 +685,53 @@ model Post {
   updatedAt     DateTime       @updatedAt
 
   // Poll-specific fields
-  pollExpiresAt      DateTime? // When poll closes
-  pollAllowMultiple  Boolean   @default(false) // Allow selecting multiple options
-  pollMaxChoices     Int?      // Max number of choices (for multiple choice)
-  pollIsAnonymous    Boolean   @default(false) // Hide who voted
+  pollExpiresAt     DateTime? // When poll closes
+  pollAllowMultiple Boolean   @default(false) // Allow selecting multiple options
+  pollMaxChoices    Int? // Max number of choices (for multiple choice)
+  pollIsAnonymous   Boolean   @default(false) // Hide who voted
 
-  comments    Comment[]
-  likes       Like[]
-  pollOptions PollOption[]
+  // Assignment-specific fields
+  assignmentDueDate        DateTime? // When assignment is due
+  assignmentPoints         Int? // Points for the assignment
+  assignmentSubmissionType String? // "file", "text", "link"
+
+  // Course-specific fields
+  courseCode     String? // e.g., "CS101"
+  courseLevel    String? // "beginner", "intermediate", "advanced"
+  courseDuration String? // e.g., "8 weeks", "3 months"
+
+  // Announcement-specific fields
+  announcementUrgency    String? // "low", "medium", "high", "urgent"
+  announcementExpiryDate DateTime? // When announcement expires
+
+  // Tutorial-specific fields
+  tutorialDifficulty    String? // "easy", "medium", "hard"
+  tutorialEstimatedTime String? // e.g., "30 min", "2 hours"
+  tutorialPrerequisites String? @db.Text // What learners should know
+
+  // Exam-specific fields
+  examDate         DateTime? // When exam is scheduled
+  examDuration     Int? // Duration in minutes
+  examTotalPoints  Int? // Total points for exam
+  examPassingScore Int? // Minimum score to pass
+
+  // Resource-specific fields
+  resourceType String? // "document", "video", "link", "tool"
+  resourceUrl  String? // External URL if applicable
+
+  // Research-specific fields
+  researchField         String? // Field of research
+  researchCollaborators String? // Comma-separated collaborators
+
+  // Project-specific fields
+  projectStatus   String? // "planning", "in_progress", "completed"
+  projectDeadline DateTime? // Project deadline
+  projectTeamSize Int? // Number of team members
+
+  comments      Comment[]
+  likes         Like[]
+  pollOptions   PollOption[]
+  quizQuestions QuizQuestion[]
 
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
@@ -702,18 +741,18 @@ model Post {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post              @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  content   String   @db.Text
+  author    User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String            @db.Text
   parentId  String? // For nested/threaded replies
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]         @relation("CommentReplies")
   reactions CommentReaction[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@index([postId, createdAt(sort: Desc)])
   @@index([authorId])
@@ -736,18 +775,36 @@ model Like {
 
 // ✅ Poll system for interactive surveys
 model PollOption {
-  id         String     @id @default(cuid())
+  id         String   @id @default(cuid())
   postId     String
-  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
-  text       String     @db.Text
-  position   Int        @default(0) // Order of options
-  votesCount Int        @default(0)
-  createdAt  DateTime   @default(now())
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  text       String   @db.Text
+  position   Int      @default(0) // Order of options
+  votesCount Int      @default(0)
+  createdAt  DateTime @default(now())
 
-  votes      PollVote[]
+  votes PollVote[]
 
   @@index([postId])
   @@map("poll_options")
+}
+
+// ✅ Quiz system for educational quizzes
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  postId        String
+  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  question      String   @db.Text
+  options       String[] // Array of option texts
+  correctAnswer Int // Index of correct answer (0-based)
+  points        Int      @default(10)
+  position      Int      @default(0) // Order of questions
+  explanation   String?  @db.Text // Optional explanation for the answer
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([postId])
+  @@map("quiz_questions")
 }
 
 model PollVote {
@@ -981,7 +1038,7 @@ model CommentReaction {
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      ReactionType
   createdAt DateTime     @default(now())
-  
+
   @@unique([commentId, userId, type])
   @@index([commentId])
   @@index([userId])
@@ -1000,7 +1057,7 @@ model PostReport {
   reviewer   User?        @relation("ReportReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   reviewedAt DateTime?
   createdAt  DateTime     @default(now())
-  
+
   @@index([postId, status])
   @@index([reporterId])
   @@index([status, createdAt])
@@ -1014,7 +1071,7 @@ model UserBlock {
   blockedId String
   blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  
+
   @@unique([blockerId, blockedId])
   @@index([blockerId])
   @@index([blockedId])
@@ -1028,7 +1085,7 @@ model PostView {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   viewedAt  DateTime @default(now())
   ipAddress String? // For anonymous tracking
-  
+
   @@index([postId])
   @@index([userId])
   @@index([viewedAt])

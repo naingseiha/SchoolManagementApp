@@ -179,6 +179,25 @@ function CreatePost({
   const [tutorialEstimatedTime, setTutorialEstimatedTime] = useState<string>("");
   const [tutorialPrerequisites, setTutorialPrerequisites] = useState<string>("");
 
+  // EXAM-specific state
+  const [examDate, setExamDate] = useState<string>("");
+  const [examDuration, setExamDuration] = useState<number>(0);
+  const [examTotalPoints, setExamTotalPoints] = useState<number>(0);
+  const [examPassingScore, setExamPassingScore] = useState<number>(0);
+
+  // RESOURCE-specific state
+  const [resourceType, setResourceType] = useState<string>("");
+  const [resourceUrl, setResourceUrl] = useState<string>("");
+
+  // PROJECT-specific state
+  const [projectStatus, setProjectStatus] = useState<string>("");
+  const [projectDeadline, setProjectDeadline] = useState<string>("");
+  const [projectTeamSize, setProjectTeamSize] = useState<number>(0);
+
+  // RESEARCH-specific state
+  const [researchField, setResearchField] = useState<string>("");
+  const [researchCollaborators, setResearchCollaborators] = useState<string>("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -225,6 +244,19 @@ function CreatePost({
     setTutorialDifficulty("medium");
     setTutorialEstimatedTime("");
     setTutorialPrerequisites("");
+    setQuizQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: 0, points: 10 }]);
+    // Reset new fields
+    setExamDate("");
+    setExamDuration(0);
+    setExamTotalPoints(0);
+    setExamPassingScore(0);
+    setResourceType("");
+    setResourceUrl("");
+    setProjectStatus("");
+    setProjectDeadline("");
+    setProjectTeamSize(0);
+    setResearchField("");
+    setResearchCollaborators("");
   };
 
   // Poll option handlers
@@ -337,6 +369,73 @@ function CreatePost({
           if (pollAllowMultiple && pollMaxChoices) {
             postData.pollMaxChoices = pollMaxChoices;
           }
+        }
+
+        // ✅ Add assignment fields if ASSIGNMENT type
+        if (postType === "ASSIGNMENT") {
+          if (assignmentDueDate) {
+            postData.assignmentDueDate = new Date(assignmentDueDate).toISOString();
+          }
+          postData.assignmentPoints = assignmentPoints;
+          postData.assignmentSubmissionType = assignmentSubmissionType;
+        }
+
+        // ✅ Add course fields if COURSE type
+        if (postType === "COURSE") {
+          postData.courseCode = courseCode;
+          postData.courseLevel = courseLevel;
+          postData.courseDuration = courseDuration;
+        }
+
+        // ✅ Add announcement fields if ANNOUNCEMENT type
+        if (postType === "ANNOUNCEMENT") {
+          postData.announcementUrgency = announcementUrgency;
+          if (announcementExpiryDate) {
+            postData.announcementExpiryDate = new Date(announcementExpiryDate).toISOString();
+          }
+        }
+
+        // ✅ Add tutorial fields if TUTORIAL type
+        if (postType === "TUTORIAL") {
+          postData.tutorialDifficulty = tutorialDifficulty;
+          postData.tutorialEstimatedTime = tutorialEstimatedTime;
+          postData.tutorialPrerequisites = tutorialPrerequisites;
+        }
+
+        // ✅ Add quiz questions if QUIZ type
+        if (postType === "QUIZ") {
+          postData.quizQuestions = quizQuestions.filter(q => q.question.trim());
+        }
+
+        // ✅ Add exam fields if EXAM type
+        if (postType === "EXAM") {
+          if (examDate) {
+            postData.examDate = new Date(examDate).toISOString();
+          }
+          if (examDuration) postData.examDuration = examDuration;
+          if (examTotalPoints) postData.examTotalPoints = examTotalPoints;
+          if (examPassingScore) postData.examPassingScore = examPassingScore;
+        }
+
+        // ✅ Add resource fields if RESOURCE type
+        if (postType === "RESOURCE") {
+          if (resourceType) postData.resourceType = resourceType;
+          if (resourceUrl) postData.resourceUrl = resourceUrl;
+        }
+
+        // ✅ Add project fields if PROJECT type
+        if (postType === "PROJECT") {
+          if (projectStatus) postData.projectStatus = projectStatus;
+          if (projectDeadline) {
+            postData.projectDeadline = new Date(projectDeadline).toISOString();
+          }
+          if (projectTeamSize) postData.projectTeamSize = projectTeamSize;
+        }
+
+        // ✅ Add research fields if RESEARCH type
+        if (postType === "RESEARCH") {
+          if (researchField) postData.researchField = researchField;
+          if (researchCollaborators) postData.researchCollaborators = researchCollaborators;
         }
 
         await createPost(postData);
@@ -690,6 +789,122 @@ function CreatePost({
         </div>
       )}
 
+      {/* QUIZ Fields */}
+      {postType === "QUIZ" && (
+        <div className="px-4 pb-3 space-y-4">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Quiz Questions ({quizQuestions.length}):</p>
+          </div>
+
+          {quizQuestions.map((question, qIndex) => (
+            <div key={qIndex} className="p-4 bg-white border-2 border-green-200 rounded-xl space-y-3">
+              {/* Question Header */}
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-gray-800">Question {qIndex + 1}</h4>
+                {quizQuestions.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuizQuestions(quizQuestions.filter((_, i) => i !== qIndex));
+                    }}
+                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Question Text */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  ❓ Question
+                </label>
+                <textarea
+                  value={question.question}
+                  onChange={(e) => {
+                    const newQuestions = [...quizQuestions];
+                    newQuestions[qIndex].question = e.target.value;
+                    setQuizQuestions(newQuestions);
+                  }}
+                  placeholder="Enter your question here..."
+                  className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm resize-none"
+                  rows={2}
+                />
+              </div>
+
+              {/* Options */}
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">
+                  Options (select the correct one):
+                </label>
+                {question.options.map((option, oIndex) => (
+                  <div key={oIndex} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={`correct-answer-${qIndex}`}
+                      checked={question.correctAnswer === oIndex}
+                      onChange={() => {
+                        const newQuestions = [...quizQuestions];
+                        newQuestions[qIndex].correctAnswer = oIndex;
+                        setQuizQuestions(newQuestions);
+                      }}
+                      className="w-5 h-5 text-green-600 focus:ring-2 focus:ring-green-500"
+                    />
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) => {
+                        const newQuestions = [...quizQuestions];
+                        newQuestions[qIndex].options[oIndex] = e.target.value;
+                        setQuizQuestions(newQuestions);
+                      }}
+                      placeholder={`Option ${oIndex + 1}`}
+                      className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Points */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  ⭐ Points for this question
+                </label>
+                <input
+                  type="number"
+                  value={question.points}
+                  onChange={(e) => {
+                    const newQuestions = [...quizQuestions];
+                    newQuestions[qIndex].points = Number(e.target.value);
+                    setQuizQuestions(newQuestions);
+                  }}
+                  min="1"
+                  max="100"
+                  className="w-32 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                />
+              </div>
+            </div>
+          ))}
+
+          {/* Add Question Button */}
+          {quizQuestions.length < 10 && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuizQuestions([
+                  ...quizQuestions,
+                  { question: "", options: ["", "", "", ""], correctAnswer: 0, points: 10 }
+                ]);
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-green-600 hover:bg-green-50 rounded-xl transition-all border-2 border-dashed border-green-200 hover:border-green-300 w-full justify-center"
+            >
+              <Plus className="w-4 h-4" />
+              Add Question ({quizQuestions.length}/10)
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ASSIGNMENT Fields */}
       {postType === "ASSIGNMENT" && (
         <div className="px-4 pb-3 space-y-3">
@@ -925,6 +1140,215 @@ function CreatePost({
               placeholder="What should learners know before starting?"
               className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm resize-none"
               rows={2}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* EXAM Fields */}
+      {postType === "EXAM" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Exam Details:</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Exam Date */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                📅 Exam Date & Time
+              </label>
+              <input
+                type="datetime-local"
+                value={examDate}
+                onChange={(e) => setExamDate(e.target.value)}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+              />
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ⏱️ Duration (minutes)
+              </label>
+              <input
+                type="number"
+                value={examDuration}
+                onChange={(e) => setExamDuration(Number(e.target.value))}
+                placeholder="e.g., 120"
+                min="0"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Total Points */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ⭐ Total Points
+              </label>
+              <input
+                type="number"
+                value={examTotalPoints}
+                onChange={(e) => setExamTotalPoints(Number(e.target.value))}
+                placeholder="e.g., 100"
+                min="0"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+              />
+            </div>
+
+            {/* Passing Score */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                ✅ Passing Score (%)
+              </label>
+              <input
+                type="number"
+                value={examPassingScore}
+                onChange={(e) => setExamPassingScore(Number(e.target.value))}
+                placeholder="e.g., 70"
+                min="0"
+                max="100"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESOURCE Fields */}
+      {postType === "RESOURCE" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Resource Information:</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Resource Type */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-2">
+                📁 Resource Type
+              </label>
+              <select
+                value={resourceType}
+                onChange={(e) => setResourceType(e.target.value)}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+              >
+                <option value="">Select type</option>
+                <option value="document">📄 Document</option>
+                <option value="video">🎥 Video</option>
+                <option value="link">🔗 Link</option>
+                <option value="tool">🛠️ Tool</option>
+                <option value="other">📦 Other</option>
+              </select>
+            </div>
+
+            {/* Resource URL */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                🔗 Resource URL
+              </label>
+              <input
+                type="url"
+                value={resourceUrl}
+                onChange={(e) => setResourceUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROJECT Fields */}
+      {postType === "PROJECT" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Project Details:</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {/* Project Status */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-2">
+                📊 Status
+              </label>
+              <select
+                value={projectStatus}
+                onChange={(e) => setProjectStatus(e.target.value)}
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+              >
+                <option value="">Select status</option>
+                <option value="planning">📋 Planning</option>
+                <option value="in_progress">⚙️ In Progress</option>
+                <option value="completed">✅ Completed</option>
+              </select>
+            </div>
+
+            {/* Team Size */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                👥 Team Size
+              </label>
+              <input
+                type="number"
+                value={projectTeamSize}
+                onChange={(e) => setProjectTeamSize(Number(e.target.value))}
+                placeholder="e.g., 5"
+                min="1"
+                className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Project Deadline */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              📅 Project Deadline
+            </label>
+            <input
+              type="datetime-local"
+              value={projectDeadline}
+              onChange={(e) => setProjectDeadline(e.target.value)}
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* RESEARCH Fields */}
+      {postType === "RESEARCH" && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-3 py-2 rounded-xl mb-2">
+            <p className="text-sm font-semibold text-gray-700">Research Information:</p>
+          </div>
+
+          {/* Research Field */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              🔬 Research Field
+            </label>
+            <input
+              type="text"
+              value={researchField}
+              onChange={(e) => setResearchField(e.target.value)}
+              placeholder="e.g., Computer Science, Biology"
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+            />
+          </div>
+
+          {/* Collaborators */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">
+              👥 Collaborators (comma-separated)
+            </label>
+            <input
+              type="text"
+              value={researchCollaborators}
+              onChange={(e) => setResearchCollaborators(e.target.value)}
+              placeholder="e.g., Dr. Smith, Prof. Johnson"
+              className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
             />
           </div>
         </div>

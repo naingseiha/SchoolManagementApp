@@ -41,6 +41,8 @@ const social_routes_1 = __importDefault(require("./routes/social.routes"));
 const skills_routes_1 = __importDefault(require("./routes/skills.routes"));
 const projects_routes_1 = __importDefault(require("./routes/projects.routes"));
 const achievements_routes_1 = __importDefault(require("./routes/achievements.routes"));
+const experiences_routes_1 = __importDefault(require("./routes/experiences.routes"));
+const recommendations_routes_1 = __importDefault(require("./routes/recommendations.routes"));
 const notification_routes_1 = __importDefault(require("./routes/notification.routes"));
 // Initialize Express app
 const app = (0, express_1.default)();
@@ -133,6 +135,8 @@ app.use("/api/feed", feed_routes_1.default);
 app.use("/api/social", social_routes_1.default);
 app.use("/api/profile", skills_routes_1.default);
 app.use("/api/profile", projects_routes_1.default);
+app.use("/api/profile", experiences_routes_1.default);
+app.use("/api/profile", recommendations_routes_1.default);
 app.use("/api", achievements_routes_1.default);
 app.use("/api/notifications", notification_routes_1.default);
 // API Documentation Route

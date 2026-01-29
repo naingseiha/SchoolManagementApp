@@ -272,20 +272,28 @@ export default function PostCard({
           <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 rounded-lg border border-purple-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3 text-sm text-gray-700">
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-purple-600" />
-                  <span className="font-medium">12 weeks</span>
-                </span>
-                <span className="w-1 h-1 rounded-full bg-gray-400"></span>
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-purple-600" />
-                  <span className="font-medium">234 enrolled</span>
-                </span>
+                {post.courseDuration && (
+                  <>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-purple-600" />
+                      <span className="font-medium">{post.courseDuration}</span>
+                    </span>
+                  </>
+                )}
+                {post.courseCode && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                    <span className="font-medium">{post.courseCode}</span>
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-1 text-amber-600">
-                <Star className="w-4 h-4 fill-amber-400" />
-                <span className="text-sm font-bold">4.8</span>
-              </div>
+              {post.courseLevel && (
+                <div className="px-2 py-1 bg-purple-100 rounded-full">
+                  <span className="text-xs font-bold text-purple-700 capitalize">
+                    {post.courseLevel}
+                  </span>
+                </div>
+              )}
             </div>
             <button className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
               <GraduationCap className="w-5 h-5" />
@@ -295,6 +303,8 @@ export default function PostCard({
         );
 
       case "QUIZ":
+        const quizQuestionsCount = post.quizQuestions?.length || 0;
+        const totalQuizPoints = post.quizQuestions?.reduce((sum, q) => sum + q.points, 0) || 0;
         return (
           <div className="mt-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
             <div className="flex items-center justify-between mb-3">
@@ -304,14 +314,12 @@ export default function PostCard({
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">
-                    Quick Quiz
+                    {quizQuestionsCount > 0 ? `Quiz (${quizQuestionsCount} questions)` : "Quick Quiz"}
                   </p>
-                  <p className="text-xs text-gray-600">10 questions • 15 min</p>
+                  {totalQuizPoints > 0 && (
+                    <p className="text-xs text-gray-600">{totalQuizPoints} total points</p>
+                  )}
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Best Score</p>
-                <p className="text-sm font-bold text-green-600">85%</p>
               </div>
             </div>
             <button className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
@@ -331,19 +339,29 @@ export default function PostCard({
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">
-                    Assignment Due
+                    Assignment{post.assignmentPoints ? ` (${post.assignmentPoints} pts)` : ""}
                   </p>
-                  <div className="flex items-center gap-1.5 text-orange-600">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">March 15, 2024</span>
-                  </div>
+                  {post.assignmentDueDate && (
+                    <div className="flex items-center gap-1.5 text-orange-600">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">
+                        Due: {new Date(post.assignmentDueDate).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="px-3 py-1 bg-orange-100 rounded-full">
-                <span className="text-xs font-bold text-orange-700">
-                  3 days left
-                </span>
-              </div>
+              {post.assignmentSubmissionType && (
+                <div className="px-3 py-1 bg-orange-100 rounded-full">
+                  <span className="text-xs font-bold text-orange-700 capitalize">
+                    {post.assignmentSubmissionType}
+                  </span>
+                </div>
+              )}
             </div>
             <button className="w-full py-3 px-4 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
               <Send className="w-5 h-5" />
@@ -359,11 +377,24 @@ export default function PostCard({
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <Megaphone className="w-5 h-5 text-red-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-bold text-red-900">
                   Important Announcement
+                  {post.announcementUrgency && (
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-red-100 capitalize">
+                      {post.announcementUrgency}
+                    </span>
+                  )}
                 </p>
-                <p className="text-xs text-red-700">Please read carefully</p>
+                {post.announcementExpiryDate && (
+                  <p className="text-xs text-red-700">
+                    Expires: {new Date(post.announcementExpiryDate).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -371,9 +402,41 @@ export default function PostCard({
 
       case "PROJECT":
         return (
-          <div className="mt-4">
-            <button className="w-full py-3 px-4 bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 hover:border-cyan-300 hover:from-cyan-100 hover:to-blue-100 text-cyan-700 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 group">
-              <ExternalLink className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          <div className="mt-4 p-4 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border border-cyan-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    Project
+                    {post.projectStatus && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-cyan-100 capitalize">
+                        {post.projectStatus.replace('_', ' ')}
+                      </span>
+                    )}
+                  </p>
+                  {post.projectDeadline && (
+                    <p className="text-xs text-gray-600">
+                      Deadline: {new Date(post.projectDeadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {post.projectTeamSize && (
+                <div className="flex items-center gap-1 text-cyan-600">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm font-bold">{post.projectTeamSize}</span>
+                </div>
+              )}
+            </div>
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <ExternalLink className="w-5 h-5" />
               View Project Details
             </button>
           </div>
@@ -393,6 +456,176 @@ export default function PostCard({
                 <p className="text-sm text-amber-700">
                   Celebrate this milestone 🎉
                 </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "TUTORIAL":
+        return (
+          <div className="mt-4 p-4 bg-gradient-to-br from-teal-50 to-green-50 rounded-lg border border-teal-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <Book className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Tutorial</p>
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    {post.tutorialDifficulty && (
+                      <span className="px-2 py-0.5 bg-teal-100 rounded-full capitalize">
+                        {post.tutorialDifficulty}
+                      </span>
+                    )}
+                    {post.tutorialEstimatedTime && (
+                      <span>{post.tutorialEstimatedTime}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {post.tutorialPrerequisites && (
+              <div className="mb-3 p-2 bg-white rounded-lg">
+                <p className="text-xs font-medium text-gray-500">Prerequisites:</p>
+                <p className="text-xs text-gray-700">{post.tutorialPrerequisites}</p>
+              </div>
+            )}
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <Play className="w-5 h-5" />
+              Start Tutorial
+            </button>
+          </div>
+        );
+
+      case "EXAM":
+        return (
+          <div className="mt-4 p-4 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg border border-red-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <ClipboardCheck className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Exam</p>
+                  {post.examDate && (
+                    <p className="text-xs text-gray-600">
+                      {new Date(post.examDate).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                {post.examTotalPoints && (
+                  <>
+                    <p className="text-xs text-gray-500">Total Points</p>
+                    <p className="text-sm font-bold text-red-600">{post.examTotalPoints}</p>
+                  </>
+                )}
+              </div>
+            </div>
+            {(post.examDuration || post.examPassingScore) && (
+              <div className="flex gap-4 mb-3 text-xs text-gray-700">
+                {post.examDuration && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-red-600" />
+                    {post.examDuration} min
+                  </span>
+                )}
+                {post.examPassingScore && (
+                  <span>Passing: {post.examPassingScore}%</span>
+                )}
+              </div>
+            )}
+            <button className="w-full py-3 px-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              View Exam Details
+            </button>
+          </div>
+        );
+
+      case "RESOURCE":
+        return (
+          <div className="mt-4 p-4 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <FolderOpen className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  Resource
+                  {post.resourceType && (
+                    <span className="ml-2 text-xs px-2 py-0.5 bg-indigo-100 rounded-full capitalize">
+                      {post.resourceType}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            {post.resourceUrl && (
+              <button 
+                onClick={() => window.open(post.resourceUrl!, '_blank')}
+                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="w-5 h-5" />
+                Open Resource
+              </button>
+            )}
+          </div>
+        );
+
+      case "RESEARCH":
+        return (
+          <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Microscope className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">Research</p>
+                {post.researchField && (
+                  <p className="text-xs text-gray-600">Field: {post.researchField}</p>
+                )}
+                {post.researchCollaborators && (
+                  <p className="text-xs text-gray-600 mt-1">
+                    Collaborators: {post.researchCollaborators}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case "REFLECTION":
+        return (
+          <div className="mt-4 p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <Lightbulb className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">Personal Reflection</p>
+                <p className="text-xs text-gray-600">A moment of introspection</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "COLLABORATION":
+        return (
+          <div className="mt-4 p-4 bg-gradient-to-br from-cyan-50 to-sky-50 rounded-lg border border-cyan-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">Team Collaboration</p>
+                <p className="text-xs text-gray-600">Work together, achieve more</p>
               </div>
             </div>
           </div>

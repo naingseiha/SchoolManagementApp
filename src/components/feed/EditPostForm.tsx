@@ -289,14 +289,14 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
   const VisibilityIcon = selectedVisibility?.icon || Globe;
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Header - Fixed */}
-      <div className="flex-shrink-0 border-b border-gray-200 bg-white">
+    <div className="fixed inset-0 flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50 overflow-hidden animate-fade-in">
+      {/* Header - Fixed with slide down animation */}
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white animate-slide-down">
         <div className="px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => router.back()}
             disabled={isPosting}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-all duration-200 hover:scale-110"
           >
             <ArrowLeft className="w-6 h-6 text-gray-700" />
           </button>
@@ -306,7 +306,7 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
           <button
             onClick={handleSave}
             disabled={isPosting || (!content.trim() && mediaPreviews.length === 0)}
-            className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+            className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold hover:shadow-lg hover:scale-105"
           >
             {isPosting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -317,10 +317,10 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
         </div>
       </div>
 
-      {/* Content - Scrollable */}
+      {/* Content - Scrollable with staggered animations */}
       <div className="flex-1 overflow-y-auto">
-        {/* User Info */}
-        <div className="px-4 py-4 border-b border-gray-100">
+        {/* User Info - Slide up animation */}
+        <div className="px-4 py-4 border-b border-gray-100 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center gap-3">
             {userProfilePicture ? (
               <Image
@@ -328,10 +328,10 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
                 alt={userName}
                 width={48}
                 height={48}
-                className="w-12 h-12 rounded-full object-cover"
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-100"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
                 {userName.charAt(0).toUpperCase()}
               </div>
             )}
@@ -339,18 +339,18 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
               <div className="font-semibold text-gray-900">{userName}</div>
               <button
                 onClick={() => setShowVisibilitySelector(!showVisibilitySelector)}
-                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mt-1"
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mt-1 transition-colors"
               >
                 <VisibilityIcon className="w-4 h-4" />
                 <span>{selectedVisibility?.labelKh}</span>
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className={`w-3 h-3 transition-transform ${showVisibilitySelector ? 'rotate-180' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Visibility Selector */}
+          {/* Visibility Selector - Slide down animation */}
           {showVisibilitySelector && (
-            <div className="mt-3 bg-gray-50 rounded-lg p-2 border border-gray-200">
+            <div className="mt-3 bg-gray-50 rounded-lg p-2 border border-gray-200 animate-slide-down">
               <div className="grid grid-cols-2 gap-2">
                 {VISIBILITY_OPTIONS.map((option) => {
                   const Icon = option.icon;
@@ -361,10 +361,10 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
                         setVisibility(option.value);
                         setShowVisibilitySelector(false);
                       }}
-                      className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
+                      className={`flex items-center gap-2 p-2 rounded-lg transition-all duration-200 ${
                         visibility === option.value
-                          ? "bg-blue-500 text-white"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
+                          ? "bg-blue-500 text-white shadow-md scale-105"
+                          : "bg-white text-gray-700 hover:bg-gray-100 hover:scale-105"
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -377,10 +377,10 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
           )}
         </div>
 
-        {/* Post Type Badge */}
-        <div className="px-4 py-3 border-b border-gray-100">
+        {/* Post Type Badge - Slide up animation */}
+        <div className="px-4 py-3 border-b border-gray-100 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-white text-sm font-medium"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-white text-sm font-medium shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105"
             style={{
               background: selectedTypeInfo?.gradient || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
             }}
@@ -390,20 +390,21 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
           </div>
         </div>
 
-        {/* Content Editor */}
-        <div className="px-4 py-4">
+        {/* Content Editor - Slide up animation */}
+        <div className="px-4 py-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="អ្វីដែលអ្នកកំពុងគិត?"
-            className="w-full min-h-[150px] text-gray-900 text-base leading-relaxed resize-none focus:outline-none"
+            className="w-full min-h-[150px] text-gray-900 text-base leading-relaxed resize-none focus:outline-none transition-all"
           />
         </div>
 
         {/* Image Gallery */}
+        {/* Media Previews - Slide up animation */}
         {mediaPreviews.length > 0 && (
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">រូបភាព ({mediaPreviews.length})</span>
               <span className="text-xs text-gray-500">អូសដើម្បីប្តូរលំដាប់</span>
@@ -416,8 +417,8 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`relative group rounded-lg overflow-hidden bg-gray-100 aspect-square cursor-move border-2 border-transparent hover:border-blue-400 transition-all ${
-                    draggedIndex === index ? "opacity-50 scale-95" : ""
+                  className={`relative group rounded-lg overflow-hidden bg-gray-100 aspect-square cursor-move border-2 border-transparent hover:border-blue-400 transition-all duration-200 hover:shadow-lg ${
+                    draggedIndex === index ? "opacity-50 scale-95" : "hover:scale-105"
                   }`}
                 >
                   <Image
@@ -433,7 +434,7 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
                   {/* Remove Button */}
                   <button
                     onClick={() => removeMedia(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -447,10 +448,10 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
           </div>
         )}
 
-        {/* Poll Options Editor - Show only when POLL type */}
+        {/* Poll Options Editor - Slide up animation */}
         {postType === "POLL" && (
-          <div className="px-4 pb-3 space-y-3">
-            <div className="flex items-center justify-between mb-2 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-2 rounded-xl">
+          <div className="px-4 pb-3 space-y-3 animate-slide-up" style={{ animationDelay: '0.5s' }}>
+            <div className="flex items-center justify-between mb-2 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-2 rounded-xl shadow-sm">
               <p className="text-sm font-semibold text-gray-700">ជម្រើសមតិ:</p>
               <span className="text-xs font-medium text-indigo-600 bg-white px-2 py-1 rounded-full">
                 {pollOptions.length}/6
@@ -458,21 +459,21 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
             </div>
 
             {pollOptions.map((option, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className="flex items-center gap-2 animate-slide-up" style={{ animationDelay: `${0.6 + index * 0.05}s` }}>
                 <div className="flex-1 relative">
                   <input
                     type="text"
                     value={option}
                     onChange={(e) => updatePollOption(index, e.target.value)}
                     placeholder={`ជម្រើសទី ${index + 1}`}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-medium transition-all"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-medium transition-all hover:border-indigo-300"
                     maxLength={100}
                   />
                 </div>
                 {pollOptions.length > 2 && (
                   <button
                     onClick={() => removePollOption(index)}
-                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                    className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 hover:scale-110"
                     type="button"
                   >
                     <Minus className="w-4 h-4" />
@@ -484,7 +485,7 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
             {pollOptions.length < 6 && (
               <button
                 onClick={addPollOption}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border-2 border-dashed border-indigo-200 hover:border-indigo-300 w-full justify-center"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-200 border-2 border-dashed border-indigo-200 hover:border-indigo-300 w-full justify-center hover:scale-105"
                 type="button"
               >
                 <Plus className="w-4 h-4" />
@@ -493,7 +494,7 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
             )}
 
             {/* Poll Settings */}
-            <div className="mt-4 space-y-3 p-4 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-indigo-100">
+            <div className="mt-4 space-y-3 p-4 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl border-2 border-indigo-100 shadow-sm">
               <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-indigo-600" />
                 ការកំណត់សំណួរមតិ
@@ -767,8 +768,8 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
         <div className="h-20"></div>
       </div>
 
-      {/* Footer Actions - Fixed */}
-      <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3">
+      {/* Footer Actions - Fixed with slide up animation */}
+      <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3 shadow-lg animate-slide-up-bottom">
         <input
           ref={fileInputRef}
           type="file"
@@ -781,12 +782,12 @@ export default function EditPostForm({ post, userProfilePicture, userName }: Edi
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={mediaPreviews.length >= 4}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-md"
           >
             <ImageIcon className="w-5 h-5 text-blue-600" />
             <span className="text-sm font-medium text-gray-700">បន្ថែមរូបភាព</span>
           </button>
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-500 font-medium">
             {mediaPreviews.length}/4 រូបភាព
           </span>
         </div>

@@ -19,7 +19,39 @@ export const createPost = async (req: Request, res: Response) => {
       pollExpiresAt,
       pollAllowMultiple,
       pollMaxChoices,
-      pollIsAnonymous
+      pollIsAnonymous,
+      // Assignment fields
+      assignmentDueDate,
+      assignmentPoints,
+      assignmentSubmissionType,
+      // Course fields
+      courseCode,
+      courseLevel,
+      courseDuration,
+      // Announcement fields
+      announcementUrgency,
+      announcementExpiryDate,
+      // Tutorial fields
+      tutorialDifficulty,
+      tutorialEstimatedTime,
+      tutorialPrerequisites,
+      // Exam fields
+      examDate,
+      examDuration,
+      examTotalPoints,
+      examPassingScore,
+      // Resource fields
+      resourceType,
+      resourceUrl,
+      // Research fields
+      researchField,
+      researchCollaborators,
+      // Project fields
+      projectStatus,
+      projectDeadline,
+      projectTeamSize,
+      // Quiz fields
+      quizQuestions
     } = req.body;
 
     // ✅ Parse pollOptions if it's a JSON string (from FormData)
@@ -29,6 +61,16 @@ export const createPost = async (req: Request, res: Response) => {
       } catch (e) {
         console.error("Failed to parse pollOptions:", e);
         pollOptions = undefined;
+      }
+    }
+
+    // ✅ Parse quizQuestions if it's a JSON string (from FormData)
+    if (typeof quizQuestions === 'string') {
+      try {
+        quizQuestions = JSON.parse(quizQuestions);
+      } catch (e) {
+        console.error("Failed to parse quizQuestions:", e);
+        quizQuestions = undefined;
       }
     }
 
@@ -101,7 +143,7 @@ export const createPost = async (req: Request, res: Response) => {
       }
     }
 
-    // Create post with poll options if POLL type
+    // Create post with type-specific fields
     const post = await prisma.post.create({
       data: {
         authorId: userId!,
@@ -110,12 +152,58 @@ export const createPost = async (req: Request, res: Response) => {
         visibility: visibility || "SCHOOL",
         mediaUrls,
         mediaKeys,
-        // Add poll-specific fields if POLL type
+        // Poll-specific fields
         ...(postType === "POLL" && {
           pollExpiresAt: pollExpiresAt ? new Date(pollExpiresAt) : null,
           pollAllowMultiple: pollAllowMultiple === true || pollAllowMultiple === 'true',
           pollMaxChoices: pollMaxChoices ? parseInt(pollMaxChoices) : null,
           pollIsAnonymous: pollIsAnonymous === true || pollIsAnonymous === 'true',
+        }),
+        // Assignment-specific fields
+        ...(postType === "ASSIGNMENT" && {
+          assignmentDueDate: assignmentDueDate ? new Date(assignmentDueDate) : null,
+          assignmentPoints: assignmentPoints ? parseInt(assignmentPoints) : null,
+          assignmentSubmissionType,
+        }),
+        // Course-specific fields
+        ...(postType === "COURSE" && {
+          courseCode,
+          courseLevel,
+          courseDuration,
+        }),
+        // Announcement-specific fields
+        ...(postType === "ANNOUNCEMENT" && {
+          announcementUrgency,
+          announcementExpiryDate: announcementExpiryDate ? new Date(announcementExpiryDate) : null,
+        }),
+        // Tutorial-specific fields
+        ...(postType === "TUTORIAL" && {
+          tutorialDifficulty,
+          tutorialEstimatedTime,
+          tutorialPrerequisites,
+        }),
+        // Exam-specific fields
+        ...(postType === "EXAM" && {
+          examDate: examDate ? new Date(examDate) : null,
+          examDuration: examDuration ? parseInt(examDuration) : null,
+          examTotalPoints: examTotalPoints ? parseInt(examTotalPoints) : null,
+          examPassingScore: examPassingScore ? parseInt(examPassingScore) : null,
+        }),
+        // Resource-specific fields
+        ...(postType === "RESOURCE" && {
+          resourceType,
+          resourceUrl,
+        }),
+        // Research-specific fields
+        ...(postType === "RESEARCH" && {
+          researchField,
+          researchCollaborators,
+        }),
+        // Project-specific fields
+        ...(postType === "PROJECT" && {
+          projectStatus,
+          projectDeadline: projectDeadline ? new Date(projectDeadline) : null,
+          projectTeamSize: projectTeamSize ? parseInt(projectTeamSize) : null,
         }),
       },
       include: {
@@ -168,6 +256,25 @@ export const createPost = async (req: Request, res: Response) => {
               postId: post.id,
               text: optionText.trim(),
               position: index,
+            },
+          })
+        )
+      );
+    }
+
+    // Create quiz questions if QUIZ type
+    if (postType === "QUIZ" && quizQuestions && Array.isArray(quizQuestions)) {
+      await Promise.all(
+        quizQuestions.map((question: any, index: number) =>
+          prisma.quizQuestion.create({
+            data: {
+              postId: post.id,
+              question: question.question || "",
+              options: question.options || [],
+              correctAnswer: question.correctAnswer || 0,
+              points: question.points || 10,
+              position: index,
+              explanation: question.explanation || null,
             },
           })
         )
@@ -428,6 +535,10 @@ export const getPost = async (req: Request, res: Response) => {
               take: 1,
             }
           }
+        },
+        // ✅ Include quiz questions if it's a quiz
+        quizQuestions: {
+          orderBy: { position: 'asc' },
         }
       },
     });

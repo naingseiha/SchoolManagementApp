@@ -81,6 +81,51 @@ export interface Post {
   isPollExpired?: boolean;
   // Legacy field (kept for backwards compatibility)
   userVote?: string | null;
+  // Assignment fields
+  assignmentDueDate?: string | null;
+  assignmentPoints?: number | null;
+  assignmentSubmissionType?: string | null;
+  // Course fields
+  courseCode?: string | null;
+  courseLevel?: string | null;
+  courseDuration?: string | null;
+  // Announcement fields
+  announcementUrgency?: string | null;
+  announcementExpiryDate?: string | null;
+  // Tutorial fields
+  tutorialDifficulty?: string | null;
+  tutorialEstimatedTime?: string | null;
+  tutorialPrerequisites?: string | null;
+  // Exam fields
+  examDate?: string | null;
+  examDuration?: number | null;
+  examTotalPoints?: number | null;
+  examPassingScore?: number | null;
+  // Resource fields
+  resourceType?: string | null;
+  resourceUrl?: string | null;
+  // Research fields
+  researchField?: string | null;
+  researchCollaborators?: string | null;
+  // Project fields
+  projectStatus?: string | null;
+  projectDeadline?: string | null;
+  projectTeamSize?: number | null;
+  // Quiz fields
+  quizQuestions?: QuizQuestion[];
+}
+
+export interface QuizQuestion {
+  id: string;
+  postId: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  points: number;
+  position: number;
+  explanation?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type ReactionType = "LIKE" | "LOVE" | "HELPFUL" | "INSIGHTFUL";
@@ -215,6 +260,44 @@ export const createPost = async (data: {
   pollAllowMultiple?: boolean;
   pollMaxChoices?: number;
   pollIsAnonymous?: boolean;
+  // Assignment fields
+  assignmentDueDate?: string;
+  assignmentPoints?: number;
+  assignmentSubmissionType?: string;
+  // Course fields
+  courseCode?: string;
+  courseLevel?: string;
+  courseDuration?: string;
+  // Announcement fields
+  announcementUrgency?: string;
+  announcementExpiryDate?: string;
+  // Tutorial fields
+  tutorialDifficulty?: string;
+  tutorialEstimatedTime?: string;
+  tutorialPrerequisites?: string;
+  // Exam fields
+  examDate?: string;
+  examDuration?: number;
+  examTotalPoints?: number;
+  examPassingScore?: number;
+  // Resource fields
+  resourceType?: string;
+  resourceUrl?: string;
+  // Research fields
+  researchField?: string;
+  researchCollaborators?: string;
+  // Project fields
+  projectStatus?: string;
+  projectDeadline?: string;
+  projectTeamSize?: number;
+  // Quiz fields
+  quizQuestions?: Array<{
+    question: string;
+    options: string[];
+    correctAnswer: number;
+    points: number;
+    explanation?: string;
+  }>;
 }): Promise<Post> => {
   const token = getAuthToken();
   const formData = new FormData();
@@ -240,6 +323,93 @@ export const createPost = async (data: {
   }
   if (data.pollIsAnonymous !== undefined) {
     formData.append("pollIsAnonymous", String(data.pollIsAnonymous));
+  }
+
+  // ✅ Add assignment fields
+  if (data.assignmentDueDate) {
+    formData.append("assignmentDueDate", data.assignmentDueDate);
+  }
+  if (data.assignmentPoints !== undefined) {
+    formData.append("assignmentPoints", String(data.assignmentPoints));
+  }
+  if (data.assignmentSubmissionType) {
+    formData.append("assignmentSubmissionType", data.assignmentSubmissionType);
+  }
+
+  // ✅ Add course fields
+  if (data.courseCode) {
+    formData.append("courseCode", data.courseCode);
+  }
+  if (data.courseLevel) {
+    formData.append("courseLevel", data.courseLevel);
+  }
+  if (data.courseDuration) {
+    formData.append("courseDuration", data.courseDuration);
+  }
+
+  // ✅ Add announcement fields
+  if (data.announcementUrgency) {
+    formData.append("announcementUrgency", data.announcementUrgency);
+  }
+  if (data.announcementExpiryDate) {
+    formData.append("announcementExpiryDate", data.announcementExpiryDate);
+  }
+
+  // ✅ Add tutorial fields
+  if (data.tutorialDifficulty) {
+    formData.append("tutorialDifficulty", data.tutorialDifficulty);
+  }
+  if (data.tutorialEstimatedTime) {
+    formData.append("tutorialEstimatedTime", data.tutorialEstimatedTime);
+  }
+  if (data.tutorialPrerequisites) {
+    formData.append("tutorialPrerequisites", data.tutorialPrerequisites);
+  }
+
+  // ✅ Add exam fields
+  if (data.examDate) {
+    formData.append("examDate", data.examDate);
+  }
+  if (data.examDuration !== undefined) {
+    formData.append("examDuration", String(data.examDuration));
+  }
+  if (data.examTotalPoints !== undefined) {
+    formData.append("examTotalPoints", String(data.examTotalPoints));
+  }
+  if (data.examPassingScore !== undefined) {
+    formData.append("examPassingScore", String(data.examPassingScore));
+  }
+
+  // ✅ Add resource fields
+  if (data.resourceType) {
+    formData.append("resourceType", data.resourceType);
+  }
+  if (data.resourceUrl) {
+    formData.append("resourceUrl", data.resourceUrl);
+  }
+
+  // ✅ Add research fields
+  if (data.researchField) {
+    formData.append("researchField", data.researchField);
+  }
+  if (data.researchCollaborators) {
+    formData.append("researchCollaborators", data.researchCollaborators);
+  }
+
+  // ✅ Add project fields
+  if (data.projectStatus) {
+    formData.append("projectStatus", data.projectStatus);
+  }
+  if (data.projectDeadline) {
+    formData.append("projectDeadline", data.projectDeadline);
+  }
+  if (data.projectTeamSize !== undefined) {
+    formData.append("projectTeamSize", String(data.projectTeamSize));
+  }
+
+  // ✅ Add quiz questions if present
+  if (data.quizQuestions && Array.isArray(data.quizQuestions)) {
+    formData.append("quizQuestions", JSON.stringify(data.quizQuestions));
   }
 
   if (data.media) {
