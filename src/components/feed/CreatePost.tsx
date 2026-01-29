@@ -461,7 +461,7 @@ function CreatePost({
     return (
       <button
         onClick={handleExpand}
-        className="w-full bg-white rounded-2xl shadow-card hover:shadow-card-hover p-4 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] animate-fade-in"
+        className="w-full bg-white rounded-2xl shadow-card hover:shadow-card-hover p-4 flex items-center gap-3 transition-all duration-300 hover:scale-[1.01]"
       >
         {/* Avatar with gradient border */}
         <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all flex-shrink-0 hover:scale-110 duration-200">
@@ -500,9 +500,9 @@ function CreatePost({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-card overflow-hidden animate-scale-in">
-      {/* Beautiful Header with gradient - Slide down */}
-      <div className="relative px-4 py-3 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 animate-slide-down">
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden transform transition-all duration-300 ease-out">
+      {/* Beautiful Header with gradient */}
+      <div className="relative px-4 py-3 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50">
         <div className="flex items-center justify-between">
           <h4 className="font-bold font-koulen text-gray-900 text-lg">
             {editMode ? "កែសម្រួលការផ្សាយ" : "បង្កើតការផ្សាយ"}
@@ -516,8 +516,8 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Author with gradient avatar - Slide up */}
-      <div className="px-4 py-4 flex items-center gap-3 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+      {/* Author with gradient avatar */}
+      <div className="px-4 py-4 flex items-center gap-3">
         <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full flex-shrink-0 hover:scale-110 transition-transform duration-200">
           <div className="w-11 h-11 rounded-full overflow-hidden bg-white">
             {userProfilePicture ? (
@@ -538,8 +538,8 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Post Type Selector - Slide up with stagger */}
-      <div className="px-4 pb-4 bg-gradient-to-b from-gray-50/50 to-transparent animate-slide-up" style={{ animationDelay: '0.2s' }}>
+      {/* Post Type Selector */}
+      <div className="px-4 pb-4 bg-gradient-to-b from-gray-50/50 to-transparent">
         <p className="text-sm font-semibold text-gray-700 mb-3">
           Select post type:
         </p>
@@ -551,7 +551,7 @@ function CreatePost({
               <button
                 key={type}
                 onClick={() => setPostType(type)}
-                className={`flex flex-col items-center gap-2 px-4 py-3 rounded-2xl flex-shrink-0 transition-all duration-300 animate-slide-up ${
+                className={`flex flex-col items-center gap-2 px-4 py-3 rounded-2xl flex-shrink-0 transition-all duration-200 ${
                   isSelected
                     ? "shadow-lg scale-105 ring-2"
                     : "hover:bg-gray-50 hover:shadow-md hover:scale-105 bg-white border border-gray-100"
@@ -562,7 +562,6 @@ function CreatePost({
                     : undefined,
                   ringColor: isSelected ? typeInfo.color : undefined,
                   borderColor: isSelected ? typeInfo.color : undefined,
-                  animationDelay: `${0.3 + index * 0.03}s`,
                 }}
               >
                 <div
@@ -587,8 +586,8 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Selected Type Badge & Visibility - Slide up */}
-      <div className="px-4 pt-2 pb-3 flex items-center gap-3 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+      {/* Selected Type Badge & Visibility */}
+      <div className="px-4 pt-2 pb-3 flex items-center gap-3">
         <div
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
           style={{ backgroundColor: selectedType.color }}
@@ -643,8 +642,8 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Content - Beautiful textarea - Slide up */}
-      <div className="px-4 py-2 animate-slide-up" style={{ animationDelay: '0.5s' }}>
+      {/* Content - Beautiful textarea */}
+      <div className="px-4 py-2">
         <textarea
           ref={textareaRef}
           value={content}

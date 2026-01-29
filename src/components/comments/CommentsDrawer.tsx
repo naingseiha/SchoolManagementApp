@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Send, Loader2, MessageCircle, TrendingUp, Clock, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -41,9 +42,19 @@ export default function CommentsDrawer({
   useEffect(() => {
     if (isOpen) {
       fetchComments();
+      // Lock body scroll when drawer opens
+      document.body.style.overflow = 'hidden';
       // Focus textarea after drawer opens
       setTimeout(() => textareaRef.current?.focus(), 300);
+    } else {
+      // Unlock body scroll when drawer closes
+      document.body.style.overflow = 'unset';
     }
+
+    return () => {
+      // Cleanup: restore scroll on unmount
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen, sortBy]);
 
   // Real-time comment updates via Socket.IO
@@ -176,10 +187,13 @@ export default function CommentsDrawer({
 
   if (!isOpen) return null;
 
-  return (
+  // Check if we're in the browser before rendering portal
+  if (typeof window === 'undefined') return null;
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center overflow-hidden">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -187,7 +201,7 @@ export default function CommentsDrawer({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={handleBackdropClick}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
 
         {/* Drawer */}
@@ -201,7 +215,7 @@ export default function CommentsDrawer({
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={{ top: 0, bottom: 0.5 }}
           onDragEnd={handleDragEnd}
-          className="relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col"
+          className="relative z-10 w-full max-w-2xl bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[85vh] sm:max-h-[90vh] flex flex-col"
         >
           {/* Drag Handle */}
           <div className="flex justify-center pt-3 pb-2 sm:hidden">
@@ -367,4 +381,7 @@ export default function CommentsDrawer({
       )}
     </AnimatePresence>
   );
+
+  // Render modal content in a portal at document.body level
+  return createPortal(modalContent, document.body);
 }

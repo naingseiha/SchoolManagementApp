@@ -649,7 +649,7 @@ export default function PostCard({
   const userLevel = Math.floor(Math.random() * 10) + 1;
 
   return (
-    <article className="relative group mb-4 animate-fade-in">
+    <article className="relative group mb-4">
       {/* Card with beautiful shadow */}
       <div className="relative bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden">
         {/* Header */}

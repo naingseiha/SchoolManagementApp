@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Send, Loader2, MessageCircle } from "lucide-react";
 import {
   getComments,
@@ -35,7 +36,17 @@ export default function CommentsModal({
   useEffect(() => {
     if (isOpen) {
       fetchComments();
+      // Lock body scroll
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Unlock body scroll
+      document.body.style.overflow = 'unset';
     }
+
+    return () => {
+      // Cleanup: restore scroll
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen, sortBy]);
 
   const fetchComments = async (loadMore = false) => {
@@ -195,9 +206,18 @@ export default function CommentsModal({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+  // Check if we're in the browser before rendering portal
+  if (typeof window === 'undefined') return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-hidden">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      />
+      
+      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -304,4 +324,7 @@ export default function CommentsModal({
       </div>
     </div>
   );
+
+  // Render modal content in a portal at document.body level
+  return createPortal(modalContent, document.body);
 }

@@ -233,9 +233,9 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
     <div className="w-full pt-2">
       {/* Create Post */}
         {showCreatePost && (
-          <div className="mb-4 animate-fade-in">
+          <div className="mb-4">
             <CreatePost
-              userProfilePicture={currentUser?.profilePictureUrl || null} // ✅ FIXED: Use actual profile picture
+              userProfilePicture={currentUser?.profilePictureUrl || null}
               userName={getUserName()}
               onPostCreated={handlePostCreated}
               onError={(error) => setError(error)}
@@ -245,7 +245,7 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         {/* Error */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3 animate-slide-down">
             <X className="w-5 h-5 text-red-600 flex-shrink-0" />
             <div className="flex-1">
               <p className="text-red-800 font-medium text-sm">{error}</p>
@@ -261,16 +261,46 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
 
         {/* Loading State with Skeletons */}
         {isLoading && (
-          <div className="space-y-3">
-            <PostCardSkeleton />
-            <PostCardSkeleton />
-            <PostCardSkeleton />
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div 
+                key={i} 
+                className="animate-fade-in" 
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                <PostCardSkeleton />
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Posts List */}
+        {/* Posts List with staggered animation */}
+        <div className="space-y-4">
+          {!isLoading &&
+            posts.map((post, index) => (
+              <div
+                key={post.id}
+                className="animate-slide-up"
+                style={{ 
+                  animationDelay: isRefreshing ? '0s' : `${Math.min(index * 0.05, 0.3)}s`,
+                  animationDuration: '0.4s',
+                  animationFillMode: 'both'
+                }}
+              >
+                <PostCard
+                  post={post}
+                  currentUserId={currentUser?.id}
+                  onPostDeleted={handlePostDeleted}
+                  onPostUpdated={handlePostUpdated}
+                  onProfileClick={onProfileClick}
+                />
+              </div>
+          ))}
+        </div>
+
+        {/* No posts yet */}
         {!isLoading && posts.length === 0 && !error && (
-          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 animate-fade-in">
             <Rss className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <h3 className="text-base font-semibold text-gray-900 mb-1">
               No posts yet
@@ -280,20 +310,6 @@ function FeedPage({ showCreatePost = true, onProfileClick, selectedFilter: exter
             </p>
           </div>
         )}
-
-        <div>
-          {!isLoading &&
-            posts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                currentUserId={currentUser?.id}
-                onPostDeleted={handlePostDeleted}
-                onPostUpdated={handlePostUpdated}
-                onProfileClick={onProfileClick}
-              />
-          ))}
-        </div>
 
         {/* Load More Trigger */}
         {hasMore && !isLoading && (
