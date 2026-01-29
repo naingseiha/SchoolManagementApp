@@ -461,10 +461,10 @@ function CreatePost({
     return (
       <button
         onClick={handleExpand}
-        className="w-full bg-white rounded-2xl shadow-card hover:shadow-card-hover p-4 flex items-center gap-3 transition-all duration-300"
+        className="w-full bg-white rounded-2xl shadow-card hover:shadow-card-hover p-4 flex items-center gap-3 transition-all duration-300 hover:scale-[1.02] animate-fade-in"
       >
         {/* Avatar with gradient border */}
-        <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all flex-shrink-0">
+        <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 transition-all flex-shrink-0 hover:scale-110 duration-200">
           <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
             {userProfilePicture ? (
               <Image
@@ -491,7 +491,7 @@ function CreatePost({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="p-2.5 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 rounded-xl transition-colors">
+          <div className="p-2.5 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 rounded-xl transition-all duration-200 hover:scale-110">
             <ImageIcon className="w-5 h-5 text-green-600" />
           </div>
         </div>
@@ -500,25 +500,25 @@ function CreatePost({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-card overflow-hidden animate-fade-in">
-      {/* Beautiful Header with gradient */}
-      <div className="relative px-4 py-3 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50">
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden animate-scale-in">
+      {/* Beautiful Header with gradient - Slide down */}
+      <div className="relative px-4 py-3 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 animate-slide-down">
         <div className="flex items-center justify-between">
           <h4 className="font-bold font-koulen text-gray-900 text-lg">
             {editMode ? "កែសម្រួលការផ្សាយ" : "បង្កើតការផ្សាយ"}
           </h4>
           <button
             onClick={handleCollapse}
-            className="p-2 hover:bg-white/80 rounded-full transition-all"
+            className="p-2 hover:bg-white/80 rounded-full transition-all duration-200 hover:scale-110 hover:rotate-90"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
 
-      {/* Author with gradient avatar */}
-      <div className="px-4 py-4 flex items-center gap-3">
-        <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full flex-shrink-0">
+      {/* Author with gradient avatar - Slide up */}
+      <div className="px-4 py-4 flex items-center gap-3 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+        <div className="relative p-[2px] bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 rounded-full flex-shrink-0 hover:scale-110 transition-transform duration-200">
           <div className="w-11 h-11 rounded-full overflow-hidden bg-white">
             {userProfilePicture ? (
               <img
@@ -538,23 +538,23 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Post Type Selector - Modern cards with proper spacing */}
-      <div className="px-4 pb-4 bg-gradient-to-b from-gray-50/50 to-transparent">
+      {/* Post Type Selector - Slide up with stagger */}
+      <div className="px-4 pb-4 bg-gradient-to-b from-gray-50/50 to-transparent animate-slide-up" style={{ animationDelay: '0.2s' }}>
         <p className="text-sm font-semibold text-gray-700 mb-3">
           Select post type:
         </p>
         <div className="flex gap-3 overflow-x-auto pb-3 pt-1 px-1 -mx-1 hide-scrollbar">
-          {POST_TYPES.map(({ type, icon: Icon, labelKh }) => {
+          {POST_TYPES.map(({ type, icon: Icon, labelKh }, index) => {
             const typeInfo = POST_TYPE_INFO[type];
             const isSelected = postType === type;
             return (
               <button
                 key={type}
                 onClick={() => setPostType(type)}
-                className={`flex flex-col items-center gap-2 px-4 py-3 rounded-2xl flex-shrink-0 transition-all duration-300 ${
+                className={`flex flex-col items-center gap-2 px-4 py-3 rounded-2xl flex-shrink-0 transition-all duration-300 animate-slide-up ${
                   isSelected
                     ? "shadow-lg scale-105 ring-2"
-                    : "hover:bg-gray-50 hover:shadow-md hover:scale-102 bg-white border border-gray-100"
+                    : "hover:bg-gray-50 hover:shadow-md hover:scale-105 bg-white border border-gray-100"
                 }`}
                 style={{
                   backgroundColor: isSelected
@@ -562,11 +562,12 @@ function CreatePost({
                     : undefined,
                   ringColor: isSelected ? typeInfo.color : undefined,
                   borderColor: isSelected ? typeInfo.color : undefined,
+                  animationDelay: `${0.3 + index * 0.03}s`,
                 }}
               >
                 <div
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-                    isSelected ? "shadow-md" : ""
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                    isSelected ? "shadow-md scale-110" : "hover:scale-110"
                   }`}
                   style={{
                     backgroundColor: typeInfo.color,
@@ -586,10 +587,10 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Selected Type Badge & Visibility */}
-      <div className="px-4 pt-2 pb-3 flex items-center gap-3">
+      {/* Selected Type Badge & Visibility - Slide up */}
+      <div className="px-4 pt-2 pb-3 flex items-center gap-3 animate-slide-up" style={{ animationDelay: '0.4s' }}>
         <div
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md hover:shadow-lg hover:scale-105 transition-all duration-200"
           style={{ backgroundColor: selectedType.color }}
         >
           {POST_TYPES.find((t) => t.type === postType)?.icon &&
@@ -604,11 +605,11 @@ function CreatePost({
         <div className="relative">
           <button
             onClick={() => setShowVisibilitySelector(!showVisibilitySelector)}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all duration-200 hover:scale-105"
           >
             <VisibilityIcon className="w-4 h-4" />
             {selectedVisibility?.labelKh}
-            <ChevronDown className="w-3.5 h-3.5" />
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showVisibilitySelector ? 'rotate-180' : ''}`} />
           </button>
 
           {showVisibilitySelector && (
@@ -617,19 +618,20 @@ function CreatePost({
                 className="fixed inset-0 z-10"
                 onClick={() => setShowVisibilitySelector(false)}
               />
-              <div className="absolute left-0 top-12 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-20 animate-fade-in">
-                {VISIBILITY_OPTIONS.map((option) => (
+              <div className="absolute left-0 top-12 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-20 animate-slide-down">
+                {VISIBILITY_OPTIONS.map((option, index) => (
                   <button
                     key={option.value}
                     onClick={() => {
                       setVisibility(option.value);
                       setShowVisibilitySelector(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors ${
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-all duration-200 animate-slide-up hover:scale-105 ${
                       visibility === option.value
-                        ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700"
+                        ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 shadow-sm"
                         : "text-gray-700 hover:bg-gray-50"
                     }`}
+                    style={{ animationDelay: `${index * 0.05}s` }}
                   >
                     <option.icon className="w-4 h-4" />
                     <span>{option.labelKh}</span>
@@ -641,8 +643,8 @@ function CreatePost({
         </div>
       </div>
 
-      {/* Content - Beautiful textarea */}
-      <div className="px-4 py-2">
+      {/* Content - Beautiful textarea - Slide up */}
+      <div className="px-4 py-2 animate-slide-up" style={{ animationDelay: '0.5s' }}>
         <textarea
           ref={textareaRef}
           value={content}
@@ -656,7 +658,7 @@ function CreatePost({
                   ? "សួរសំណួរមតិ..."
                   : "តើអ្នកកំពុងគិតអ្វី?"
           }
-          className="w-full min-h-[140px] resize-none border-0 focus:ring-0 text-gray-900 placeholder-gray-400 text-base p-3 bg-gray-50 rounded-xl"
+          className="w-full min-h-[140px] resize-none border-0 focus:ring-2 focus:ring-indigo-500 text-gray-900 placeholder-gray-400 text-base p-3 bg-gray-50 rounded-xl transition-all duration-200"
           maxLength={2000}
         />
       </div>

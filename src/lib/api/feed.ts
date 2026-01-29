@@ -661,6 +661,9 @@ export const addComment = async (
   return response.data;
 };
 
+// Alias for consistency
+export const createComment = addComment;
+
 /**
  * Edit a comment
  */
@@ -947,4 +950,23 @@ export const votePoll = async (optionId: string): Promise<any> => {
   apiCache.clear();
   
   return response;
+};
+
+/**
+ * Search users for mentions
+ */
+export interface MentionUser {
+  id: string;
+  name: string;
+  avatar?: string;
+  role?: string;
+}
+
+export const searchUsers = async (query: string): Promise<MentionUser[]> => {
+  if (!query || query.length < 2) {
+    return [];
+  }
+
+  const response = await authFetch(`/feed/search/users?q=${encodeURIComponent(query)}`);
+  return response.data || [];
 };

@@ -15,6 +15,7 @@ import {
   toggleCommentReaction,
   getUserPosts,
   votePoll,
+  searchUsers,
 } from "../controllers/feed.controller";
 
 const router = Router();
@@ -44,5 +45,8 @@ router.post("/comments/:commentId/react", toggleCommentReaction);
 
 // User posts
 router.get("/users/:userId/posts", getUserPosts);
+
+// Search users (for mentions)
+router.get("/search/users", searchUsers);
 
 export default router;

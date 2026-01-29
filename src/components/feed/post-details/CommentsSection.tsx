@@ -20,12 +20,25 @@ export default function CommentsSection({
   commentsCount,
   onCommentAdded,
 }: CommentsSectionProps) {
+  // Load saved sort preference from localStorage
+  const savedSort = typeof window !== 'undefined' 
+    ? (localStorage.getItem('commentSortPreference') as SortOption) || 'top'
+    : 'top';
+  
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>("top");
+  const [sortBy, setSortBy] = useState<SortOption>(savedSort);
+
+  // Save sort preference to localStorage
+  const handleSortChange = (newSort: SortOption) => {
+    setSortBy(newSort);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('commentSortPreference', newSort);
+    }
+  };
 
   useEffect(() => {
     loadComments(true);
@@ -111,10 +124,10 @@ export default function CommentsSection({
             return (
               <button
                 key={option.value}
-                onClick={() => setSortBy(option.value as SortOption)}
+                onClick={() => handleSortChange(option.value as SortOption)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
                   sortBy === option.value
-                    ? "bg-blue-500 text-white shadow-md"
+                    ? "bg-blue-500 text-white shadow-md scale-105"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >

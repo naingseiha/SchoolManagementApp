@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Comment } from "@/lib/api/feed";
+import { Comment, ReactionType, toggleCommentReaction } from "@/lib/api/feed";
 import { formatDistanceToNow } from "date-fns";
 import {
   Heart,
@@ -18,6 +18,7 @@ import { toast } from "react-hot-toast";
 import GradientAvatar from "@/components/common/GradientAvatar";
 import CommentComposer from "./CommentComposer";
 import RichText from "@/components/comments/RichText";
+import CommentReactions from "@/components/comments/CommentReactions";
 
 interface CommentItemProps {
   comment: Comment;
@@ -38,8 +39,14 @@ export default function CommentItem({
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+  
+  // Reaction state
+  const [reactionCounts, setReactionCounts] = useState(
+    comment.reactionCounts || { LIKE: 0, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 }
+  );
+  const [userReaction, setUserReaction] = useState<ReactionType | null>(
+    comment.userReaction
+  );
 
   const isOwnComment = user?.id === comment.authorId;
   const maxLevel = 3; // Maximum nesting level
@@ -67,11 +74,40 @@ export default function CommentItem({
     return author.role.charAt(0) + author.role.slice(1).toLowerCase();
   };
 
-  const handleLike = async () => {
-    // TODO: Implement comment like API
-    setIsLiked(!isLiked);
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1);
-    toast.success(isLiked ? "Like removed" : "Comment liked!");
+  const handleReact = async (type: ReactionType) => {
+    if (!user) {
+      toast.error("Please login to react");
+      return;
+    }
+
+    try {
+      const result = await toggleCommentReaction(comment.id, type);
+      
+      // Update local state optimistically
+      if (result.action === "removed") {
+        setUserReaction(null);
+        setReactionCounts((prev) => ({
+          ...prev,
+          [type]: Math.max(0, prev[type] - 1),
+        }));
+      } else {
+        // Remove old reaction count if switching reactions
+        if (userReaction && userReaction !== type) {
+          setReactionCounts((prev) => ({
+            ...prev,
+            [userReaction]: Math.max(0, prev[userReaction] - 1),
+          }));
+        }
+        setUserReaction(type);
+        setReactionCounts((prev) => ({
+          ...prev,
+          [type]: prev[type] + 1,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to react:", error);
+      toast.error("Failed to react. Please try again.");
+    }
   };
 
   const handleReply = () => {
@@ -112,8 +148,15 @@ export default function CommentItem({
   };
 
   return (
-    <div className={`${level > 0 ? "ml-8 md:ml-12" : ""}`}>
-      <div className="bg-gray-50 rounded-xl p-4">
+    <div className={`${level > 0 ? "ml-8 md:ml-12" : ""} animate-slide-up`} style={{ animationDelay: `${level * 0.05}s` }}>
+      {/* Threading Line for nested replies */}
+      {level > 0 && (
+        <div className="absolute left-4 md:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 to-transparent" />
+      )}
+      
+      <div className={`bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors relative ${
+        level > 0 ? "border-l-2 border-blue-200" : ""
+      }`}>
         <div className="flex gap-3">
           {/* Avatar */}
           <GradientAvatar
@@ -131,12 +174,20 @@ export default function CommentItem({
                 <h4 className="font-semibold text-gray-900 text-sm">
                   {getDisplayName()}
                 </h4>
-                <p className="text-xs text-gray-500">
-                  {getRoleText()} •{" "}
-                  {formatDistanceToNow(new Date(comment.createdAt), {
-                    addSuffix: true,
-                  })}
-                  {comment.isEdited && " • Edited"}
+                <p className="text-xs text-gray-500 flex items-center gap-1.5">
+                  <span>{getRoleText()}</span>
+                  <span>•</span>
+                  <span>
+                    {formatDistanceToNow(new Date(comment.createdAt), {
+                      addSuffix: true,
+                    })}
+                  </span>
+                  {comment.isEdited && (
+                    <>
+                      <span>•</span>
+                      <span className="text-blue-600 font-medium">Edited</span>
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -193,32 +244,23 @@ export default function CommentItem({
               <RichText text={comment.content} />
             </p>
 
-            {/* Actions */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleLike}
-                className={`flex items-center gap-1 text-xs font-medium transition-colors ${
-                  isLiked
-                    ? "text-red-500"
-                    : "text-gray-600 hover:text-red-500"
-                }`}
-              >
-                <Heart
-                  className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`}
-                />
-                <span>{likesCount || "Like"}</span>
-              </button>
+            {/* Reaction Buttons */}
+            <CommentReactions
+              reactionCounts={reactionCounts}
+              userReaction={userReaction}
+              onReact={handleReact}
+            />
 
-              {canReply && (
-                <button
-                  onClick={handleReply}
-                  className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-blue-500 transition-colors"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Reply</span>
-                </button>
-              )}
-            </div>
+            {/* Reply Button */}
+            {canReply && (
+              <button
+                onClick={handleReply}
+                className="mt-2 flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-blue-500 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Reply</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -239,37 +281,46 @@ export default function CommentItem({
 
       {/* Nested Replies */}
       {comment.replies && comment.replies.length > 0 && (
-        <div className="mt-2">
-          {/* Toggle Replies Button */}
+        <div className="mt-3 relative">
+          {/* Toggle Replies Button with count badge */}
           <button
             onClick={() => setShowReplies(!showReplies)}
-            className="ml-11 flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors mb-2"
+            className="ml-11 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-all hover:gap-3 group"
           >
             {showReplies ? (
               <>
-                <ChevronUp className="w-4 h-4" />
-                <span>Hide {comment.replies.length} replies</span>
+                <ChevronUp className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" />
+                <span>Hide replies</span>
               </>
             ) : (
               <>
-                <ChevronDown className="w-4 h-4" />
-                <span>Show {comment.replies.length} replies</span>
+                <ChevronDown className="w-4 h-4 transition-transform group-hover:translate-y-0.5" />
+                <span>Show replies</span>
               </>
             )}
+            {/* Reply count badge */}
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+              {comment.repliesCount || comment.replies.length}
+            </span>
           </button>
 
-          {/* Replies List */}
+          {/* Replies List with animation */}
           {showReplies && (
-            <div className="space-y-2">
-              {comment.replies.map((reply) => (
-                <CommentItem
+            <div className="space-y-2 mt-2 animate-slide-down">
+              {comment.replies.map((reply, index) => (
+                <div
                   key={reply.id}
-                  comment={reply}
-                  postId={postId}
-                  level={level + 1}
-                  onReplyAdded={onReplyAdded}
-                  onCommentDeleted={onCommentDeleted}
-                />
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <CommentItem
+                    comment={reply}
+                    postId={postId}
+                    level={level + 1}
+                    onReplyAdded={onReplyAdded}
+                    onCommentDeleted={onCommentDeleted}
+                  />
+                </div>
               ))}
             </div>
           )}

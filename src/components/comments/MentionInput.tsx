@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { AtSign, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { searchUsers, MentionUser } from "@/lib/api/feed";
 
 interface MentionUser {
   id: string;
@@ -35,15 +36,24 @@ export default function MentionInput({
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock users - Replace with actual API call to search users
-  const mockUsers: MentionUser[] = [
-    { id: "1", name: "សុភា រដ្ឋ", role: "Student", avatar: undefined },
-    { id: "2", name: "David Chen", role: "Teacher", avatar: undefined },
-    { id: "3", name: "Sarah Johnson", role: "Student", avatar: undefined },
-    { id: "4", name: "មករា ខេម", role: "Student", avatar: undefined },
-    { id: "5", name: "John Smith", role: "Teacher", avatar: undefined },
-  ];
+  // Fetch users from API
+  const fetchUsers = async (query: string) => {
+    try {
+      setIsLoading(true);
+      const users = await searchUsers(query);
+      setSuggestions(users);
+      setShowSuggestions(users.length > 0);
+      setSelectedIndex(0);
+    } catch (error) {
+      console.error("Failed to search users:", error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Detect @ symbol and show suggestions
   useEffect(() => {
@@ -51,10 +61,8 @@ export default function MentionInput({
 
     if (lastAtSymbol !== -1 && lastAtSymbol === cursorPosition - 1) {
       // Just typed @
-      setSuggestions(mockUsers);
-      setShowSuggestions(true);
+      fetchUsers("");
       setMentionQuery("");
-      setSelectedIndex(0);
     } else if (lastAtSymbol !== -1 && cursorPosition > lastAtSymbol) {
       // Typing after @
       const query = value.substring(lastAtSymbol + 1, cursorPosition);
@@ -63,12 +71,12 @@ export default function MentionInput({
       if (spaceIndex === -1) {
         // Still typing mention
         setMentionQuery(query);
-        const filtered = mockUsers.filter((user) =>
-          user.name.toLowerCase().includes(query.toLowerCase())
-        );
-        setSuggestions(filtered);
-        setShowSuggestions(filtered.length > 0);
-        setSelectedIndex(0);
+        if (query.length >= 2) {
+          fetchUsers(query);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
       } else {
         // Space after mention, close suggestions
         setShowSuggestions(false);
@@ -172,6 +180,9 @@ export default function MentionInput({
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <AtSign className="w-4 h-4" />
                 <span className="font-medium">Mention someone</span>
+                {isLoading && (
+                  <span className="ml-auto text-xs text-gray-400">Loading...</span>
+                )}
               </div>
             </div>
 

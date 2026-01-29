@@ -1057,20 +1057,35 @@ export const getComments = async (req: Request, res: Response) => {
       prisma.comment.count({ where: { postId, parentId: null } }),
     ]);
 
-    // ✅ OPTIMIZED: Simplified enrichment logic
+    // ✅ Get reaction counts by type for all comments
+    const commentIds = comments.map((c) => c.id);
+    const replyIds = comments.flatMap((c) => c.replies.map((r: any) => r.id));
+    const allCommentIds = [...commentIds, ...replyIds];
+
+    const reactionsByComment = await prisma.commentReaction.groupBy({
+      by: ['commentId', 'type'],
+      where: { commentId: { in: allCommentIds } },
+      _count: { type: true },
+    });
+
+    // Create a map for quick lookup
+    const reactionMap = new Map<string, { LIKE: number; LOVE: number; HELPFUL: number; INSIGHTFUL: number }>();
+    allCommentIds.forEach((id) => {
+      reactionMap.set(id, { LIKE: 0, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 });
+    });
+    reactionsByComment.forEach((r) => {
+      const counts = reactionMap.get(r.commentId)!;
+      counts[r.type as 'LIKE' | 'LOVE' | 'HELPFUL' | 'INSIGHTFUL'] = r._count.type;
+    });
+
+    // ✅ OPTIMIZED: Enrichment logic with proper reaction counts
     const enrichedComments = comments.map((comment) => {
       const userReaction = comment.reactions[0]?.type || null;
-      const reactionCounts = {
-        LIKE: 0,
-        LOVE: 0,
-        HELPFUL: 0,
-        INSIGHTFUL: 0,
-      };
-      // We only have total count now, not breakdown by type
-      // For simplicity, put all in LIKE for now or implement separate query if needed
+      const reactionCounts = reactionMap.get(comment.id)!
       
       const enrichedReplies = comment.replies.map((reply: any) => {
         const replyUserReaction = reply.reactions[0]?.type || null;
+        const replyReactionCounts = reactionMap.get(reply.id) || { LIKE: 0, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 };
         return {
           id: reply.id,
           content: reply.content,
@@ -1080,9 +1095,10 @@ export const getComments = async (req: Request, res: Response) => {
           authorId: reply.authorId,
           parentId: reply.parentId,
           author: reply.author,
-          reactionCounts: { LIKE: reply._count.reactions, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 },
+          reactionCounts: replyReactionCounts,
           userReaction: replyUserReaction,
           repliesCount: 0,
+          isEdited: reply.createdAt.getTime() !== reply.updatedAt.getTime(),
         };
       });
 
@@ -1096,9 +1112,10 @@ export const getComments = async (req: Request, res: Response) => {
         parentId: comment.parentId,
         author: comment.author,
         replies: enrichedReplies,
-        reactionCounts: { LIKE: comment._count.reactions, LOVE: 0, HELPFUL: 0, INSIGHTFUL: 0 },
+        reactionCounts,
         userReaction,
         repliesCount: comment._count.replies,
+        isEdited: comment.createdAt.getTime() !== comment.updatedAt.getTime(),
       };
     });
 
@@ -1756,6 +1773,114 @@ export const votePoll = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to record vote",
+    });
+  }
+};
+
+/**
+ * Search users for mentions
+ * GET /api/feed/search/users?q=query
+ */
+export const searchUsers = async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    const query = (q as string)?.trim() || "";
+
+    if (!query || query.length < 2) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Search in firstName, lastName, khmerName (students/teachers)
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          {
+            firstName: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+          {
+            lastName: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+          {
+            student: {
+              khmerName: {
+                contains: query,
+              },
+            },
+          },
+          {
+            teacher: {
+              khmerName: {
+                contains: query,
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        profilePictureUrl: true,
+        role: true,
+        student: {
+          select: {
+            khmerName: true,
+            class: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        teacher: {
+          select: {
+            khmerName: true,
+            position: true,
+          },
+        },
+      },
+      take: 10, // Limit to 10 results for autocomplete
+    });
+
+    // Format results for mention component
+    const formattedUsers = users.map((user) => {
+      let displayName = `${user.firstName} ${user.lastName}`;
+      let subtitle = user.role;
+
+      if (user.role === "STUDENT" && user.student?.khmerName) {
+        displayName = user.student.khmerName;
+        subtitle = user.student.class?.name || "Student";
+      } else if (user.role === "TEACHER" && user.teacher?.khmerName) {
+        displayName = user.teacher.khmerName;
+        subtitle = user.teacher.position || "Teacher";
+      }
+
+      return {
+        id: user.id,
+        name: displayName,
+        avatar: user.profilePictureUrl,
+        role: subtitle,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: formattedUsers,
+    });
+  } catch (error: any) {
+    console.error("Search users error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to search users",
     });
   }
 };
