@@ -16,6 +16,8 @@ import {
   getUserPosts,
   votePoll,
   searchUsers,
+  trackPostView,
+  getPostAnalytics,
 } from "../controllers/feed.controller";
 
 const router = Router();
@@ -48,5 +50,9 @@ router.get("/users/:userId/posts", getUserPosts);
 
 // Search users (for mentions)
 router.get("/search/users", searchUsers);
+
+// Analytics endpoints
+router.post("/posts/:id/view", trackPostView); // No auth required (guests can view)
+router.get("/posts/:id/analytics", getPostAnalytics); // Auth required (only author)
 
 export default router;

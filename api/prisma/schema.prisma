@@ -732,6 +732,7 @@ model Post {
   likes         Like[]
   pollOptions   PollOption[]
   quizQuestions QuizQuestion[]
+  views         PostView[] // Analytics: post views
 
   @@index([authorId, createdAt(sort: Desc)])
   @@index([postType, createdAt(sort: Desc)])
@@ -1081,9 +1082,12 @@ model UserBlock {
 model PostView {
   id        String   @id @default(cuid())
   postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String?
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   viewedAt  DateTime @default(now())
+  duration  Int? // Time spent in seconds
+  source    String?  @default("feed") // feed, profile, search, notification
   ipAddress String? // For anonymous tracking
 
   @@index([postId])

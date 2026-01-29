@@ -1884,3 +1884,254 @@ export const searchUsers = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Track post view
+ * POST /api/feed/posts/:id/view
+ */
+export const trackPostView = async (req: Request, res: Response) => {
+  try {
+    const { id: postId } = req.params;
+    const userId = req.userId; // May be undefined for guests
+    const { duration, source } = req.body;
+
+    // Check if post exists
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, authorId: true },
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Don't track view if user is the post author
+    if (userId && userId === post.authorId) {
+      return res.json({ success: true, message: "Own post view not tracked" });
+    }
+
+    // Check if user already viewed this post in last 24 hours (avoid duplicate tracking)
+    if (userId) {
+      const recentView = await prisma.postView.findFirst({
+        where: {
+          postId,
+          userId,
+          viewedAt: {
+            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+          },
+        },
+      });
+
+      if (recentView) {
+        // Update duration if provided
+        if (duration && duration > 0) {
+          await prisma.postView.update({
+            where: { id: recentView.id },
+            data: { duration },
+          });
+        }
+        return res.json({ success: true, message: "View already tracked" });
+      }
+    }
+
+    // Create new view record
+    await prisma.postView.create({
+      data: {
+        postId,
+        userId: userId || null,
+        duration: duration || null,
+        source: source || "feed",
+        ipAddress: req.ip || null,
+      },
+    });
+
+    // Get updated view count
+    const viewCount = await prisma.postView.count({
+      where: { postId },
+    });
+
+    const uniqueViewCount = await prisma.postView.groupBy({
+      by: ["userId"],
+      where: { postId, userId: { not: null } },
+      _count: true,
+    });
+
+    res.json({
+      success: true,
+      viewCount,
+      uniqueViewCount: uniqueViewCount.length,
+    });
+  } catch (error) {
+    console.error("❌ Track view error:", error);
+    res.status(500).json({ error: "Failed to track view" });
+  }
+};
+
+/**
+ * Get post analytics
+ * GET /api/feed/posts/:id/analytics
+ */
+export const getPostAnalytics = async (req: Request, res: Response) => {
+  try {
+    const { id: postId } = req.params;
+    const userId = req.userId;
+    const { dateFrom, dateTo, groupBy = "day" } = req.query;
+
+    // Check if post exists and user is the author
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        authorId: true,
+        createdAt: true,
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    // Only post author can view analytics
+    if (post.authorId !== userId) {
+      return res.status(403).json({ error: "Not authorized to view analytics" });
+    }
+
+    // Parse date range
+    const fromDate = dateFrom
+      ? new Date(dateFrom as string)
+      : new Date(post.createdAt);
+    const toDate = dateTo ? new Date(dateTo as string) : new Date();
+
+    // Get all views for this post
+    const views = await prisma.postView.findMany({
+      where: {
+        postId,
+        viewedAt: {
+          gte: fromDate,
+          lte: toDate,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+        viewedAt: true,
+        duration: true,
+        source: true,
+        user: {
+          select: {
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        viewedAt: "asc",
+      },
+    });
+
+    // Calculate metrics
+    const totalViews = views.length;
+    const uniqueViews = new Set(
+      views.filter((v) => v.userId).map((v) => v.userId)
+    ).size;
+
+    const totalLikes = post._count.likes;
+    const totalComments = post._count.comments;
+
+    // Engagement rate = (likes + comments) / unique views * 100
+    const engagementRate =
+      uniqueViews > 0
+        ? (((totalLikes + totalComments) / uniqueViews) * 100).toFixed(2)
+        : "0.00";
+
+    // Group views by date
+    const viewsByDate: { [key: string]: number } = {};
+    views.forEach((view) => {
+      const dateKey = view.viewedAt.toISOString().split("T")[0];
+      viewsByDate[dateKey] = (viewsByDate[dateKey] || 0) + 1;
+    });
+
+    const viewsOverTime = Object.entries(viewsByDate).map(([date, count]) => ({
+      date,
+      views: count,
+    }));
+
+    // Top view sources
+    const sourceCount: { [key: string]: number } = {};
+    views.forEach((view) => {
+      const src = view.source || "unknown";
+      sourceCount[src] = (sourceCount[src] || 0) + 1;
+    });
+
+    const topViewSources = Object.entries(sourceCount)
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Audience breakdown
+    const roleCount: { [key: string]: number } = {
+      STUDENT: 0,
+      TEACHER: 0,
+      ADMIN: 0,
+      guest: 0,
+    };
+    views.forEach((view) => {
+      if (!view.user) {
+        roleCount.guest++;
+      } else {
+        roleCount[view.user.role] = (roleCount[view.user.role] || 0) + 1;
+      }
+    });
+
+    const audienceBreakdown = {
+      students: roleCount.STUDENT,
+      teachers: roleCount.TEACHER,
+      admins: roleCount.ADMIN,
+      guests: roleCount.guest,
+    };
+
+    // Average duration
+    const durationsWithValue = views.filter((v) => v.duration && v.duration > 0);
+    const avgDuration =
+      durationsWithValue.length > 0
+        ? Math.round(
+            durationsWithValue.reduce((sum, v) => sum + (v.duration || 0), 0) /
+              durationsWithValue.length
+          )
+        : 0;
+
+    // Peak times (group by hour)
+    const hourCount: { [key: number]: number } = {};
+    views.forEach((view) => {
+      const hour = view.viewedAt.getHours();
+      hourCount[hour] = (hourCount[hour] || 0) + 1;
+    });
+
+    const peakTimes = Object.entries(hourCount)
+      .map(([hour, count]) => ({ hour: parseInt(hour), views: count }))
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 5); // Top 5 peak hours
+
+    res.json({
+      overview: {
+        totalViews,
+        uniqueViews,
+        likes: totalLikes,
+        comments: totalComments,
+        engagementRate: parseFloat(engagementRate),
+      },
+      viewsOverTime,
+      topViewSources,
+      audienceBreakdown,
+      peakTimes,
+      avgDuration,
+    });
+  } catch (error) {
+    console.error("❌ Get analytics error:", error);
+    res.status(500).json({ error: "Failed to get analytics" });
+  }
+};

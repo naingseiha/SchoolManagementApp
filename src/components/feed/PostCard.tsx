@@ -54,6 +54,8 @@ import GradientAvatar from "@/components/common/GradientAvatar";
 import KnowledgePoints from "./KnowledgePoints";
 import { socketClient } from "@/lib/socket";
 import { useAuth } from "@/context/AuthContext";
+import { trackPostView } from "@/lib/api/analytics";
+import AnalyticsModal from "@/components/analytics/AnalyticsModal";
 
 interface PostCardProps {
   post: Post;
@@ -102,8 +104,33 @@ export default function PostCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showFullContent, setShowFullContent] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false); // ✅ NEW: Analytics modal state
 
   const isOwnPost = currentUserId === post.authorId;
+
+  // ✅ VIEW TRACKING: Track meaningful views (3+ seconds)
+  useEffect(() => {
+    const startTime = Date.now();
+    let viewTracked = false;
+
+    // Track view after 3 seconds (meaningful view)
+    const viewTimer = setTimeout(() => {
+      if (!viewTracked) {
+        trackPostView(post.id, { source: "feed" });
+        viewTracked = true;
+      }
+    }, 3000);
+
+    return () => {
+      clearTimeout(viewTimer);
+      
+      // Track duration on unmount if view was meaningful
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      if (duration >= 3 && viewTracked) {
+        trackPostView(post.id, { duration, source: "feed" });
+      }
+    };
+  }, [post.id]);
 
   // Listen for real-time post updates
   useEffect(() => {
@@ -959,6 +986,18 @@ export default function PostCard({
               </span>
             </button>
 
+            {/* Analytics Button - Own Posts Only */}
+            {isOwnPost && (
+              <button
+                onClick={() => setShowAnalyticsModal(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-sm transition-all duration-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50"
+                title="View Analytics"
+              >
+                <BarChart3 className="w-5 h-5 text-gray-700" />
+                <span className="font-semibold text-gray-900 text-xs">Analytics</span>
+              </button>
+            )}
+
             {/* Share Button - Gradient background */}
             <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-medium text-sm transition-all duration-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50">
               <Share2 className="w-5 h-5 text-gray-700" />
@@ -993,6 +1032,15 @@ export default function PostCard({
         onClose={() => setShowCommentsModal(false)}
         initialCommentsCount={commentsCount}
       />
+
+      {/* Analytics Modal - Own Posts Only */}
+      {isOwnPost && (
+        <AnalyticsModal
+          postId={post.id}
+          isOpen={showAnalyticsModal}
+          onClose={() => setShowAnalyticsModal(false)}
+        />
+      )}
     </article>
   );
 }
