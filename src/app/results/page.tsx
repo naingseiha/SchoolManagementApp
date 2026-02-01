@@ -15,6 +15,12 @@ import {
   Target,
   ChevronRight,
   Calendar,
+  Filter,
+  Printer,
+  Eye,
+  EyeOff,
+  Check,
+  X,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
@@ -72,6 +78,10 @@ export default function ResultsPage() {
   // ✅ OPTIMIZATION: Progressive rendering state (must be before conditional returns)
   const [visibleStudents, setVisibleStudents] = useState(20);
   const BATCH_SIZE = 20;
+
+  // ✅ NEW: Subject filtering state
+  const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
+  const [showSubjectFilter, setShowSubjectFilter] = useState(false);
 
   // Load all classes on mount
   useEffect(() => {
@@ -209,16 +219,93 @@ export default function ResultsPage() {
     }
   };
 
-  // Sort students
-  const sortedStudents = useMemo(() => {
-    const students =
-      viewMode === "byGrade"
-        ? gradeWideData?.students || []
-        : reportData?.students || [];
+  // ✅ Get current subjects list
+  const currentSubjects = useMemo(() => {
+    const data = viewMode === "byGrade" ? gradeWideData : reportData;
+    return data?.subjects || [];
+  }, [reportData, gradeWideData, viewMode]);
+
+  // ✅ Get active (not hidden) subjects
+  const activeSubjects = useMemo(() => {
+    return currentSubjects.filter(s => !hiddenSubjects.has(s.id));
+  }, [currentSubjects, hiddenSubjects]);
+
+  // ✅ Reset hidden subjects when data changes
+  useEffect(() => {
+    setHiddenSubjects(new Set());
+  }, [reportData, gradeWideData]);
+
+  // ✅ Calculate grade level from average
+  const calculateGradeLevel = (average: number): string => {
+    if (average >= 45) return "A";
+    if (average >= 40) return "B";
+    if (average >= 35) return "C";
+    if (average >= 30) return "D";
+    if (average >= 25) return "E";
+    return "F";
+  };
+
+  // ✅ Recalculate students based on selected subjects
+  const filteredStudents = useMemo(() => {
+    const data = viewMode === "byGrade" ? gradeWideData : reportData;
+    const students = data?.students || [];
 
     if (students.length === 0) return [];
 
-    const studentsCopy = [...students];
+    // If no subjects are hidden, return original data
+    if (hiddenSubjects.size === 0) {
+      return students;
+    }
+
+    // Recalculate for each student based on active subjects only
+    const recalculated = students.map((student) => {
+      let totalScore = 0;
+      let totalCoefficient = 0;
+
+      activeSubjects.forEach((subject) => {
+        const score = student.grades[subject.id];
+        if (score !== null && score !== undefined) {
+          totalScore += score;
+          totalCoefficient += subject.coefficient;
+        }
+      });
+
+      const average = totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+      const gradeLevel = calculateGradeLevel(average);
+
+      return {
+        ...student,
+        totalScore: totalScore.toFixed(2),
+        average: average.toFixed(2),
+        gradeLevel,
+        // Keep original grades but will be filtered in display
+        filteredGrades: Object.fromEntries(
+          Object.entries(student.grades).filter(([id]) => !hiddenSubjects.has(id))
+        ),
+      };
+    });
+
+    // Recalculate ranks based on filtered averages
+    const sorted = [...recalculated].sort(
+      (a, b) => parseFloat(b.average) - parseFloat(a.average)
+    );
+
+    return recalculated.map((student) => {
+      const rankIndex = sorted.findIndex(
+        (s) => s.studentId === student.studentId
+      );
+      return {
+        ...student,
+        rank: rankIndex + 1,
+      };
+    });
+  }, [reportData, gradeWideData, viewMode, hiddenSubjects, activeSubjects]);
+
+  // Sort students
+  const sortedStudents = useMemo(() => {
+    if (filteredStudents.length === 0) return [];
+
+    const studentsCopy = [...filteredStudents];
 
     switch (sortBy) {
       case "rank":
@@ -238,7 +325,7 @@ export default function ResultsPage() {
       default:
         return studentsCopy;
     }
-  }, [reportData, gradeWideData, viewMode, sortBy]);
+  }, [filteredStudents, sortBy]);
 
   // ✅ OPTIMIZATION: Reset visible students when students list changes
   useEffect(() => {
@@ -248,6 +335,34 @@ export default function ResultsPage() {
   // ✅ OPTIMIZATION: Load more students function
   const loadMoreStudents = () => {
     setVisibleStudents(prev => Math.min(prev + BATCH_SIZE, sortedStudents.length));
+  };
+
+  // ✅ NEW: Toggle subject visibility
+  const toggleSubject = (subjectId: string) => {
+    setHiddenSubjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(subjectId)) {
+        newSet.delete(subjectId);
+      } else {
+        newSet.add(subjectId);
+      }
+      return newSet;
+    });
+  };
+
+  // ✅ NEW: Show all subjects
+  const showAllSubjects = () => {
+    setHiddenSubjects(new Set());
+  };
+
+  // ✅ NEW: Hide all subjects
+  const hideAllSubjects = () => {
+    setHiddenSubjects(new Set(currentSubjects.map(s => s.id)));
+  };
+
+  // ✅ NEW: Print functionality
+  const handlePrint = () => {
+    window.print();
   };
 
   const getGradeColor = (gradeLevel: string) => {
@@ -588,9 +703,106 @@ export default function ResultsPage() {
 
     return (
       <div>
+        {/* Subject Filter Panel */}
+        {currentSubjects.length > 0 && (
+          <div className="mb-6 print:hidden">
+            <div className="flex items-center justify-between mb-3">
+              <button
+                onClick={() => setShowSubjectFilter(!showSubjectFilter)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-khmer-body text-sm font-bold transition-all ${
+                  showSubjectFilter || hiddenSubjects.size > 0
+                    ? "bg-purple-100 text-purple-700 shadow-sm"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                ជ្រើសរើសមុខវិជ្ជា
+                {hiddenSubjects.size > 0 && (
+                  <span className="ml-1 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
+                    {activeSubjects.length}/{currentSubjects.length}
+                  </span>
+                )}
+              </button>
+              
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-khmer-body text-sm font-bold shadow-md hover:shadow-lg transition-all"
+              >
+                <Printer className="w-4 h-4" />
+                បោះពុម្ព
+              </button>
+            </div>
+
+            {/* Subject Filter Dropdown */}
+            {showSubjectFilter && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 mb-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-khmer-body text-sm font-bold text-gray-700">
+                    ជ្រើសរើសមុខវិជ្ជាដើម្បីគណនា
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={showAllSubjects}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg font-khmer-body text-xs font-bold hover:bg-green-200 transition-all"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      បង្ហាញទាំងអស់
+                    </button>
+                    <button
+                      onClick={hideAllSubjects}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-khmer-body text-xs font-bold hover:bg-red-200 transition-all"
+                    >
+                      <EyeOff className="w-3.5 h-3.5" />
+                      លាក់ទាំងអស់
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+                  {currentSubjects.map((subject) => {
+                    const isActive = !hiddenSubjects.has(subject.id);
+                    return (
+                      <button
+                        key={subject.id}
+                        onClick={() => toggleSubject(subject.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all ${
+                          isActive
+                            ? "bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 text-green-800"
+                            : "bg-gray-50 border-2 border-gray-200 text-gray-400"
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center ${
+                          isActive ? "bg-green-500" : "bg-gray-300"
+                        }`}>
+                          {isActive ? (
+                            <Check className="w-3.5 h-3.5 text-white" />
+                          ) : (
+                            <X className="w-3.5 h-3.5 text-white" />
+                          )}
+                        </div>
+                        <span className="font-khmer-body text-xs font-bold truncate">
+                          {subject.nameKh}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {hiddenSubjects.size > 0 && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p className="font-khmer-body text-xs text-amber-700">
+                      <strong>ចំណាំ:</strong> ពិន្ទុសរុប មធ្យមភាគ និង ចំណាត់ថ្នាក់ ត្រូវបានគណនាឡើងវិញដោយផ្អែកលើមុខវិជ្ជាដែលបានជ្រើសរើសប៉ុណ្ណោះ ({activeSubjects.length} មុខវិជ្ជា)
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-khmer-title text-2xl text-gray-900">{title}</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
             <span className="font-khmer-body text-sm text-gray-500 font-medium">
               តម្រៀបតាម:
             </span>
@@ -771,16 +983,18 @@ export default function ResultsPage() {
   // Render Class Results (Level 3)
   if (selectedClass) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <div className="flex-shrink-0">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20 print:bg-white">
+        <div className="flex-shrink-0 print:hidden">
           <Sidebar />
         </div>
         <div className="flex-1 flex flex-col min-h-0">
-          <Header />
-          <main className="flex-1 overflow-y-auto min-h-0 p-8">
+          <div className="print:hidden">
+            <Header />
+          </div>
+          <main className="flex-1 overflow-y-auto min-h-0 p-8 print:p-4">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group"
+              className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group print:hidden"
             >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span className="font-khmer-body text-sm font-bold">
@@ -791,7 +1005,7 @@ export default function ResultsPage() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/30">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/30 print:shadow-none">
                     <Trophy className="w-8 h-8 text-white" />
                   </div>
                   <div>
@@ -800,6 +1014,11 @@ export default function ResultsPage() {
                     </h1>
                     <p className="font-khmer-body text-gray-500 font-medium">
                       {selectedMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
+                      {hiddenSubjects.size > 0 && (
+                        <span className="ml-2 text-purple-600">
+                          ({activeSubjects.length} មុខវិជ្ជា)
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -856,16 +1075,18 @@ export default function ResultsPage() {
   // Render Grade-Wide Results (Level 2 - By Grade View)
   if (selectedGrade && viewMode === "byGrade") {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
-        <div className="flex-shrink-0">
+      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20 print:bg-white">
+        <div className="flex-shrink-0 print:hidden">
           <Sidebar />
         </div>
         <div className="flex-1 flex flex-col min-h-0">
-          <Header />
-          <main className="flex-1 overflow-y-auto min-h-0 p-8">
+          <div className="print:hidden">
+            <Header />
+          </div>
+          <main className="flex-1 overflow-y-auto min-h-0 p-8 print:p-4">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group"
+              className="flex items-center gap-2 mb-6 text-gray-600 hover:text-indigo-600 transition-colors group print:hidden"
             >
               <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span className="font-khmer-body text-sm font-bold">
@@ -876,7 +1097,7 @@ export default function ResultsPage() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/30">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/30 print:shadow-none">
                     <BarChart3 className="w-8 h-8 text-white" />
                   </div>
                   <div>
@@ -885,11 +1106,16 @@ export default function ResultsPage() {
                     </h1>
                     <p className="font-khmer-body text-gray-500 font-medium">
                       {selectedMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
+                      {hiddenSubjects.size > 0 && (
+                        <span className="ml-2 text-purple-600">
+                          ({activeSubjects.length} មុខវិជ្ជា)
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl">
+                <div className="flex gap-2 p-1.5 bg-gray-100 rounded-2xl print:hidden">
                   <button
                     onClick={() => setViewMode("byClass")}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-khmer-body text-sm font-bold transition-all ${

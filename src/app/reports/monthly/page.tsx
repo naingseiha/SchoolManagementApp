@@ -20,6 +20,9 @@ import {
   BarChart3,
   ChevronDown,
   ChevronUp,
+  Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { reportsApi, type MonthlyReportData } from "@/lib/api/reports";
 import { formatReportDate } from "@/lib/khmerDateUtils";
@@ -143,6 +146,9 @@ export default function ReportsPage() {
   const [showRoomNumber, setShowRoomNumber] = useState(true);
   const [showClassName, setShowClassName] = useState(true);
 
+  // ✅ NEW: Subject filter state
+  const [hiddenSubjects, setHiddenSubjects] = useState<Set<string>>(new Set());
+
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Get unique grades from available classes
@@ -250,6 +256,57 @@ export default function ReportsPage() {
     }
   }, [reportFormat]);
 
+  // ✅ Sort subjects based on grade level - MUST be before any early returns!
+  const sortedSubjects = useMemo(() => {
+    if (!reportData || !reportData.subjects) return [];
+    const grade = reportData.grade;
+    const sorted = sortSubjectsByOrder(reportData.subjects, grade);
+    return sorted;
+  }, [reportData]);
+
+  // ✅ NEW: Get active (not hidden) subjects
+  const activeSubjects = useMemo(() => {
+    return sortedSubjects.filter(s => !hiddenSubjects.has(s.id));
+  }, [sortedSubjects, hiddenSubjects]);
+
+  // ✅ NEW: Reset hidden subjects when report data changes
+  useEffect(() => {
+    setHiddenSubjects(new Set());
+  }, [reportData]);
+
+  // ✅ NEW: Calculate grade level from average
+  const calculateGradeLevel = (average: number): string => {
+    if (average >= 45) return "A";
+    if (average >= 40) return "B";
+    if (average >= 35) return "C";
+    if (average >= 30) return "D";
+    if (average >= 25) return "E";
+    return "F";
+  };
+
+  // ✅ NEW: Toggle subject visibility
+  const toggleSubject = (subjectId: string) => {
+    setHiddenSubjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(subjectId)) {
+        newSet.delete(subjectId);
+      } else {
+        newSet.add(subjectId);
+      }
+      return newSet;
+    });
+  };
+
+  // ✅ NEW: Show all subjects
+  const showAllSubjectsHandler = () => {
+    setHiddenSubjects(new Set());
+  };
+
+  // ✅ NEW: Hide all subjects
+  const hideAllSubjectsHandler = () => {
+    setHiddenSubjects(new Set(sortedSubjects.map(s => s.id)));
+  };
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -287,46 +344,101 @@ export default function ReportsPage() {
         }
       : null;
 
-  // ✅ Sort subjects based on grade level
-  const sortedSubjects = useMemo(() => {
-    if (!reportData || !reportData.subjects) return [];
-    const grade = reportData.grade;
-    const sorted = sortSubjectsByOrder(reportData.subjects, grade);
-    return sorted;
-  }, [reportData]);
-
-  // Transform API data - use sortedSubjects
+  // Transform API data - use activeSubjects (filtered subjects) and recalculate if needed
   const studentReports = reportData
-    ? reportData.students.map((student) => {
-        const gradesArray = sortedSubjects.map((subject) => {
-          const score = student.grades[subject.id];
+    ? (() => {
+        // If no subjects are hidden, use original data
+        if (hiddenSubjects.size === 0) {
+          return reportData.students.map((student) => {
+            const gradesArray = sortedSubjects.map((subject) => {
+              const score = student.grades[subject.id];
+              return {
+                id: `grade_${student.studentId}_${subject.id}`,
+                studentId: student.studentId,
+                subjectId: subject.id,
+                score: score,
+                month: reportData.month,
+              };
+            });
+
+            return {
+              student: {
+                id: student.studentId,
+                lastName: student.studentName.split(" ")[0] || "",
+                firstName: student.studentName.split(" ").slice(1).join(" ") || "",
+                gender: student.gender.toLowerCase() as "male" | "female",
+                dateOfBirth: "",
+                className: student.className || "",
+              },
+              grades: gradesArray,
+              total: parseFloat(student.totalScore),
+              average: parseFloat(student.average),
+              letterGrade: student.gradeLevel,
+              rank: student.rank,
+              absent: student.absent,
+              permission: student.permission,
+            };
+          });
+        }
+
+        // Recalculate with filtered subjects
+        const recalculated = reportData.students.map((student) => {
+          // Calculate only with active subjects
+          let totalScore = 0;
+          let totalCoefficient = 0;
+
+          activeSubjects.forEach((subject) => {
+            const score = student.grades[subject.id];
+            if (score !== null && score !== undefined) {
+              totalScore += score;
+              totalCoefficient += subject.coefficient;
+            }
+          });
+
+          const average = totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+          const letterGrade = calculateGradeLevel(average);
+
+          // Build grades array with only active subjects
+          const gradesArray = activeSubjects.map((subject) => {
+            const score = student.grades[subject.id];
+            return {
+              id: `grade_${student.studentId}_${subject.id}`,
+              studentId: student.studentId,
+              subjectId: subject.id,
+              score: score,
+              month: reportData.month,
+            };
+          });
+
           return {
-            id: `grade_${student.studentId}_${subject.id}`,
-            studentId: student.studentId,
-            subjectId: subject.id,
-            score: score,
-            month: reportData.month,
+            student: {
+              id: student.studentId,
+              lastName: student.studentName.split(" ")[0] || "",
+              firstName: student.studentName.split(" ").slice(1).join(" ") || "",
+              gender: student.gender.toLowerCase() as "male" | "female",
+              dateOfBirth: "",
+              className: student.className || "",
+            },
+            grades: gradesArray,
+            total: totalScore,
+            average: average,
+            letterGrade: letterGrade,
+            rank: 0, // Will be recalculated
+            absent: student.absent,
+            permission: student.permission,
           };
         });
 
-        return {
-          student: {
-            id: student.studentId,
-            lastName: student.studentName.split(" ")[0] || "",
-            firstName: student.studentName.split(" ").slice(1).join(" ") || "",
-            gender: student.gender.toLowerCase() as "male" | "female",
-            dateOfBirth: "",
-            className: student.className || "",
-          },
-          grades: gradesArray,
-          total: parseFloat(student.totalScore),
-          average: parseFloat(student.average),
-          letterGrade: student.gradeLevel,
-          rank: student.rank,
-          absent: student.absent,
-          permission: student.permission,
-        };
-      })
+        // Recalculate ranks based on new averages
+        const sorted = [...recalculated].sort((a, b) => b.average - a.average);
+        return recalculated.map((student) => {
+          const rankIndex = sorted.findIndex(s => s.student.id === student.student.id);
+          return {
+            ...student,
+            rank: rankIndex + 1,
+          };
+        });
+      })()
     : [];
 
   // Sort reports
@@ -342,8 +454,8 @@ export default function ReportsPage() {
     return sortOrder === "asc" ? comparison : -comparison;
   });
 
-  // Transform subjects - use sortedSubjects
-  const subjects = sortedSubjects.map((s) => ({
+  // Transform subjects - use activeSubjects when subjects are hidden
+  const subjects = (hiddenSubjects.size > 0 ? activeSubjects : sortedSubjects).map((s) => ({
     id: s.id,
     name: s.nameKh,
     code: s.code,
@@ -780,6 +892,73 @@ export default function ReportsPage() {
                     setUseAutoDate={setUseAutoDate}
                     reportFormat={reportFormat}
                   />
+
+                  {/* ✅ NEW: Subject Filter Section */}
+                  {sortedSubjects.length > 0 && showSettings && (
+                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-khmer-body text-sm font-bold text-purple-800 flex items-center gap-2">
+                          <BookOpen className="w-4 h-4" />
+                          ជ្រើសរើសមុខវិជ្ជា Subject Selection
+                          {hiddenSubjects.size > 0 && (
+                            <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
+                              {activeSubjects.length}/{sortedSubjects.length}
+                            </span>
+                          )}
+                        </h3>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={showAllSubjectsHandler}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg font-khmer-body text-xs font-bold hover:bg-green-200 transition-all"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            បង្ហាញទាំងអស់
+                          </button>
+                          <button
+                            onClick={hideAllSubjectsHandler}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg font-khmer-body text-xs font-bold hover:bg-red-200 transition-all"
+                          >
+                            <EyeOff className="w-3.5 h-3.5" />
+                            លាក់ទាំងអស់
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {sortedSubjects.map((subject) => {
+                          const isActive = !hiddenSubjects.has(subject.id);
+                          return (
+                            <button
+                              key={subject.id}
+                              onClick={() => toggleSubject(subject.id)}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${
+                                isActive
+                                  ? "bg-white border-2 border-green-400 text-green-800 shadow-sm"
+                                  : "bg-gray-100 border-2 border-gray-200 text-gray-400"
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${
+                                isActive ? "bg-green-500" : "bg-gray-300"
+                              }`}>
+                                <Check className={`w-3.5 h-3.5 text-white ${isActive ? "" : "opacity-0"}`} />
+                              </div>
+                              <span className="font-khmer-body text-xs font-bold truncate">
+                                {subject.nameKh}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {hiddenSubjects.size > 0 && (
+                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <p className="font-khmer-body text-xs text-amber-700">
+                            <strong>ចំណាំ:</strong> ពិន្ទុសរុប មធ្យមភាគ កម្រិត និង ចំណាត់ថ្នាក់ ត្រូវបានគណនាឡើងវិញដោយផ្អែកលើ {activeSubjects.length} មុខវិជ្ជាដែលបានជ្រើសរើសប៉ុណ្ណោះ
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-between pt-4 border-t">
