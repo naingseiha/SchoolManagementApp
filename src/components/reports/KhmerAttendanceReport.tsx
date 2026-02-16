@@ -66,24 +66,13 @@ export default function KhmerAttendanceReport({
     }
   });
 
-  // Helper to get subject abbreviation
-  const getSubjectAbbr = (subjectName: string): string => {
-    const abbrMap: { [key: string]: string } = {
-      "ភាសាខ្មែរ": "ខ្មែរ",
-      "គណិតវិទ្យា": "គណិត",
-      "រូបវិទ្យា": "រូប",
-      "គីមីវិទ្យា": "គីមី",
-      "ជីវវិទ្យា": "ជីវ",
-      "ប្រវត្តិវិទ្យា": "ប្រវ",
-      "ភូមិវិទ្យា": "ភូមិ",
-      "ភាសាអង់គ្លេស": "អង់",
-      "សីលធម៌-ពលរដ្ឋ": "សីល",
-      "ផែនដីនិងបរិស្ថាន": "ផែន",
-      "វិទ្យាសាស្ត្រ": "វិទ្យា",
-      "តែងសេចក្ដី": "តែង",
-      "សរសេរតាមអាន": "ស.អាន",
+  // Helper to clean up subject names for display
+  const getCleanSubjectName = (subjectName: string): string => {
+    const nameMap: { [key: string]: string } = {
+      "សីលធម៌-ពលរដ្ឋវិជ្ជា": "សីលធម៌",
+      "សីលធម៌-ពលរដ្ឋ": "សីលធម៌",
     };
-    return abbrMap[subjectName] || subjectName.substring(0, 4);
+    return nameMap[subjectName] || subjectName;
   };
 
   return (
@@ -311,15 +300,28 @@ export default function KhmerAttendanceReport({
                   <th
                     key={subject.id}
                     rowSpan={2}
-                    className="px-1 py-1.5 bg-blue-100 align-middle text-center"
+                    className="px-1 py-2 bg-blue-100"
                     style={{ 
                       border: "1px solid black", 
-                      width: "45px",
+                      width: "30px",
+                      height: "120px",
                       fontFamily: "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      fontSize: "8px",
+                      fontSize: "9px",
+                      textAlign: "center",
+                      verticalAlign: "middle",
                     }}
                   >
-                    {getSubjectAbbr(subject.name)}
+                    <div
+                      style={{
+                        writingMode: "vertical-rl",
+                        transform: "rotate(180deg)",
+                        whiteSpace: "nowrap",
+                        display: "inline-block",
+                        textAlign: "center",
+                      }}
+                    >
+                      {getCleanSubjectName(subject.name)}
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -357,98 +359,13 @@ export default function KhmerAttendanceReport({
                     >
                       
                     </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Room Statistics */}
-          <div className="mt-2 text-xs">
-            <div className="bg-gray-50 p-2 rounded border border-gray-200">
-              <div className="font-bold mb-1 text-center text-gray-800">
-                ចំនួនសិស្សក្នុងមួយបន្ទប់
-              </div>
-              <div className="text-xs bg-white p-2 rounded border border-gray-200">
-                <span className="font-bold text-purple-700">
-                  បន្ទប់ {String(parseInt(roomNumber) + pageIndex).padStart(2, '0')}:
-                </span>
-                <div className="ml-2 mt-1">
-                  <div className="text-blue-600">
-                    • {selectedClass.name}{pageIndex + 1}: {page.students.length} នាក់
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Signatures - Only on last page */}
-          {pageIndex === pages.length - 1 && (
-            <>
-              {/* Signatures */}
-              <div className="grid grid-cols-2 gap-10 mt-3">
-                {/* Principal */}
-                <div className="text-center">
-                  <p
-                    className="text-xs mb-0.5"
-                    style={{
-                      fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    {reportDate}
-                  </p>
-                  <p
-                    className="text-xs font-bold mb-0.5"
-                    style={{
-                      fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    នាយកសាលារៀន
-                  </p>
-                  <div className="h-12"></div>
-                  <p
-                    className="text-xs font-bold"
-                    style={{
-                      fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    {principalName}
-                  </p>
-                </div>
-
-                {/* Teacher */}
-                <div className="text-center">
-                  <p
-                    className="text-xs mb-0.5"
-                    style={{
-                      fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    {reportDate}
-                  </p>
-                  <p
-                    className="text-xs font-bold mb-0.5"
-                    style={{
-                      fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    គ្រូបន្ទុកថ្នាក់
-                  </p>
-                  <div className="h-12"></div>
-                  <p
-                    className="text-xs font-bold"
-                    style={{
-                      fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    {teacherName}
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      ))}
-    </>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ))}
+  </>
   );
 }

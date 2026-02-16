@@ -171,7 +171,7 @@ export default function AttendancePage() {
             {/* Configuration Section */}
             <div className="mb-6 rounded-lg bg-white p-6 shadow-sm">
               <h4 className="mb-4 text-lg font-semibold text-gray-700">
-                ការកំណត់រចនាសម្ព័ន្ធ
+                ការកំណត់
               </h4>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -365,9 +365,9 @@ export default function AttendancePage() {
             {isGenerating && selectedClass && (
               <div className="rounded-lg bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-700">
+                  <h4 className="text-lg font-semibold text-gray-700">
                     មើលរបាយការណ៍
-                  </h2>
+                  </h4>
                   <Button onClick={handlePrint} variant="outline">
                     <Printer className="mr-2 h-4 w-4" />
                     បោះពុម្ព

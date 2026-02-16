@@ -138,231 +138,227 @@ export default function AttendanceTab() {
     <>
       {/* Configuration Section */}
       <div className="mb-6 rounded-lg bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-gray-700">
+        <h4 className="mb-4 text-lg font-semibold text-gray-700">
           ការកំណត់រចនាសម្ព័ន្ធ
-        </h2>
+        </h4>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {/* Class Selection */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    ថ្នាក់រៀន
-                  </label>
-                  <select
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Class Selection */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              ថ្នាក់រៀន
+            </label>
+            <select
+              value={selectedClassId}
+              onChange={(e) => setSelectedClassId(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">ជ្រើសរើសថ្នាក់រៀន</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Academic Year */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              ឆ្នាំសិក្សា
+            </label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {academicYearOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Province */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              ខេត្ត
+            </label>
+            <input
+              type="text"
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Exam Center */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              មណ្ឌលប្រឡង
+            </label>
+            <input
+              type="text"
+              value={examCenter}
+              onChange={(e) => setExamCenter(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Room Number */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              លេខបន្ទប់
+            </label>
+            <input
+              type="text"
+              value={roomNumber}
+              onChange={(e) => setRoomNumber(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Report Title */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              ចំណងជើង
+            </label>
+            <input
+              type="text"
+              value={reportTitle}
+              onChange={(e) => setReportTitle(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Report Date */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              កាលបរិច្ឆេទ
+            </label>
+            <input
+              type="text"
+              value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Principal Name */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              ឈ្មោះនាយក
+            </label>
+            <input
+              type="text"
+              value={principalName}
+              onChange={(e) => setPrincipalName(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Teacher Name */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              ឈ្មោះគ្រូ
+            </label>
+            <input
+              type="text"
+              value={teacherName}
+              onChange={(e) => setTeacherName(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* Page Configuration */}
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-sm font-semibold text-gray-700">
+              ការកំណត់ចំនួនសិស្សក្នុងមួយទំព័រ
+            </h4>
+            <Button onClick={handleAddPage} size="sm" variant="outline">
+              <Plus className="mr-1 h-4 w-4" />
+              បន្ថែមទំព័រ
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {pageConfigs.map((config, index) => (
+              <div
+                key={config.id}
+                className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 p-3"
+              >
+                <span className="min-w-[80px] text-sm font-medium text-gray-700">
+                  ទំព័រទី {index + 1}:
+                </span>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    min="1"
+                    value={config.studentCount}
+                    onChange={(e) =>
+                      handlePageConfigChange(
+                        config.id,
+                        parseInt(e.target.value) || 0,
+                      )
+                    }
+                    className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="ចំនួនសិស្ស"
+                  />
+                </div>
+                {pageConfigs.length > 1 && (
+                  <button
+                    onClick={() => handleRemovePage(config.id)}
+                    className="text-red-600 hover:text-red-700"
                   >
-                    <option value="">ជ្រើសរើសថ្នាក់រៀន</option>
-                    {classes.map((cls) => (
-                      <option key={cls.id} value={cls.id}>
-                        {cls.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Academic Year */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    ឆ្នាំសិក្សា
-                  </label>
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    {academicYearOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Province */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    ខេត្ត
-                  </label>
-                  <input
-                    type="text"
-                    value={province}
-                    onChange={(e) => setProvince(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Exam Center */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    មណ្ឌលប្រឡង
-                  </label>
-                  <input
-                    type="text"
-                    value={examCenter}
-                    onChange={(e) => setExamCenter(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Room Number */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    លេខបន្ទប់
-                  </label>
-                  <input
-                    type="text"
-                    value={roomNumber}
-                    onChange={(e) => setRoomNumber(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Report Title */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    ចំណងជើង
-                  </label>
-                  <input
-                    type="text"
-                    value={reportTitle}
-                    onChange={(e) => setReportTitle(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Report Date */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    កាលបរិច្ឆេទ
-                  </label>
-                  <input
-                    type="text"
-                    value={reportDate}
-                    onChange={(e) => setReportDate(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Principal Name */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    ឈ្មោះនាយក
-                  </label>
-                  <input
-                    type="text"
-                    value={principalName}
-                    onChange={(e) => setPrincipalName(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Teacher Name */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
-                    ឈ្មោះគ្រូ
-                  </label>
-                  <input
-                    type="text"
-                    value={teacherName}
-                    onChange={(e) => setTeacherName(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
+            ))}
+          </div>
+        </div>
 
-              {/* Page Configuration */}
-              <div className="mt-6">
-                <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-gray-700">
-                    ការកំណត់ចំនួនសិស្សក្នុងមួយទំព័រ
-                  </h4>
-                  <Button onClick={handleAddPage} size="sm" variant="outline">
-                    <Plus className="mr-1 h-4 w-4" />
-                    បន្ថែមទំព័រ
-                  </Button>
-                </div>
+        {/* Generate Button */}
+        <div className="mt-6 flex justify-end gap-3">
+          <Button onClick={handleGenerate} variant="primary">
+            បង្កើតរបាយការណ៍
+          </Button>
+        </div>
+      </div>
 
-                <div className="space-y-2">
-                  {pageConfigs.map((config, index) => (
-                    <div
-                      key={config.id}
-                      className="flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 p-3"
-                    >
-                      <span className="min-w-[80px] text-sm font-medium text-gray-700">
-                        ទំព័រទី {index + 1}:
-                      </span>
-                      <div className="flex-1">
-                        <input
-                          type="number"
-                          min="1"
-                          value={config.studentCount}
-                          onChange={(e) =>
-                            handlePageConfigChange(
-                              config.id,
-                              parseInt(e.target.value) || 0,
-                            )
-                          }
-                          className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="ចំនួនសិស្ស"
-                        />
-                      </div>
-                      {pageConfigs.length > 1 && (
-                        <button
-                          onClick={() => handleRemovePage(config.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Report Preview */}
+      {isGenerating && selectedClass && (
+        <div className="rounded-lg bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h4 className="text-lg font-semibold text-gray-700">
+              មើលរបាយការណ៍
+            </h4>
+            <Button onClick={handlePrint} variant="outline">
+              <Printer className="mr-2 h-4 w-4" />
+              បោះពុម្ព
+            </Button>
+          </div>
 
-              {/* Generate Button */}
-              <div className="mt-6 flex justify-end gap-3">
-                <Button onClick={handleGenerate} variant="primary">
-                  បង្កើតរបាយការណ៍
-                </Button>
-              </div>
-            </div>
-
-            {/* Report Preview */}
-            {isGenerating && selectedClass && (
-              <div className="rounded-lg bg-white p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-700">
-                    មើលរបាយការណ៍
-                  </h2>
-                  <Button onClick={handlePrint} variant="outline">
-                    <Printer className="mr-2 h-4 w-4" />
-                    បោះពុម្ព
-                  </Button>
-                </div>
-
-                <div
-                  ref={printRef}
-                  className="mx-auto"
-                  style={{ width: "210mm" }}
-                >
-                  <KhmerAttendanceReport
-                    selectedClass={selectedClass}
-                    province={province}
-                    examCenter={examCenter}
-                    roomNumber={roomNumber}
-                    reportTitle={reportTitle}
-                    reportDate={reportDate}
-                                      principalName={principalName}
-                  teacherName={teacherName}
-                  selectedYear={selectedYear}
-                  pageConfigs={pageConfigs}
-                  sortStudents={sortStudents}
-                />
-              </div>
-            </div>
-          )}
-        </>
-      );
-    }
+          <div ref={printRef} className="mx-auto" style={{ width: "210mm" }}>
+            <KhmerAttendanceReport
+              selectedClass={selectedClass}
+              province={province}
+              examCenter={examCenter}
+              roomNumber={roomNumber}
+              reportTitle={reportTitle}
+              reportDate={reportDate}
+              principalName={principalName}
+              teacherName={teacherName}
+              selectedYear={selectedYear}
+              pageConfigs={pageConfigs}
+              sortStudents={sortStudents}
+            />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

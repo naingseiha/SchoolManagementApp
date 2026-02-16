@@ -120,7 +120,7 @@ function Sidebar() {
     },
     {
       icon: FileText,
-      label: "គ្រប់គ្រងប្រឡង",
+      label: "គ្រប់គ្រងការប្រឡង",
       href: "/reports/exam-management",
       roles: ["ADMIN", "TEACHER"],
       permission: PERMISSIONS.VIEW_REPORTS,
@@ -140,7 +140,7 @@ function Sidebar() {
   const filteredMenuItems = menuItems.filter((item) => {
     // Check if user has the required role
     if (!item.roles.includes(userRole || "")) return false;
-    
+
     // For ADMIN users, check permissions (unless Super Admin)
     if (userRole === "ADMIN" && item.permission) {
       // Super Admins see everything
@@ -148,13 +148,15 @@ function Sidebar() {
         console.log(`✅ [SIDEBAR] ${item.label}: Super Admin - showing`);
         return true;
       }
-      
+
       // Regular admins need specific permission
       const hasAccess = hasPermission(item.permission);
-      console.log(`🔍 [SIDEBAR] ${item.label}: Permission ${item.permission} = ${hasAccess}`);
+      console.log(
+        `🔍 [SIDEBAR] ${item.label}: Permission ${item.permission} = ${hasAccess}`,
+      );
       return hasAccess;
     }
-    
+
     // TEACHER users see all teacher-allowed items
     return true;
   });
@@ -204,7 +206,7 @@ function Sidebar() {
       // Start navigation
       router.push(href);
     },
-    [pathname, router]
+    [pathname, router],
   );
 
   // ✅ Reset navigation state when pathname changes
@@ -218,7 +220,7 @@ function Sidebar() {
     (href: string) => {
       router.prefetch(href);
     },
-    [router]
+    [router],
   );
 
   return (
@@ -227,7 +229,6 @@ function Sidebar() {
         isCollapsed ? "w-20" : "w-72"
       } relative flex flex-col h-screen`}
     >
-
       {/* Sidebar Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-white/20 bg-black/10 backdrop-blur-md">
         {!isCollapsed && (
