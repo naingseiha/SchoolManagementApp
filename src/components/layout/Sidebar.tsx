@@ -23,7 +23,6 @@ import {
   Sparkles,
   Loader2,
   FileText,
-  ClipboardCheck,
 } from "lucide-react";
 
 function Sidebar() {
@@ -121,19 +120,11 @@ function Sidebar() {
     },
     {
       icon: FileText,
-      label: "តារាងប្រឡង",
-      href: "/reports/exam",
+      label: "គ្រប់គ្រងប្រឡង",
+      href: "/reports/exam-management",
       roles: ["ADMIN", "TEACHER"],
       permission: PERMISSIONS.VIEW_REPORTS,
       gradient: "from-violet-500 to-purple-500",
-    },
-    {
-      icon: ClipboardCheck,
-      label: "តារាងវត្តមាន",
-      href: "/reports/attendance",
-      roles: ["ADMIN", "TEACHER"],
-      permission: PERMISSIONS.VIEW_REPORTS,
-      gradient: "from-indigo-500 to-blue-500",
     },
     {
       icon: Settings,
