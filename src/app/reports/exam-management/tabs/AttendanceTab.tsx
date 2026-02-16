@@ -84,15 +84,13 @@ export default function AttendanceTab() {
     fetchClassData();
   }, [selectedClassId]);
 
-  // Sort students: males first, then by Khmer name
+  // Sort students by name (same as grade entry)
   const sortStudents = (students: any[]) => {
     return students.sort((a, b) => {
-      // First sort by gender (male/ប first)
-      if (a.gender === "male" && b.gender !== "male") return -1;
-      if (a.gender !== "male" && b.gender === "male") return 1;
-
-      // Then sort by Khmer name
-      return (a.khmerName || "").localeCompare(b.khmerName || "", "km");
+      // Sort by khmerName
+      const nameA = a.khmerName || "";
+      const nameB = b.khmerName || "";
+      return nameA.localeCompare(nameB, "en-US");
     });
   };
 

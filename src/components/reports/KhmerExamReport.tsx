@@ -283,19 +283,6 @@ export default function KhmerExamReport({
                 }}
               >
                 <thead>
-                  <tr>
-                    <th
-                      colSpan={3}
-                      className="px-2 py-1.5 bg-blue-100 text-center font-bold"
-                      style={{
-                        border: "1px solid black",
-                        fontFamily:
-                          "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      {class1.name} - {sortedStudents1.length} នាក់
-                    </th>
-                  </tr>
                   <tr style={{ border: "1px solid black" }}>
                     <th
                       className="px-1 py-1.5 bg-gray-100 w-10 align-middle text-center"
@@ -305,7 +292,7 @@ export default function KhmerExamReport({
                           "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
                       }}
                     >
-                      ល.រ
+                      លេខតុ
                     </th>
                     <th
                       className="px-2 py-1.5 bg-gray-100 align-middle"
@@ -382,19 +369,6 @@ export default function KhmerExamReport({
                 }}
               >
                 <thead>
-                  <tr>
-                    <th
-                      colSpan={3}
-                      className="px-2 py-1.5 bg-green-100 text-center font-bold"
-                      style={{
-                        border: "1px solid black",
-                        fontFamily:
-                          "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      {class2.name} - {sortedStudents2.length} នាក់
-                    </th>
-                  </tr>
                   <tr style={{ border: "1px solid black" }}>
                     <th
                       className="px-1 py-1.5 bg-gray-100 w-10 align-middle text-center"
@@ -404,7 +378,7 @@ export default function KhmerExamReport({
                           "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
                       }}
                     >
-                      ល.រ
+                      លេខតុ
                     </th>
                     <th
                       className="px-2 py-1.5 bg-gray-100 align-middle"
@@ -515,78 +489,6 @@ export default function KhmerExamReport({
               </div>
             </div>
           </div>
-
-          {/* Statistics & Signatures - Only on last page */}
-          {pageIndex === pages.length - 1 && (
-            <>
-              {/* Signatures */}
-              <div className="grid grid-cols-2 gap-10 mt-3">
-                {/* Principal */}
-                <div className="text-center">
-                  <p
-                    className="text-xs mb-0.5"
-                    style={{
-                      fontFamily:
-                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    {reportDate}
-                  </p>
-                  <p
-                    className="text-xs font-bold mb-0.5"
-                    style={{
-                      fontFamily:
-                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    បានឃើញ និងឯកភាព
-                  </p>
-                  <div className="h-8"></div>
-                  <p
-                    className="text-xs font-bold text-blue-600"
-                    style={{
-                      fontFamily:
-                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                    }}
-                  >
-                    {principalName}
-                  </p>
-                </div>
-
-                {/* Teacher */}
-                <div className="text-center">
-                  <p
-                    className="text-xs mb-0.5"
-                    style={{
-                      fontFamily:
-                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    {reportDate}
-                  </p>
-                  <p
-                    className="text-xs font-bold mb-0.5"
-                    style={{
-                      fontFamily:
-                        "'Khmer OS Siem Reap', 'Khmer OS Siem Reap', serif",
-                    }}
-                  >
-                    គ្រូឃ្លាំមើល
-                  </p>
-                  <div className="h-8"></div>
-                  <p
-                    className="text-xs font-bold text-blue-600"
-                    style={{
-                      fontFamily:
-                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
-                    }}
-                  >
-                    {teacherName}
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
         </div>
       ))}
     </>

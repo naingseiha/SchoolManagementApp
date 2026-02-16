@@ -106,17 +106,14 @@ export default function ExamSeatingTab() {
     fetchClassData();
   }, [selectedClassId1, selectedClassId2]);
 
-  // Sort students by gender (male first) then by name
+  // Sort students by name (same as grade entry)
   const sortStudents = (students: any[]) => {
     if (!students) return [];
     return [...students].sort((a, b) => {
-      // First sort by gender (male first)
-      if (a.gender === "male" && b.gender === "female") return -1;
-      if (a.gender === "female" && b.gender === "male") return 1;
-      // Then sort by khmerName if available, otherwise use lastName
-      const nameA = a.khmerName || a.lastName;
-      const nameB = b.khmerName || b.lastName;
-      return nameA.localeCompare(nameB, "km");
+      // Sort by khmerName if available, otherwise use lastName
+      const nameA = a.khmerName || a.lastName || "";
+      const nameB = b.khmerName || b.lastName || "";
+      return nameA.localeCompare(nameB, "en-US");
     });
   };
 
