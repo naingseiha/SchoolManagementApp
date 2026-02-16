@@ -22,6 +22,8 @@ import {
   UserCheck,
   Sparkles,
   Loader2,
+  FileText,
+  ClipboardCheck,
 } from "lucide-react";
 
 function Sidebar() {
@@ -116,6 +118,22 @@ function Sidebar() {
       roles: ["ADMIN", "TEACHER"],
       permission: PERMISSIONS.VIEW_TRACKING_BOOK,
       gradient: "from-pink-500 to-rose-500",
+    },
+    {
+      icon: FileText,
+      label: "តារាងប្រឡង",
+      href: "/reports/exam",
+      roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.VIEW_REPORTS,
+      gradient: "from-violet-500 to-purple-500",
+    },
+    {
+      icon: ClipboardCheck,
+      label: "តារាងវត្តមាន",
+      href: "/reports/attendance",
+      roles: ["ADMIN", "TEACHER"],
+      permission: PERMISSIONS.VIEW_REPORTS,
+      gradient: "from-indigo-500 to-blue-500",
     },
     {
       icon: Settings,

@@ -126,8 +126,30 @@ export const getClassById = async (req: Request, res: Response) => {
       });
     }
 
-    console.log("✅ Class found:", classData.name);
-    res.json(classData);
+    // Fetch subjects for the class based on grade and track
+    const whereClause: any = {
+      grade: classData.grade,
+      isActive: true,
+    };
+
+    // If class has a track (science/social), filter subjects by track
+    if (classData.track) {
+      whereClause.OR = [
+        { track: classData.track },
+        { track: null }, // Include common subjects
+      ];
+    }
+
+    const subjects = await prisma.subject.findMany({
+      where: whereClause,
+      orderBy: { code: "asc" },
+    });
+
+    console.log("✅ Class found:", classData.name, "with", subjects.length, "subjects");
+    res.json({
+      ...classData,
+      subjects,
+    });
   } catch (error: any) {
     console.error("❌ Error getting class:", error);
     res.status(500).json({
