@@ -730,7 +730,7 @@ export default function SubjectDetailsReport({
                       {
                         paginatedReports
                           .flat()
-                          .filter((r) => r.student.gender === "female").length
+                          .filter((r) => r.student.gender === "FEMALE" || r.student.gender === "female").length
                       }{" "}
                       នាក់
                     </span>
@@ -763,7 +763,7 @@ export default function SubjectDetailsReport({
                           .flat()
                           .filter(
                             (r) =>
-                              r.average >= 25 && r.student.gender === "female"
+                              r.average >= 25 && (r.student.gender === "FEMALE" || r.student.gender === "female")
                           ).length
                       }{" "}
                       នាក់
@@ -797,7 +797,7 @@ export default function SubjectDetailsReport({
                           .flat()
                           .filter(
                             (r) =>
-                              r.average < 25 && r.student.gender === "female"
+                              r.average < 25 && (r.student.gender === "FEMALE" || r.student.gender === "female")
                           ).length
                       }{" "}
                       នាក់

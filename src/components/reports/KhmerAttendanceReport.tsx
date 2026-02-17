@@ -348,7 +348,7 @@ export default function KhmerAttendanceReport({
                     className="px-1 py-1 text-center align-middle"
                     style={{ border: "1px solid black" }}
                   >
-                    {student.gender === "male" ? "ប" : "ស"}
+                    {student.gender === "MALE" || student.gender === "male" ? "ប" : "ស"}
                   </td>
                   {/* Subject columns - empty for attendance */}
                   {sortedSubjects.map((subject: any) => (

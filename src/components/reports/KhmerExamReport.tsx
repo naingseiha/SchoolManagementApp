@@ -337,7 +337,7 @@ export default function KhmerExamReport({
                         className="px-1 py-1 text-center"
                         style={{ border: "1px solid black" }}
                       >
-                        {student.gender === "female" ? "ស" : "ប"}
+                        {student.gender === "MALE" || student.gender === "male" ? "ប" : "ស"}
                       </td>
                     </tr>
                   ))}
@@ -423,7 +423,7 @@ export default function KhmerExamReport({
                         className="px-1 py-1 text-center"
                         style={{ border: "1px solid black" }}
                       >
-                        {student.gender === "female" ? "ស" : "ប"}
+                        {student.gender === "MALE" || student.gender === "male" ? "ប" : "ស"}
                       </td>
                     </tr>
                   ))}
