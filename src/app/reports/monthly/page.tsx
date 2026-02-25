@@ -31,6 +31,7 @@ import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 
 // Import existing components
 import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
+import KhmerSemesterOneReport from "@/components/reports/KhmerSemesterOneReport";
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
 import MonthlyReportSettings from "@/components/reports/MonthlyReportSettings";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
@@ -39,8 +40,32 @@ import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 import {
   getSubjectAbbr,
   monthOptions,
+  getMonthDisplayName,
   getCurrentKhmerMonth,
 } from "@/lib/reportHelpers";
+
+interface SemesterReportRow {
+  student: {
+    id: string;
+    lastName: string;
+    firstName: string;
+    gender: "male" | "female";
+    className: string;
+  };
+  permission: number;
+  absent: number;
+  totalAbsent: number;
+  preSemesterAverage: number;
+  preSemesterRank: number;
+  examTotal: number;
+  examAverage: number;
+  examRank: number;
+  finalAverage: number;
+  finalRank: number;
+  finalGrade: string;
+}
+
+const SEMESTER_PREVIOUS_MONTHS = ["វិច្ឆិកា", "ធ្នូ", "មករា"] as const;
 
 export default function ReportsPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
@@ -86,9 +111,9 @@ export default function ReportsPage() {
   const [reportType, setReportType] = useState<"single" | "grade-wide">(
     "single"
   );
-  const [reportFormat, setReportFormat] = useState<"summary" | "detailed">(
-    "summary"
-  );
+  const [reportFormat, setReportFormat] = useState<
+    "summary" | "detailed" | "semester-1"
+  >("summary");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
@@ -99,6 +124,9 @@ export default function ReportsPage() {
     return month >= 10 ? year : year - 1;
   });
   const [reportData, setReportData] = useState<MonthlyReportData | null>(null);
+  const [semesterSourceReports, setSemesterSourceReports] = useState<
+    MonthlyReportData[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,28 +196,43 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     setReportData(null);
+    setSemesterSourceReports([]);
 
     try {
       if (reportType === "single") {
-        // ✅ Fetch report in parallel
-        const [report] = await Promise.all([
-          reportsApi.getMonthlyReport(
-            selectedClassId,
-            selectedMonth,
-            selectedYear
-          ),
-        ]);
+        const requests: Promise<MonthlyReportData>[] = [
+          reportsApi.getMonthlyReport(selectedClassId, selectedMonth, selectedYear),
+        ];
+
+        if (reportFormat === "semester-1") {
+          requests.push(
+            ...SEMESTER_PREVIOUS_MONTHS.map((month) =>
+              reportsApi.getMonthlyReport(selectedClassId, month, selectedYear)
+            )
+          );
+        }
+
+        const [report, ...previousReports] = await Promise.all(requests);
 
         setReportData(report);
+        setSemesterSourceReports(previousReports);
         console.log("✅ Report loaded");
       } else {
-        // For grade-wide, only fetch report (no statistics endpoint yet)
-        const data = await reportsApi.getGradeWideReport(
-          selectedGrade,
-          selectedMonth,
-          selectedYear
-        );
+        const requests: Promise<MonthlyReportData>[] = [
+          reportsApi.getGradeWideReport(selectedGrade, selectedMonth, selectedYear),
+        ];
+
+        if (reportFormat === "semester-1") {
+          requests.push(
+            ...SEMESTER_PREVIOUS_MONTHS.map((month) =>
+              reportsApi.getGradeWideReport(selectedGrade, month, selectedYear)
+            )
+          );
+        }
+
+        const [data, ...previousReports] = await Promise.all(requests);
         setReportData(data);
+        setSemesterSourceReports(previousReports);
         console.log("✅ Grade-wide report loaded");
       }
     } catch (err: any) {
@@ -222,7 +265,7 @@ export default function ReportsPage() {
   // Auto-update exam session when month/year changes
   useEffect(() => {
     setExamSession(
-      `សប្តាហ៍ទី ១២៖ ខែ${selectedMonth} ${selectedYear}-${selectedYear + 1}`
+      `សប្តាហ៍ទី ១២៖ ខែ${getMonthDisplayName(selectedMonth)} ${selectedYear}-${selectedYear + 1}`
     );
   }, [selectedMonth, selectedYear]);
 
@@ -247,6 +290,13 @@ export default function ReportsPage() {
       setTableFontSize(10);
       setFirstPageStudentCount(37);
       setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
+    } else if (reportFormat === "semester-1") {
+      setSelectedMonth("កុម្ភៈ");
+      setShowSubjects(false);
+      setTableFontSize(10);
+      setFirstPageStudentCount(28);
+      setSecondPageStudentCount(36);
+      setReportTitle("តារាងលទ្ធផលប្រចាំឆមាសទី១");
     } else {
       setShowSubjects(false);
       setTableFontSize(10);
@@ -454,6 +504,87 @@ export default function ReportsPage() {
     return sortOrder === "asc" ? comparison : -comparison;
   });
 
+  const semesterReports: SemesterReportRow[] =
+    reportData && reportFormat === "semester-1"
+      ? (() => {
+          const previousMonthAverageMaps = semesterSourceReports.map((monthData) => {
+            const map = new Map<string, number>();
+            monthData.students.forEach((student) => {
+              const avg = parseFloat(student.average);
+              map.set(student.studentId, Number.isFinite(avg) ? avg : 0);
+            });
+            return map;
+          });
+
+          const rows = reportData.students.map((student) => {
+            const preMonthAverages = previousMonthAverageMaps
+              .map((monthMap) => monthMap.get(student.studentId))
+              .filter((avg): avg is number => avg !== undefined);
+
+            const preSemesterAverage =
+              preMonthAverages.length > 0
+                ? preMonthAverages.reduce((sum, value) => sum + value, 0) /
+                  preMonthAverages.length
+                : 0;
+
+            const examAverageRaw = parseFloat(student.average);
+            const examTotalRaw = parseFloat(student.totalScore);
+            const examAverage = Number.isFinite(examAverageRaw) ? examAverageRaw : 0;
+            const examTotal = Number.isFinite(examTotalRaw) ? examTotalRaw : 0;
+            const finalAverage = (preSemesterAverage + examAverage) / 2;
+
+            return {
+              student: {
+                id: student.studentId,
+                lastName: student.studentName.split(" ")[0] || "",
+                firstName: student.studentName.split(" ").slice(1).join(" ") || "",
+                gender: student.gender.toLowerCase() as "male" | "female",
+                className: student.className || "",
+              },
+              permission: student.permission || 0,
+              absent: student.absent || 0,
+              totalAbsent: (student.permission || 0) + (student.absent || 0),
+              preSemesterAverage,
+              preSemesterRank: 0,
+              examTotal,
+              examAverage,
+              examRank: 0,
+              finalAverage,
+              finalRank: 0,
+              finalGrade: calculateGradeLevel(finalAverage),
+            };
+          });
+
+          const preSemesterSorted = [...rows].sort(
+            (a, b) => b.preSemesterAverage - a.preSemesterAverage
+          );
+          const examSorted = [...rows].sort((a, b) => b.examAverage - a.examAverage);
+          const finalSorted = [...rows].sort((a, b) => b.finalAverage - a.finalAverage);
+
+          const rankedRows = rows.map((row) => ({
+            ...row,
+            preSemesterRank:
+              preSemesterSorted.findIndex((s) => s.student.id === row.student.id) + 1,
+            examRank: examSorted.findIndex((s) => s.student.id === row.student.id) + 1,
+            finalRank: finalSorted.findIndex((s) => s.student.id === row.student.id) + 1,
+          }));
+
+          return [...rankedRows].sort((a, b) => {
+            let comparison = 0;
+            if (sortBy === "name") {
+              const nameA = `${a.student.lastName} ${a.student.firstName}`;
+              const nameB = `${b.student.lastName} ${b.student.firstName}`;
+              comparison = nameA.localeCompare(nameB, "km");
+            } else if (sortBy === "average") {
+              comparison = b.finalAverage - a.finalAverage;
+            } else {
+              comparison = a.finalRank - b.finalRank;
+            }
+            return sortOrder === "asc" ? comparison : -comparison;
+          });
+        })()
+      : [];
+
   // Transform subjects - use activeSubjects when subjects are hidden
   const subjects = (hiddenSubjects.size > 0 ? activeSubjects : sortedSubjects).map((s) => ({
     id: s.id,
@@ -495,38 +626,79 @@ export default function ReportsPage() {
           return pages;
         })();
 
+  const semesterPaginatedReports: SemesterReportRow[][] = (() => {
+    const pages: SemesterReportRow[][] = [];
+    if (semesterReports.length > 0) {
+      pages.push(semesterReports.slice(0, firstPageStudentCount));
+      for (
+        let i = firstPageStudentCount;
+        i < semesterReports.length;
+        i += secondPageStudentCount
+      ) {
+        pages.push(semesterReports.slice(i, i + secondPageStudentCount));
+      }
+    }
+    return pages;
+  })();
+
   const exportToExcel = () => {
-    const data = sortedReports.map((report, index) => {
-      const row: any = {
-        "ល.  រ": index + 1,
-        "គោត្តនាម និងនាម": `${report.student.lastName} ${report.student.firstName}`,
-        ភេទ: report.student.gender === "male" ? "ប្រុស" : "ស្រី",
-      };
+    const data =
+      reportFormat === "semester-1"
+        ? semesterReports.map((report, index) => {
+            const row: any = {
+              "ល. រ": index + 1,
+              "គោត្តនាម និងនាម": `${report.student.lastName} ${report.student.firstName}`,
+            };
 
-      if (reportType === "grade-wide" && showClassName) {
-        row["ថ្នាក់"] = report.student.className;
-      }
+            if (reportType === "grade-wide" && showClassName) {
+              row["ថ្នាក់"] = report.student.className;
+            }
 
-      if (reportFormat === "detailed") {
-        subjects.forEach((subject) => {
-          const grade = report.grades.find((g) => g.subjectId === subject.id);
-          row[subject.name] = grade?.score || "-";
-        });
-      }
+            row["អវត្តមានច"] = report.permission;
+            row["អវត្តមានអច្ប"] = report.absent;
+            row["អវត្តមានសរុប"] = report.totalAbsent;
+            row["លទ្ធផលមុនឆមាស ម.ភាគ"] = report.preSemesterAverage.toFixed(2);
+            row["លទ្ធផលមុនឆមាស ចំ.ថ្នាក់"] = report.preSemesterRank;
+            row["ប្រឡងឆមាស ពិន្ទុសរុប"] = report.examTotal.toFixed(0);
+            row["ប្រឡងឆមាស ម.ភាគ"] = report.examAverage.toFixed(2);
+            row["ប្រឡងឆមាស ចំ.ថ្នាក់"] = report.examRank;
+            row["លទ្ធផលប្រចាំឆមាស ម.ភាគ"] = report.finalAverage.toFixed(2);
+            row["លទ្ធផលប្រចាំឆមាស ចំ.ថ្នាក់"] = report.finalRank;
+            row["លទ្ធផលប្រចាំឆមាស និទ្ទេស"] = report.finalGrade;
 
-      if (showAttendance) {
-        row["អវត្តមានមានច្បាប់"] = report.permission;
-        row["អវត្តមានអត់ច្បាប់"] = report.absent;
-        row["អវត្តមានសរុប"] = report.permission + report.absent;
-      }
+            return row;
+          })
+        : sortedReports.map((report, index) => {
+            const row: any = {
+              "ល.  រ": index + 1,
+              "គោត្តនាម និងនាម": `${report.student.lastName} ${report.student.firstName}`,
+              ភេទ: report.student.gender === "male" ? "ប្រុស" : "ស្រី",
+            };
 
-      if (showTotal) row["ពិន្ទុសរុប"] = report.total.toFixed(2);
-      if (showAverage) row["មធ្យមភាគ"] = report.average.toFixed(2);
-      if (showRank) row["ចំណាត់ថ្នាក់"] = `#${report.rank}`;
-      if (showGradeLevel) row["និទ្ទេស"] = report.letterGrade;
+            if (reportType === "grade-wide" && showClassName) {
+              row["ថ្នាក់"] = report.student.className;
+            }
 
-      return row;
-    });
+            if (reportFormat === "detailed") {
+              subjects.forEach((subject) => {
+                const grade = report.grades.find((g) => g.subjectId === subject.id);
+                row[subject.name] = grade?.score || "-";
+              });
+            }
+
+            if (showAttendance) {
+              row["អវត្តមានមានច្បាប់"] = report.permission;
+              row["អវត្តមានអត់ច្បាប់"] = report.absent;
+              row["អវត្តមានសរុប"] = report.permission + report.absent;
+            }
+
+            if (showTotal) row["ពិន្ទុសរុប"] = report.total.toFixed(2);
+            if (showAverage) row["មធ្យមភាគ"] = report.average.toFixed(2);
+            if (showRank) row["ចំណាត់ថ្នាក់"] = `#${report.rank}`;
+            if (showGradeLevel) row["និទ្ទេស"] = report.letterGrade;
+
+            return row;
+          });
 
     const headers = Object.keys(data[0] || {});
     const csv = [
@@ -543,8 +715,8 @@ export default function ReportsPage() {
 
     const fileName =
       reportType === "single"
-        ? `របាយការណ៍_${reportData?.className}_${selectedMonth}_${selectedYear}.csv`
-        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${selectedMonth}_${selectedYear}.csv`;
+        ? `របាយការណ៍_${reportData?.className}_${getMonthDisplayName(selectedMonth)}_${selectedYear}.csv`
+        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${getMonthDisplayName(selectedMonth)}_${selectedYear}.csv`;
 
     link.setAttribute("download", fileName);
     link.style.visibility = "hidden";
@@ -689,6 +861,17 @@ export default function ReportsPage() {
                   <BookOpen className="w-4 h-4" />
                   លម្អិតមុខវិជ្ជា (Details)
                 </button>
+                <button
+                  onClick={() => setReportFormat("semester-1")}
+                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    reportFormat === "semester-1"
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  ឆមាសទី១
+                </button>
               </div>
             </div>
 
@@ -769,7 +952,8 @@ export default function ReportsPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent"
+                  disabled={reportFormat === "semester-1"}
+                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   {monthOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -894,7 +1078,9 @@ export default function ReportsPage() {
                   />
 
                   {/* ✅ NEW: Subject Filter Section */}
-                  {sortedSubjects.length > 0 && showSettings && (
+                  {sortedSubjects.length > 0 &&
+                    showSettings &&
+                    reportFormat !== "semester-1" && (
                     <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-khmer-body text-sm font-bold text-purple-800 flex items-center gap-2">
@@ -1079,7 +1265,7 @@ export default function ReportsPage() {
                       isGradeWide={reportType === "grade-wide"}
                       showClassName={showClassName}
                     />
-                  ) : (
+                  ) : reportFormat === "detailed" ? (
                     <SubjectDetailsReport
                       paginatedReports={paginatedReports}
                       selectedClass={selectedClass}
@@ -1105,7 +1291,23 @@ export default function ReportsPage() {
                       selectedYear={selectedYear}
                       isGradeWide={reportType === "grade-wide"}
                       showClassName={showClassName}
-                      selectedMonth={selectedMonth}
+                      selectedMonth={getMonthDisplayName(selectedMonth)}
+                    />
+                  ) : (
+                    <KhmerSemesterOneReport
+                      paginatedReports={semesterPaginatedReports}
+                      selectedClass={selectedClass}
+                      province={province}
+                      examCenter={examCenter}
+                      reportTitle={reportTitle}
+                      reportDate={reportDate}
+                      teacherName={reportData?.teacherName || teacherName}
+                      principalName={principalName}
+                      selectedYear={selectedYear}
+                      isGradeWide={reportType === "grade-wide"}
+                      showClassName={showClassName}
+                      firstPageStudentCount={firstPageStudentCount}
+                      studentsPerPage={studentsPerPage}
                     />
                   )}
                 </div>
@@ -1149,7 +1351,7 @@ export default function ReportsPage() {
                   isGradeWide={reportType === "grade-wide"}
                   showClassName={showClassName}
                 />
-              ) : (
+              ) : reportFormat === "detailed" ? (
                 <SubjectDetailsReport
                   paginatedReports={paginatedReports}
                   selectedClass={selectedClass}
@@ -1175,7 +1377,23 @@ export default function ReportsPage() {
                   selectedYear={selectedYear}
                   isGradeWide={reportType === "grade-wide"}
                   showClassName={showClassName}
-                  selectedMonth={selectedMonth}
+                  selectedMonth={getMonthDisplayName(selectedMonth)}
+                />
+              ) : (
+                <KhmerSemesterOneReport
+                  paginatedReports={semesterPaginatedReports}
+                  selectedClass={selectedClass}
+                  province={province}
+                  examCenter={examCenter}
+                  reportTitle={reportTitle}
+                  reportDate={reportDate}
+                  teacherName={reportData?.teacherName || teacherName}
+                  principalName={principalName}
+                  selectedYear={selectedYear}
+                  isGradeWide={reportType === "grade-wide"}
+                  showClassName={showClassName}
+                  firstPageStudentCount={firstPageStudentCount}
+                  studentsPerPage={studentsPerPage}
                 />
               )}
             </div>

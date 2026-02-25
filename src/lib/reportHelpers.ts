@@ -1,7 +1,7 @@
 // Month options - MUST use Khmer names
 export const monthOptions = [
   { value: "មករា", label: "មករា (January)" },
-  { value: "កុម្ភៈ", label: "កុម្ភៈ (February)" },
+  { value: "កុម្ភៈ", label: "ឆមាសទី១ (First Semester)" },
   { value: "មីនា", label: "មីនា (March)" },
   { value: "មេសា", label: "មេសា (April)" },
   { value: "ឧសភា", label: "ឧសភា (May)" },
@@ -51,6 +51,10 @@ export const getMonthName = (monthNumber: string): string => {
   ];
   const index = parseInt(monthNumber) - 1;
   return months[index] || monthNumber;
+};
+
+export const getMonthDisplayName = (month: string): string => {
+  return month.trim() === "កុម្ភៈ" ? "ឆមាសទី១" : month;
 };
 
 export const getMonthNumber = (khmerMonth: string): number => {

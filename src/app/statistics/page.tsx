@@ -3161,6 +3161,211 @@ export default function StatisticsPage() {
                               </table>
                             </div>
 
+                            {/* Aggregated Subjects for Grade - NEW SECTION */}
+                            {(() => {
+                              // Aggregate all subjects across all classes in this grade
+                              const subjectMap = new Map<string, any>();
+                              
+                              grade.classes.forEach((cls: any) => {
+                                if (cls.subjectStats && cls.subjectStats.length > 0) {
+                                  cls.subjectStats.forEach((subject: any) => {
+                                    const key = subject.subjectId;
+                                    
+                                    if (!subjectMap.has(key)) {
+                                      // Initialize subject
+                                      subjectMap.set(key, {
+                                        subjectId: subject.subjectId,
+                                        subjectName: subject.subjectName,
+                                        subjectCode: subject.subjectCode,
+                                        maxScore: subject.maxScore,
+                                        coefficient: subject.coefficient,
+                                        totalStudentsWithGrades: 0,
+                                        gradeDistribution: {
+                                          A: { total: 0, male: 0, female: 0 },
+                                          B: { total: 0, male: 0, female: 0 },
+                                          C: { total: 0, male: 0, female: 0 },
+                                          D: { total: 0, male: 0, female: 0 },
+                                          E: { total: 0, male: 0, female: 0 },
+                                          F: { total: 0, male: 0, female: 0 },
+                                        },
+                                      });
+                                    }
+                                    
+                                    // Aggregate data
+                                    const aggregated = subjectMap.get(key);
+                                    aggregated.totalStudentsWithGrades += subject.totalStudentsWithGrades || 0;
+                                    
+                                    // Aggregate grade distribution
+                                    ['A', 'B', 'C', 'D', 'E', 'F'].forEach(letter => {
+                                      if (subject.gradeDistribution && subject.gradeDistribution[letter]) {
+                                        aggregated.gradeDistribution[letter].total += subject.gradeDistribution[letter].total || 0;
+                                        aggregated.gradeDistribution[letter].male += subject.gradeDistribution[letter].male || 0;
+                                        aggregated.gradeDistribution[letter].female += subject.gradeDistribution[letter].female || 0;
+                                      }
+                                    });
+                                  });
+                                }
+                              });
+                              
+                              const aggregatedSubjects = Array.from(subjectMap.values())
+                                .sort((a, b) => a.subjectName.localeCompare(b.subjectName));
+                              
+                              if (aggregatedSubjects.length === 0) return null;
+                              
+                              return (
+                                <div className="border border-gray-200 rounded-lg overflow-hidden mb-6 print:border-black">
+                                  <div className="bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-3 border-b border-gray-300 print:bg-gray-200 print:border-black">
+                                    <h5 className="font-khmer-body text-sm font-bold text-gray-900 flex items-center gap-2">
+                                      <BarChart3 className="w-4 h-4" />
+                                      មុខវិជ្ជាទាំងអស់សម្រាប់ថ្នាក់ទី{grade.grade} ({aggregatedSubjects.length} មុខវិជ្ជា)
+                                    </h5>
+                                    <p className="font-khmer-body text-xs text-gray-600 mt-1">
+                                      ស្ថិតិសរុបពីថ្នាក់រៀនទាំងអស់
+                                    </p>
+                                  </div>
+                                  <div className="divide-y divide-gray-200 print:divide-gray-400">
+                                    {aggregatedSubjects.map((subject: any) => {
+                                      const subjectMale = Object.values(subject.gradeDistribution).reduce(
+                                        (sum: number, dist: any) => sum + (dist.male || 0),
+                                        0
+                                      );
+                                      const subjectFemale = Object.values(subject.gradeDistribution).reduce(
+                                        (sum: number, dist: any) => sum + (dist.female || 0),
+                                        0
+                                      );
+                                      
+                                      return (
+                                        <div
+                                          key={subject.subjectId}
+                                          className="p-4 bg-white hover:bg-gray-50 transition-colors"
+                                        >
+                                          <div className="flex items-start justify-between mb-3">
+                                            <div className="flex-1">
+                                              <h6 className="font-khmer-body text-base font-bold text-gray-900">
+                                                {subject.subjectName}
+                                              </h6>
+                                              <p className="font-mono text-xs text-gray-500 mt-0.5">
+                                                {subject.subjectCode} • Max: {subject.maxScore} • Coefficient: {subject.coefficient}
+                                              </p>
+                                            </div>
+                                            <div className="text-right ml-4">
+                                              <p className="font-black text-2xl text-gray-900">
+                                                {subject.totalStudentsWithGrades}
+                                              </p>
+                                              <p className="font-khmer-body text-xs text-gray-500">
+                                                សិស្សមានពិន្ទុ
+                                              </p>
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Gender Summary */}
+                                          <div className="flex items-center gap-6 mb-3 text-sm">
+                                            <span className="text-gray-600">
+                                              <span className="font-khmer-body font-semibold">ប្រុស:</span>{" "}
+                                              <span className="font-bold text-blue-600 print:text-black">{subjectMale}</span>
+                                              <span className="text-xs text-gray-400 ml-1">
+                                                ({subject.totalStudentsWithGrades > 0 
+                                                  ? ((subjectMale / subject.totalStudentsWithGrades) * 100).toFixed(1) 
+                                                  : 0}%)
+                                              </span>
+                                            </span>
+                                            <span className="text-gray-600">
+                                              <span className="font-khmer-body font-semibold">ស្រី:</span>{" "}
+                                              <span className="font-bold text-pink-600 print:text-black">{subjectFemale}</span>
+                                              <span className="text-xs text-gray-400 ml-1">
+                                                ({subject.totalStudentsWithGrades > 0 
+                                                  ? ((subjectFemale / subject.totalStudentsWithGrades) * 100).toFixed(1) 
+                                                  : 0}%)
+                                              </span>
+                                            </span>
+                                          </div>
+                                          
+                                          {/* Grade Distribution Bars */}
+                                          <div className="grid grid-cols-6 gap-2">
+                                            {['A', 'B', 'C', 'D', 'E', 'F'].map((letter) => {
+                                              const dist = subject.gradeDistribution[letter];
+                                              const percentage = subject.totalStudentsWithGrades > 0 
+                                                ? ((dist.total / subject.totalStudentsWithGrades) * 100).toFixed(1)
+                                                : '0.0';
+                                              
+                                              return (
+                                                <div
+                                                  key={letter}
+                                                  className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-center print:border-black"
+                                                >
+                                                  <div className={`w-8 h-8 mx-auto mb-1 rounded-md flex items-center justify-center bg-gradient-to-br ${getLetterGradeColor(letter)} text-white font-black text-sm print:bg-gray-300 print:text-black`}>
+                                                    {letter}
+                                                  </div>
+                                                  <p className="font-black text-base text-gray-900">
+                                                    {dist.total}
+                                                  </p>
+                                                  <p className="text-xs text-gray-500">
+                                                    {percentage}%
+                                                  </p>
+                                                  <div className="flex items-center justify-center gap-1 mt-1 text-xs">
+                                                    <span className="text-blue-600 print:text-black">♂{dist.male}</span>
+                                                    <span className="text-pink-600 print:text-black">♀{dist.female}</span>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                          
+                                          {/* Performance Summary */}
+                                          <div className="grid grid-cols-4 gap-2 mt-3">
+                                            <div className="bg-green-50 border border-green-200 rounded p-2 text-center">
+                                              <p className="font-khmer-body text-xs text-green-700 font-bold">A+B</p>
+                                              <p className="font-black text-sm text-green-700">
+                                                {subject.gradeDistribution.A.total + subject.gradeDistribution.B.total}
+                                              </p>
+                                              <p className="text-xs text-green-600">
+                                                {subject.totalStudentsWithGrades > 0 
+                                                  ? (((subject.gradeDistribution.A.total + subject.gradeDistribution.B.total) / subject.totalStudentsWithGrades) * 100).toFixed(1)
+                                                  : 0}%
+                                              </p>
+                                            </div>
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-center">
+                                              <p className="font-khmer-body text-xs text-yellow-700 font-bold">C</p>
+                                              <p className="font-black text-sm text-yellow-700">
+                                                {subject.gradeDistribution.C.total}
+                                              </p>
+                                              <p className="text-xs text-yellow-600">
+                                                {subject.totalStudentsWithGrades > 0 
+                                                  ? ((subject.gradeDistribution.C.total / subject.totalStudentsWithGrades) * 100).toFixed(1)
+                                                  : 0}%
+                                              </p>
+                                            </div>
+                                            <div className="bg-orange-50 border border-orange-200 rounded p-2 text-center">
+                                              <p className="font-khmer-body text-xs text-orange-700 font-bold">D</p>
+                                              <p className="font-black text-sm text-orange-700">
+                                                {subject.gradeDistribution.D.total}
+                                              </p>
+                                              <p className="text-xs text-orange-600">
+                                                {subject.totalStudentsWithGrades > 0 
+                                                  ? ((subject.gradeDistribution.D.total / subject.totalStudentsWithGrades) * 100).toFixed(1)
+                                                  : 0}%
+                                              </p>
+                                            </div>
+                                            <div className="bg-red-50 border border-red-200 rounded p-2 text-center">
+                                              <p className="font-khmer-body text-xs text-red-700 font-bold">E+F</p>
+                                              <p className="font-black text-sm text-red-700">
+                                                {subject.gradeDistribution.E.total + subject.gradeDistribution.F.total}
+                                              </p>
+                                              <p className="text-xs text-red-600">
+                                                {subject.totalStudentsWithGrades > 0 
+                                                  ? (((subject.gradeDistribution.E.total + subject.gradeDistribution.F.total) / subject.totalStudentsWithGrades) * 100).toFixed(1)
+                                                  : 0}%
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
                             {/* Classes List - Clickable */}
                             <div className="border border-gray-200 rounded-lg overflow-hidden print:border-black">
                               <div className="bg-gray-100 px-4 py-3 border-b border-gray-300 print:bg-gray-200 print:border-black">
