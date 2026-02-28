@@ -8,3 +8,5 @@ export interface CellState {
   error: string | null;
   isEditable?: boolean;
 }
+
+export type StudentSortMode = "google-khmer" | "legacy-en";

@@ -146,7 +146,10 @@ export default function KhmerSemesterOneReport({
                   <p className="text-xs" style={{ lineHeight: "1.4" }}>
                     {province}
                   </p>
-                  <p className="text-xs font-bold" style={{ lineHeight: "1.4" }}>
+                  <p
+                    className="text-xs font-bold"
+                    style={{ lineHeight: "1.4" }}
+                  >
                     {examCenter}
                   </p>
                 </div>
@@ -155,7 +158,8 @@ export default function KhmerSemesterOneReport({
                   <p
                     className="font-bold text-sm"
                     style={{
-                      fontFamily: "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                      fontFamily:
+                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                       lineHeight: "1.2",
                     }}
                   >
@@ -164,7 +168,8 @@ export default function KhmerSemesterOneReport({
                   <p
                     className="font-bold text-sm"
                     style={{
-                      fontFamily: "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
+                      fontFamily:
+                        "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                       lineHeight: "1.2",
                     }}
                   >
@@ -259,7 +264,7 @@ export default function KhmerSemesterOneReport({
                   className="px-1 py-2 bg-cyan-100"
                   style={{ border: "1px solid black" }}
                 >
-                  លទ្ធផលសេប្រចាំឆមាស លទ
+                  លទ្ធផលប្រចាំខែឆមាស
                 </th>
                 <th
                   colSpan={3}
@@ -357,7 +362,10 @@ export default function KhmerSemesterOneReport({
                       1;
 
                 return (
-                  <tr key={report.student.id} style={{ border: "1px solid black" }}>
+                  <tr
+                    key={report.student.id}
+                    style={{ border: "1px solid black" }}
+                  >
                     <td
                       className="px-2 py-1.5 text-center"
                       style={{ border: "1px solid black" }}

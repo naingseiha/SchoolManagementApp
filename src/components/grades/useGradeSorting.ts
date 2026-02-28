@@ -1,10 +1,49 @@
 import { useMemo } from "react";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
+import type { StudentSortMode } from "./types";
+
+const GOOGLE_SHEETS_KHMER_COLLATOR = new Intl.Collator("km-KH", {
+  usage: "sort",
+  sensitivity: "variant",
+  numeric: true,
+  ignorePunctuation: false,
+});
+
+const LEGACY_EN_COLLATOR = new Intl.Collator("en-US", {
+  usage: "sort",
+  sensitivity: "base",
+  numeric: true,
+});
+
+const normalizeNameForKhmerSort = (name: string): string => {
+  return name
+    .normalize("NFC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const compareKhmerGoogleSheetsStyle = (
+  rawNameA: string,
+  rawNameB: string
+): number => {
+  const nameA = normalizeNameForKhmerSort(rawNameA);
+  const nameB = normalizeNameForKhmerSort(rawNameB);
+
+  const collatorDiff = GOOGLE_SHEETS_KHMER_COLLATOR.compare(nameA, nameB);
+  if (collatorDiff !== 0) return collatorDiff;
+
+  // Keep deterministic order when collator considers values equal.
+  if (nameA !== nameB) return nameA < nameB ? -1 : 1;
+
+  return LEGACY_EN_COLLATOR.compare(rawNameA, rawNameB);
+};
 
 export function useGradeSorting(
   subjects: any[],
   students: any[],
-  className: string
+  className: string,
+  sortMode: StudentSortMode = "google-khmer"
 ) {
   const sortedSubjects = useMemo(() => {
     let grade: number | undefined;
@@ -56,9 +95,14 @@ export function useGradeSorting(
     return [...students].sort((a, b) => {
       const nameA = a.studentName || "";
       const nameB = b.studentName || "";
-      return nameA.localeCompare(nameB, "en-US");
+
+      if (sortMode === "legacy-en") {
+        return LEGACY_EN_COLLATOR.compare(nameA, nameB);
+      }
+
+      return compareKhmerGoogleSheetsStyle(nameA, nameB);
     });
-  }, [students]);
+  }, [students, sortMode]);
 
   return { sortedSubjects, sortedStudents };
 }

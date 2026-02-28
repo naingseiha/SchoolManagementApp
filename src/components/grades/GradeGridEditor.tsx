@@ -24,7 +24,7 @@ import {
 } from "./subjectUtils";
 import { usePasteHandler } from "./usePasteHandler";
 import { useAutoSave } from "./useAutoSave";
-import type { CellState } from "./types";
+import type { CellState, StudentSortMode } from "./types";
 
 // Around line 15-20, UPDATE interface:
 
@@ -50,6 +50,8 @@ export default function GradeGridEditor({
   const [pasteMode, setPasteMode] = useState(false);
   const [pastedCells, setPastedCells] = useState<Set<string>>(new Set());
   const [editedCells, setEditedCells] = useState<Set<string>>(new Set());
+  const [studentSortMode, setStudentSortMode] =
+    useState<StudentSortMode>("google-khmer");
   const [allPendingChanges, setAllPendingChanges] = useState<
     Map<string, BulkSaveGradeItem>
   >(new Map());
@@ -80,7 +82,8 @@ export default function GradeGridEditor({
   const { sortedSubjects, sortedStudents } = useGradeSorting(
     gridData.subjects,
     gridData.students,
-    gridData.className
+    gridData.className,
+    studentSortMode
   );
 
   const totalCoefficientForClass = useMemo(() => {
@@ -153,7 +156,7 @@ export default function GradeGridEditor({
   useEffect(() => {
     const initialCells: { [key: string]: CellState } = {};
 
-    sortedStudents.forEach((student) => {
+    (gridData.students || []).forEach((student) => {
       sortedSubjects.forEach((subject) => {
         const cellKey = `${student.studentId}_${subject.id}`;
         const gradeData = student.grades[subject.id];
@@ -172,7 +175,7 @@ export default function GradeGridEditor({
     });
 
     setCells(initialCells);
-  }, [gridData, sortedStudents, sortedSubjects]);
+  }, [gridData, sortedSubjects]);
 
   // Fetch attendance
   useEffect(() => {
@@ -355,6 +358,22 @@ export default function GradeGridEditor({
           </p>
         </div>
       )}
+
+      <div className="bg-gray-50 border-b border-gray-200 px-6 py-2.5 flex items-center justify-between gap-3">
+        <p className="text-xs md:text-sm font-semibold text-gray-700">
+          តម្រៀបឈ្មោះសិស្ស៖ Google Sheets Khmer Unicode
+        </p>
+        <select
+          value={studentSortMode}
+          onChange={(e) => setStudentSortMode(e.target.value as StudentSortMode)}
+          className="h-9 px-3 text-xs md:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="google-khmer">
+            Khmer Unicode (Google Sheets)
+          </option>
+          <option value="legacy-en">Legacy (A-Z)</option>
+        </select>
+      </div>
 
       {/* ✅ NEW: Warning Banner for Unconfirmed Subjects */}
       {unconfirmedSubjects.length > 0 && (
