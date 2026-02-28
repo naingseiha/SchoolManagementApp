@@ -1290,6 +1290,7 @@ export class DashboardController {
         const classDetails = classes.map((cls) => {
           const classStudentData = studentData.filter(s => s.classId === cls.id);
           const classStudents = cls.students;
+          const classStudentIds = new Set(classStudents.map((s) => s.id));
 
           const classPassed = classStudentData.filter(s => s.average >= 25);
           const classPassPercentage = classStudentData.length > 0
@@ -1355,7 +1356,9 @@ export class DashboardController {
           const subjectStats = classSubjects.map(subject => {
             // Get all grades for this subject in this class from our lookup map
             const key = `${cls.id}:${subject.id}`;
-            const subjectGrades = gradesByClassAndSubject.get(key) || [];
+            const subjectGrades = (gradesByClassAndSubject.get(key) || []).filter((g) =>
+              classStudentIds.has(g.studentId)
+            );
 
             // Convert scores to percentages and calculate grade distribution
             const scorePercentages = subjectGrades
