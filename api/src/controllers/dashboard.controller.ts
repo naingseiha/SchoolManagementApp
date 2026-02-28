@@ -1099,6 +1099,7 @@ export class DashboardController {
             subjectId: true,
             score: true,
             classId: true,
+            updatedAt: true,
             class: {
               select: {
                 grade: true,
@@ -1122,8 +1123,20 @@ export class DashboardController {
         subjectsByGrade.get(subject.grade)!.push(subject);
       });
 
-      const gradesByClass = new Map<string, typeof allGrades>();
-      allGrades.forEach(grade => {
+      // Deduplicate by class+student+subject to avoid double-counting mixed month formats (e.g., "ធ្នូ" and "12")
+      type GradeRow = (typeof allGrades)[number];
+      const latestGradesByStudentSubject = new Map<string, GradeRow>();
+      allGrades.forEach((grade) => {
+        const key = `${grade.classId}:${grade.studentId}:${grade.subjectId}`;
+        const existing = latestGradesByStudentSubject.get(key);
+        if (!existing || grade.updatedAt > existing.updatedAt) {
+          latestGradesByStudentSubject.set(key, grade);
+        }
+      });
+      const normalizedGrades = Array.from(latestGradesByStudentSubject.values());
+
+      const gradesByClass = new Map<string, GradeRow[]>();
+      normalizedGrades.forEach(grade => {
         if (!gradesByClass.has(grade.classId)) {
           gradesByClass.set(grade.classId, []);
         }
@@ -1139,8 +1152,8 @@ export class DashboardController {
       });
 
       // ✅ NEW: Create lookup map for grades by class + subject for subject-level stats
-      const gradesByClassAndSubject = new Map<string, typeof allGrades>();
-      allGrades.forEach(grade => {
+      const gradesByClassAndSubject = new Map<string, GradeRow[]>();
+      normalizedGrades.forEach(grade => {
         const key = `${grade.classId}:${grade.subjectId}`;
         if (!gradesByClassAndSubject.has(key)) {
           gradesByClassAndSubject.set(key, []);
@@ -1377,7 +1390,7 @@ export class DashboardController {
               subjectName: subject.nameKh || subject.name,
               maxScore: subject.maxScore,
               coefficient: subject.coefficient,
-              totalStudentsWithGrades: subjectGrades.length,
+              totalStudentsWithGrades: scorePercentages.length,
               gradeDistribution: subjectGradeDistribution,
             };
           });
