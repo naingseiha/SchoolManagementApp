@@ -288,7 +288,9 @@ export default function SubjectDetailsReport({
                     fontFamily: "'Khmer OS Muol Light', 'Khmer OS Muol', serif",
                   }}
                 >
-                  តារាងលទ្ធផលប្រចាំខែ៖ ខែ{selectedMonth}
+                  {selectedMonth.trim() === "ឆមាសទី១"
+                    ? "តារាងលទ្ធផលប្រឡងឆមាសទី០១"
+                    : `តារាងលទ្ធផលប្រចាំខែ៖ ខែ${selectedMonth}`}
                 </h1>
                 <p
                   className="text-xs mb-0.5"
