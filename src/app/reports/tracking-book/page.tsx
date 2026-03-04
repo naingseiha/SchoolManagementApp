@@ -170,7 +170,7 @@ export default function TrackingBookPage() {
   const monthOptions = [
     { value: "", label: "ទាំងអស់" },
     { value: "មករា", label: "មករា" },
-    { value: "កុម្ភៈ", label: "កុម្ភៈ" },
+    { value: "កុម្ភៈ", label: "ឆមាសទី១" },
     { value: "មីនា", label: "មីនា" },
     { value: "មេសា", label: "មេសា" },
     { value: "ឧសភា", label: "ឧសភា" },
@@ -236,7 +236,10 @@ export default function TrackingBookPage() {
           withoutPermission: 0,
         },
         year: sortedTrackingData.year,
-        month: sortedTrackingData.month,
+        month:
+          sortedTrackingData.month?.trim() === "កុម្ភៈ"
+            ? "ឆមាសទី១"
+            : sortedTrackingData.month,
         teacherName: sortedTrackingData.teacherName,
         principalName: "នាយកសាលា",
         schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
