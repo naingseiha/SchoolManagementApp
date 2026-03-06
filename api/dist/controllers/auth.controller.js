@@ -342,6 +342,8 @@ const login = async (req, res) => {
                     firstName: user.firstName,
                     lastName: user.lastName,
                     role: user.role,
+                    isSuperAdmin: user.isSuperAdmin,
+                    permissions: user.permissions,
                     student: user.student,
                     teacher: user.teacher,
                     parent: user.parent,
@@ -429,6 +431,8 @@ const getCurrentUser = async (req, res) => {
                 loginCount: true,
                 createdAt: true,
                 updatedAt: true,
+                isSuperAdmin: true,
+                permissions: true,
                 student: {
                     select: {
                         id: true,

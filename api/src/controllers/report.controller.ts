@@ -1,6 +1,55 @@
 import { Request, Response } from "express";
 import { prisma } from "../utils/db";
 
+const SEMESTER_ONE_MONTH = "កុម្ភៈ";
+const ENGLISH_SCORE_BASELINE = 25;
+const KHMER_DIGIT_MAP: Record<string, string> = {
+  "០": "0",
+  "១": "1",
+  "២": "2",
+  "៣": "3",
+  "៤": "4",
+  "៥": "5",
+  "៦": "6",
+  "៧": "7",
+  "៨": "8",
+  "៩": "9",
+};
+
+function normalizeDigits(value: string): string {
+  return value.replace(/[០-៩]/g, (digit) => KHMER_DIGIT_MAP[digit] || digit);
+}
+
+function shouldApplySemesterOneEnglishRule(
+  grade: string,
+  month?: string | null
+): boolean {
+  if (!month) return false;
+  const gradeNumber = parseInt(normalizeDigits(String(grade)), 10);
+  const normalizedMonth = month.trim();
+  return (
+    (normalizedMonth === SEMESTER_ONE_MONTH ||
+      normalizedMonth === "ឆមាសទី១") &&
+    (gradeNumber === 9 || gradeNumber === 12)
+  );
+}
+
+function isEnglishSubject(subject: {
+  code?: string | null;
+  name?: string | null;
+  nameKh?: string | null;
+  nameEn?: string | null;
+}): boolean {
+  const code = subject.code?.toUpperCase() || "";
+  if (code.startsWith("ENG")) return true;
+
+  const khmerName = `${subject.nameKh || ""}${subject.name || ""}`;
+  if (khmerName.includes("អង់គ្លេស")) return true;
+
+  const englishName = `${subject.nameEn || ""}${subject.name || ""}`.toLowerCase();
+  return englishName.includes("english");
+}
+
 function getSubjectGradeLevel(
   score: number | null,
   maxScore: number
@@ -142,6 +191,11 @@ export class ReportController {
         });
       }
 
+      const applySemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(
+        classData.grade,
+        month as string
+      );
+
       const grades = await prisma.grade.findMany({
         where: {
           classId,
@@ -195,7 +249,10 @@ export class ReportController {
 
       // ✅ FIXED: Calculate total coefficient from filtered subjects
       const totalCoefficientForClass = subjects.reduce(
-        (sum, s) => sum + s.coefficient,
+        (sum, s) =>
+          applySemesterOneEnglishRule && isEnglishSubject(s)
+            ? sum
+            : sum + s.coefficient,
         0
       );
 
@@ -207,6 +264,7 @@ export class ReportController {
       const studentsData = sortedStudents.map((student) => {
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
+        let englishBonus = 0;
         let gradeCount = 0;
         let studentCoefficient = 0; // ✅ Track coefficient per student
 
@@ -217,18 +275,28 @@ export class ReportController {
 
           if (grade && grade.score !== null) {
             studentGrades[subject.id] = grade.score;
-            totalScore += grade.score;
             gradeCount++;
-            studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
+
+            if (applySemesterOneEnglishRule && isEnglishSubject(subject)) {
+              englishBonus += Math.max(
+                grade.score - ENGLISH_SCORE_BASELINE,
+                0
+              );
+            } else {
+              totalScore += grade.score;
+              studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
+            }
           } else {
             studentGrades[subject.id] = null;
           }
         });
 
+        const adjustedTotalScore = totalScore + englishBonus;
+
         // ✅ Average = totalScore / studentCoefficient (only entered subjects)
         const average =
           studentCoefficient > 0
-            ? totalScore / studentCoefficient
+            ? adjustedTotalScore / studentCoefficient
             : 0;
 
         let gradeLevel = "F";
@@ -244,7 +312,7 @@ export class ReportController {
             student.khmerName || `${student.lastName} ${student.firstName}`,
           gender: student.gender,
           grades: studentGrades,
-          totalScore: totalScore.toFixed(2),
+          totalScore: adjustedTotalScore.toFixed(2),
           average: average.toFixed(2),
           gradeLevel,
           absent: attendanceSummary[student.id]?.absent || 0,
@@ -368,6 +436,11 @@ export class ReportController {
         });
       }
 
+      const applySemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(
+        grade,
+        month as string
+      );
+
       const grades = await prisma.grade.findMany({
         where: {
           OR: [
@@ -435,12 +508,16 @@ export class ReportController {
             : subjects;
 
         const totalCoefficientForStudent = studentSubjects.reduce(
-          (sum, s) => sum + s.coefficient,
+          (sum, s) =>
+            applySemesterOneEnglishRule && isEnglishSubject(s)
+              ? sum
+              : sum + s.coefficient,
           0
         );
 
         const studentGrades: { [subjectId: string]: number | null } = {};
         let totalScore = 0;
+        let englishBonus = 0;
         let gradeCount = 0;
         let actualCoefficient = 0; // ✅ Track coefficient for entered subjects only
 
@@ -451,17 +528,27 @@ export class ReportController {
 
           if (grade && grade.score !== null) {
             studentGrades[subject.id] = grade.score;
-            totalScore += grade.score;
             gradeCount++;
-            actualCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
+
+            if (applySemesterOneEnglishRule && isEnglishSubject(subject)) {
+              englishBonus += Math.max(
+                grade.score - ENGLISH_SCORE_BASELINE,
+                0
+              );
+            } else {
+              totalScore += grade.score;
+              actualCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
+            }
           } else {
             studentGrades[subject.id] = null;
           }
         });
 
+        const adjustedTotalScore = totalScore + englishBonus;
+
         const average =
           actualCoefficient > 0
-            ? totalScore / actualCoefficient
+            ? adjustedTotalScore / actualCoefficient
             : 0;
 
         let gradeLevel = "F";
@@ -478,7 +565,7 @@ export class ReportController {
           className: student.className,
           gender: student.gender,
           grades: studentGrades,
-          totalScore: totalScore.toFixed(2),
+          totalScore: adjustedTotalScore.toFixed(2),
           average: average.toFixed(2),
           gradeLevel,
           absent: attendanceSummary[student.id]?.absent || 0,
@@ -497,7 +584,13 @@ export class ReportController {
 
       // ✅ Calculate average coefficient across all classes
       const avgCoefficient =
-        subjects.reduce((sum, s) => sum + s.coefficient, 0) / classes.length;
+        subjects.reduce(
+          (sum, s) =>
+            applySemesterOneEnglishRule && isEnglishSubject(s)
+              ? sum
+              : sum + s.coefficient,
+          0
+        ) / classes.length;
 
       return res.json({
         success: true,
@@ -577,6 +670,11 @@ export class ReportController {
       console.log(`👥 Students: ${sortedStudents.length}`);
       console.log(`📊 Grade: ${classInfo.grade}`);
       console.log(`🎯 Track: ${classInfo.track || "N/A"}`);
+
+      const applySemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(
+        classInfo.grade,
+        month as string | undefined
+      );
 
       // ✅ Build subject filter with track support
       const subjectWhereClause: any = {
@@ -832,7 +930,10 @@ export class ReportController {
 
       // ✅✅✅ THIS IS THE MISSING PART - ADD IT HERE ✅✅✅
       const totalCoefficientForClass = subjects.reduce(
-        (sum, s) => sum + s.coefficient,
+        (sum, s) =>
+          applySemesterOneEnglishRule && isEnglishSubject(s)
+            ? sum
+            : sum + s.coefficient,
         0
       );
 
@@ -852,6 +953,7 @@ export class ReportController {
         } = {};
 
         let totalScore = 0;
+        let englishBonus = 0;
         let subjectsWithScores = 0;
         let studentCoefficient = 0; // ✅ Track coefficient for entered subjects
 
@@ -872,16 +974,23 @@ export class ReportController {
           };
 
           if (score !== null) {
-            totalScore += score;
             subjectsWithScores++;
-            studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
+
+            if (applySemesterOneEnglishRule && isEnglishSubject(subject)) {
+              englishBonus += Math.max(score - ENGLISH_SCORE_BASELINE, 0);
+            } else {
+              totalScore += score;
+              studentCoefficient += subject.coefficient; // ✅ Add coefficient only for entered subjects
+            }
           }
         });
+
+        const adjustedTotalScore = totalScore + englishBonus;
 
         // ✅ Average = totalScore / studentCoefficient (only entered subjects)
         const averageScore =
           studentCoefficient > 0
-            ? totalScore / studentCoefficient
+            ? adjustedTotalScore / studentCoefficient
             : 0;
 
         // ✅ Grade level thresholds
@@ -913,7 +1022,7 @@ export class ReportController {
           motherName: student.motherName || "",
           parentOccupation: student.parentOccupation || "",
           subjectScores,
-          totalScore: totalScore.toFixed(0),
+          totalScore: adjustedTotalScore.toFixed(0),
           averageScore: averageScore.toFixed(2),
           gradeLevel: gradeLevel,
           gradeLevelKhmer: gradeLevelKhmer[gradeLevel],

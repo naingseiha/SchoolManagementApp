@@ -334,6 +334,79 @@ export default function ReportsPage() {
     return "F";
   };
 
+  const normalizeDigits = (value: string) => {
+    const khmerDigitMap: Record<string, string> = {
+      "០": "0",
+      "១": "1",
+      "២": "2",
+      "៣": "3",
+      "៤": "4",
+      "៥": "5",
+      "៦": "6",
+      "៧": "7",
+      "៨": "8",
+      "៩": "9",
+    };
+    return value.replace(/[០-៩]/g, (digit) => khmerDigitMap[digit] || digit);
+  };
+
+  const reportGradeNumber = reportData?.grade
+    ? parseInt(normalizeDigits(reportData.grade), 10)
+    : NaN;
+  const normalizedReportMonth = reportData?.month?.trim();
+  const shouldUseSemesterOneEnglishRule =
+    (normalizedReportMonth === "កុម្ភៈ" ||
+      normalizedReportMonth === "ឆមាសទី១") &&
+    (reportGradeNumber === 9 || reportGradeNumber === 12);
+
+  const isEnglishSubject = (subject: {
+    code?: string;
+    nameKh?: string;
+    nameEn?: string;
+    name?: string;
+  }) => {
+    const code = subject.code?.toUpperCase() || "";
+    if (code.startsWith("ENG")) return true;
+
+    const khmerName = `${subject.nameKh || ""}${subject.name || ""}`;
+    if (khmerName.includes("អង់គ្លេស")) return true;
+
+    const englishName = `${subject.nameEn || ""}${subject.name || ""}`.toLowerCase();
+    return englishName.includes("english");
+  };
+
+  const calculateStudentSummary = (
+    student: MonthlyReportData["students"][number],
+    calculationSubjects: MonthlyReportData["subjects"]
+  ) => {
+    let totalScore = 0;
+    let totalCoefficient = 0;
+    let englishBonus = 0;
+
+    calculationSubjects.forEach((subject) => {
+      const score = student.grades[subject.id];
+      if (score === null || score === undefined) return;
+
+      if (shouldUseSemesterOneEnglishRule && isEnglishSubject(subject)) {
+        englishBonus += Math.max(score - 25, 0);
+        return;
+      }
+
+      totalScore += score;
+      totalCoefficient += subject.coefficient;
+    });
+
+    const adjustedTotalScore = totalScore + englishBonus;
+    const average =
+      totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
+
+    return {
+      totalScore: adjustedTotalScore,
+      average,
+      gradeLevel: calculateGradeLevel(average),
+    };
+  };
+
   // ✅ NEW: Toggle subject visibility
   const toggleSubject = (subjectId: string) => {
     setHiddenSubjects(prev => {
@@ -399,7 +472,7 @@ export default function ReportsPage() {
     ? (() => {
         // If no subjects are hidden, use original data
         if (hiddenSubjects.size === 0) {
-          return reportData.students.map((student) => {
+          const transformedStudents = reportData.students.map((student) => {
             const gradesArray = sortedSubjects.map((subject) => {
               const score = student.grades[subject.id];
               return {
@@ -411,6 +484,10 @@ export default function ReportsPage() {
               };
             });
 
+            const calculatedSummary = shouldUseSemesterOneEnglishRule
+              ? calculateStudentSummary(student, sortedSubjects)
+              : null;
+
             return {
               student: {
                 id: student.studentId,
@@ -421,32 +498,41 @@ export default function ReportsPage() {
                 className: student.className || "",
               },
               grades: gradesArray,
-              total: parseFloat(student.totalScore),
-              average: parseFloat(student.average),
-              letterGrade: student.gradeLevel,
+              total: calculatedSummary
+                ? calculatedSummary.totalScore
+                : parseFloat(student.totalScore),
+              average: calculatedSummary
+                ? calculatedSummary.average
+                : parseFloat(student.average),
+              letterGrade: calculatedSummary
+                ? calculatedSummary.gradeLevel
+                : student.gradeLevel,
               rank: student.rank,
               absent: student.absent,
               permission: student.permission,
             };
           });
+
+          if (!shouldUseSemesterOneEnglishRule) {
+            return transformedStudents;
+          }
+
+          const sorted = [...transformedStudents].sort(
+            (a, b) => b.average - a.average
+          );
+          return transformedStudents.map((student) => ({
+            ...student,
+            rank:
+              sorted.findIndex((s) => s.student.id === student.student.id) + 1,
+          }));
         }
 
         // Recalculate with filtered subjects
         const recalculated = reportData.students.map((student) => {
-          // Calculate only with active subjects
-          let totalScore = 0;
-          let totalCoefficient = 0;
-
-          activeSubjects.forEach((subject) => {
-            const score = student.grades[subject.id];
-            if (score !== null && score !== undefined) {
-              totalScore += score;
-              totalCoefficient += subject.coefficient;
-            }
-          });
-
-          const average = totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
-          const letterGrade = calculateGradeLevel(average);
+          const calculatedSummary = calculateStudentSummary(
+            student,
+            activeSubjects
+          );
 
           // Build grades array with only active subjects
           const gradesArray = activeSubjects.map((subject) => {
@@ -467,16 +553,16 @@ export default function ReportsPage() {
               firstName: student.studentName.split(" ").slice(1).join(" ") || "",
               gender: student.gender.toLowerCase() as "male" | "female",
               dateOfBirth: "",
-              className: student.className || "",
-            },
-            grades: gradesArray,
-            total: totalScore,
-            average: average,
-            letterGrade: letterGrade,
-            rank: 0, // Will be recalculated
-            absent: student.absent,
-            permission: student.permission,
-          };
+                className: student.className || "",
+              },
+              grades: gradesArray,
+              total: calculatedSummary.totalScore,
+              average: calculatedSummary.average,
+              letterGrade: calculatedSummary.gradeLevel,
+              rank: 0, // Will be recalculated
+              absent: student.absent,
+              permission: student.permission,
+            };
         });
 
         // Recalculate ranks based on new averages
@@ -527,8 +613,15 @@ export default function ReportsPage() {
                   preMonthAverages.length
                 : 0;
 
-            const examAverageRaw = parseFloat(student.average);
-            const examTotalRaw = parseFloat(student.totalScore);
+            const calculatedSummary = shouldUseSemesterOneEnglishRule
+              ? calculateStudentSummary(student, sortedSubjects)
+              : null;
+            const examAverageRaw = calculatedSummary
+              ? calculatedSummary.average
+              : parseFloat(student.average);
+            const examTotalRaw = calculatedSummary
+              ? calculatedSummary.totalScore
+              : parseFloat(student.totalScore);
             const examAverage = Number.isFinite(examAverageRaw) ? examAverageRaw : 0;
             const examTotal = Number.isFinite(examTotalRaw) ? examTotalRaw : 0;
             const finalAverage = (preSemesterAverage + examAverage) / 2;
