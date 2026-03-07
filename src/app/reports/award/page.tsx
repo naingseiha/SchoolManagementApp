@@ -23,7 +23,7 @@ import {
   calculateTopStudentsByClass,
   calculateTopStudentsByGrade,
 } from "@/lib/utils/topStudentsCalculator";
-import { getCurrentKhmerMonth } from "@/lib/reportHelpers";
+import { getCurrentKhmerMonth, getMonthDisplayName } from "@/lib/reportHelpers";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -428,6 +428,11 @@ export default function AwardReportPage() {
 
   const selectedClass = classes.find((c) => c.id === selectedClassId);
   const topStudents = getTopStudents();
+  const selectedMonthDisplayName = getMonthDisplayName(selectedMonth);
+  const selectedPeriodLabel =
+    selectedMonthDisplayName === "ឆមាសទី១"
+      ? selectedMonthDisplayName
+      : `ខែ${selectedMonthDisplayName}`;
 
   const classOptions = isLoadingClasses
     ? [{ value: "", label: "កំពុងផ្ទុក... - Loading..." }]
@@ -620,11 +625,19 @@ export default function AwardReportPage() {
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
                 >
-                  {monthNames.map((month, index) => (
-                    <option key={index} value={month}>
-                      ខែ{month}
-                    </option>
-                  ))}
+                  {monthNames.map((month, index) => {
+                    const monthDisplayName = getMonthDisplayName(month);
+                    const monthOptionLabel =
+                      monthDisplayName === "ឆមាសទី១"
+                        ? monthDisplayName
+                        : `ខែ${monthDisplayName}`;
+
+                    return (
+                      <option key={index} value={month}>
+                        {monthOptionLabel}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -685,7 +698,7 @@ export default function AwardReportPage() {
                         : `ថ្នាក់ទី ${selectedGrade}`}
                     </div>
                     <div className="text-xs text-gray-600">
-                      ខែ{selectedMonth} • ឆ្នាំសិក្សា {academicYear} •{" "}
+                      {selectedPeriodLabel} • ឆ្នាំសិក្សា {academicYear} •{" "}
                       {templateType === "medals" ? "🥇 Medals" : "🏆 Trophies"}
                     </div>
                   </div>

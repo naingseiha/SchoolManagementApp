@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { getMonthDisplayName } from "@/lib/reportHelpers";
 
 interface TopStudent {
   rank: number;
@@ -95,6 +96,9 @@ export default function HonorCertificate({
     if (!letterGrade || letterGrade === "undefined") return "N/A";
     return letterGrade.toUpperCase().trim();
   };
+  const displayMonth = getMonthDisplayName(month || "...");
+  const reportPeriodTitle =
+    displayMonth === "ឆមាសទី១" ? displayMonth : `ប្រចាំខែ ${displayMonth}`;
 
   return (
     <>
@@ -356,10 +360,10 @@ export default function HonorCertificate({
               <div className="font-bold text-gray-800">
                 {reportType === "class" &&
                   className &&
-                  `ប្រចាំខែ ${month || "..."}, ${className}`}
+                  `${reportPeriodTitle}, ${className}`}
                 {reportType === "grade" &&
                   grade &&
-                  `ប្រចាំខែ ${month || "..."}, ថ្នាក់ទី ${grade}`}
+                  `${reportPeriodTitle}, ថ្នាក់ទី ${grade}`}
               </div>
               <div className="font-bold text-gray-700">
                 ឆ្នាំសិក្សា {academicYear}
