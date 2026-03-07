@@ -42,6 +42,115 @@ const monthNames = [
   "ធ្នូ",
 ];
 
+const SEMESTER_ONE_MONTH = "កុម្ភៈ";
+const ENGLISH_SCORE_BASELINE = 25;
+const KHMER_DIGIT_MAP: Record<string, string> = {
+  "០": "0",
+  "១": "1",
+  "២": "2",
+  "៣": "3",
+  "៤": "4",
+  "៥": "5",
+  "៦": "6",
+  "៧": "7",
+  "៨": "8",
+  "៩": "9",
+};
+
+interface SemesterRuleSubject {
+  id: string;
+  coefficient: number;
+  code?: string | null;
+  name?: string | null;
+  nameKh?: string | null;
+  nameEn?: string | null;
+}
+
+interface SemesterRuleStudent {
+  grades?: Record<string, number | null | undefined>;
+}
+
+function normalizeDigits(value: string): string {
+  return value.replace(/[០-៩]/g, (digit) => KHMER_DIGIT_MAP[digit] || digit);
+}
+
+function shouldApplySemesterOneEnglishRule(
+  grade: string,
+  month: string
+): boolean {
+  const gradeNumber = parseInt(normalizeDigits(String(grade)), 10);
+  const normalizedMonth = month.trim();
+  return (
+    (normalizedMonth === SEMESTER_ONE_MONTH || normalizedMonth === "ឆមាសទី១") &&
+    (gradeNumber === 9 || gradeNumber === 12)
+  );
+}
+
+function isEnglishSubject(subject: {
+  code?: string | null;
+  name?: string | null;
+  nameKh?: string | null;
+  nameEn?: string | null;
+}): boolean {
+  const code = subject.code?.toUpperCase() || "";
+  if (code.startsWith("ENG")) return true;
+
+  const khmerName = `${subject.nameKh || ""}${subject.name || ""}`;
+  if (khmerName.includes("អង់គ្លេស")) return true;
+
+  const englishName = `${subject.nameEn || ""}${subject.name || ""}`.toLowerCase();
+  return englishName.includes("english");
+}
+
+function calculateGradeLevel(average: number): string {
+  if (average >= 45) return "A";
+  if (average >= 40) return "B";
+  if (average >= 35) return "C";
+  if (average >= 30) return "D";
+  if (average >= 25) return "E";
+  return "F";
+}
+
+function calculateSemesterOneAdjustedSummary(
+  student: SemesterRuleStudent,
+  subjects: SemesterRuleSubject[]
+): {
+  totalScore: number;
+  average: number;
+  gradeLevel: string;
+} {
+  let totalScore = 0;
+  let totalCoefficient = 0;
+  let englishBonus = 0;
+
+  subjects.forEach((subject) => {
+    const rawScore = student.grades?.[subject.id];
+    if (rawScore === null || rawScore === undefined) return;
+
+    const score =
+      typeof rawScore === "number" ? rawScore : parseFloat(String(rawScore));
+    if (!Number.isFinite(score)) return;
+
+    if (isEnglishSubject(subject)) {
+      englishBonus += Math.max(score - ENGLISH_SCORE_BASELINE, 0);
+      return;
+    }
+
+    totalScore += score;
+    totalCoefficient += subject.coefficient;
+  });
+
+  const adjustedTotalScore = totalScore + englishBonus;
+  const average =
+    totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
+
+  return {
+    totalScore: adjustedTotalScore,
+    average,
+    gradeLevel: calculateGradeLevel(average),
+  };
+}
+
 export default function AwardReportPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes, isLoadingClasses, refreshClasses } = useData();
@@ -226,7 +335,20 @@ export default function AwardReportPage() {
         setTeacherName(data.teacherName);
       }
 
-      const transformedSummaries = data.students.map((student: any) => ({
+      const shouldUseSemesterOneEnglishRule =
+        shouldApplySemesterOneEnglishRule(gradeValue, selectedMonth);
+      const reportSubjects: SemesterRuleSubject[] = Array.isArray(data.subjects)
+        ? data.subjects
+        : [];
+      const shouldRecalculateSemesterSummary =
+        shouldUseSemesterOneEnglishRule && reportSubjects.length > 0;
+
+      const transformedSummaries = data.students.map((student: any) => {
+        const calculatedSummary = shouldRecalculateSemesterSummary
+          ? calculateSemesterOneAdjustedSummary(student, reportSubjects)
+          : null;
+
+        return {
         student: {
           studentId: student.studentId,
           khmerName: student.studentName,
@@ -240,9 +362,14 @@ export default function AwardReportPage() {
             grade: gradeValue,
           },
         },
-        averageScore: parseFloat(student.average) || 0,
-        letterGrade: student.gradeLevel || "F",
-      }));
+        averageScore: calculatedSummary
+          ? calculatedSummary.average
+          : parseFloat(student.average) || 0,
+        letterGrade: calculatedSummary
+          ? calculatedSummary.gradeLevel
+          : student.gradeLevel || "F",
+        };
+      });
 
       if (transformedSummaries.length === 0) {
         setError("មិនមានទិន្នន័យសម្រាប់ខែនេះទេ");

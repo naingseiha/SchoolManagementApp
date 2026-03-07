@@ -293,7 +293,7 @@ export class ReportController {
 
         const adjustedTotalScore = totalScore + englishBonus;
 
-        // ✅ Average = totalScore / studentCoefficient (only entered subjects)
+        // ✅ Match Khmer monthly report: divide by entered non-English coefficients
         const average =
           studentCoefficient > 0
             ? adjustedTotalScore / studentCoefficient
@@ -546,6 +546,7 @@ export class ReportController {
 
         const adjustedTotalScore = totalScore + englishBonus;
 
+        // ✅ Match Khmer monthly report: divide by entered non-English coefficients
         const average =
           actualCoefficient > 0
             ? adjustedTotalScore / actualCoefficient
