@@ -60,6 +60,9 @@ export default function TrackingBookPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"single" | "all">("single");
+  const [activeBookTab, setActiveBookTab] = useState<
+    "score-bulletin" | "internship-book"
+  >("score-bulletin");
   const [placeName, setPlaceName] = useState("ស្វាយធំ");
   const [directorDate, setDirectorDate] = useState(() => {
     return formatKhmerDate(new Date());
@@ -202,55 +205,506 @@ export default function TrackingBookPage() {
     })),
   ];
 
+  const GRADE_LABELS_KH = {
+    A: "ល្អប្រសើរ",
+    B: "ល្អណាស់",
+    C: "ល្អ",
+    D: "ល្អបង្គួរ",
+    E: "មធ្យម",
+    F: "ខ្សោយ",
+  } as const;
+  type GradeLetter = keyof typeof GRADE_LABELS_KH;
+  type TrackingSubjectScore =
+    | StudentTrackingBookData["students"][number]["subjectScores"][string]
+    | undefined;
+
+  const buildSubjectRankMap = (
+    values: Array<{ studentId: string; value: number | null }>
+  ): Record<string, number> => {
+    const sorted = values
+      .filter((item) => item.value !== null)
+      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
+    const rankMap: Record<string, number> = {};
+    let previousValue: number | null = null;
+    let previousRank = 0;
+
+    sorted.forEach((item, index) => {
+      if (item.value === previousValue) {
+        rankMap[item.studentId] = previousRank;
+        return;
+      }
+
+      const rank = index + 1;
+      rankMap[item.studentId] = rank;
+      previousValue = item.value;
+      previousRank = rank;
+    });
+
+    return rankMap;
+  };
+
+  const parseTrackingNumber = (
+    value: string | number | null | undefined
+  ): number | null => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.replace(/,/g, "").trim();
+      if (!normalized) return null;
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    return null;
+  };
+
+  const getOptionalNumberField = (
+    scoreData: TrackingSubjectScore,
+    field: string
+  ): number | null => {
+    if (!scoreData) return null;
+    const value = (scoreData as Record<string, unknown>)[field];
+    return parseTrackingNumber(value as string | number | null | undefined);
+  };
+
+  const getOptionalTextField = (scoreData: TrackingSubjectScore, field: string): string => {
+    if (!scoreData) return "";
+    const value = (scoreData as Record<string, unknown>)[field];
+    return typeof value === "string" ? value : "";
+  };
+
+  const normalizeGradeLetter = (value: unknown): GradeLetter | null => {
+    if (typeof value !== "string") return null;
+    const normalized = value.trim().toUpperCase();
+    if (normalized in GRADE_LABELS_KH) {
+      return normalized as GradeLetter;
+    }
+    return null;
+  };
+
+  const getGradeBandFromPercentage = (
+    percentage: number | null
+  ): { letter: GradeLetter | null; labelKh: string } => {
+    if (percentage === null) {
+      return { letter: null, labelKh: "" };
+    }
+
+    let letter: GradeLetter = "F";
+    if (percentage >= 80) letter = "A";
+    else if (percentage >= 70) letter = "B";
+    else if (percentage >= 60) letter = "C";
+    else if (percentage >= 50) letter = "D";
+    else if (percentage >= 40) letter = "E";
+
+    return {
+      letter,
+      labelKh: GRADE_LABELS_KH[letter],
+    };
+  };
+
+  const getGradeLabelKhFromCode = (value: unknown): string | null => {
+    const letter = normalizeGradeLetter(value);
+    return letter ? GRADE_LABELS_KH[letter] : null;
+  };
+
+  const getResolvedMaxScore = (
+    scoreData: TrackingSubjectScore,
+    fallbackMaxScore: number | null
+  ): number | null => {
+    const resolvedMaxScore =
+      getOptionalNumberField(scoreData, "maxScore") ??
+      parseTrackingNumber(fallbackMaxScore);
+
+    return resolvedMaxScore !== null && resolvedMaxScore > 0
+      ? resolvedMaxScore
+      : null;
+  };
+
+  const toPercentageScore = (
+    score: number | null,
+    maxScore: number | null
+  ): number | null => {
+    if (score === null || maxScore === null || maxScore <= 0) {
+      return null;
+    }
+    return (score / maxScore) * 100;
+  };
+
+  const getSemesterMetrics = (scoreData: TrackingSubjectScore) => {
+    const semester1Score =
+      getOptionalNumberField(scoreData, "semester1Score") ??
+      parseTrackingNumber(scoreData?.score ?? null);
+    const semester2Score = getOptionalNumberField(scoreData, "semester2Score");
+    const annualScore =
+      getOptionalNumberField(scoreData, "annualScore") ??
+      (semester1Score !== null && semester2Score !== null
+        ? (semester1Score + semester2Score) / 2
+        : semester1Score);
+    const status =
+      getOptionalTextField(scoreData, "status") ||
+      (annualScore === null ? "-" : annualScore >= 50 ? "ជាប់" : "ធ្លាក់");
+    const note = getOptionalTextField(scoreData, "note");
+
+    return { semester1Score, semester2Score, annualScore, status, note };
+  };
+
+  const aggregateStudentSemesterMetrics = (
+    subjectScores: StudentTrackingBookData["students"][number]["subjectScores"],
+    subjectMaxScores: Record<string, number>
+  ) => {
+    let semester1Total = 0;
+    let semester2Total = 0;
+    let annualTotal = 0;
+    let semester1Count = 0;
+    let semester2Count = 0;
+    let annualCount = 0;
+
+    let semester1TotalPercentage = 0;
+    let semester2TotalPercentage = 0;
+    let annualTotalPercentage = 0;
+    let semester1PercentageCount = 0;
+    let semester2PercentageCount = 0;
+    let annualPercentageCount = 0;
+
+    Object.entries(subjectScores).forEach(([subjectId, scoreData]) => {
+      const { semester1Score, semester2Score, annualScore } =
+        getSemesterMetrics(scoreData);
+      const maxScore = getResolvedMaxScore(scoreData, subjectMaxScores[subjectId] ?? null);
+
+      const semester1Percentage = toPercentageScore(semester1Score, maxScore);
+      const semester2Percentage = toPercentageScore(semester2Score, maxScore);
+      const annualPercentage = toPercentageScore(annualScore, maxScore);
+
+      if (semester1Score !== null) {
+        semester1Total += semester1Score;
+        semester1Count += 1;
+      }
+      if (semester2Score !== null) {
+        semester2Total += semester2Score;
+        semester2Count += 1;
+      }
+      if (annualScore !== null) {
+        annualTotal += annualScore;
+        annualCount += 1;
+      }
+
+      if (semester1Percentage !== null) {
+        semester1TotalPercentage += semester1Percentage;
+        semester1PercentageCount += 1;
+      }
+      if (semester2Percentage !== null) {
+        semester2TotalPercentage += semester2Percentage;
+        semester2PercentageCount += 1;
+      }
+      if (annualPercentage !== null) {
+        annualTotalPercentage += annualPercentage;
+        annualPercentageCount += 1;
+      }
+    });
+
+    return {
+      semester1Total: semester1Count > 0 ? semester1Total : null,
+      semester2Total: semester2Count > 0 ? semester2Total : null,
+      annualTotal: annualCount > 0 ? annualTotal : null,
+      semester1Average: semester1Count > 0 ? semester1Total / semester1Count : null,
+      semester2Average: semester2Count > 0 ? semester2Total / semester2Count : null,
+      annualAverage: annualCount > 0 ? annualTotal / annualCount : null,
+      semester1TotalPercentage:
+        semester1PercentageCount > 0 ? semester1TotalPercentage : null,
+      semester2TotalPercentage:
+        semester2PercentageCount > 0 ? semester2TotalPercentage : null,
+      annualTotalPercentage: annualPercentageCount > 0 ? annualTotalPercentage : null,
+      semester1AveragePercentage:
+        semester1PercentageCount > 0
+          ? semester1TotalPercentage / semester1PercentageCount
+          : null,
+      semester2AveragePercentage:
+        semester2PercentageCount > 0
+          ? semester2TotalPercentage / semester2PercentageCount
+          : null,
+      annualAveragePercentage:
+        annualPercentageCount > 0 ? annualTotalPercentage / annualPercentageCount : null,
+    };
+  };
+
+  const subjectRankLookup = sortedTrackingData
+    ? (() => {
+        const semester1Ranks: Record<string, Record<string, number>> = {};
+        const semester2Ranks: Record<string, Record<string, number>> = {};
+        const annualRanks: Record<string, Record<string, number>> = {};
+
+        sortedTrackingData.subjects.forEach((subject) => {
+          const metricRows = sortedTrackingData.students.map((student) => {
+            const scoreData = student.subjectScores[subject.id];
+            const metrics = getSemesterMetrics(scoreData);
+            const maxScore = getResolvedMaxScore(scoreData, subject.maxScore);
+            return {
+              studentId: student.studentId,
+              maxScore,
+              ...metrics,
+            };
+          });
+
+          semester1Ranks[subject.id] = buildSubjectRankMap(
+            metricRows.map((row) => ({
+              studentId: row.studentId,
+              value: toPercentageScore(row.semester1Score, row.maxScore),
+            }))
+          );
+          semester2Ranks[subject.id] = buildSubjectRankMap(
+            metricRows.map((row) => ({
+              studentId: row.studentId,
+              value: toPercentageScore(row.semester2Score, row.maxScore),
+            }))
+          );
+          annualRanks[subject.id] = buildSubjectRankMap(
+            metricRows.map((row) => ({
+              studentId: row.studentId,
+              value: toPercentageScore(row.annualScore, row.maxScore),
+            }))
+          );
+        });
+
+        return {
+          semester1Ranks,
+          semester2Ranks,
+          annualRanks,
+        };
+      })()
+    : null;
+
+  const summaryRankLookup = sortedTrackingData
+    ? (() => {
+        const subjectMaxScores = Object.fromEntries(
+          sortedTrackingData.subjects.map((subject) => [subject.id, subject.maxScore])
+        ) as Record<string, number>;
+        const metricsByStudentId: Record<
+          string,
+          {
+            semester1Total: number | null;
+            semester2Total: number | null;
+            annualTotal: number | null;
+            semester1Average: number | null;
+            semester2Average: number | null;
+            annualAverage: number | null;
+            semester1TotalPercentage: number | null;
+            semester2TotalPercentage: number | null;
+            annualTotalPercentage: number | null;
+            semester1AveragePercentage: number | null;
+            semester2AveragePercentage: number | null;
+            annualAveragePercentage: number | null;
+          }
+        > = {};
+
+        sortedTrackingData.students.forEach((student) => {
+          metricsByStudentId[student.studentId] = aggregateStudentSemesterMetrics(
+            student.subjectScores,
+            subjectMaxScores
+          );
+        });
+
+        return {
+          semester1TotalRanks: buildSubjectRankMap(
+            sortedTrackingData.students.map((student) => ({
+              studentId: student.studentId,
+              value:
+                metricsByStudentId[student.studentId].semester1TotalPercentage ??
+                metricsByStudentId[student.studentId].semester1Total,
+            }))
+          ),
+          semester2TotalRanks: buildSubjectRankMap(
+            sortedTrackingData.students.map((student) => ({
+              studentId: student.studentId,
+              value:
+                metricsByStudentId[student.studentId].semester2TotalPercentage ??
+                metricsByStudentId[student.studentId].semester2Total,
+            }))
+          ),
+          annualTotalRanks: buildSubjectRankMap(
+            sortedTrackingData.students.map((student) => ({
+              studentId: student.studentId,
+              value:
+                metricsByStudentId[student.studentId].annualTotalPercentage ??
+                metricsByStudentId[student.studentId].annualTotal ??
+                parseTrackingNumber(student.totalScore),
+            }))
+          ),
+          semester1AverageRanks: buildSubjectRankMap(
+            sortedTrackingData.students.map((student) => ({
+              studentId: student.studentId,
+              value:
+                metricsByStudentId[student.studentId].semester1AveragePercentage ??
+                metricsByStudentId[student.studentId].semester1Average,
+            }))
+          ),
+          semester2AverageRanks: buildSubjectRankMap(
+            sortedTrackingData.students.map((student) => ({
+              studentId: student.studentId,
+              value:
+                metricsByStudentId[student.studentId].semester2AveragePercentage ??
+                metricsByStudentId[student.studentId].semester2Average,
+            }))
+          ),
+          annualAverageRanks: buildSubjectRankMap(
+            sortedTrackingData.students.map((student) => ({
+              studentId: student.studentId,
+              value:
+                metricsByStudentId[student.studentId].annualAveragePercentage ??
+                metricsByStudentId[student.studentId].annualAverage ??
+                parseTrackingNumber(student.averageScore),
+            }))
+          ),
+          metricsByStudentId,
+        };
+      })()
+    : null;
+
   // ✅ Transform data for StudentTranscript with sorted subjects
   const transcriptData = sortedTrackingData
-    ? sortedTrackingData.students.map((student) => ({
-        studentData: {
-          // ✅ Wrap in studentData object
-          studentId: student.studentId,
-          studentName: student.studentName,
-          studentNumber: student.studentId, // ✅ Use actual studentId instead of index
-          dateOfBirth: student.dateOfBirth || "01-01-2010",
-          placeOfBirth: "សៀមរាប",
-          gender: student.gender,
-          fatherName: student.fatherName || "ឪពុក",
-          fatherOccupation: student.parentOccupation || "",
-          motherName: student.motherName || "ម្តាយ",
-          motherOccupation: student.parentOccupation || "",
-          address: "សៀមរាប",
-          className: sortedTrackingData.className,
-          grade: sortedTrackingData.grade,
-        },
-        subjects: sortedTrackingData.subjects,
-        subjectScores: student.subjectScores,
-        summary: {
-          totalScore: parseFloat(student.totalScore),
-          averageScore: parseFloat(student.averageScore),
-          gradeLevel: student.gradeLevel,
-          gradeLevelKhmer: student.gradeLevelKhmer,
-          rank: student.rank,
-        },
-        attendance: student.attendance || {
-          totalAbsent: 0,
-          permission: 0,
-          withoutPermission: 0,
-        },
-        year: sortedTrackingData.year,
-        month:
-          sortedTrackingData.month?.trim() === "កុម្ភៈ"
-            ? "ឆមាសទី១"
-            : sortedTrackingData.month,
-        teacherName: sortedTrackingData.teacherName,
-        principalName: "នាយកសាលា",
-        schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
-        province: "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប", // ✅ Add province
-        placeName: placeName, // ✅ Add dynamic place name
-        directorDate: directorDate, // ✅ Add director date
-        teacherDate: teacherDate, // ✅ Add teacher date
-      }))
+    ? sortedTrackingData.students.map((student) => {
+        const enrichedSubjectScores = Object.fromEntries(
+          sortedTrackingData.subjects.map((subject) => {
+            const scoreData = student.subjectScores[subject.id];
+            const { semester1Score, semester2Score, annualScore, status, note } =
+              getSemesterMetrics(scoreData);
+            const resolvedMaxScore = getResolvedMaxScore(scoreData, subject.maxScore);
+            const semester1Percentage = toPercentageScore(
+              semester1Score,
+              resolvedMaxScore
+            );
+            const gradeBand = getGradeBandFromPercentage(semester1Percentage);
+            const backendGradeLevel = getOptionalTextField(scoreData, "gradeLevel");
+            const backendGradeLevelKhmer = getOptionalTextField(
+              scoreData,
+              "gradeLevelKhmer"
+            );
+            const normalizedBackendGradeLevel =
+              normalizeGradeLetter(backendGradeLevel) ?? backendGradeLevel;
+            const computedGradeLevelKhmer =
+              gradeBand.labelKh ||
+              getGradeLabelKhFromCode(backendGradeLevel) ||
+              backendGradeLevelKhmer;
+
+            return [
+              subject.id,
+              {
+                ...(scoreData || { score: null, maxScore: subject.maxScore }),
+                maxScore: resolvedMaxScore ?? subject.maxScore,
+                percentage: semester1Percentage ?? undefined,
+                gradeLevel: gradeBand.letter ?? normalizedBackendGradeLevel ?? "",
+                gradeLevelKhmer: computedGradeLevelKhmer,
+                semester1Score,
+                semester1Rank:
+                  subjectRankLookup?.semester1Ranks[subject.id]?.[student.studentId] ??
+                  null,
+                semester2Score,
+                semester2Rank:
+                  subjectRankLookup?.semester2Ranks[subject.id]?.[student.studentId] ??
+                  null,
+                annualScore,
+                annualRank:
+                  subjectRankLookup?.annualRanks[subject.id]?.[student.studentId] ??
+                  null,
+                status,
+                note,
+              },
+            ] as const;
+          })
+        );
+
+        const studentSummaryMetrics =
+          summaryRankLookup?.metricsByStudentId[student.studentId];
+        const totalScore =
+          parseTrackingNumber(student.totalScore) ??
+          studentSummaryMetrics?.annualTotal ??
+          0;
+        const averageScore =
+          parseTrackingNumber(student.averageScore) ??
+          studentSummaryMetrics?.annualAverage ??
+          0;
+        const annualAveragePercentageForGrade =
+          studentSummaryMetrics?.annualAveragePercentage ??
+          parseTrackingNumber(student.averageScore);
+        const summaryGradeBand = getGradeBandFromPercentage(
+          annualAveragePercentageForGrade
+        );
+        const normalizedBackendSummaryGradeLevel =
+          normalizeGradeLetter(student.gradeLevel) ?? student.gradeLevel;
+        const summaryGradeLevel =
+          summaryGradeBand.letter ?? normalizedBackendSummaryGradeLevel ?? "";
+        const summaryGradeLevelKhmer =
+          summaryGradeBand.labelKh ||
+          getGradeLabelKhFromCode(student.gradeLevel) ||
+          student.gradeLevelKhmer ||
+          "";
+
+        return {
+          studentData: {
+            // ✅ Wrap in studentData object
+            studentId: student.studentId,
+            studentName: student.studentName,
+            studentNumber: student.studentId, // ✅ Use actual studentId instead of index
+            dateOfBirth: student.dateOfBirth || "01-01-2010",
+            placeOfBirth: "សៀមរាប",
+            gender: student.gender,
+            fatherName: student.fatherName || "ឪពុក",
+            fatherOccupation: student.parentOccupation || "",
+            motherName: student.motherName || "ម្តាយ",
+            motherOccupation: student.parentOccupation || "",
+            address: "សៀមរាប",
+            className: sortedTrackingData.className,
+            grade: sortedTrackingData.grade,
+          },
+          subjects: sortedTrackingData.subjects,
+          subjectScores: enrichedSubjectScores,
+          summary: {
+            totalScore,
+            averageScore,
+            gradeLevel: summaryGradeLevel,
+            gradeLevelKhmer: summaryGradeLevelKhmer,
+            rank: student.rank,
+            totalRank:
+              summaryRankLookup?.annualTotalRanks[student.studentId] ?? null,
+            averageRank:
+              summaryRankLookup?.annualAverageRanks[student.studentId] ?? null,
+            semester1TotalRank:
+              summaryRankLookup?.semester1TotalRanks[student.studentId] ?? null,
+            semester2TotalRank:
+              summaryRankLookup?.semester2TotalRanks[student.studentId] ?? null,
+            semester1AverageRank:
+              summaryRankLookup?.semester1AverageRanks[student.studentId] ?? null,
+            semester2AverageRank:
+              summaryRankLookup?.semester2AverageRanks[student.studentId] ?? null,
+          },
+          attendance: student.attendance || {
+            totalAbsent: 0,
+            permission: 0,
+            withoutPermission: 0,
+          },
+          year: sortedTrackingData.year,
+          month:
+            sortedTrackingData.month?.trim() === "កុម្ភៈ"
+              ? "ឆមាសទី១"
+              : sortedTrackingData.month,
+          teacherName: sortedTrackingData.teacherName,
+          principalName: "នាយកសាលា",
+          schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
+          province: "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប", // ✅ Add province
+          placeName: placeName, // ✅ Add dynamic place name
+          directorDate: directorDate, // ✅ Add director date
+          teacherDate: teacherDate, // ✅ Add teacher date
+        };
+      })
     : [];
 
   const currentStudent = transcriptData[selectedStudentIndex];
+  const selectedTabFileLabel =
+    activeBookTab === "score-bulletin"
+      ? "ព្រឹត្តិបត្រពិន្ទុ"
+      : "សៀវភៅសិក្ខាគារិក";
 
   const handlePrint = () => {
     window.print();
@@ -272,6 +726,7 @@ export default function TrackingBookPage() {
     ];
 
     const rows = sortedTrackingData.students.map((student, index) => {
+      const summaryForExport = transcriptData[index]?.summary;
       const row = [
         student.studentId, // ✅ Use actual studentId instead of index + 1
         student.studentName,
@@ -284,7 +739,9 @@ export default function TrackingBookPage() {
         }),
         student.totalScore,
         student.averageScore,
-        student.gradeLevel,
+        summaryForExport?.gradeLevelKhmer ||
+          summaryForExport?.gradeLevel ||
+          student.gradeLevel,
         student.rank.toString(),
         student.attendance.totalAbsent.toString(),
       ];
@@ -303,7 +760,7 @@ export default function TrackingBookPage() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `សៀវភៅតាមដាន_${sortedTrackingData.className}_${selectedYear}. csv`
+      `${selectedTabFileLabel}_${sortedTrackingData.className}_${selectedYear}.csv`
     );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
@@ -409,7 +866,7 @@ export default function TrackingBookPage() {
 
       // Save the PDF
       pdf.save(
-        `សៀវភៅតាមដាន_${sortedTrackingData.className}_${selectedYear}.pdf`
+        `${selectedTabFileLabel}_${sortedTrackingData.className}_${selectedYear}.pdf`
       );
 
       setLoading(false);
@@ -507,12 +964,34 @@ export default function TrackingBookPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-black text-gray-900">
-                  សៀវភៅតាមដានការសិក្សា
+                  {selectedTabFileLabel}
                 </h1>
                 <p className="text-gray-600 font-medium">
-                  Student Tracking Book
+                  Student Report Books
                 </p>
               </div>
+            </div>
+            <div className="mt-4 inline-flex gap-2 rounded-xl bg-white p-1 border border-gray-200 shadow-sm">
+              <button
+                onClick={() => setActiveBookTab("score-bulletin")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeBookTab === "score-bulletin"
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                ព្រឹត្តិបត្រពិន្ទុ
+              </button>
+              <button
+                onClick={() => setActiveBookTab("internship-book")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeBookTab === "internship-book"
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                សៀវភៅសិក្ខាគារិក
+              </button>
             </div>
           </div>
 
@@ -790,11 +1269,18 @@ export default function TrackingBookPage() {
           {sortedTrackingData && (
             <div ref={reportRef} className="print-container">
               {viewMode === "single" && currentStudent ? (
-                <StudentTranscript {...currentStudent} />
+                <StudentTranscript
+                  {...currentStudent}
+                  reportTab={activeBookTab}
+                />
               ) : viewMode === "all" ? (
                 <div className="space-y-8 all-students-container">
                   {transcriptData.map((student, index) => (
-                    <StudentTranscript key={index} {...student} />
+                    <StudentTranscript
+                      key={index}
+                      {...student}
+                      reportTab={activeBookTab}
+                    />
                   ))}
                 </div>
               ) : null}
@@ -806,10 +1292,10 @@ export default function TrackingBookPage() {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-16 text-center">
               <div className="text-6xl mb-4">📚</div>
               <p className="text-xl font-semibold text-gray-700 mb-2">
-                សូមជ្រើសរើសថ្នាក់ដើម្បីមើលសៀវភៅតាមដាន
+                សូមជ្រើសរើសថ្នាក់ដើម្បីមើល{selectedTabFileLabel}
               </p>
               <p className="text-gray-500">
-                Please select a class to view tracking book
+                Please select a class to view {selectedTabFileLabel}
               </p>
             </div>
           )}

@@ -1,5 +1,23 @@
 "use client";
 
+type ReportTabType = "score-bulletin" | "internship-book";
+
+interface SubjectScoreData {
+  score: number | null;
+  maxScore: number;
+  gradeLevel?: string;
+  gradeLevelKhmer?: string;
+  percentage?: number;
+  semester1Score?: number | null;
+  semester1Rank?: number | null;
+  semester2Score?: number | null;
+  semester2Rank?: number | null;
+  annualScore?: number | null;
+  annualRank?: number | null;
+  status?: string;
+  note?: string;
+}
+
 interface StudentTranscriptProps {
   studentData: {
     studentId: string;
@@ -24,13 +42,7 @@ interface StudentTranscriptProps {
     maxScore: number;
   }>;
   subjectScores: {
-    [subjectId: string]: {
-      score: number | null;
-      maxScore: number;
-      gradeLevel?: string;
-      gradeLevelKhmer?: string;
-      percentage?: number;
-    };
+    [subjectId: string]: SubjectScoreData;
   };
   summary: {
     totalScore: number;
@@ -38,6 +50,12 @@ interface StudentTranscriptProps {
     gradeLevel: string;
     gradeLevelKhmer: string;
     rank: number;
+    totalRank?: number | null;
+    averageRank?: number | null;
+    semester1TotalRank?: number | null;
+    semester2TotalRank?: number | null;
+    semester1AverageRank?: number | null;
+    semester2AverageRank?: number | null;
   };
   attendance?: {
     totalAbsent: number;
@@ -53,6 +71,7 @@ interface StudentTranscriptProps {
   placeName: string;
   directorDate: string;
   teacherDate: string;
+  reportTab?: ReportTabType;
 }
 
 export default function StudentTranscript({
@@ -70,6 +89,7 @@ export default function StudentTranscript({
   placeName,
   directorDate,
   teacherDate,
+  reportTab = "score-bulletin",
 }: StudentTranscriptProps) {
   const displayValue = (
     value: string | number | null | undefined,
@@ -80,6 +100,151 @@ export default function StudentTranscript({
     }
     return `${value}${suffix}`;
   };
+
+  const toNumber = (value: number | null | undefined): number | null => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return null;
+    }
+    return value;
+  };
+
+  const formatMetric = (
+    value: number | null | undefined,
+    digits: number = 1
+  ): string => {
+    const numericValue = toNumber(value);
+    return numericValue === null ? "-" : numericValue.toFixed(digits);
+  };
+
+  const formatRank = (value: number | null | undefined): string => {
+    const numericValue = toNumber(value);
+    return numericValue === null ? "-" : `${Math.round(numericValue)}`;
+  };
+
+  type GradeLetter = "A" | "B" | "C" | "D" | "E" | "F";
+  const GRADE_LABELS_KH: Record<GradeLetter, string> = {
+    A: "ល្អប្រសើរ",
+    B: "ល្អណាស់",
+    C: "ល្អ",
+    D: "ល្អបង្គួរ",
+    E: "មធ្យម",
+    F: "ខ្សោយ",
+  };
+
+  const normalizeGradeLetter = (value: string | undefined): GradeLetter | null => {
+    if (!value) return null;
+    const normalized = value.trim().toUpperCase();
+    if (normalized in GRADE_LABELS_KH) {
+      return normalized as GradeLetter;
+    }
+    return null;
+  };
+
+  const getGradeLabelKhFromScore = (
+    score: number | null,
+    maxScore: number | null
+  ): string => {
+    if (score === null || maxScore === null || maxScore <= 0) {
+      return "";
+    }
+    const percentage = (score / maxScore) * 100;
+    if (percentage >= 80) return GRADE_LABELS_KH.A;
+    if (percentage >= 70) return GRADE_LABELS_KH.B;
+    if (percentage >= 60) return GRADE_LABELS_KH.C;
+    if (percentage >= 50) return GRADE_LABELS_KH.D;
+    if (percentage >= 40) return GRADE_LABELS_KH.E;
+    return GRADE_LABELS_KH.F;
+  };
+
+  const getSemesterMetrics = (scoreData?: SubjectScoreData) => {
+    const semester1Score = toNumber(scoreData?.semester1Score ?? scoreData?.score);
+    const semester1Rank = toNumber(scoreData?.semester1Rank);
+    const semester2Score = toNumber(scoreData?.semester2Score);
+    const semester2Rank = toNumber(scoreData?.semester2Rank);
+    const calculatedAnnualScore =
+      toNumber(scoreData?.annualScore) ??
+      (semester1Score !== null && semester2Score !== null
+        ? (semester1Score + semester2Score) / 2
+        : semester1Score);
+    const annualRank = toNumber(scoreData?.annualRank) ?? semester1Rank;
+    const note = scoreData?.note || "";
+
+    return {
+      semester1Score,
+      semester1Rank,
+      semester2Score,
+      semester2Rank,
+      annualScore: calculatedAnnualScore,
+      annualRank,
+      note,
+    };
+  };
+
+  const semesterRows = subjects.map((subject) => {
+    const scoreData = subjectScores[subject.id];
+    const metrics = getSemesterMetrics(scoreData);
+    const resolvedMaxScore = toNumber(scoreData?.maxScore ?? subject.maxScore);
+    const backendGradeLetter = normalizeGradeLetter(scoreData?.gradeLevel);
+    const annualGradeLevelKhmer =
+      getGradeLabelKhFromScore(metrics.annualScore, resolvedMaxScore) ||
+      scoreData?.gradeLevelKhmer ||
+      (backendGradeLetter ? GRADE_LABELS_KH[backendGradeLetter] : "");
+
+    return {
+      subject,
+      annualGradeLevelKhmer,
+      ...metrics,
+    };
+  });
+
+  const semester1Available = semesterRows.filter(
+    (row) => row.semester1Score !== null
+  );
+  const semester2Available = semesterRows.filter(
+    (row) => row.semester2Score !== null
+  );
+  const annualAvailable = semesterRows.filter((row) => row.annualScore !== null);
+
+  const semester1Total = semester1Available.reduce(
+    (sum, row) => sum + (row.semester1Score ?? 0),
+    0
+  );
+  const semester2Total = semester2Available.reduce(
+    (sum, row) => sum + (row.semester2Score ?? 0),
+    0
+  );
+  const annualTotal = annualAvailable.reduce(
+    (sum, row) => sum + (row.annualScore ?? 0),
+    0
+  );
+
+  const semester1Average =
+    semester1Available.length > 0
+      ? semester1Total / semester1Available.length
+      : null;
+  const semester2Average =
+    semester2Available.length > 0
+      ? semester2Total / semester2Available.length
+      : null;
+  const annualAverage =
+    annualAvailable.length > 0 ? annualTotal / annualAvailable.length : null;
+  const reportTitleKh =
+    reportTab === "internship-book" ? "សៀវភៅសិក្ខាគារិក" : "ព្រឹត្តិបត្រពិន្ទុ";
+  const normalizeRank = (value: number | null | undefined): number | null => {
+    const numericValue = toNumber(value);
+    if (numericValue === null || numericValue <= 0) {
+      return null;
+    }
+    return numericValue;
+  };
+  const totalSummaryRank =
+    normalizeRank(summary.totalRank) ?? normalizeRank(summary.rank);
+  const averageSummaryRank =
+    normalizeRank(summary.averageRank) ?? normalizeRank(summary.rank);
+  const semester1TotalSummaryRank = normalizeRank(summary.semester1TotalRank);
+  const semester2TotalSummaryRank = normalizeRank(summary.semester2TotalRank);
+  const semester1AverageSummaryRank = normalizeRank(summary.semester1AverageRank);
+  const semester2AverageSummaryRank = normalizeRank(summary.semester2AverageRank);
 
   return (
     <>
@@ -258,7 +423,7 @@ export default function StudentTranscript({
                     lineHeight: "1.3",
                   }}
                 >
-                  ព្រឹត្តិបត្រពិន្ទុ
+                  {reportTitleKh}
                 </h1>
                 <p
                   className="mt-2.5"
@@ -462,256 +627,490 @@ export default function StudentTranscript({
                 flexDirection: "column",
               }}
             >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontSize: "10px",
-                }}
-              >
-                <thead>
-                  <tr style={{ backgroundColor: "#FFF9E6" }}>
-                    <th
-                      rowSpan={2}
-                      className="border border-black px-1.5 py-1.5"
-                      style={{
-                        width: "7%",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ល.រ
-                    </th>
-                    <th
-                      rowSpan={2}
-                      className="border border-black px-1.5 py-1.5"
-                      style={{
-                        width: "25%",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      មុខវិជ្ជា
-                    </th>
-                    <th
-                      colSpan={3}
-                      className="border border-black px-1.5 py-1"
-                      style={{
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ពិន្ទុ
-                    </th>
-                    <th
-                      rowSpan={2}
-                      className="border border-black px-1.5 py-1.5"
-                      style={{
-                        width: "15%",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ផ្សេងៗ
-                    </th>
-                  </tr>
-                  <tr style={{ backgroundColor: "#FFF9E6" }}>
-                    <th
-                      className="border border-black px-1.5 py-1"
-                      style={{
-                        width: "12%",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      អតិបរមា
-                    </th>
-                    <th
-                      className="border border-black px-1.5 py-1"
-                      style={{
-                        width: "15%",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ពិន្ទុបាន
-                    </th>
-                    <th
-                      className="border border-black px-1.5 py-1"
-                      style={{
-                        width: "12%",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      និទ្ទេស
-                    </th>
-                  </tr>
-                </thead>
+              {reportTab === "score-bulletin" ? (
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "10px",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#FFF9E6" }}>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1.5 py-1.5"
+                        style={{
+                          width: "7%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        ល.រ
+                      </th>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1.5 py-1.5"
+                        style={{
+                          width: "25%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        មុខវិជ្ជា
+                      </th>
+                      <th
+                        colSpan={3}
+                        className="border border-black px-1.5 py-1"
+                        style={{
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        ពិន្ទុ
+                      </th>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1.5 py-1.5"
+                        style={{
+                          width: "15%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        ផ្សេងៗ
+                      </th>
+                    </tr>
+                    <tr style={{ backgroundColor: "#FFF9E6" }}>
+                      <th
+                        className="border border-black px-1.5 py-1"
+                        style={{
+                          width: "12%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        អតិបរមា
+                      </th>
+                      <th
+                        className="border border-black px-1.5 py-1"
+                        style={{
+                          width: "15%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        ពិន្ទុបាន
+                      </th>
+                      <th
+                        className="border border-black px-1.5 py-1"
+                        style={{
+                          width: "12%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        និទ្ទេស
+                      </th>
+                    </tr>
+                  </thead>
 
-                <tbody>
-                  {subjects.map((subject, index) => {
-                    const scoreData = subjectScores[subject.id];
-                    const score = scoreData?.score;
-                    const maxScore = scoreData?.maxScore || subject.maxScore;
+                  <tbody>
+                    {subjects.map((subject, index) => {
+                      const scoreData = subjectScores[subject.id];
+                      const score = toNumber(scoreData?.score);
+                      const maxScore = toNumber(scoreData?.maxScore ?? subject.maxScore);
+                      const gradeLevel =
+                        scoreData?.gradeLevelKhmer ||
+                        getGradeLabelKhFromScore(score, maxScore);
 
-                    // ✅ Use grade level from backend if available, otherwise calculate
-                    let gradeLevel = "";
-                    if (scoreData?.gradeLevelKhmer) {
-                      gradeLevel = scoreData.gradeLevelKhmer;
-                    } else if (score !== null && score !== undefined) {
-                      const percentage = (score / maxScore) * 100;
-                      if (percentage >= 80) gradeLevel = "ល្អប្រសើរ";
-                      else if (percentage >= 70) gradeLevel = "ល្អណាស់";
-                      else if (percentage >= 60) gradeLevel = "ល្អ";
-                      else if (percentage >= 50) gradeLevel = "ល្អបង្គួរ";
-                      else if (percentage >= 40) gradeLevel = "មធ្យម";
-                      else gradeLevel = "ខ្សោយ";
-                    }
+                      return (
+                        <tr key={subject.id}>
+                          <td
+                            className="border border-black px-1.5 py-1 text-center"
+                            style={{
+                              fontFamily: "'Time New Roman'",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {index + 1}
+                          </td>
+                          <td className="border border-black px-1.5 py-1">
+                            {subject.nameKh}
+                          </td>
+                          <td
+                            className="border border-black px-1.5 py-1 text-center font-bold"
+                            style={{
+                              fontFamily: "'Time New Roman'",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {maxScore ?? "-"}
+                          </td>
+                          <td
+                            className="border border-black px-1.5 py-1 text-center font-bold"
+                            style={{
+                              color: "#2563EB",
+                              fontSize: "11px",
+                              fontFamily: "'Time New Roman'",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {score !== null ? Math.round(score) : "N/A"}
+                          </td>
+                          <td className="border border-black px-1.5 py-1 text-center">
+                            {gradeLevel || "N/A"}
+                          </td>
+                          {/* ✅ Keep column but remove data */}
+                          <td className="border border-black px-1.5 py-1 text-center"></td>
+                        </tr>
+                      );
+                    })}
 
-                    return (
-                      <tr key={subject.id}>
+                    {/* Empty rows */}
+                    {Array.from({
+                      length: Math.max(0, 11 - subjects.length),
+                    }).map((_, i) => (
+                      <tr key={`empty-${i}`}>
+                        <td className="border border-black px-1.5 py-1 text-center">
+                          {subjects.length + i + 1}
+                        </td>
+                        <td className="border border-black px-1.5 py-1"></td>
+                        <td className="border border-black px-1.5 py-1"></td>
+                        <td className="border border-black px-1.5 py-1"></td>
+                        <td className="border border-black px-1.5 py-1"></td>
+                        <td className="border border-black px-1.5 py-1"></td>
+                      </tr>
+                    ))}
+
+                    {/* Summary Rows */}
+                    <tr style={{ backgroundColor: "#EFF6FF" }}>
+                      <td
+                        colSpan={3}
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        ពិន្ទុសរុប
+                      </td>
+
+                      <td
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          color: "#2563EB",
+                          fontSize: "12px",
+                          fontFamily: "'Time New Roman'",
+                        }}
+                      >
+                        {summary.totalScore > 0
+                          ? summary.totalScore.toFixed(0)
+                          : "N/A"}
+                      </td>
+                      <td
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        ចំណាត់ថ្នាក់
+                      </td>
+                      <td
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          color: "#DC2626",
+                          fontSize: "12px",
+                          fontFamily: "'Time New Roman'",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {summary.rank > 0 ? summary.rank : "N/A"}
+                      </td>
+                    </tr>
+
+                    <tr style={{ backgroundColor: "#EFF6FF" }}>
+                      <td
+                        colSpan={3}
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        មធ្យមភាគ
+                      </td>
+                      <td
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          color: "#2563EB",
+                          fontSize: "12px",
+                          fontFamily: "'Time New Roman'",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {summary.averageScore > 0
+                          ? summary.averageScore.toFixed(2)
+                          : "N/A"}
+                      </td>
+                      <td
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        និទ្ទេស
+                      </td>
+                      <td
+                        className="border border-black px-1.5 py-1.5 text-center font-bold"
+                        style={{
+                          color: "#2563EB",
+                          fontSize: "12px",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                        }}
+                      >
+                        {summary.gradeLevelKhmer || "N/A"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              ) : (
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "9px",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#E8F0F9" }}>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1 py-1.5"
+                        style={{ width: "6%", fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        ល.រ
+                      </th>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1 py-1.5"
+                        style={{ width: "22%", fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        មុខវិជ្ជា
+                      </th>
+                      <th
+                        colSpan={2}
+                        className="border border-black px-1 py-1"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        ឆមាសទី១
+                      </th>
+                      <th
+                        colSpan={2}
+                        className="border border-black px-1 py-1"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        ឆមាសទី២
+                      </th>
+                      <th
+                        colSpan={2}
+                        className="border border-black px-1 py-1"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        ពិន្ទុប្រចាំឆ្នាំ
+                      </th>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1 py-1.5"
+                        style={{
+                          width: "11%",
+                          fontFamily: "'Khmer OS Muol Light', serif",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        និទ្ទេស
+                      </th>
+                      <th
+                        rowSpan={2}
+                        className="border border-black px-1 py-1.5"
+                        style={{ width: "10%", fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        ផ្សេងៗ
+                      </th>
+                    </tr>
+                    <tr style={{ backgroundColor: "#E8F0F9" }}>
+                      {["ពិន្ទុ", "ចំ.ថ្នាក់", "ពិន្ទុ", "ចំ.ថ្នាក់", "ពិន្ទុ", "ចំ.ថ្នាក់"].map(
+                        (label, index) => (
+                          <th
+                            key={`${label}-${index}`}
+                            className="border border-black px-1 py-1"
+                            style={{ width: "8%", fontFamily: "'Khmer OS Muol Light', serif" }}
+                          >
+                            {label}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {semesterRows.map((row, index) => (
+                      <tr key={row.subject.id}>
                         <td
-                          className="border border-black px-1.5 py-1 text-center"
-                          style={{
-                            fontFamily: "'Time New Roman'",
-                            fontWeight: "bold",
-                          }}
+                          className="border border-black px-1 py-1 text-center"
+                          style={{ fontFamily: "'Time New Roman'", fontWeight: "bold" }}
                         >
                           {index + 1}
                         </td>
-                        <td className="border border-black px-1.5 py-1">
-                          {subject.nameKh}
+                        <td className="border border-black px-1 py-1">{row.subject.nameKh}</td>
+                        <td
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                        >
+                          {formatMetric(row.semester1Score)}
                         </td>
                         <td
-                          className="border border-black px-1.5 py-1 text-center font-bold"
-                          style={{
-                            fontFamily: "'Time New Roman'",
-                            fontWeight: "bold",
-                          }}
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
                         >
-                          {maxScore}
+                          {formatRank(row.semester1Rank)}
                         </td>
                         <td
-                          className="border border-black px-1.5 py-1 text-center font-bold"
-                          style={{
-                            color: "#2563EB",
-                            fontSize: "11px",
-                            fontFamily: "'Time New Roman'",
-                            fontWeight: "bold",
-                          }}
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                         >
-                          {score !== null && score !== undefined
-                            ? Math.round(score)
-                            : "N/A"}
+                          {formatMetric(row.semester2Score)}
                         </td>
-                        <td className="border border-black px-1.5 py-1 text-center">
-                          {gradeLevel || "N/A"}
+                        <td
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
+                        >
+                          {formatRank(row.semester2Rank)}
                         </td>
-                        {/* ✅ Keep column but remove data */}
-                        <td className="border border-black px-1.5 py-1 text-center"></td>
+                        <td
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                        >
+                          {formatMetric(row.annualScore)}
+                        </td>
+                        <td
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
+                        >
+                          {formatRank(row.annualRank)}
+                        </td>
+                        <td
+                          className="border border-black px-1 py-1 text-center font-bold"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          {row.annualGradeLevelKhmer || "-"}
+                        </td>
+                        <td className="border border-black px-1 py-1 text-center">
+                          {row.note}
+                        </td>
                       </tr>
-                    );
-                  })}
+                    ))}
 
-                  {/* Empty rows */}
-                  {Array.from({
-                    length: Math.max(0, 11 - subjects.length),
-                  }).map((_, i) => (
-                    <tr key={`empty-${i}`}>
-                      <td className="border border-black px-1.5 py-1 text-center">
-                        {subjects.length + i + 1}
+                    {Array.from({
+                      length: Math.max(0, 11 - semesterRows.length),
+                    }).map((_, i) => (
+                      <tr key={`internship-empty-${i}`}>
+                        <td className="border border-black px-1 py-1 text-center">
+                          {semesterRows.length + i + 1}
+                        </td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                        <td className="border border-black px-1 py-1"></td>
+                      </tr>
+                    ))}
+
+                    <tr style={{ backgroundColor: "#EFF6FF" }}>
+                      <td
+                        colSpan={2}
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        ពិន្ទុសរុប
                       </td>
-                      <td className="border border-black px-1.5 py-1"></td>
-                      <td className="border border-black px-1.5 py-1"></td>
-                      <td className="border border-black px-1.5 py-1"></td>
-                      <td className="border border-black px-1.5 py-1"></td>
-                      <td className="border border-black px-1.5 py-1"></td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester1Total, 0)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center">
+                        {formatRank(semester1TotalSummaryRank)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester2Total, 0)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center">
+                        {formatRank(semester2TotalSummaryRank)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(annualTotal, 0)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatRank(totalSummaryRank)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold">
+                        -
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
                     </tr>
-                  ))}
 
-                  {/* Summary Rows */}
-                  <tr style={{ backgroundColor: "#EFF6FF" }}>
-                    <td
-                      colSpan={3}
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ពិន្ទុសរុប
-                    </td>
-
-                    <td
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        color: "#2563EB",
-                        fontSize: "12px",
-                        fontFamily: "'Time New Roman'",
-                      }}
-                    >
-                      {summary.totalScore > 0
-                        ? summary.totalScore.toFixed(0)
-                        : "N/A"}
-                    </td>
-                    <td
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ចំណាត់ថ្នាក់
-                    </td>
-                    <td
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        color: "#DC2626",
-                        fontSize: "12px",
-                        fontFamily: "'Time New Roman'",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {summary.rank > 0 ? summary.rank : "N/A"}
-                    </td>
-                  </tr>
-
-                  <tr style={{ backgroundColor: "#EFF6FF" }}>
-                    <td
-                      colSpan={3}
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      មធ្យមភាគ
-                    </td>
-                    <td
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        color: "#2563EB",
-                        fontSize: "12px",
-                        fontFamily: "'Time New Roman'",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {summary.averageScore > 0
-                        ? summary.averageScore.toFixed(2)
-                        : "N/A"}
-                    </td>
-                    <td
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      និទ្ទេស
-                    </td>
-                    <td
-                      className="border border-black px-1.5 py-1.5 text-center font-bold"
-                      style={{
-                        color: "#2563EB",
-                        fontSize: "12px",
-                        fontFamily: "'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      {summary.gradeLevelKhmer || "N/A"}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    <tr style={{ backgroundColor: "#EFF6FF" }}>
+                      <td
+                        colSpan={2}
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        មធ្យមភាគ
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester1Average, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center">
+                        {formatRank(semester1AverageSummaryRank)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester2Average, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center">
+                        {formatRank(semester2AverageSummaryRank)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(annualAverage, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center">
+                        {formatRank(averageSummaryRank)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ whiteSpace: "nowrap" }}
+                      >
+                        {summary.gradeLevelKhmer || "-"}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
 
               {/* Footer */}
               <div className="mt-3 p-1.5" style={{ marginBottom: "8mm" }}>
