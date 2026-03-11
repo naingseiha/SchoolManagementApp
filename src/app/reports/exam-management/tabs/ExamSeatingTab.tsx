@@ -24,6 +24,11 @@ interface PageConfig {
   class2Count: number;
 }
 
+interface ExcludedStudentsState {
+  class1: string[];
+  class2: string[];
+}
+
 export default function ExamSeatingTab() {
   const { currentUser } = useAuth();
   const { classes, isLoadingClasses } = useData();
@@ -53,6 +58,7 @@ export default function ExamSeatingTab() {
   const [reportGenerated, setReportGenerated] = useState(false);
   const [loadingClassData, setLoadingClassData] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const generationTimeoutRef = useRef<number | null>(null);
 
   // Full class data with students
   const [class1Data, setClass1Data] = useState<any>(null);
@@ -62,6 +68,18 @@ export default function ExamSeatingTab() {
   const [pageConfigs, setPageConfigs] = useState<PageConfig[]>([
     { id: "1", class1Count: 20, class2Count: 20 },
   ]);
+  const [excludedStudents, setExcludedStudents] = useState<ExcludedStudentsState>({
+    class1: [],
+    class2: [],
+  });
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+  const exclusionStorageKey = useMemo(() => {
+    if (!selectedClassId1 || !selectedClassId2) return "";
+    return `exam-seating-exclusions:${currentMonthKey}:${selectedYear}:${selectedClassId1}:${selectedClassId2}`;
+  }, [currentMonthKey, selectedYear, selectedClassId1, selectedClassId2]);
 
   // Filter classes based on role
   const availableClasses = useMemo(() => {
@@ -86,25 +104,71 @@ export default function ExamSeatingTab() {
 
   // Fetch full class data with students when classes are selected
   useEffect(() => {
+    let isMounted = true;
+
     const fetchClassData = async () => {
-      if (selectedClassId1 && selectedClassId2) {
-        setLoadingClassData(true);
-        try {
-          const [data1, data2] = await Promise.all([
-            classesApi.getById(selectedClassId1),
-            classesApi.getById(selectedClassId2),
-          ]);
-          setClass1Data(data1);
-          setClass2Data(data2);
-        } catch (error) {
+      if (!selectedClassId1 || !selectedClassId2) {
+        if (isMounted) {
+          setClass1Data(null);
+          setClass2Data(null);
+          setLoadingClassData(false);
+        }
+        return;
+      }
+
+      setLoadingClassData(true);
+      try {
+        const [data1, data2] = await Promise.all([
+          classesApi.getById(selectedClassId1),
+          classesApi.getById(selectedClassId2),
+        ]);
+        if (!isMounted) return;
+        setClass1Data(data1);
+        setClass2Data(data2);
+      } catch (error) {
+        if (isMounted) {
           console.error("Error fetching class data:", error);
-        } finally {
+        }
+      } finally {
+        if (isMounted) {
           setLoadingClassData(false);
         }
       }
     };
     fetchClassData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedClassId1, selectedClassId2]);
+
+  useEffect(() => {
+    if (!exclusionStorageKey) {
+      setExcludedStudents({ class1: [], class2: [] });
+      return;
+    }
+
+    const savedExclusions = window.localStorage.getItem(exclusionStorageKey);
+    if (!savedExclusions) {
+      setExcludedStudents({ class1: [], class2: [] });
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedExclusions);
+      setExcludedStudents({
+        class1: Array.isArray(parsed?.class1)
+          ? parsed.class1.map((id: unknown) => String(id))
+          : [],
+        class2: Array.isArray(parsed?.class2)
+          ? parsed.class2.map((id: unknown) => String(id))
+          : [],
+      });
+    } catch (error) {
+      console.error("Failed to parse saved exam exclusions:", error);
+      setExcludedStudents({ class1: [], class2: [] });
+    }
+  }, [exclusionStorageKey]);
 
   // Sort students by name (same as grade entry)
   const sortStudents = (students: any[]) => {
@@ -115,6 +179,81 @@ export default function ExamSeatingTab() {
       const nameB = b.khmerName || b.lastName || "";
       return nameA.localeCompare(nameB, "en-US");
     });
+  };
+
+  const normalizeStudentId = (studentId: unknown) => String(studentId ?? "");
+
+  useEffect(() => {
+    if (!exclusionStorageKey) return;
+    window.localStorage.setItem(
+      exclusionStorageKey,
+      JSON.stringify(excludedStudents),
+    );
+  }, [exclusionStorageKey, excludedStudents]);
+
+  const sortedClass1Students = useMemo(
+    () => sortStudents(class1Data?.students || []),
+    [class1Data],
+  );
+  const sortedClass2Students = useMemo(
+    () => sortStudents(class2Data?.students || []),
+    [class2Data],
+  );
+
+  const filteredClass1Students = useMemo(() => {
+    const excludedSet = new Set(excludedStudents.class1);
+    return sortedClass1Students.filter(
+      (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
+    );
+  }, [sortedClass1Students, excludedStudents.class1]);
+
+  const filteredClass2Students = useMemo(() => {
+    const excludedSet = new Set(excludedStudents.class2);
+    return sortedClass2Students.filter(
+      (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
+    );
+  }, [sortedClass2Students, excludedStudents.class2]);
+
+  const class1DataForReport = useMemo(
+    () =>
+      class1Data
+        ? {
+            ...class1Data,
+            students: filteredClass1Students,
+          }
+        : null,
+    [class1Data, filteredClass1Students],
+  );
+
+  const class2DataForReport = useMemo(
+    () =>
+      class2Data
+        ? {
+            ...class2Data,
+            students: filteredClass2Students,
+          }
+        : null,
+    [class2Data, filteredClass2Students],
+  );
+
+  const removeStudentFromExamList = (
+    side: keyof ExcludedStudentsState,
+    studentId: string,
+  ) => {
+    setExcludedStudents((prev) => {
+      if (prev[side].includes(studentId)) return prev;
+      return {
+        ...prev,
+        [side]: [...prev[side], studentId],
+      };
+    });
+  };
+
+  const restoreAllStudents = (side: keyof ExcludedStudentsState) => {
+    setExcludedStudents((prev) => ({
+      ...prev,
+      [side]: [],
+    }));
   };
 
   const addPageConfig = () => {
@@ -149,11 +288,24 @@ export default function ExamSeatingTab() {
     }
 
     setIsGenerating(true);
-    setTimeout(() => {
+    if (generationTimeoutRef.current) {
+      window.clearTimeout(generationTimeoutRef.current);
+    }
+    generationTimeoutRef.current = window.setTimeout(() => {
       setIsGenerating(false);
       setReportGenerated(true);
+      generationTimeoutRef.current = null;
     }, 500);
   };
+
+  useEffect(
+    () => () => {
+      if (generationTimeoutRef.current) {
+        window.clearTimeout(generationTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -418,6 +570,176 @@ export default function ExamSeatingTab() {
           </div>
         )}
 
+        {selectedClassId1 && selectedClassId2 && class1Data && class2Data && (
+          <div className="mt-6 border-t pt-6">
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-800">
+                  កែតារាងសិស្សមុនបោះពុម្ព
+                </h4>
+                <p className="text-sm text-gray-600">
+                  ដកសិស្សចេញតែពីបញ្ជីប្រឡងខែនេះ មិនលុបចេញពីថ្នាក់ទេ
+                </p>
+              </div>
+              <span className="rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-700">
+                សម្រាប់បោះពុម្ពតែប៉ុណ្ណោះ
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+                  <div className="text-sm font-semibold text-gray-800">
+                    {class1Data.name}
+                    <span className="ml-2 text-xs font-normal text-gray-500">
+                      បង្ហាញ {filteredClass1Students.length}/
+                      {sortedClass1Students.length} នាក់
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => restoreAllStudents("class1")}
+                    disabled={excludedStudents.class1.length === 0}
+                    className="text-xs font-medium text-blue-600 disabled:cursor-not-allowed disabled:text-gray-400"
+                  >
+                    ស្តារវិញ ({excludedStudents.class1.length})
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-white">
+                      <tr>
+                        <th className="border-b px-2 py-2 text-left">ល.រ</th>
+                        <th className="border-b px-2 py-2 text-left">ឈ្មោះ</th>
+                        <th className="border-b px-2 py-2 text-center">ភេទ</th>
+                        <th className="border-b px-2 py-2 text-center">
+                          សកម្មភាព
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredClass1Students.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="px-2 py-4 text-center text-sm text-gray-500"
+                          >
+                            មិនមានសិស្សនៅក្នុងបញ្ជី
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredClass1Students.map((student: any, index: number) => (
+                          <tr key={student.id} className="hover:bg-gray-50">
+                            <td className="border-b px-2 py-2">{index + 1}</td>
+                            <td className="border-b px-2 py-2">
+                              {student.khmerName ||
+                                `${student.lastName} ${student.firstName}`}
+                            </td>
+                            <td className="border-b px-2 py-2 text-center">
+                              {student.gender === "MALE" || student.gender === "male"
+                                ? "ប"
+                                : "ស"}
+                            </td>
+                            <td className="border-b px-2 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removeStudentFromExamList(
+                                    "class1",
+                                    normalizeStudentId(student.id),
+                                  )
+                                }
+                                className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                ដកចេញ
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+                  <div className="text-sm font-semibold text-gray-800">
+                    {class2Data.name}
+                    <span className="ml-2 text-xs font-normal text-gray-500">
+                      បង្ហាញ {filteredClass2Students.length}/
+                      {sortedClass2Students.length} នាក់
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => restoreAllStudents("class2")}
+                    disabled={excludedStudents.class2.length === 0}
+                    className="text-xs font-medium text-blue-600 disabled:cursor-not-allowed disabled:text-gray-400"
+                  >
+                    ស្តារវិញ ({excludedStudents.class2.length})
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-white">
+                      <tr>
+                        <th className="border-b px-2 py-2 text-left">ល.រ</th>
+                        <th className="border-b px-2 py-2 text-left">ឈ្មោះ</th>
+                        <th className="border-b px-2 py-2 text-center">ភេទ</th>
+                        <th className="border-b px-2 py-2 text-center">
+                          សកម្មភាព
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredClass2Students.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="px-2 py-4 text-center text-sm text-gray-500"
+                          >
+                            មិនមានសិស្សនៅក្នុងបញ្ជី
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredClass2Students.map((student: any, index: number) => (
+                          <tr key={student.id} className="hover:bg-gray-50">
+                            <td className="border-b px-2 py-2">{index + 1}</td>
+                            <td className="border-b px-2 py-2">
+                              {student.khmerName ||
+                                `${student.lastName} ${student.firstName}`}
+                            </td>
+                            <td className="border-b px-2 py-2 text-center">
+                              {student.gender === "MALE" || student.gender === "male"
+                                ? "ប"
+                                : "ស"}
+                            </td>
+                            <td className="border-b px-2 py-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  removeStudentFromExamList(
+                                    "class2",
+                                    normalizeStudentId(student.id),
+                                  )
+                                }
+                                className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                ដកចេញ
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-4 mt-6">
           <Button
@@ -448,15 +770,15 @@ export default function ExamSeatingTab() {
       </div>
 
       {/* Report Preview */}
-      {reportGenerated && class1Data && class2Data && (
+      {reportGenerated && class1DataForReport && class2DataForReport && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h4 className="text-xl font-semibold mb-4 text-gray-800">
             មើលរបាយការណ៍
           </h4>
           <div ref={printRef}>
             <KhmerExamReport
-              class1={class1Data}
-              class2={class2Data}
+              class1={class1DataForReport}
+              class2={class2DataForReport}
               province={province}
               examCenter={examCenter}
               roomNumber={roomNumber}

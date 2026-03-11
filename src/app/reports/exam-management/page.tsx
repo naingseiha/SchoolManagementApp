@@ -80,9 +80,8 @@ export default function ExamManagementPage() {
             </div>
 
             {/* Tab Content */}
-            <div>
-              {activeTab === "seating" && <ExamSeatingTab />}
-              {activeTab === "attendance" && <AttendanceTab />}
+            <div key={activeTab}>
+              {activeTab === "seating" ? <ExamSeatingTab /> : <AttendanceTab />}
             </div>
           </div>
         </main>

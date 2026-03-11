@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useData } from "@/context/DataContext";
 import Button from "@/components/ui/Button";
 import { Printer, Plus, Trash2 } from "lucide-react";
@@ -37,14 +37,25 @@ export default function AttendanceTab() {
   const [pageConfigs, setPageConfigs] = useState<PageConfig[]>([
     { id: "1", studentCount: 25 },
   ]);
+  const [excludedStudentIds, setExcludedStudentIds] = useState<string[]>([]);
+  const currentMonthKey = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, []);
+  const exclusionStorageKey = useMemo(() => {
+    if (!selectedClassId) return "";
+    return `exam-attendance-exclusions:${currentMonthKey}:${selectedYear}:${selectedClassId}`;
+  }, [currentMonthKey, selectedYear, selectedClassId]);
 
   const academicYearOptions = getAcademicYearOptionsCustom();
 
   // Fetch full class data when class is selected
   useEffect(() => {
+    let isMounted = true;
+
     const fetchClassData = async () => {
       if (!selectedClassId) {
-        setSelectedClass(null);
+        if (isMounted) setSelectedClass(null);
         return;
       }
 
@@ -72,26 +83,100 @@ export default function AttendanceTab() {
           },
         );
 
+        if (!isMounted) return;
         setSelectedClass({
           ...classData,
           subjects: filteredSubjects,
         });
       } catch (error) {
-        console.error("Error fetching class data:", error);
+        if (isMounted) {
+          console.error("Error fetching class data:", error);
+        }
       }
     };
 
     fetchClassData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedClassId]);
+
+  useEffect(() => {
+    if (!exclusionStorageKey) {
+      setExcludedStudentIds([]);
+      return;
+    }
+
+    const savedExclusions = window.localStorage.getItem(exclusionStorageKey);
+    if (!savedExclusions) {
+      setExcludedStudentIds([]);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(savedExclusions);
+      setExcludedStudentIds(
+        Array.isArray(parsed) ? parsed.map((id: unknown) => String(id)) : [],
+      );
+    } catch (error) {
+      console.error("Failed to parse attendance exclusions:", error);
+      setExcludedStudentIds([]);
+    }
+  }, [exclusionStorageKey]);
 
   // Sort students by name (same as grade entry)
   const sortStudents = (students: any[]) => {
-    return students.sort((a, b) => {
+    return [...students].sort((a, b) => {
       // Sort by khmerName
       const nameA = a.khmerName || "";
       const nameB = b.khmerName || "";
       return nameA.localeCompare(nameB, "en-US");
     });
+  };
+
+  const normalizeStudentId = (studentId: unknown) => String(studentId ?? "");
+
+  useEffect(() => {
+    if (!exclusionStorageKey) return;
+    window.localStorage.setItem(
+      exclusionStorageKey,
+      JSON.stringify(excludedStudentIds),
+    );
+  }, [exclusionStorageKey, excludedStudentIds]);
+
+  const sortedClassStudents = useMemo(
+    () => sortStudents(selectedClass?.students || []),
+    [selectedClass],
+  );
+
+  const filteredClassStudents = useMemo(() => {
+    const excludedSet = new Set(excludedStudentIds);
+    return sortedClassStudents.filter(
+      (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
+    );
+  }, [sortedClassStudents, excludedStudentIds]);
+
+  const selectedClassForReport = useMemo(
+    () =>
+      selectedClass
+        ? {
+            ...selectedClass,
+            students: filteredClassStudents,
+          }
+        : null,
+    [selectedClass, filteredClassStudents],
+  );
+
+  const removeStudentFromExamList = (studentId: string) => {
+    setExcludedStudentIds((prev) => {
+      if (prev.includes(studentId)) return prev;
+      return [...prev, studentId];
+    });
+  };
+
+  const restoreAllStudents = () => {
+    setExcludedStudentIds([]);
   };
 
   const handleAddPage = () => {
@@ -270,6 +355,96 @@ export default function AttendanceTab() {
           </div>
         </div>
 
+        {selectedClass && (
+          <div className="mt-6 border-t pt-6">
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-800">
+                  កែតារាងសិស្សមុនបោះពុម្ព
+                </h4>
+                <p className="text-sm text-gray-600">
+                  ដកសិស្សចេញតែពីបញ្ជីវត្តមានប្រឡងខែនេះ មិនលុបចេញពីថ្នាក់ទេ
+                </p>
+              </div>
+              <span className="rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-700">
+                សម្រាប់បោះពុម្ពតែប៉ុណ្ណោះ
+              </span>
+            </div>
+
+            <div className="overflow-hidden rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+                <div className="text-sm font-semibold text-gray-800">
+                  {selectedClass.name}
+                  <span className="ml-2 text-xs font-normal text-gray-500">
+                    បង្ហាញ {filteredClassStudents.length}/
+                    {sortedClassStudents.length} នាក់
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={restoreAllStudents}
+                  disabled={excludedStudentIds.length === 0}
+                  className="text-xs font-medium text-blue-600 disabled:cursor-not-allowed disabled:text-gray-400"
+                >
+                  ស្តារវិញ ({excludedStudentIds.length})
+                </button>
+              </div>
+              <div className="max-h-64 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-white">
+                    <tr>
+                      <th className="border-b px-2 py-2 text-left">ល.រ</th>
+                      <th className="border-b px-2 py-2 text-left">ឈ្មោះ</th>
+                      <th className="border-b px-2 py-2 text-center">ភេទ</th>
+                      <th className="border-b px-2 py-2 text-center">សកម្មភាព</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClassStudents.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-2 py-4 text-center text-sm text-gray-500"
+                        >
+                          មិនមានសិស្សនៅក្នុងបញ្ជី
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredClassStudents.map((student: any, index: number) => (
+                        <tr key={student.id} className="hover:bg-gray-50">
+                          <td className="border-b px-2 py-2">{index + 1}</td>
+                          <td className="border-b px-2 py-2">
+                            {student.khmerName ||
+                              `${student.lastName} ${student.firstName}`}
+                          </td>
+                          <td className="border-b px-2 py-2 text-center">
+                            {student.gender === "MALE" || student.gender === "male"
+                              ? "ប"
+                              : "ស"}
+                          </td>
+                          <td className="border-b px-2 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                removeStudentFromExamList(
+                                  normalizeStudentId(student.id),
+                                )
+                              }
+                              className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              ដកចេញ
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Page Configuration */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
@@ -328,7 +503,7 @@ export default function AttendanceTab() {
       </div>
 
       {/* Report Preview */}
-      {isGenerating && selectedClass && (
+      {isGenerating && selectedClassForReport && (
         <div className="rounded-lg bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h4 className="text-lg font-semibold text-gray-700">
@@ -342,7 +517,7 @@ export default function AttendanceTab() {
 
           <div ref={printRef} className="mx-auto" style={{ width: "210mm" }}>
             <KhmerAttendanceReport
-              selectedClass={selectedClass}
+              selectedClass={selectedClassForReport}
               province={province}
               examCenter={examCenter}
               roomNumber={roomNumber}
