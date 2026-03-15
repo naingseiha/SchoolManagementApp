@@ -77,7 +77,10 @@ export default function ExamSeatingTab() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }, []);
   const exclusionStorageKey = useMemo(() => {
-    if (!selectedClassId1 || !selectedClassId2) return "";
+    if (!selectedClassId1) return "";
+    if (!selectedClassId2) {
+      return `exam-seating-exclusions:${currentMonthKey}:${selectedYear}:${selectedClassId1}`;
+    }
     return `exam-seating-exclusions:${currentMonthKey}:${selectedYear}:${selectedClassId1}:${selectedClassId2}`;
   }, [currentMonthKey, selectedYear, selectedClassId1, selectedClassId2]);
 
@@ -107,7 +110,7 @@ export default function ExamSeatingTab() {
     let isMounted = true;
 
     const fetchClassData = async () => {
-      if (!selectedClassId1 || !selectedClassId2) {
+      if (!selectedClassId1) {
         if (isMounted) {
           setClass1Data(null);
           setClass2Data(null);
@@ -117,10 +120,14 @@ export default function ExamSeatingTab() {
       }
 
       setLoadingClassData(true);
+      if (isMounted) {
+        setClass1Data(null);
+        setClass2Data(null);
+      }
       try {
         const [data1, data2] = await Promise.all([
           classesApi.getById(selectedClassId1),
-          classesApi.getById(selectedClassId2),
+          selectedClassId2 ? classesApi.getById(selectedClassId2) : Promise.resolve(null),
         ]);
         if (!isMounted) return;
         setClass1Data(data1);
@@ -235,6 +242,13 @@ export default function ExamSeatingTab() {
         : null,
     [class2Data, filteredClass2Students],
   );
+  const hasPrimaryClassData = Boolean(class1Data);
+  const hasSecondaryClassData = Boolean(class2Data);
+  const isTwoClassMode = hasPrimaryClassData && hasSecondaryClassData;
+  const canGenerateReport =
+    hasPrimaryClassData &&
+    (!selectedClassId2 || hasSecondaryClassData) &&
+    !loadingClassData;
 
   const removeStudentFromExamList = (
     side: keyof ExcludedStudentsState,
@@ -282,8 +296,13 @@ export default function ExamSeatingTab() {
   };
 
   const handleGenerateReport = async () => {
-    if (!selectedClassId1 || !selectedClassId2 || !class1Data || !class2Data) {
-      alert("សូមជ្រើសរើសថ្នាក់ទាំងពីរ");
+    if (!selectedClassId1 || !class1Data) {
+      alert("សូមជ្រើសរើសថ្នាក់យ៉ាងហោចណាស់មួយ");
+      return;
+    }
+
+    if (selectedClassId2 && !class2Data) {
+      alert("សូមរង់ចាំទិន្នន័យថ្នាក់ទី២សិន");
       return;
     }
 
@@ -362,7 +381,7 @@ export default function ExamSeatingTab() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                ថ្នាក់ទី២ (ខាងស្តាំ)
+                ថ្នាក់ទី២ (ខាងស្តាំ - ជម្រើសបន្ថែម)
               </label>
               <select
                 value={selectedClassId2}
@@ -486,8 +505,15 @@ export default function ExamSeatingTab() {
           </div>
         </div>
 
+        {loadingClassData && selectedClassId1 && (
+          <div className="mt-4 flex items-center rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            កំពុងផ្ទុកទិន្នន័យថ្នាក់...
+          </div>
+        )}
+
         {/* Page Configuration Section */}
-        {selectedClassId1 && selectedClassId2 && class1Data && class2Data && (
+        {class1Data && (
           <div className="mt-6 border-t pt-6">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-800">
@@ -508,10 +534,17 @@ export default function ExamSeatingTab() {
                   <span className="font-semibold text-gray-700 w-20">
                     ទំព័រ {index + 1}:
                   </span>
-                  <div className="flex-1 grid grid-cols-2 gap-4">
+                  <div
+                    className={
+                      isTwoClassMode
+                        ? "flex-1 grid grid-cols-2 gap-4"
+                        : "flex-1 grid grid-cols-1"
+                    }
+                  >
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">
-                        {class1Data.name} (ខាងឆ្វេង)
+                        {class1Data.name}
+                        {isTwoClassMode ? " (ខាងឆ្វេង)" : ""}
                       </label>
                       <input
                         type="number"
@@ -527,24 +560,26 @@ export default function ExamSeatingTab() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">
-                        {class2Data.name} (ខាងស្តាំ)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={config.class2Count}
-                        onChange={(e) =>
-                          updatePageConfig(
-                            config.id,
-                            "class2Count",
-                            parseInt(e.target.value) || 1,
-                          )
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
+                    {isTwoClassMode && class2Data && (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">
+                          {class2Data.name} (ខាងស្តាំ)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={config.class2Count}
+                          onChange={(e) =>
+                            updatePageConfig(
+                              config.id,
+                              "class2Count",
+                              parseInt(e.target.value) || 1,
+                            )
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
                   </div>
                   {pageConfigs.length > 1 && (
                     <button
@@ -558,19 +593,10 @@ export default function ExamSeatingTab() {
               ))}
             </div>
 
-            {/* Loading indicator */}
-            {loadingClassData && (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
-                <span className="text-gray-600">
-                  កំពុងផ្ទុកទិន្នន័យសិស្ស...
-                </span>
-              </div>
-            )}
           </div>
         )}
 
-        {selectedClassId1 && selectedClassId2 && class1Data && class2Data && (
+        {class1Data && (
           <div className="mt-6 border-t pt-6">
             <div className="mb-4 flex items-start justify-between gap-2">
               <div>
@@ -586,7 +612,13 @@ export default function ExamSeatingTab() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div
+              className={
+                isTwoClassMode
+                  ? "grid grid-cols-1 gap-4 lg:grid-cols-2"
+                  : "grid grid-cols-1 gap-4"
+              }
+            >
               <div className="overflow-hidden rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
                   <div className="text-sm font-semibold text-gray-800">
@@ -662,80 +694,83 @@ export default function ExamSeatingTab() {
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
-                  <div className="text-sm font-semibold text-gray-800">
-                    {class2Data.name}
-                    <span className="ml-2 text-xs font-normal text-gray-500">
-                      បង្ហាញ {filteredClass2Students.length}/
-                      {sortedClass2Students.length} នាក់
-                    </span>
+              {isTwoClassMode && class2Data && (
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
+                    <div className="text-sm font-semibold text-gray-800">
+                      {class2Data.name}
+                      <span className="ml-2 text-xs font-normal text-gray-500">
+                        បង្ហាញ {filteredClass2Students.length}/
+                        {sortedClass2Students.length} នាក់
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => restoreAllStudents("class2")}
+                      disabled={excludedStudents.class2.length === 0}
+                      className="text-xs font-medium text-blue-600 disabled:cursor-not-allowed disabled:text-gray-400"
+                    >
+                      ស្តារវិញ ({excludedStudents.class2.length})
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => restoreAllStudents("class2")}
-                    disabled={excludedStudents.class2.length === 0}
-                    className="text-xs font-medium text-blue-600 disabled:cursor-not-allowed disabled:text-gray-400"
-                  >
-                    ស្តារវិញ ({excludedStudents.class2.length})
-                  </button>
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-white">
-                      <tr>
-                        <th className="border-b px-2 py-2 text-left">ល.រ</th>
-                        <th className="border-b px-2 py-2 text-left">ឈ្មោះ</th>
-                        <th className="border-b px-2 py-2 text-center">ភេទ</th>
-                        <th className="border-b px-2 py-2 text-center">
-                          សកម្មភាព
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredClass2Students.length === 0 ? (
+                  <div className="max-h-64 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-white">
                         <tr>
-                          <td
-                            colSpan={4}
-                            className="px-2 py-4 text-center text-sm text-gray-500"
-                          >
-                            មិនមានសិស្សនៅក្នុងបញ្ជី
-                          </td>
+                          <th className="border-b px-2 py-2 text-left">ល.រ</th>
+                          <th className="border-b px-2 py-2 text-left">ឈ្មោះ</th>
+                          <th className="border-b px-2 py-2 text-center">ភេទ</th>
+                          <th className="border-b px-2 py-2 text-center">
+                            សកម្មភាព
+                          </th>
                         </tr>
-                      ) : (
-                        filteredClass2Students.map((student: any, index: number) => (
-                          <tr key={student.id} className="hover:bg-gray-50">
-                            <td className="border-b px-2 py-2">{index + 1}</td>
-                            <td className="border-b px-2 py-2">
-                              {student.khmerName ||
-                                `${student.lastName} ${student.firstName}`}
-                            </td>
-                            <td className="border-b px-2 py-2 text-center">
-                              {student.gender === "MALE" || student.gender === "male"
-                                ? "ប"
-                                : "ស"}
-                            </td>
-                            <td className="border-b px-2 py-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  removeStudentFromExamList(
-                                    "class2",
-                                    normalizeStudentId(student.id),
-                                  )
-                                }
-                                className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                              >
-                                ដកចេញ
-                              </button>
+                      </thead>
+                      <tbody>
+                        {filteredClass2Students.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-2 py-4 text-center text-sm text-gray-500"
+                            >
+                              មិនមានសិស្សនៅក្នុងបញ្ជី
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : (
+                          filteredClass2Students.map((student: any, index: number) => (
+                            <tr key={student.id} className="hover:bg-gray-50">
+                              <td className="border-b px-2 py-2">{index + 1}</td>
+                              <td className="border-b px-2 py-2">
+                                {student.khmerName ||
+                                  `${student.lastName} ${student.firstName}`}
+                              </td>
+                              <td className="border-b px-2 py-2 text-center">
+                                {student.gender === "MALE" ||
+                                student.gender === "male"
+                                  ? "ប"
+                                  : "ស"}
+                              </td>
+                              <td className="border-b px-2 py-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeStudentFromExamList(
+                                      "class2",
+                                      normalizeStudentId(student.id),
+                                    )
+                                  }
+                                  className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                                >
+                                  ដកចេញ
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -744,7 +779,7 @@ export default function ExamSeatingTab() {
         <div className="flex gap-4 mt-6">
           <Button
             onClick={handleGenerateReport}
-            disabled={!selectedClassId1 || !selectedClassId2 || isGenerating}
+            disabled={!canGenerateReport || isGenerating}
             className="flex-1"
           >
             {isGenerating ? (
@@ -770,7 +805,7 @@ export default function ExamSeatingTab() {
       </div>
 
       {/* Report Preview */}
-      {reportGenerated && class1DataForReport && class2DataForReport && (
+      {reportGenerated && class1DataForReport && (
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h4 className="text-xl font-semibold mb-4 text-gray-800">
             មើលរបាយការណ៍
@@ -778,7 +813,7 @@ export default function ExamSeatingTab() {
           <div ref={printRef}>
             <KhmerExamReport
               class1={class1DataForReport}
-              class2={class2DataForReport}
+              class2={isTwoClassMode ? class2DataForReport || undefined : undefined}
               province={province}
               examCenter={examCenter}
               roomNumber={roomNumber}

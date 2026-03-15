@@ -8,7 +8,7 @@ interface PageConfig {
 
 interface KhmerExamReportProps {
   class1: any;
-  class2: any;
+  class2?: any;
   province: string;
   examCenter: string;
   roomNumber: string;
@@ -37,7 +37,8 @@ export default function KhmerExamReport({
 }: KhmerExamReportProps) {
   // Sort students from both classes
   const sortedStudents1 = sortStudents(class1.students || []);
-  const sortedStudents2 = sortStudents(class2.students || []);
+  const hasClass2 = Boolean(class2);
+  const sortedStudents2 = hasClass2 ? sortStudents(class2?.students || []) : [];
 
   // Create pages based on configuration
   const pages: Array<{
@@ -51,17 +52,17 @@ export default function KhmerExamReport({
   let currentIndex2 = 0;
 
   pageConfigs.forEach((config) => {
+    const class2CountPerPage = hasClass2 ? config.class2Count : 0;
     const pageStudents1 = sortedStudents1.slice(
       currentIndex1,
       currentIndex1 + config.class1Count,
     );
-    const pageStudents2 = sortedStudents2.slice(
-      currentIndex2,
-      currentIndex2 + config.class2Count,
-    );
+    const pageStudents2 = hasClass2
+      ? sortedStudents2.slice(currentIndex2, currentIndex2 + class2CountPerPage)
+      : [];
 
     // Only add page if there are students to show
-    if (pageStudents1.length > 0 || pageStudents2.length > 0) {
+    if (pageStudents1.length > 0 || (hasClass2 && pageStudents2.length > 0)) {
       pages.push({
         students1: pageStudents1,
         students2: pageStudents2,
@@ -70,7 +71,9 @@ export default function KhmerExamReport({
       });
 
       currentIndex1 += config.class1Count;
-      currentIndex2 += config.class2Count;
+      if (hasClass2) {
+        currentIndex2 += class2CountPerPage;
+      }
     }
   });
 
@@ -251,15 +254,15 @@ export default function KhmerExamReport({
             </div>
           </div>
 
-          {/* Two Tables Side by Side */}
+          {/* Exam Tables */}
           <div
             className="two-tables-container"
             style={{
               display: "flex",
-              gap: "8px",
+              gap: hasClass2 ? "8px" : "0px",
             }}
           >
-            {/* Left Table - Class 1 */}
+            {/* Primary Table */}
             <div className="table-wrapper" style={{ flex: 1 }}>
               {/* Simple Class Label */}
               <div
@@ -280,6 +283,7 @@ export default function KhmerExamReport({
                     "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
                   borderCollapse: "collapse",
                   fontSize: "10px",
+                  tableLayout: hasClass2 ? "auto" : "fixed",
                 }}
               >
                 <thead>
@@ -288,6 +292,7 @@ export default function KhmerExamReport({
                       className="px-1 py-1.5 bg-gray-100 w-10 align-middle text-center"
                       style={{
                         border: "1px solid black",
+                        width: hasClass2 ? undefined : "8%",
                         fontFamily:
                           "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
                       }}
@@ -298,7 +303,8 @@ export default function KhmerExamReport({
                       className="px-2 py-1.5 bg-gray-100 align-middle"
                       style={{
                         border: "1px solid black",
-                        minWidth: "120px",
+                        minWidth: hasClass2 ? "90px" : "0",
+                        width: hasClass2 ? undefined : "45%",
                         fontFamily:
                           "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
                       }}
@@ -309,12 +315,39 @@ export default function KhmerExamReport({
                       className="px-1 py-1.5 bg-gray-100 w-12 align-middle text-center"
                       style={{
                         border: "1px solid black",
+                        width: hasClass2 ? undefined : "8%",
                         fontFamily:
                           "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
                       }}
                     >
                       ភេទ
                     </th>
+                    {!hasClass2 && (
+                      <>
+                        <th
+                          className="px-0.5 py-1.5 bg-gray-100 w-12 align-middle text-center"
+                          style={{
+                            border: "1px solid black",
+                            width: "17%",
+                            fontFamily:
+                              "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
+                          }}
+                        >
+                          ថ្នាក់
+                        </th>
+                        <th
+                          className="px-0.5 py-1.5 bg-gray-100 w-12 align-middle text-center"
+                          style={{
+                            border: "1px solid black",
+                            width: "22%",
+                            fontFamily:
+                              "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
+                          }}
+                        >
+                          ផ្សេងៗ
+                        </th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -339,97 +372,114 @@ export default function KhmerExamReport({
                       >
                         {student.gender === "MALE" || student.gender === "male" ? "ប" : "ស"}
                       </td>
+                      {!hasClass2 && (
+                        <>
+                          <td
+                            className="px-0.5 py-1 text-center"
+                            style={{ border: "1px solid black" }}
+                          >
+                            {class1.name}
+                          </td>
+                          <td className="px-0.5 py-1" style={{ border: "1px solid black" }}>
+                            &nbsp;
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Right Table - Class 2 */}
-            <div className="table-wrapper" style={{ flex: 1 }}>
-              {/* Simple Class Label */}
-              <div
-                className="text-left mb-0.5 font-bold"
-                style={{
-                  fontFamily:
-                    "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
-                  fontSize: "11px",
-                }}
-              >
-                {class2.name}
-                {pageIndex + 1}
-              </div>
-              <table
-                className="w-full"
-                style={{
-                  fontFamily:
-                    "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
-                  borderCollapse: "collapse",
-                  fontSize: "10px",
-                }}
-              >
-                <thead>
-                  <tr style={{ border: "1px solid black" }}>
-                    <th
-                      className="px-1 py-1.5 bg-gray-100 w-10 align-middle text-center"
-                      style={{
-                        border: "1px solid black",
-                        fontFamily:
-                          "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      លេខតុ
-                    </th>
-                    <th
-                      className="px-2 py-1.5 bg-gray-100 align-middle"
-                      style={{
-                        border: "1px solid black",
-                        minWidth: "120px",
-                        fontFamily:
-                          "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      គោត្តនាម និងនាម
-                    </th>
-                    <th
-                      className="px-1 py-1.5 bg-gray-100 w-12 align-middle text-center"
-                      style={{
-                        border: "1px solid black",
-                        fontFamily:
-                          "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      }}
-                    >
-                      ភេទ
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {page.students2.map((student: any, index: number) => (
-                    <tr key={student.id} style={{ border: "1px solid black" }}>
-                      <td
-                        className="px-1 py-1 text-center"
-                        style={{ border: "1px solid black" }}
+            {/* Secondary Table */}
+            {hasClass2 && class2 && (
+              <div className="table-wrapper" style={{ flex: 1 }}>
+                {/* Simple Class Label */}
+                <div
+                  className="text-left mb-0.5 font-bold"
+                  style={{
+                    fontFamily:
+                      "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
+                    fontSize: "11px",
+                  }}
+                >
+                  {class2.name}
+                  {pageIndex + 1}
+                </div>
+                <table
+                  className="w-full"
+                  style={{
+                    fontFamily:
+                      "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
+                    borderCollapse: "collapse",
+                    fontSize: "10px",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ border: "1px solid black" }}>
+                      <th
+                        className="px-1 py-1.5 bg-gray-100 w-10 align-middle text-center"
+                        style={{
+                          border: "1px solid black",
+                          fontFamily:
+                            "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
+                        }}
                       >
-                        {page.startIndex2 + index + 1}
-                      </td>
-                      <td
-                        className="px-2 py-1"
-                        style={{ border: "1px solid black" }}
+                        លេខតុ
+                      </th>
+                      <th
+                        className="px-2 py-1.5 bg-gray-100 align-middle"
+                        style={{
+                          border: "1px solid black",
+                          minWidth: "90px",
+                          fontFamily:
+                            "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
+                        }}
                       >
-                        {student.khmerName ||
-                          `${student.lastName} ${student.firstName}`}
-                      </td>
-                      <td
-                        className="px-1 py-1 text-center"
-                        style={{ border: "1px solid black" }}
+                        គោត្តនាម និងនាម
+                      </th>
+                      <th
+                        className="px-1 py-1.5 bg-gray-100 w-12 align-middle text-center"
+                        style={{
+                          border: "1px solid black",
+                          fontFamily:
+                            "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
+                        }}
                       >
-                        {student.gender === "MALE" || student.gender === "male" ? "ប" : "ស"}
-                      </td>
+                        ភេទ
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {page.students2.map((student: any, index: number) => (
+                      <tr key={student.id} style={{ border: "1px solid black" }}>
+                        <td
+                          className="px-1 py-1 text-center"
+                          style={{ border: "1px solid black" }}
+                        >
+                          {page.startIndex2 + index + 1}
+                        </td>
+                        <td
+                          className="px-2 py-1"
+                          style={{ border: "1px solid black" }}
+                        >
+                          {student.khmerName ||
+                            `${student.lastName} ${student.firstName}`}
+                        </td>
+                        <td
+                          className="px-1 py-1 text-center"
+                          style={{ border: "1px solid black" }}
+                        >
+                          {student.gender === "MALE" || student.gender === "male"
+                            ? "ប"
+                            : "ស"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Room Statistics - Show on every page */}
@@ -448,11 +498,15 @@ export default function KhmerExamReport({
               <span className="text-blue-700 font-semibold">
                 {class1.name} ({page.students1.length} នាក់)
               </span>
-              <span className="mx-2 text-gray-500">+</span>
-              <span className="text-green-700 font-semibold">
-                {class2.name} ({page.students2.length} នាក់)
-              </span>
-              <span className="mx-2 text-gray-500">=</span>
+              {hasClass2 && class2 && (
+                <>
+                  <span className="mx-2 text-gray-500">+</span>
+                  <span className="text-green-700 font-semibold">
+                    {class2.name} ({page.students2.length} នាក់)
+                  </span>
+                  <span className="mx-2 text-gray-500">=</span>
+                </>
+              )}
               <span className="font-bold text-purple-700">
                 សរុប {page.students1.length + page.students2.length} នាក់
               </span>
@@ -479,9 +533,11 @@ export default function KhmerExamReport({
                   <div className="text-blue-600">
                     • {class1.name}: {page.students1.length} នាក់
                   </div>
-                  <div className="text-green-600">
-                    • {class2.name}: {page.students2.length} នាក់
-                  </div>
+                  {hasClass2 && class2 && (
+                    <div className="text-green-600">
+                      • {class2.name}: {page.students2.length} នាក់
+                    </div>
+                  )}
                   <div className="font-semibold text-gray-700 mt-1 border-t pt-1">
                     សរុប: {page.students1.length + page.students2.length} នាក់
                   </div>
