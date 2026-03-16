@@ -83,6 +83,11 @@ export default function ExamSeatingTab() {
     }
     return `exam-seating-exclusions:${currentMonthKey}:${selectedYear}:${selectedClassId1}:${selectedClassId2}`;
   }, [currentMonthKey, selectedYear, selectedClassId1, selectedClassId2]);
+  const isSameClassSelection = Boolean(
+    selectedClassId1 &&
+      selectedClassId2 &&
+      selectedClassId1 === selectedClassId2,
+  );
 
   // Filter classes based on role
   const availableClasses = useMemo(() => {
@@ -125,13 +130,23 @@ export default function ExamSeatingTab() {
         setClass2Data(null);
       }
       try {
+        const shouldFetchDistinctClass2 =
+          Boolean(selectedClassId2) && selectedClassId2 !== selectedClassId1;
         const [data1, data2] = await Promise.all([
           classesApi.getById(selectedClassId1),
-          selectedClassId2 ? classesApi.getById(selectedClassId2) : Promise.resolve(null),
+          shouldFetchDistinctClass2
+            ? classesApi.getById(selectedClassId2)
+            : Promise.resolve(null),
         ]);
         if (!isMounted) return;
         setClass1Data(data1);
-        setClass2Data(data2);
+        setClass2Data(
+          selectedClassId2
+            ? shouldFetchDistinctClass2
+              ? data2
+              : data1
+            : null,
+        );
       } catch (error) {
         if (isMounted) {
           console.error("Error fetching class data:", error);
@@ -208,18 +223,49 @@ export default function ExamSeatingTab() {
   );
 
   const filteredClass1Students = useMemo(() => {
+    if (isSameClassSelection) {
+      const excludedSet = new Set([
+        ...excludedStudents.class1,
+        ...excludedStudents.class2,
+      ]);
+      return sortedClass1Students.filter(
+        (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
+      );
+    }
+
     const excludedSet = new Set(excludedStudents.class1);
     return sortedClass1Students.filter(
       (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
     );
-  }, [sortedClass1Students, excludedStudents.class1]);
+  }, [
+    isSameClassSelection,
+    sortedClass1Students,
+    excludedStudents.class1,
+    excludedStudents.class2,
+  ]);
 
   const filteredClass2Students = useMemo(() => {
+    if (isSameClassSelection) {
+      const excludedSet = new Set([
+        ...excludedStudents.class1,
+        ...excludedStudents.class2,
+      ]);
+      return sortedClass1Students.filter(
+        (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
+      );
+    }
+
     const excludedSet = new Set(excludedStudents.class2);
     return sortedClass2Students.filter(
       (student: any) => !excludedSet.has(normalizeStudentId(student.id)),
     );
-  }, [sortedClass2Students, excludedStudents.class2]);
+  }, [
+    isSameClassSelection,
+    sortedClass1Students,
+    sortedClass2Students,
+    excludedStudents.class1,
+    excludedStudents.class2,
+  ]);
 
   const class1DataForReport = useMemo(
     () =>
@@ -245,6 +291,11 @@ export default function ExamSeatingTab() {
   const hasPrimaryClassData = Boolean(class1Data);
   const hasSecondaryClassData = Boolean(class2Data);
   const isTwoClassMode = hasPrimaryClassData && hasSecondaryClassData;
+  const isSameClassMode = isTwoClassMode && isSameClassSelection;
+  const sharedExcludedCount = useMemo(
+    () => new Set([...excludedStudents.class1, ...excludedStudents.class2]).size,
+    [excludedStudents.class1, excludedStudents.class2],
+  );
   const canGenerateReport =
     hasPrimaryClassData &&
     (!selectedClassId2 || hasSecondaryClassData) &&
@@ -255,6 +306,16 @@ export default function ExamSeatingTab() {
     studentId: string,
   ) => {
     setExcludedStudents((prev) => {
+      if (isSameClassMode) {
+        const sharedExclusions = Array.from(
+          new Set([...prev.class1, ...prev.class2, studentId]),
+        );
+        return {
+          class1: sharedExclusions,
+          class2: sharedExclusions,
+        };
+      }
+
       if (prev[side].includes(studentId)) return prev;
       return {
         ...prev,
@@ -264,6 +325,11 @@ export default function ExamSeatingTab() {
   };
 
   const restoreAllStudents = (side: keyof ExcludedStudentsState) => {
+    if (isSameClassMode) {
+      setExcludedStudents({ class1: [], class2: [] });
+      return;
+    }
+
     setExcludedStudents((prev) => ({
       ...prev,
       [side]: [],
@@ -544,7 +610,11 @@ export default function ExamSeatingTab() {
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">
                         {class1Data.name}
-                        {isTwoClassMode ? " (ខាងឆ្វេង)" : ""}
+                        {isSameClassMode
+                          ? "1"
+                          : isTwoClassMode
+                            ? " (ខាងឆ្វេង)"
+                            : ""}
                       </label>
                       <input
                         type="number"
@@ -563,7 +633,9 @@ export default function ExamSeatingTab() {
                     {isTwoClassMode && class2Data && (
                       <div>
                         <label className="block text-xs text-gray-600 mb-1">
-                          {class2Data.name} (ខាងស្តាំ)
+                          {isSameClassMode
+                            ? `${class2Data.name}2`
+                            : `${class2Data.name} (ខាងស្តាំ)`}
                         </label>
                         <input
                           type="number"
@@ -614,7 +686,7 @@ export default function ExamSeatingTab() {
 
             <div
               className={
-                isTwoClassMode
+                isTwoClassMode && !isSameClassMode
                   ? "grid grid-cols-1 gap-4 lg:grid-cols-2"
                   : "grid grid-cols-1 gap-4"
               }
@@ -631,10 +703,14 @@ export default function ExamSeatingTab() {
                   <button
                     type="button"
                     onClick={() => restoreAllStudents("class1")}
-                    disabled={excludedStudents.class1.length === 0}
+                    disabled={
+                      isSameClassMode
+                        ? sharedExcludedCount === 0
+                        : excludedStudents.class1.length === 0
+                    }
                     className="text-xs font-medium text-blue-600 disabled:cursor-not-allowed disabled:text-gray-400"
                   >
-                    ស្តារវិញ ({excludedStudents.class1.length})
+                    ស្តារវិញ ({isSameClassMode ? sharedExcludedCount : excludedStudents.class1.length})
                   </button>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
@@ -694,7 +770,7 @@ export default function ExamSeatingTab() {
                 </div>
               </div>
 
-              {isTwoClassMode && class2Data && (
+              {isTwoClassMode && class2Data && !isSameClassMode && (
                 <div className="overflow-hidden rounded-lg border border-gray-200">
                   <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
                     <div className="text-sm font-semibold text-gray-800">

@@ -21,6 +21,16 @@ interface KhmerExamReportProps {
   sortStudents: (students: any[]) => any[];
 }
 
+interface ReportPage {
+  students1: any[];
+  students2: any[];
+  startIndex1: number;
+  startIndex2: number;
+  classLabel1: string;
+  classLabel2?: string;
+  showSecondTable: boolean;
+}
+
 export default function KhmerExamReport({
   class1,
   class2,
@@ -39,43 +49,176 @@ export default function KhmerExamReport({
   const sortedStudents1 = sortStudents(class1.students || []);
   const hasClass2 = Boolean(class2);
   const sortedStudents2 = hasClass2 ? sortStudents(class2?.students || []) : [];
+  const class1Name = class1?.name || "";
+  const class2Name = class2?.name || "";
+  const class1Key = class1?.id || class1Name;
+  const class2Key = class2?.id || class2Name;
+  const isSameClassMode =
+    hasClass2 && Boolean(class1Key) && class1Key === class2Key;
 
-  // Create pages based on configuration
-  const pages: Array<{
-    students1: any[];
-    students2: any[];
-    startIndex1: number;
-    startIndex2: number;
-  }> = [];
+  const safePageConfigs =
+    pageConfigs.length > 0
+      ? pageConfigs
+      : [{ id: "default", class1Count: 20, class2Count: 20 }];
+  const normalizeCount = (count: number | undefined, fallback: number) => {
+    const numericCount = Number(count);
+    if (!Number.isFinite(numericCount) || numericCount < 1) {
+      return fallback;
+    }
+    return Math.floor(numericCount);
+  };
 
-  let currentIndex1 = 0;
-  let currentIndex2 = 0;
+  const pages: ReportPage[] = [];
 
-  pageConfigs.forEach((config) => {
-    const class2CountPerPage = hasClass2 ? config.class2Count : 0;
-    const pageStudents1 = sortedStudents1.slice(
-      currentIndex1,
-      currentIndex1 + config.class1Count,
+  if (isSameClassMode) {
+    let currentIndex = 0;
+    let sectionNumber = 1;
+
+    safePageConfigs.forEach((config) => {
+      if (currentIndex >= sortedStudents1.length) return;
+
+      const class1Count = normalizeCount(config.class1Count, 20);
+      const class2Count = normalizeCount(config.class2Count, class1Count);
+      const startIndex1 = currentIndex;
+      const sectionStudents1 = sortedStudents1.slice(
+        currentIndex,
+        currentIndex + class1Count,
+      );
+      currentIndex += class1Count;
+      const startIndex2 = currentIndex;
+      const sectionStudents2 = sortedStudents1.slice(
+        currentIndex,
+        currentIndex + class2Count,
+      );
+      currentIndex += class2Count;
+
+      if (sectionStudents1.length > 0 && sectionStudents2.length > 0) {
+        pages.push({
+          students1: sectionStudents1,
+          students2: sectionStudents2,
+          startIndex1,
+          startIndex2,
+          classLabel1: `${class1Name}${sectionNumber}`,
+          classLabel2: `${class1Name}${sectionNumber + 1}`,
+          showSecondTable: true,
+        });
+        sectionNumber += 2;
+        return;
+      }
+
+      if (sectionStudents1.length > 0) {
+        pages.push({
+          students1: sectionStudents1,
+          students2: [],
+          startIndex1,
+          startIndex2: 0,
+          classLabel1: `${class1Name}${sectionNumber}`,
+          showSecondTable: false,
+        });
+        sectionNumber += 1;
+      }
+    });
+
+    const overflowCount = normalizeCount(
+      safePageConfigs[safePageConfigs.length - 1]?.class1Count,
+      20,
     );
-    const pageStudents2 = hasClass2
-      ? sortedStudents2.slice(currentIndex2, currentIndex2 + class2CountPerPage)
-      : [];
 
-    // Only add page if there are students to show
-    if (pageStudents1.length > 0 || (hasClass2 && pageStudents2.length > 0)) {
+    while (currentIndex < sortedStudents1.length) {
+      const startIndex1 = currentIndex;
+      const sectionStudents = sortedStudents1.slice(
+        currentIndex,
+        currentIndex + overflowCount,
+      );
+      currentIndex += overflowCount;
+
+      pages.push({
+        students1: sectionStudents,
+        students2: [],
+        startIndex1,
+        startIndex2: 0,
+        classLabel1: `${class1Name}${sectionNumber}`,
+        showSecondTable: false,
+      });
+      sectionNumber += 1;
+    }
+  } else {
+    let currentIndex1 = 0;
+    let currentIndex2 = 0;
+
+    safePageConfigs.forEach((config) => {
+      const class1Count = normalizeCount(config.class1Count, 20);
+      const class2CountPerPage = hasClass2
+        ? normalizeCount(config.class2Count, 20)
+        : 0;
+      const pageStudents1 = sortedStudents1.slice(
+        currentIndex1,
+        currentIndex1 + class1Count,
+      );
+      const pageStudents2 = hasClass2
+        ? sortedStudents2.slice(currentIndex2, currentIndex2 + class2CountPerPage)
+        : [];
+
+      if (pageStudents1.length > 0 || (hasClass2 && pageStudents2.length > 0)) {
+        const pageNumber = pages.length + 1;
+        pages.push({
+          students1: pageStudents1,
+          students2: pageStudents2,
+          startIndex1: currentIndex1,
+          startIndex2: currentIndex2,
+          classLabel1: `${class1Name}${pageNumber}`,
+          classLabel2: hasClass2 ? `${class2Name}${pageNumber}` : undefined,
+          showSecondTable: hasClass2,
+        });
+      }
+
+      currentIndex1 += class1Count;
+      if (hasClass2) {
+        currentIndex2 += class2CountPerPage;
+      }
+    });
+
+    const fallbackClass1Count = normalizeCount(
+      safePageConfigs[safePageConfigs.length - 1]?.class1Count,
+      20,
+    );
+    const fallbackClass2Count = hasClass2
+      ? normalizeCount(safePageConfigs[safePageConfigs.length - 1]?.class2Count, 20)
+      : 0;
+
+    while (
+      currentIndex1 < sortedStudents1.length ||
+      (hasClass2 && currentIndex2 < sortedStudents2.length)
+    ) {
+      const pageStudents1 = sortedStudents1.slice(
+        currentIndex1,
+        currentIndex1 + fallbackClass1Count,
+      );
+      const pageStudents2 = hasClass2
+        ? sortedStudents2.slice(currentIndex2, currentIndex2 + fallbackClass2Count)
+        : [];
+
+      if (pageStudents1.length === 0 && pageStudents2.length === 0) {
+        break;
+      }
+
+      const pageNumber = pages.length + 1;
       pages.push({
         students1: pageStudents1,
         students2: pageStudents2,
         startIndex1: currentIndex1,
         startIndex2: currentIndex2,
+        classLabel1: `${class1Name}${pageNumber}`,
+        classLabel2: hasClass2 ? `${class2Name}${pageNumber}` : undefined,
+        showSecondTable: hasClass2,
       });
 
-      currentIndex1 += config.class1Count;
+      currentIndex1 += fallbackClass1Count;
       if (hasClass2) {
-        currentIndex2 += class2CountPerPage;
+        currentIndex2 += fallbackClass2Count;
       }
     }
-  });
+  }
 
   return (
     <>
@@ -259,7 +402,7 @@ export default function KhmerExamReport({
             className="two-tables-container"
             style={{
               display: "flex",
-              gap: hasClass2 ? "8px" : "0px",
+              gap: page.showSecondTable ? "8px" : "0px",
             }}
           >
             {/* Primary Table */}
@@ -273,8 +416,7 @@ export default function KhmerExamReport({
                   fontSize: "11px",
                 }}
               >
-                {class1.name}
-                {pageIndex + 1}
+                {page.classLabel1}
               </div>
               <table
                 className="w-full"
@@ -392,7 +534,7 @@ export default function KhmerExamReport({
             </div>
 
             {/* Secondary Table */}
-            {hasClass2 && class2 && (
+            {page.showSecondTable && class2 && (
               <div className="table-wrapper" style={{ flex: 1 }}>
                 {/* Simple Class Label */}
                 <div
@@ -403,8 +545,7 @@ export default function KhmerExamReport({
                     fontSize: "11px",
                   }}
                 >
-                  {class2.name}
-                  {pageIndex + 1}
+                  {page.classLabel2 || class2Name}
                 </div>
                 <table
                   className="w-full"
@@ -496,13 +637,13 @@ export default function KhmerExamReport({
                 ៖{" "}
               </span>
               <span className="text-blue-700 font-semibold">
-                {class1.name} ({page.students1.length} នាក់)
+                {page.classLabel1} ({page.students1.length} នាក់)
               </span>
-              {hasClass2 && class2 && (
+              {page.showSecondTable && class2 && (
                 <>
                   <span className="mx-2 text-gray-500">+</span>
                   <span className="text-green-700 font-semibold">
-                    {class2.name} ({page.students2.length} នាក់)
+                    {page.classLabel2 || class2Name} ({page.students2.length} នាក់)
                   </span>
                   <span className="mx-2 text-gray-500">=</span>
                 </>
@@ -531,11 +672,11 @@ export default function KhmerExamReport({
                 </span>
                 <div className="ml-2 mt-1">
                   <div className="text-blue-600">
-                    • {class1.name}: {page.students1.length} នាក់
+                    • {page.classLabel1}: {page.students1.length} នាក់
                   </div>
-                  {hasClass2 && class2 && (
+                  {page.showSecondTable && class2 && (
                     <div className="text-green-600">
-                      • {class2.name}: {page.students2.length} នាក់
+                      • {page.classLabel2 || class2Name}: {page.students2.length} នាក់
                     </div>
                   )}
                   <div className="font-semibold text-gray-700 mt-1 border-t pt-1">
