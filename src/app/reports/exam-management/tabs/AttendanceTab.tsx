@@ -7,6 +7,7 @@ import { Printer, Plus, Trash2 } from "lucide-react";
 import { classesApi } from "@/lib/api/classes";
 import KhmerAttendanceReport from "@/components/reports/KhmerAttendanceReport";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
+import { printElementContent } from "@/lib/print";
 
 interface PageConfig {
   id: string;
@@ -207,14 +208,8 @@ export default function AttendanceTab() {
   };
 
   const handlePrint = () => {
-    if (printRef.current) {
-      const printContents = printRef.current.innerHTML;
-      const originalContents = document.body.innerHTML;
-
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = originalContents;
-    }
+    if (!printRef.current) return;
+    printElementContent(printRef.current, reportTitle);
   };
 
   return (

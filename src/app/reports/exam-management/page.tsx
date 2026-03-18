@@ -36,8 +36,8 @@ export default function ExamManagementPage() {
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto max-w-7xl">
+        <main className="flex-1 overflow-y-auto p-4 md:p-5">
+          <div className="mx-auto w-full max-w-[90rem]">
             <h1 className="mb-6 text-2xl font-bold text-gray-800">
               គ្រប់គ្រងប្រឡង
             </h1>

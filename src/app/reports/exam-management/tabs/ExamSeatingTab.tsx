@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 import { classesApi } from "@/lib/api/classes";
+import { printElementContent } from "@/lib/print";
 
 // Import the exam report component
 import KhmerExamReport from "@/components/reports/KhmerExamReport";
@@ -393,14 +394,8 @@ export default function ExamSeatingTab() {
   );
 
   const handlePrint = () => {
-    if (printRef.current) {
-      const printContents = printRef.current.innerHTML;
-      const originalContents = document.body.innerHTML;
-
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = originalContents;
-    }
+    if (!printRef.current) return;
+    printElementContent(printRef.current, reportTitle);
   };
 
   if (isLoadingClasses) {

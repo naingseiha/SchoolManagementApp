@@ -39,14 +39,9 @@ export default function KhmerAttendanceReport({
 
   // Use subjects from the class (already filtered in the page component)
   const sortedSubjects = sortSubjectsByOrder(
-    selectedClass.subjects || [], 
-    selectedClass.name
+    selectedClass.subjects || [],
+    selectedClass.name,
   );
-
-  // Debug logging
-  console.log("Selected Class:", selectedClass);
-  console.log("Class Subjects:", selectedClass.subjects);
-  console.log("Sorted Subjects:", sortedSubjects);
 
   // Create pages array based on page configs
   const pages: { students: any[]; startIndex: number }[] = [];
@@ -110,7 +105,7 @@ export default function KhmerAttendanceReport({
         @media print {
           @page {
             size: A4 portrait;
-            margin: 1cm;
+            margin: 1cm 0.6cm;
           }
 
           .attendance-report-page {
@@ -122,7 +117,7 @@ export default function KhmerAttendanceReport({
             max-width: 100% !important;
             box-sizing: border-box !important;
             margin: 0 !important;
-            padding: 1cm !important;
+            padding: 1cm 0.6cm !important;
             box-shadow: none !important;
             background: white !important;
             overflow: visible !important;
@@ -150,11 +145,13 @@ export default function KhmerAttendanceReport({
       {pages.map((page, pageIndex) => (
         <div
           key={pageIndex}
-          className="attendance-report-page mx-auto mb-8 bg-white p-6 shadow-lg"
+          className="attendance-report-page mx-auto mb-8 bg-white px-3 py-6 shadow-lg"
           style={{
             width: "210mm",
             minHeight: "297mm",
             fontFamily: "'Khmer OS Siem Reap', 'Khmer OS Siemreap', serif",
+            boxSizing: "border-box",
+            maxWidth: "100%",
           }}
         >
           {/* Header - Same design as exam report */}
@@ -303,10 +300,11 @@ export default function KhmerAttendanceReport({
                     className="px-1 py-2 bg-blue-100"
                     style={{ 
                       border: "1px solid black", 
-                      width: "30px",
-                      height: "120px",
+                      width: "44px",
+                      minWidth: "44px",
+                      height: "132px",
                       fontFamily: "'Khmer OS Moul Light', 'Khmer OS Muol Light', serif",
-                      fontSize: "9px",
+                      fontSize: "7px",
                       textAlign: "center",
                       verticalAlign: "middle",
                     }}
@@ -318,6 +316,7 @@ export default function KhmerAttendanceReport({
                         whiteSpace: "nowrap",
                         display: "inline-block",
                         textAlign: "center",
+                        lineHeight: "0.9",
                       }}
                     >
                       {getCleanSubjectName(subject.name)}
@@ -355,9 +354,14 @@ export default function KhmerAttendanceReport({
                     <td
                       key={subject.id}
                       className="px-1 py-1 text-center align-middle"
-                      style={{ border: "1px solid black", minHeight: "18px" }}
+                      style={{
+                        border: "1px solid black",
+                        minHeight: "18px",
+                        width: "44px",
+                        minWidth: "44px",
+                      }}
                     >
-                      
+
                     </td>
                 ))}
               </tr>
