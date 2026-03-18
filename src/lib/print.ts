@@ -1,65 +1,55 @@
-const escapeHtml = (value: string): string =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-
 export function printElementContent(
   element: HTMLElement,
-  title = "Report Print",
+  _title = "Report Print",
 ): void {
-  const printWindow = window.open(
-    "",
-    "_blank",
-    "noopener,noreferrer,width=1000,height=800",
-  );
+  const printToken = `print-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+  const printAttr = "data-print-target";
+  const styleEl = document.createElement("style");
 
-  if (!printWindow) {
-    window.print();
-    return;
-  }
-
-  const styles = Array.from(
-    document.querySelectorAll<HTMLLinkElement | HTMLStyleElement>(
-      'link[rel="stylesheet"], style',
-    ),
-  )
-    .map((node) => node.outerHTML)
-    .join("\n");
-
-  const safeTitle = escapeHtml(title);
-
-  printWindow.document.open();
-  printWindow.document.write(`<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${safeTitle}</title>
-    ${styles}
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: #fff;
+  element.setAttribute(printAttr, printToken);
+  styleEl.setAttribute("data-print-style", printToken);
+  styleEl.textContent = `
+    @media print {
+      body {
+        margin: 0 !important;
       }
-    </style>
-  </head>
-  <body>${element.innerHTML}</body>
-</html>`);
-  printWindow.document.close();
 
-  let hasPrinted = false;
-  const executePrint = () => {
-    if (hasPrinted || printWindow.closed) return;
-    hasPrinted = true;
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+      body * {
+        visibility: hidden !important;
+      }
+
+      [${printAttr}="${printToken}"],
+      [${printAttr}="${printToken}"] * {
+        visibility: visible !important;
+      }
+
+      [${printAttr}="${printToken}"] {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        margin: 0 !important;
+      }
+    }
+  `;
+
+  document.head.appendChild(styleEl);
+
+  let didCleanup = false;
+  const cleanup = () => {
+    if (didCleanup) return;
+    didCleanup = true;
+    element.removeAttribute(printAttr);
+    styleEl.remove();
+    window.removeEventListener("afterprint", cleanup);
   };
 
-  printWindow.addEventListener("load", executePrint, { once: true });
-  window.setTimeout(executePrint, 350);
-}
+  window.addEventListener("afterprint", cleanup, { once: true });
 
+  try {
+    window.print();
+  } finally {
+    window.setTimeout(cleanup, 1000);
+  }
+}
