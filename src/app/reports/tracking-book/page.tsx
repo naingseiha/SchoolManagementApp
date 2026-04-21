@@ -211,7 +211,7 @@ export default function TrackingBookPage() {
     C: "ល្អ",
     D: "ល្អបង្គួរ",
     E: "មធ្យម",
-    F: "ខ្សោយ",
+    F: "ធ្លាក់",
   } as const;
   type GradeLetter = keyof typeof GRADE_LABELS_KH;
   type TrackingSubjectScore =
@@ -283,6 +283,21 @@ export default function TrackingBookPage() {
       return normalized as GradeLetter;
     }
     return null;
+  };
+
+  const calculateGradeLevelFromAverage = (
+    average: number | null
+  ): GradeLetter | null => {
+    if (average === null) {
+      return null;
+    }
+
+    if (average >= 45) return "A";
+    if (average >= 40) return "B";
+    if (average >= 35) return "C";
+    if (average >= 30) return "D";
+    if (average >= 25) return "E";
+    return "F";
   };
 
   const getGradeBandFromPercentage = (
@@ -625,18 +640,16 @@ export default function TrackingBookPage() {
           parseTrackingNumber(student.averageScore) ??
           studentSummaryMetrics?.annualAverage ??
           0;
-        const annualAveragePercentageForGrade =
-          studentSummaryMetrics?.annualAveragePercentage ??
-          parseTrackingNumber(student.averageScore);
-        const summaryGradeBand = getGradeBandFromPercentage(
-          annualAveragePercentageForGrade
-        );
+        const summaryGradeLevelFromAverage =
+          calculateGradeLevelFromAverage(averageScore);
         const normalizedBackendSummaryGradeLevel =
           normalizeGradeLetter(student.gradeLevel) ?? student.gradeLevel;
         const summaryGradeLevel =
-          summaryGradeBand.letter ?? normalizedBackendSummaryGradeLevel ?? "";
+          summaryGradeLevelFromAverage ?? normalizedBackendSummaryGradeLevel ?? "";
         const summaryGradeLevelKhmer =
-          summaryGradeBand.labelKh ||
+          (summaryGradeLevelFromAverage
+            ? GRADE_LABELS_KH[summaryGradeLevelFromAverage]
+            : "") ||
           getGradeLabelKhFromCode(student.gradeLevel) ||
           student.gradeLevelKhmer ||
           "";

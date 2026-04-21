@@ -608,7 +608,6 @@ export default function StudentTranscript({
                   <p>
                     {placeName} {directorDate}
                   </p>
-                  <p className="mt-1">បានឃើញ និងឯកភាព</p>
                   <p
                     className="font-bold text-blue-700"
                     style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
@@ -1125,7 +1124,6 @@ export default function StudentTranscript({
                   <p>
                     {placeName} {teacherDate}
                   </p>
-                  <p className="mt-0.5">បានឃើញ និងឯកភាព</p>
                   <p
                     className="font-bold text-blue-700"
                     style={{
