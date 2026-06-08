@@ -56,9 +56,33 @@ async function calculateMonthlySummaries() {
         where: whereClause,
       });
 
+      const ENGLISH_SCORE_BASELINE = 25;
+      const isEnglishSubject = (subject: any) => {
+        const code = subject.code?.toUpperCase() || "";
+        if (code.startsWith("ENG")) return true;
+        const khmerName = `${subject.nameKh || ""}${subject.name || ""}`;
+        if (khmerName.includes("អង់គ្លេស")) return true;
+        const englishName = `${subject.nameEn || ""}${subject.name || ""}`.toLowerCase();
+        return englishName.includes("english");
+      };
+      const shouldApplyEnglishBonusRule = (grade: string | number, month?: string) => {
+        const gradeNum = typeof grade === "string" ? parseInt(grade.replace(/\D/g, ""), 10) : grade;
+        if (gradeNum !== 9 && gradeNum !== 12) return false;
+        if (!month) return false;
+        const normalizedMonth = month.trim();
+        return (
+          normalizedMonth === "កុម្ភៈ" || 
+          normalizedMonth === "ឆមាសទី១" || 
+          normalizedMonth === "មិថុនា" || 
+          normalizedMonth === "ឆមាសទី២"
+        );
+      };
+
+      const applyEnglishBonusRule = shouldApplyEnglishBonusRule(classItem.grade, currentMonth);
+
       // Calculate total coefficient for this class from ALL subjects
       const totalCoefficientForClass = allSubjects.reduce(
-        (sum, s) => sum + (s.coefficient || 1),
+        (sum, s) => applyEnglishBonusRule && isEnglishSubject(s) ? sum : sum + (s.coefficient || 1),
         0
       );
 
@@ -82,19 +106,29 @@ async function calculateMonthlySummaries() {
           continue;
         }
 
-        // Calculate statistics
-        const totalScore = grades.reduce((sum, g) => sum + (g.score || 0), 0);
-        const totalMaxScore = grades.reduce((sum, g) => sum + g.maxScore, 0);
+        // Calculate statistics with English rule
+        let totalScore = 0;
+        let totalMaxScore = 0;
+        let englishBonus = 0;
+        let studentCoefficient = 0;
 
-        // ✅ Calculate coefficient only for subjects with grades entered
-        const studentCoefficient = grades.reduce(
-          (sum, g) => sum + (g.subject.coefficient || 1),
-          0
-        );
+        grades.forEach((g) => {
+          const score = g.score || 0;
+          totalMaxScore += g.maxScore || 0;
 
-        // ✅ Average = totalScore / studentCoefficient (only entered subjects)
+          if (applyEnglishBonusRule && isEnglishSubject(g.subject)) {
+            englishBonus += Math.max(score - ENGLISH_SCORE_BASELINE, 0);
+          } else {
+            totalScore += score;
+            studentCoefficient += g.subject.coefficient || 1;
+          }
+        });
+
+        const adjustedTotalScore = totalScore + englishBonus;
+
+        // ✅ Average = adjustedTotalScore / studentCoefficient (only entered subjects)
         const average = studentCoefficient > 0
-          ? (totalScore / studentCoefficient)
+          ? (adjustedTotalScore / studentCoefficient)
           : 0;
 
         // Keep totalWeightedScore for storage (legacy field)

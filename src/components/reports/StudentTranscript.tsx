@@ -56,6 +56,21 @@ interface StudentTranscriptProps {
     semester2TotalRank?: number | null;
     semester1AverageRank?: number | null;
     semester2AverageRank?: number | null;
+    semester1ExamTotal?: number | null;
+    semester2ExamTotal?: number | null;
+    annualExamTotal?: number | null;
+    semester1ExamAverage?: number | null;
+    semester2ExamAverage?: number | null;
+    semester1ExamRank?: number | null;
+    semester2ExamRank?: number | null;
+    semester1MonthlyAverage?: number | null;
+    semester2MonthlyAverage?: number | null;
+    semester1OverallAverage?: number | null;
+    semester2OverallAverage?: number | null;
+    annualOverallAverage?: number | null;
+    semester1OverallRank?: number | null;
+    semester2OverallRank?: number | null;
+    annualOverallRank?: number | null;
   };
   attendance?: {
     totalAbsent: number;
@@ -245,6 +260,30 @@ export default function StudentTranscript({
   const semester2TotalSummaryRank = normalizeRank(summary.semester2TotalRank);
   const semester1AverageSummaryRank = normalizeRank(summary.semester1AverageRank);
   const semester2AverageSummaryRank = normalizeRank(summary.semester2AverageRank);
+
+  const getGradeLabelKhFromAverage = (average: number | null): string => {
+    if (average === null) return "-";
+    if (average >= 45) return "ល្អប្រសើរ";
+    if (average >= 40) return "ល្អណាស់";
+    if (average >= 35) return "ល្អ";
+    if (average >= 30) return "ល្អបង្គួរ";
+    if (average >= 25) return "មធ្យម";
+    return "ខ្សោយ";
+  };
+
+  const semester1ExamAvg = toNumber(summary.semester1ExamAverage);
+  const semester2ExamAvg = toNumber(summary.semester2ExamAverage);
+  const semester1MonthlyAvg = toNumber(summary.semester1MonthlyAverage);
+  const semester2MonthlyAvg = toNumber(summary.semester2MonthlyAverage);
+  const semester1OverallAvg = toNumber(summary.semester1OverallAverage);
+  const semester2OverallAvg = toNumber(summary.semester2OverallAverage);
+  const annualOverallAvg = toNumber(summary.annualOverallAverage);
+
+  const semester1ExamRankVal = normalizeRank(summary.semester1ExamRank);
+  const semester2ExamRankVal = normalizeRank(summary.semester2ExamRank);
+  const semester1OverallRankVal = normalizeRank(summary.semester1OverallRank);
+  const semester2OverallRankVal = normalizeRank(summary.semester2OverallRank);
+  const annualOverallRankVal = normalizeRank(summary.annualOverallRank) ?? normalizeRank(summary.rank);
 
   return (
     <>
@@ -1020,90 +1059,140 @@ export default function StudentTranscript({
                       </tr>
                     ))}
 
+                    {/* Row 1: សរុបពិន្ទុប្រឡងឆមាស */}
                     <tr style={{ backgroundColor: "#EFF6FF" }}>
                       <td
                         colSpan={2}
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
                       >
-                        ពិន្ទុសរុប
+                        សរុបពិន្ទុប្រឡងឆមាស
                       </td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                       >
-                        {formatMetric(semester1Total, 0)}
+                        {formatMetric(summary.semester1ExamTotal, 0)}
                       </td>
-                      <td className="border border-black px-1 py-1.5 text-center">
-                        {formatRank(semester1TotalSummaryRank)}
-                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                       >
-                        {formatMetric(semester2Total, 0)}
+                        {formatMetric(summary.semester2ExamTotal, 0)}
                       </td>
-                      <td className="border border-black px-1 py-1.5 text-center">
-                        {formatRank(semester2TotalSummaryRank)}
-                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                       >
-                        {formatMetric(annualTotal, 0)}
+                        {formatMetric(summary.annualExamTotal, 0)}
                       </td>
-                      <td
-                        className="border border-black px-1 py-1.5 text-center font-bold"
-                        style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
-                      >
-                        {formatRank(totalSummaryRank)}
-                      </td>
-                      <td className="border border-black px-1 py-1.5 text-center font-bold">
-                        -
-                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold">-</td>
                       <td className="border border-black px-1 py-1.5 text-center"></td>
                     </tr>
 
+                    {/* Row 2: មធ្យមភាគពិន្ទុប្រឡងឆមាស */}
                     <tr style={{ backgroundColor: "#EFF6FF" }}>
                       <td
                         colSpan={2}
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
                       >
-                        មធ្យមភាគ
+                        មធ្យមភាគពិន្ទុប្រឡងឆមាស
                       </td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                       >
-                        {formatMetric(semester1Average, 2)}
+                        {formatMetric(semester1ExamAvg, 2)}
                       </td>
-                      <td className="border border-black px-1 py-1.5 text-center">
-                        {formatRank(semester1AverageSummaryRank)}
-                      </td>
-                      <td
-                        className="border border-black px-1 py-1.5 text-center font-bold"
-                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
-                      >
-                        {formatMetric(semester2Average, 2)}
-                      </td>
-                      <td className="border border-black px-1 py-1.5 text-center">
-                        {formatRank(semester2AverageSummaryRank)}
+                      <td className="border border-black px-1 py-1.5 text-center font-bold" style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}>
+                        {formatRank(semester1ExamRankVal)}
                       </td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                       >
-                        {formatMetric(annualAverage, 2)}
+                        {formatMetric(semester2ExamAvg, 2)}
                       </td>
-                      <td className="border border-black px-1 py-1.5 text-center">
-                        {formatRank(averageSummaryRank)}
+                      <td className="border border-black px-1 py-1.5 text-center font-bold" style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}>
+                        {formatRank(semester2ExamRankVal)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold"></td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold">-</td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                    </tr>
+
+                    {/* Row 3: មធ្យមភាគពិន្ទុខែប្រចាំឆមាស */}
+                    <tr style={{ backgroundColor: "#EFF6FF" }}>
+                      <td
+                        colSpan={2}
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        មធ្យមភាគពិន្ទុខែប្រចាំឆមាស
                       </td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
-                        style={{ whiteSpace: "nowrap" }}
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
                       >
-                        {summary.gradeLevelKhmer || "-"}
+                        {formatMetric(semester1MonthlyAvg, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester2MonthlyAvg, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold"></td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold">-</td>
+                      <td className="border border-black px-1 py-1.5 text-center"></td>
+                    </tr>
+
+                    {/* Row 4: មធ្យមភាគពិន្ទុប្រចាំឆ្នាំ */}
+                    <tr style={{ backgroundColor: "#EFF6FF" }}>
+                      <td
+                        colSpan={2}
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        មធ្យមភាគពិន្ទុប្រចាំឆ្នាំ
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester1OverallAvg, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold" style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}>
+                        {formatRank(semester1OverallRankVal)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(semester2OverallAvg, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold" style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}>
+                        {formatRank(semester2OverallRankVal)}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {formatMetric(annualOverallAvg, 2)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold" style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}>
+                        {formatRank(annualOverallRankVal)}
+                      </td>
+                      <td className="border border-black px-1 py-1.5 text-center font-bold" style={{ whiteSpace: "nowrap" }}>
+                        {getGradeLabelKhFromAverage(annualOverallAvg)}
                       </td>
                       <td className="border border-black px-1 py-1.5 text-center"></td>
                     </tr>

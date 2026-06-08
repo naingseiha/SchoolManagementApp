@@ -60,6 +60,32 @@ export class GradeCalculationService {
     monthNumber: number,
     year: number
   ) {
+    const classData = await prisma.class.findUnique({ where: { id: classId } });
+    const classGrade = classData?.grade || "";
+
+    const ENGLISH_SCORE_BASELINE = 25;
+    const isEnglishSubject = (subject: any) => {
+      const code = subject.code?.toUpperCase() || "";
+      if (code.startsWith("ENG")) return true;
+      const khmerName = `${subject.nameKh || ""}${subject.name || ""}`;
+      if (khmerName.includes("អង់គ្លេស")) return true;
+      const englishName = `${subject.nameEn || ""}${subject.name || ""}`.toLowerCase();
+      return englishName.includes("english");
+    };
+    const shouldApplyEnglishBonusRule = (grade: string | number, m?: string) => {
+      const gradeNum = typeof grade === "string" ? parseInt(grade.replace(/\D/g, ""), 10) : grade;
+      if (gradeNum !== 9 && gradeNum !== 12) return false;
+      if (!m) return false;
+      const normalizedMonth = m.trim();
+      return (
+        normalizedMonth === "កុម្ភៈ" || 
+        normalizedMonth === "ឆមាសទី១" || 
+        normalizedMonth === "មិថុនា" || 
+        normalizedMonth === "ឆមាសទី២"
+      );
+    };
+
+    const applyEnglishBonusRule = shouldApplyEnglishBonusRule(classGrade, month);
     // Get all grades for this student in this month
     const grades = await prisma.grade.findMany({
       where: {
@@ -81,19 +107,25 @@ export class GradeCalculationService {
     let totalMaxScore = 0;
     let totalWeightedScore = 0;
     let totalCoefficient = 0;
+    let englishBonus = 0;
 
     for (const grade of grades) {
-      const coefficient = grade.subject.coefficient;
+      const coefficient = grade.subject.coefficient || 1;
       const weightedScore = this.calculateWeightedScore(
         grade.score,
         coefficient
       );
 
       // Include ALL scores (including 0) in calculations
-      totalScore += grade.score;
       totalMaxScore += grade.maxScore;
       totalWeightedScore += weightedScore;
-      totalCoefficient += coefficient;
+
+      if (applyEnglishBonusRule && isEnglishSubject(grade.subject)) {
+        englishBonus += Math.max(grade.score - ENGLISH_SCORE_BASELINE, 0);
+      } else {
+        totalScore += grade.score;
+        totalCoefficient += coefficient;
+      }
 
       // Update grade with weighted score
       await prisma.grade.update({
@@ -105,10 +137,12 @@ export class GradeCalculationService {
       });
     }
 
-    // ✅ Calculate average using correct formula (as per AVERAGE_CALCULATION_IMPLEMENTATION.md)
-    // AVERAGE = Total Score of ENTERED subjects / Sum of coefficients for ENTERED subjects
+    const adjustedTotalScore = totalScore + englishBonus;
+
+    // ✅ Calculate average using correct formula
+    // AVERAGE = Adjusted Total Score / Sum of coefficients for counted subjects
     const average =
-      totalCoefficient > 0 ? totalScore / totalCoefficient : 0;
+      totalCoefficient > 0 ? adjustedTotalScore / totalCoefficient : 0;
 
     // Determine grade level
     const gradeLevel = this.determineGradeLevel(average);

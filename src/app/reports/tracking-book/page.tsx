@@ -127,6 +127,18 @@ export default function TrackingBookPage() {
     refreshClasses,
   ]);
 
+  // ✅ Reset selected month when switching tabs
+  useEffect(() => {
+    if (activeBookTab === "internship-book") {
+      setSelectedMonth((prev) => {
+        if (prev === "កុម្ភៈ" || prev === "ឆមាសទី២") {
+          return prev;
+        }
+        return "កុម្ភៈ";
+      });
+    }
+  }, [activeBookTab]);
+
   // ✅ Pass month parameter to API
   const fetchTrackingBook = async () => {
     if (!selectedClassId) return;
@@ -134,10 +146,15 @@ export default function TrackingBookPage() {
     setLoading(true);
     setError(null);
     try {
+      let apiMonth = selectedMonth;
+      if (activeBookTab === "internship-book") {
+        apiMonth = ""; // Omit month to fetch all records (S1, S2, and Monthly Averages)
+      }
+
       const data = await reportsApi.getStudentTrackingBook(
         selectedClassId,
         selectedYear,
-        selectedMonth || undefined,
+        apiMonth || undefined,
         selectedSubjectId || undefined
       );
       setTrackingData(data);
@@ -149,6 +166,30 @@ export default function TrackingBookPage() {
       setLoading(false);
     }
   };
+
+  const monthOptions = useMemo(() => {
+    if (activeBookTab === "internship-book") {
+      return [
+        { value: "កុម្ភៈ", label: "ឆមាសទី១" },
+        { value: "ឆមាសទី២", label: "ឆមាសទី២" },
+      ];
+    }
+    return [
+      { value: "", label: "ទាំងអស់" },
+      { value: "មករា", label: "មករា" },
+      { value: "កុម្ភៈ", label: "ឆមាសទី១" },
+      { value: "មីនា", label: "មីនា" },
+      { value: "មេសា", label: "មេសា" },
+      { value: "ឧសភា", label: "ឧសភា" },
+      { value: "មិថុនា", label: "មិថុនា" },
+      { value: "កក្កដា", label: "កក្កដា" },
+      { value: "សីហា", label: "សីហា" },
+      { value: "កញ្ញា", label: "កញ្ញា" },
+      { value: "តុលា", label: "តុលា" },
+      { value: "វិច្ឆិកា", label: "វិច្ឆិកា" },
+      { value: "ធ្នូ", label: "ធ្នូ" },
+    ];
+  }, [activeBookTab]);
 
   if (authLoading) {
     return (
@@ -169,22 +210,6 @@ export default function TrackingBookPage() {
         { value: "", label: "ជ្រើសរើសថ្នាក់" },
         ...classes.map((c) => ({ value: c.id, label: c.name })),
       ];
-
-  const monthOptions = [
-    { value: "", label: "ទាំងអស់" },
-    { value: "មករា", label: "មករា" },
-    { value: "កុម្ភៈ", label: "ឆមាសទី១" },
-    { value: "មីនា", label: "មីនា" },
-    { value: "មេសា", label: "មេសា" },
-    { value: "ឧសភា", label: "ឧសភា" },
-    { value: "មិថុនា", label: "មិថុនា" },
-    { value: "កក្កដា", label: "កក្កដា" },
-    { value: "សីហា", label: "សីហា" },
-    { value: "កញ្ញា", label: "កញ្ញា" },
-    { value: "តុលា", label: "តុលា" },
-    { value: "វិច្ឆិកា", label: "វិច្ឆិកា" },
-    { value: "ធ្នូ", label: "ធ្នូ" },
-  ];
 
   const yearOptions = getAcademicYearOptionsCustom(2, 2);
 
@@ -493,85 +518,136 @@ export default function TrackingBookPage() {
 
   const summaryRankLookup = sortedTrackingData
     ? (() => {
-        const subjectMaxScores = Object.fromEntries(
-          sortedTrackingData.subjects.map((subject) => [subject.id, subject.maxScore])
-        ) as Record<string, number>;
         const metricsByStudentId: Record<
           string,
           {
-            semester1Total: number | null;
-            semester2Total: number | null;
-            annualTotal: number | null;
-            semester1Average: number | null;
-            semester2Average: number | null;
-            annualAverage: number | null;
-            semester1TotalPercentage: number | null;
-            semester2TotalPercentage: number | null;
-            annualTotalPercentage: number | null;
-            semester1AveragePercentage: number | null;
-            semester2AveragePercentage: number | null;
-            annualAveragePercentage: number | null;
+            semester1ExamTotal: number | null;
+            semester2ExamTotal: number | null;
+            annualExamTotal: number | null;
+            semester1ExamAverage: number | null;
+            semester2ExamAverage: number | null;
+            annualExamAverage: number | null;
+            semester1MonthlyAverage: number | null;
+            semester2MonthlyAverage: number | null;
+            semester1OverallAverage: number | null;
+            semester2OverallAverage: number | null;
+            annualOverallAverage: number | null;
           }
         > = {};
 
         sortedTrackingData.students.forEach((student) => {
-          metricsByStudentId[student.studentId] = aggregateStudentSemesterMetrics(
-            student.subjectScores,
-            subjectMaxScores
-          );
+          let sem1ExamTotal = 0;
+          let sem1CoefSum = 0;
+          let sem1Count = 0;
+          let sem2ExamTotal = 0;
+          let sem2CoefSum = 0;
+          let sem2Count = 0;
+          let annualExamTotal = 0;
+          let annualCoefSum = 0;
+          let annualCount = 0;
+
+          sortedTrackingData.subjects.forEach((subject) => {
+            const scoreData = student.subjectScores[subject.id];
+            if (!scoreData) return;
+
+            const coef = subject.coefficient ?? 1;
+
+            const { semester1Score, semester2Score, annualScore } = getSemesterMetrics(scoreData);
+
+            if (semester1Score !== null) {
+              sem1ExamTotal += semester1Score;
+              sem1CoefSum += coef;
+              sem1Count++;
+            }
+
+            if (semester2Score !== null) {
+              sem2ExamTotal += semester2Score;
+              sem2CoefSum += coef;
+              sem2Count++;
+            }
+
+            if (annualScore !== null) {
+              annualExamTotal += annualScore;
+              annualCoefSum += coef;
+              annualCount++;
+            }
+          });
+
+          const semester1ExamAverage = sem1CoefSum > 0 ? sem1ExamTotal / sem1CoefSum : null;
+          const semester2ExamAverage = sem2CoefSum > 0 ? sem2ExamTotal / sem2CoefSum : null;
+          const annualExamAverage = annualCoefSum > 0 ? annualExamTotal / annualCoefSum : null;
+
+          const semester1MonthlyAverage = (student as any).sem1MonthlyAvg ?? null;
+          const semester2MonthlyAverage = (student as any).sem2MonthlyAvg ?? null;
+
+          const semester1OverallAverage = (semester1ExamAverage !== null && semester1MonthlyAverage !== null)
+            ? (semester1ExamAverage + semester1MonthlyAverage) / 2
+            : (semester1ExamAverage !== null ? semester1ExamAverage : (semester1MonthlyAverage !== null ? semester1MonthlyAverage : null));
+
+          const semester2OverallAverage = (semester2ExamAverage !== null && semester2MonthlyAverage !== null)
+            ? (semester2ExamAverage + semester2MonthlyAverage) / 2
+            : (semester2ExamAverage !== null ? semester2ExamAverage : (semester2MonthlyAverage !== null ? semester2MonthlyAverage : null));
+
+          const annualOverallAverage = (semester1OverallAverage !== null && semester2OverallAverage !== null)
+            ? (semester1OverallAverage + semester2OverallAverage) / 2
+            : (semester1OverallAverage !== null ? semester1OverallAverage : (semester2OverallAverage !== null ? semester2OverallAverage : null));
+
+          metricsByStudentId[student.studentId] = {
+            semester1ExamTotal: sem1Count > 0 ? sem1ExamTotal : null,
+            semester2ExamTotal: sem2Count > 0 ? sem2ExamTotal : null,
+            annualExamTotal: annualCount > 0 ? annualExamTotal : null,
+            semester1ExamAverage,
+            semester2ExamAverage,
+            annualExamAverage,
+            semester1MonthlyAverage,
+            semester2MonthlyAverage,
+            semester1OverallAverage,
+            semester2OverallAverage,
+            annualOverallAverage,
+          };
         });
 
+        const semester1ExamRanks = buildSubjectRankMap(
+          sortedTrackingData.students.map((student) => ({
+            studentId: student.studentId,
+            value: metricsByStudentId[student.studentId].semester1ExamAverage,
+          }))
+        );
+
+        const semester2ExamRanks = buildSubjectRankMap(
+          sortedTrackingData.students.map((student) => ({
+            studentId: student.studentId,
+            value: metricsByStudentId[student.studentId].semester2ExamAverage,
+          }))
+        );
+
+        const semester1OverallRanks = buildSubjectRankMap(
+          sortedTrackingData.students.map((student) => ({
+            studentId: student.studentId,
+            value: metricsByStudentId[student.studentId].semester1OverallAverage,
+          }))
+        );
+
+        const semester2OverallRanks = buildSubjectRankMap(
+          sortedTrackingData.students.map((student) => ({
+            studentId: student.studentId,
+            value: metricsByStudentId[student.studentId].semester2OverallAverage,
+          }))
+        );
+
+        const annualOverallRanks = buildSubjectRankMap(
+          sortedTrackingData.students.map((student) => ({
+            studentId: student.studentId,
+            value: metricsByStudentId[student.studentId].annualOverallAverage,
+          }))
+        );
+
         return {
-          semester1TotalRanks: buildSubjectRankMap(
-            sortedTrackingData.students.map((student) => ({
-              studentId: student.studentId,
-              value:
-                metricsByStudentId[student.studentId].semester1TotalPercentage ??
-                metricsByStudentId[student.studentId].semester1Total,
-            }))
-          ),
-          semester2TotalRanks: buildSubjectRankMap(
-            sortedTrackingData.students.map((student) => ({
-              studentId: student.studentId,
-              value:
-                metricsByStudentId[student.studentId].semester2TotalPercentage ??
-                metricsByStudentId[student.studentId].semester2Total,
-            }))
-          ),
-          annualTotalRanks: buildSubjectRankMap(
-            sortedTrackingData.students.map((student) => ({
-              studentId: student.studentId,
-              value:
-                metricsByStudentId[student.studentId].annualTotalPercentage ??
-                metricsByStudentId[student.studentId].annualTotal ??
-                parseTrackingNumber(student.totalScore),
-            }))
-          ),
-          semester1AverageRanks: buildSubjectRankMap(
-            sortedTrackingData.students.map((student) => ({
-              studentId: student.studentId,
-              value:
-                metricsByStudentId[student.studentId].semester1AveragePercentage ??
-                metricsByStudentId[student.studentId].semester1Average,
-            }))
-          ),
-          semester2AverageRanks: buildSubjectRankMap(
-            sortedTrackingData.students.map((student) => ({
-              studentId: student.studentId,
-              value:
-                metricsByStudentId[student.studentId].semester2AveragePercentage ??
-                metricsByStudentId[student.studentId].semester2Average,
-            }))
-          ),
-          annualAverageRanks: buildSubjectRankMap(
-            sortedTrackingData.students.map((student) => ({
-              studentId: student.studentId,
-              value:
-                metricsByStudentId[student.studentId].annualAveragePercentage ??
-                metricsByStudentId[student.studentId].annualAverage ??
-                parseTrackingNumber(student.averageScore),
-            }))
-          ),
+          semester1ExamRanks,
+          semester2ExamRanks,
+          semester1OverallRanks,
+          semester2OverallRanks,
+          annualOverallRanks,
           metricsByStudentId,
         };
       })()
@@ -634,11 +710,11 @@ export default function TrackingBookPage() {
           summaryRankLookup?.metricsByStudentId[student.studentId];
         const totalScore =
           parseTrackingNumber(student.totalScore) ??
-          studentSummaryMetrics?.annualTotal ??
+          studentSummaryMetrics?.annualExamTotal ??
           0;
         const averageScore =
           parseTrackingNumber(student.averageScore) ??
-          studentSummaryMetrics?.annualAverage ??
+          studentSummaryMetrics?.annualOverallAverage ??
           0;
         const summaryGradeLevelFromAverage =
           calculateGradeLevelFromAverage(averageScore);
@@ -678,19 +754,30 @@ export default function TrackingBookPage() {
             averageScore,
             gradeLevel: summaryGradeLevel,
             gradeLevelKhmer: summaryGradeLevelKhmer,
-            rank: student.rank,
-            totalRank:
-              summaryRankLookup?.annualTotalRanks[student.studentId] ?? null,
-            averageRank:
-              summaryRankLookup?.annualAverageRanks[student.studentId] ?? null,
-            semester1TotalRank:
-              summaryRankLookup?.semester1TotalRanks[student.studentId] ?? null,
-            semester2TotalRank:
-              summaryRankLookup?.semester2TotalRanks[student.studentId] ?? null,
-            semester1AverageRank:
-              summaryRankLookup?.semester1AverageRanks[student.studentId] ?? null,
-            semester2AverageRank:
-              summaryRankLookup?.semester2AverageRanks[student.studentId] ?? null,
+            rank: studentSummaryMetrics?.annualOverallRank ?? student.rank,
+            
+            // Exam totals
+            semester1ExamTotal: studentSummaryMetrics?.semester1ExamTotal ?? null,
+            semester2ExamTotal: studentSummaryMetrics?.semester2ExamTotal ?? null,
+            annualExamTotal: studentSummaryMetrics?.annualExamTotal ?? null,
+
+            // Exam averages & ranks
+            semester1ExamAverage: studentSummaryMetrics?.semester1ExamAverage ?? null,
+            semester2ExamAverage: studentSummaryMetrics?.semester2ExamAverage ?? null,
+            semester1ExamRank: summaryRankLookup?.semester1ExamRanks[student.studentId] ?? null,
+            semester2ExamRank: summaryRankLookup?.semester2ExamRanks[student.studentId] ?? null,
+
+            // Monthly averages
+            semester1MonthlyAverage: studentSummaryMetrics?.semester1MonthlyAverage ?? null,
+            semester2MonthlyAverage: studentSummaryMetrics?.semester2MonthlyAverage ?? null,
+
+            // Overall averages & ranks
+            semester1OverallAverage: studentSummaryMetrics?.semester1OverallAverage ?? null,
+            semester2OverallAverage: studentSummaryMetrics?.semester2OverallAverage ?? null,
+            annualOverallAverage: studentSummaryMetrics?.annualOverallAverage ?? null,
+            semester1OverallRank: summaryRankLookup?.semester1OverallRanks[student.studentId] ?? null,
+            semester2OverallRank: summaryRankLookup?.semester2OverallRanks[student.studentId] ?? null,
+            annualOverallRank: summaryRankLookup?.annualOverallRanks[student.studentId] ?? null,
           },
           attendance: student.attendance || {
             totalAbsent: 0,
@@ -701,7 +788,9 @@ export default function TrackingBookPage() {
           month:
             sortedTrackingData.month?.trim() === "កុម្ភៈ"
               ? "ឆមាសទី១"
-              : sortedTrackingData.month,
+              : (sortedTrackingData.month?.trim() === "មិថុនា" || sortedTrackingData.month?.trim() === "កក្កដា") && activeBookTab === "internship-book"
+                ? "ឆមាសទី២"
+                : sortedTrackingData.month,
           teacherName: sortedTrackingData.teacherName,
           principalName: "នាយកសាលា",
           schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",
@@ -1011,7 +1100,7 @@ export default function TrackingBookPage() {
           {/* Controls Panel */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 no-print">
             {/* Selection Row */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <div className={`grid grid-cols-1 ${activeBookTab === "internship-book" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-4 mb-4`}>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ថ្នាក់ Class
@@ -1050,22 +1139,24 @@ export default function TrackingBookPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  ខែ Month
-                </label>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  {monthOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {activeBookTab !== "internship-book" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ខែ Month
+                  </label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    {monthOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">

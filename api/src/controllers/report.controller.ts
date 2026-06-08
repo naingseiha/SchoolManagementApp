@@ -20,17 +20,25 @@ function normalizeDigits(value: string): string {
   return value.replace(/[០-៩]/g, (digit) => KHMER_DIGIT_MAP[digit] || digit);
 }
 
-function shouldApplySemesterOneEnglishRule(
-  grade: string,
-  month?: string | null
-): boolean {
+function shouldApplyEnglishBonusRule(
+  grade: string | number,
+  month?: string
+) {
+  const gradeNum =
+    typeof grade === "string" ? parseInt(grade.replace(/\D/g, ""), 10) : grade;
+
+  // Rule applies only to Grade 9 and 12
+  if (gradeNum !== 9 && gradeNum !== 12) return false;
+
   if (!month) return false;
-  const gradeNumber = parseInt(normalizeDigits(String(grade)), 10);
   const normalizedMonth = month.trim();
+
+  // Applies to both Semester 1 Exam (February) and Semester 2 Exam (June)
   return (
-    (normalizedMonth === SEMESTER_ONE_MONTH ||
-      normalizedMonth === "ឆមាសទី១") &&
-    (gradeNumber === 9 || gradeNumber === 12)
+    normalizedMonth === "កុម្ភៈ" || 
+    normalizedMonth === "ឆមាសទី១" || 
+    normalizedMonth === "មិថុនា" || 
+    normalizedMonth === "ឆមាសទី២"
   );
 }
 
@@ -191,7 +199,7 @@ export class ReportController {
         });
       }
 
-      const applySemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(
+      const applyEnglishBonusRule = shouldApplyEnglishBonusRule(
         classData.grade,
         month as string
       );
@@ -250,7 +258,7 @@ export class ReportController {
       // ✅ FIXED: Calculate total coefficient from filtered subjects
       const totalCoefficientForClass = subjects.reduce(
         (sum, s) =>
-          applySemesterOneEnglishRule && isEnglishSubject(s)
+          applyEnglishBonusRule && isEnglishSubject(s)
             ? sum
             : sum + s.coefficient,
         0
@@ -277,7 +285,7 @@ export class ReportController {
             studentGrades[subject.id] = grade.score;
             gradeCount++;
 
-            if (applySemesterOneEnglishRule && isEnglishSubject(subject)) {
+            if (applyEnglishBonusRule && isEnglishSubject(subject)) {
               englishBonus += Math.max(
                 grade.score - ENGLISH_SCORE_BASELINE,
                 0
@@ -436,7 +444,7 @@ export class ReportController {
         });
       }
 
-      const applySemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(
+      const applyEnglishBonusRule = shouldApplyEnglishBonusRule(
         grade,
         month as string
       );
@@ -509,7 +517,7 @@ export class ReportController {
 
         const totalCoefficientForStudent = studentSubjects.reduce(
           (sum, s) =>
-            applySemesterOneEnglishRule && isEnglishSubject(s)
+            applyEnglishBonusRule && isEnglishSubject(s)
               ? sum
               : sum + s.coefficient,
           0
@@ -530,7 +538,7 @@ export class ReportController {
             studentGrades[subject.id] = grade.score;
             gradeCount++;
 
-            if (applySemesterOneEnglishRule && isEnglishSubject(subject)) {
+            if (applyEnglishBonusRule && isEnglishSubject(subject)) {
               englishBonus += Math.max(
                 grade.score - ENGLISH_SCORE_BASELINE,
                 0
@@ -587,7 +595,7 @@ export class ReportController {
       const avgCoefficient =
         subjects.reduce(
           (sum, s) =>
-            applySemesterOneEnglishRule && isEnglishSubject(s)
+            applyEnglishBonusRule && isEnglishSubject(s)
               ? sum
               : sum + s.coefficient,
           0
@@ -672,7 +680,7 @@ export class ReportController {
       console.log(`📊 Grade: ${classInfo.grade}`);
       console.log(`🎯 Track: ${classInfo.track || "N/A"}`);
 
-      const applySemesterOneEnglishRule = shouldApplySemesterOneEnglishRule(
+      const applyEnglishBonusRule = shouldApplyEnglishBonusRule(
         classInfo.grade,
         month as string | undefined
       );
@@ -775,6 +783,25 @@ export class ReportController {
       });
 
       console.log(`\n✅ Found ${grades.length} grade records`);
+
+      // ✅ Fetch monthly summaries for all students in this class for the given year
+      const monthlySummaries = await prisma.studentMonthlySummary.findMany({
+        where: {
+          classId: classId,
+          year: parseInt(year as string),
+          studentId: {
+            in: sortedStudents.map((s) => s.id),
+          },
+        },
+        select: {
+          studentId: true,
+          month: true,
+          monthNumber: true,
+          average: true,
+        },
+      });
+
+      console.log(`\n✅ Found ${monthlySummaries.length} monthly summaries`);
 
       // ✅ Fetch attendance data
       const attendanceWhereClause: any = {
@@ -932,7 +959,7 @@ export class ReportController {
       // ✅✅✅ THIS IS THE MISSING PART - ADD IT HERE ✅✅✅
       const totalCoefficientForClass = subjects.reduce(
         (sum, s) =>
-          applySemesterOneEnglishRule && isEnglishSubject(s)
+          applyEnglishBonusRule && isEnglishSubject(s)
             ? sum
             : sum + s.coefficient,
         0
@@ -950,6 +977,9 @@ export class ReportController {
             gradeLevel: string;
             gradeLevelKhmer: string;
             percentage: number;
+            semester1Score: number | null;
+            semester2Score: number | null;
+            annualScore: number | null;
           };
         } = {};
 
@@ -959,11 +989,34 @@ export class ReportController {
         let studentCoefficient = 0; // ✅ Track coefficient for entered subjects
 
         subjects.forEach((subject) => {
-          const grade = grades.find(
+          const studentSubjectGrades = grades.filter(
             (g) => g.studentId === student.id && g.subjectId === subject.id
           );
 
+          // Find Semester 1 exam grade (February / កុម្ភៈ)
+          const sem1ExamGrade = studentSubjectGrades.find(
+            (g) => g.month?.trim() === "កុម្ភៈ" || g.monthNumber === 2
+          );
+
+          // Find Semester 2 exam grade (June / មិថុនា for Grade 9/12, July / កក្កដា for others)
+          const gradeNum = parseInt(classInfo.grade);
+          const sem2ExamMonth = (gradeNum === 9 || gradeNum === 12) ? "មិថុនា" : "កក្កដា";
+          const sem2ExamGrade = studentSubjectGrades.find(
+            (g) => g.month?.trim() === sem2ExamMonth
+          );
+
+          const semester1Score = sem1ExamGrade ? sem1ExamGrade.score : null;
+          const semester2Score = sem2ExamGrade ? sem2ExamGrade.score : null;
+          const annualScore = (semester1Score !== null && semester2Score !== null)
+            ? parseFloat(((semester1Score + semester2Score) / 2).toFixed(2))
+            : (semester1Score !== null ? semester1Score : (semester2Score !== null ? semester2Score : null));
+
+          // Use February score as default 'score' if month query param is not set, otherwise fallback to first record
+          const grade = grades.find(
+            (g) => g.studentId === student.id && g.subjectId === subject.id
+          );
           const score = grade?.score ?? null;
+
           const gradeInfo = getSubjectGradeLevel(score, subject.maxScore);
 
           subjectScores[subject.id] = {
@@ -972,12 +1025,15 @@ export class ReportController {
             gradeLevel: gradeInfo.level,
             gradeLevelKhmer: gradeInfo.levelKhmer,
             percentage: gradeInfo.percentage,
+            semester1Score,
+            semester2Score,
+            annualScore,
           };
 
           if (score !== null) {
             subjectsWithScores++;
 
-            if (applySemesterOneEnglishRule && isEnglishSubject(subject)) {
+            if (applyEnglishBonusRule && isEnglishSubject(subject)) {
               englishBonus += Math.max(score - ENGLISH_SCORE_BASELINE, 0);
             } else {
               totalScore += score;
@@ -1011,6 +1067,66 @@ export class ReportController {
           F: "ខ្សោយ",
         };
 
+        const monthNames = [
+          "មករា",
+          "កុម្ភៈ",
+          "មីនា",
+          "មេសា",
+          "ឧសភា",
+          "មិថុនា",
+          "កក្កដា",
+          "សីហា",
+          "កញ្ញា",
+          "តុលា",
+          "វិច្ឆិកា",
+          "ធ្នូ",
+        ];
+
+        // Filter summaries for this student
+        const studentSummaries = monthlySummaries.filter(
+          (s) => s.studentId === student.id
+        );
+
+        // Map summaries to resolve correct monthNumber from name if it's 0 or invalid in the database
+        const studentSummariesWithCorrectMonths = studentSummaries.map((s) => {
+          let resolvedMonthNumber = s.monthNumber;
+          if (!resolvedMonthNumber || resolvedMonthNumber <= 0) {
+            const idx = monthNames.indexOf(s.month?.trim() || "");
+            if (idx >= 0) {
+              resolvedMonthNumber = idx + 1;
+            }
+          }
+          return {
+            ...s,
+            resolvedMonthNumber,
+          };
+        });
+
+        // Semester 1 months: November (11), December (12), January (1), February (2)
+        const sem1Months = [11, 12, 1, 2];
+        const sem1SummaryList = studentSummariesWithCorrectMonths.filter((s) =>
+          sem1Months.includes(s.resolvedMonthNumber)
+        );
+        // Semester 2 months:
+        // Grade 9 & 12: 3, 5, 6
+        // Others: 3, 5, 6, 7
+        const gradeNum = parseInt(classInfo.grade);
+        const sem2Months = (gradeNum === 9 || gradeNum === 12) ? [3, 5, 6] : [3, 5, 6, 7];
+        const sem2SummaryList = studentSummariesWithCorrectMonths.filter((s) =>
+          sem2Months.includes(s.resolvedMonthNumber)
+        );
+
+        let sem1MonthlyAvgRaw = sem1SummaryList.length > 0
+          ? sem1SummaryList.reduce((sum, s) => sum + s.average, 0) / sem1SummaryList.length
+          : null;
+        let sem2MonthlyAvgRaw = sem2SummaryList.length > 0
+          ? sem2SummaryList.reduce((sum, s) => sum + s.average, 0) / sem2SummaryList.length
+          : null;
+
+        // The monthly average is already appropriately scaled in the database (e.g. out of 50)
+        let sem1MonthlyAvg: number | null = sem1MonthlyAvgRaw !== null ? parseFloat(sem1MonthlyAvgRaw.toFixed(2)) : null;
+        let sem2MonthlyAvg: number | null = sem2MonthlyAvgRaw !== null ? parseFloat(sem2MonthlyAvgRaw.toFixed(2)) : null;
+
         return {
           studentId: student.studentId || student.id, // ✅ Use studentId field, fallback to id
           studentName:
@@ -1028,6 +1144,8 @@ export class ReportController {
           gradeLevel: gradeLevel,
           gradeLevelKhmer: gradeLevelKhmer[gradeLevel],
           subjectsRecorded: subjectsWithScores,
+          sem1MonthlyAvg,
+          sem2MonthlyAvg,
           attendance: attendanceSummary[student.id] || {
             totalAbsent: 0,
             permission: 0,
