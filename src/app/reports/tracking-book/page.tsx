@@ -780,9 +780,9 @@ export default function TrackingBookPage() {
             annualOverallRank: summaryRankLookup?.annualOverallRanks[student.studentId] ?? null,
           },
           attendance: student.attendance || {
-            totalAbsent: 0,
-            permission: 0,
-            withoutPermission: 0,
+            semester1: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+            semester2: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+            annual: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
           },
           year: sortedTrackingData.year,
           month:
@@ -845,7 +845,7 @@ export default function TrackingBookPage() {
           summaryForExport?.gradeLevel ||
           student.gradeLevel,
         student.rank.toString(),
-        student.attendance.totalAbsent.toString(),
+        student.attendance?.annual?.totalAbsent?.toString() || "0",
       ];
       return row;
     });

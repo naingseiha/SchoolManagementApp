@@ -878,35 +878,43 @@ export class ReportController {
       // ✅ Calculate attendance summary
       const attendanceSummary: {
         [studentId: string]: {
-          totalAbsent: number;
-          permission: number;
-          withoutPermission: number;
+          semester1: { totalAbsent: number; permission: number; withoutPermission: number };
+          semester2: { totalAbsent: number; permission: number; withoutPermission: number };
+          annual: { totalAbsent: number; permission: number; withoutPermission: number };
         };
       } = {};
 
       sortedStudents.forEach((student) => {
         attendanceSummary[student.id] = {
-          totalAbsent: 0,
-          permission: 0,
-          withoutPermission: 0,
+          semester1: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+          semester2: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+          annual: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
         };
       });
 
       attendanceRecords.forEach((record) => {
         if (!attendanceSummary[record.studentId]) {
           attendanceSummary[record.studentId] = {
-            totalAbsent: 0,
-            permission: 0,
-            withoutPermission: 0,
+            semester1: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+            semester2: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+            annual: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
           };
         }
 
+        const isSem1 = [10, 11, 0, 1].includes(record.date.getMonth());
+        const target = isSem1 ? attendanceSummary[record.studentId].semester1 : attendanceSummary[record.studentId].semester2;
+        const annual = attendanceSummary[record.studentId].annual;
+
         if (record.status === "ABSENT") {
-          attendanceSummary[record.studentId].withoutPermission++;
-          attendanceSummary[record.studentId].totalAbsent++;
+          target.withoutPermission++;
+          target.totalAbsent++;
+          annual.withoutPermission++;
+          annual.totalAbsent++;
         } else if (record.status === "PERMISSION") {
-          attendanceSummary[record.studentId].permission++;
-          attendanceSummary[record.studentId].totalAbsent++;
+          target.permission++;
+          target.totalAbsent++;
+          annual.permission++;
+          annual.totalAbsent++;
         }
       });
 
@@ -1147,9 +1155,9 @@ export class ReportController {
           sem1MonthlyAvg,
           sem2MonthlyAvg,
           attendance: attendanceSummary[student.id] || {
-            totalAbsent: 0,
-            permission: 0,
-            withoutPermission: 0,
+            semester1: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+            semester2: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+            annual: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
           },
         };
       });

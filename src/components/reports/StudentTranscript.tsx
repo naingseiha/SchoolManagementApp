@@ -73,9 +73,9 @@ interface StudentTranscriptProps {
     annualOverallRank?: number | null;
   };
   attendance?: {
-    totalAbsent: number;
-    permission: number;
-    withoutPermission: number;
+    semester1: { totalAbsent: number; permission: number; withoutPermission: number };
+    semester2: { totalAbsent: number; permission: number; withoutPermission: number };
+    annual: { totalAbsent: number; permission: number; withoutPermission: number };
   };
   year: number;
   month: string | null;
@@ -580,19 +580,19 @@ export default function StudentTranscript({
                   <div>
                     <p className="font-bold">
                       អវត្តមាន៖{" "}
-                      {String(attendance?.totalAbsent || 0).padStart(2, "0")} ដង
+                      {String(attendance?.annual?.totalAbsent || 0).padStart(2, "0")} ដង
                     </p>
                   </div>
                   <div>
                     <p className="font-bold">
                       មានច្បាប់៖{" "}
-                      {String(attendance?.permission || 0).padStart(2, "0")} ដង
+                      {String(attendance?.annual?.permission || 0).padStart(2, "0")} ដង
                     </p>
                   </div>
                   <div>
                     <p className="font-bold">
                       អត់ច្បាប់៖{" "}
-                      {String(attendance?.withoutPermission || 0).padStart(
+                      {String(attendance?.annual?.withoutPermission || 0).padStart(
                         2,
                         "0"
                       )}{" "}
@@ -1162,7 +1162,7 @@ export default function StudentTranscript({
                         className="border border-black px-1 py-1.5 text-center font-bold"
                         style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
                       >
-                        មធ្យមភាគពិន្ទុប្រចាំឆ្នាំ
+                        មធ្យមភាគពិន្ទុប្រចាំឆមាស/ប្រចាំឆ្នាំ
                       </td>
                       <td
                         className="border border-black px-1 py-1.5 text-center font-bold"
@@ -1195,6 +1195,108 @@ export default function StudentTranscript({
                         {getGradeLabelKhFromAverage(annualOverallAvg)}
                       </td>
                       <td className="border border-black px-1 py-1.5 text-center"></td>
+                    </tr>
+
+                    {/* Row 5: អវត្តមានមានច្បាប់ */}
+                    <tr style={{ backgroundColor: "#F9FAFB" }}>
+                      <td
+                        colSpan={2}
+                        rowSpan={2}
+                        className="border border-black px-1 py-1.5 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Muol Light', serif" }}
+                      >
+                        អវត្តមាន
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                      >
+                        ច្បាប់
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {String(attendance?.semester1?.permission || 0).padStart(2, "0")}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                      >
+                        ច្បាប់
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {String(attendance?.semester2?.permission || 0).padStart(2, "0")}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                      >
+                        ច្បាប់
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                      >
+                        {String(attendance?.annual?.permission || 0).padStart(2, "0")}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                        rowSpan={2}
+                      >
+                        សរុប
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#1D4ED8", fontFamily: "'Time New Roman'" }}
+                        rowSpan={2}
+                      >
+                        {String(attendance?.annual?.totalAbsent || 0).padStart(2, "0")}
+                      </td>
+                    </tr>
+
+                    {/* Row 6: អវត្តមានឥតច្បាប់ */}
+                    <tr style={{ backgroundColor: "#F9FAFB" }}>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                      >
+                        អត់ច្បាប់
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
+                      >
+                        {String(attendance?.semester1?.withoutPermission || 0).padStart(2, "0")}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                      >
+                        អត់ច្បាប់
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
+                      >
+                        {String(attendance?.semester2?.withoutPermission || 0).padStart(2, "0")}
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ fontFamily: "'Khmer OS Battambang', serif" }}
+                      >
+                        អត់ច្បាប់
+                      </td>
+                      <td
+                        className="border border-black px-1 py-1 text-center font-bold"
+                        style={{ color: "#DC2626", fontFamily: "'Time New Roman'" }}
+                      >
+                        {String(attendance?.annual?.withoutPermission || 0).padStart(2, "0")}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
