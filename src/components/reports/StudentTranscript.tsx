@@ -263,10 +263,8 @@ export default function StudentTranscript({
 
   const getGradeLabelKhFromAverage = (average: number | null): string => {
     if (average === null) return "-";
-    if (average >= 45) return "ល្អប្រសើរ";
-    if (average >= 40) return "ល្អណាស់";
-    if (average >= 35) return "ល្អ";
-    if (average >= 30) return "ល្អបង្គួរ";
+    if (average >= 40) return "ល្អ";
+    if (average >= 32.5) return "បង្គួរ";
     if (average >= 25) return "មធ្យម";
     return "ខ្សោយ";
   };
