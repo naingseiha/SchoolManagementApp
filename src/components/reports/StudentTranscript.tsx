@@ -171,6 +171,29 @@ export default function StudentTranscript({
     return GRADE_LABELS_KH.F;
   };
 
+  const get4LevelGradeLabelKhFromScore = (
+    score: number | null,
+    maxScore: number | null
+  ): string => {
+    if (score === null || maxScore === null || maxScore <= 0) {
+      return "";
+    }
+    const percentage = (score / maxScore) * 100;
+    if (percentage >= 80) return "ល្អ";
+    if (percentage >= 65) return "បង្គួរ";
+    if (percentage >= 50) return "មធ្យម";
+    return "ខ្សោយ";
+  };
+
+  const mapTo4LevelKhmerGrade = (label: string | undefined): string => {
+    if (!label) return "";
+    if (label === "ល្អប្រសើរ") return "ល្អ";
+    if (label === "ល្អណាស់" || label === "ល្អ") return "បង្គួរ";
+    if (label === "ល្អបង្គួរ" || label === "មធ្យម") return "មធ្យម";
+    if (label === "ខ្សោយ") return "ខ្សោយ";
+    return label;
+  };
+
   const getSemesterMetrics = (scoreData?: SubjectScoreData) => {
     const semester1Score = toNumber(scoreData?.semester1Score ?? scoreData?.score);
     const semester1Rank = toNumber(scoreData?.semester1Rank);
@@ -201,9 +224,9 @@ export default function StudentTranscript({
     const resolvedMaxScore = toNumber(scoreData?.maxScore ?? subject.maxScore);
     const backendGradeLetter = normalizeGradeLetter(scoreData?.gradeLevel);
     const annualGradeLevelKhmer =
-      getGradeLabelKhFromScore(metrics.annualScore, resolvedMaxScore) ||
-      scoreData?.gradeLevelKhmer ||
-      (backendGradeLetter ? GRADE_LABELS_KH[backendGradeLetter] : "");
+      get4LevelGradeLabelKhFromScore(metrics.annualScore, resolvedMaxScore) ||
+      mapTo4LevelKhmerGrade(scoreData?.gradeLevelKhmer) ||
+      (backendGradeLetter ? mapTo4LevelKhmerGrade(GRADE_LABELS_KH[backendGradeLetter]) : "");
 
     return {
       subject,
