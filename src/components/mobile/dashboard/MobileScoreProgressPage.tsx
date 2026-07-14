@@ -325,11 +325,14 @@ export default function MobileScoreProgressPage() {
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent font-battambang font-bold text-sm bg-white"
                 >
-                  {KHMER_MONTHS.map((month) => (
-                    <option key={month} value={month}>
-                      {month}
-                    </option>
-                  ))}
+                  {KHMER_MONTHS.map((month) => {
+                    const isSpecialGrade = ["7", "8", "10", "11"].includes(selectedGrade || "");
+                    return (
+                      <option key={month} value={month}>
+                        {month === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : month}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
             )}

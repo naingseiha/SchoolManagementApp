@@ -554,8 +554,9 @@ export default function AwardReportPage() {
   }
 
   const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const currentGrade = reportType === "class" ? selectedClass?.grade : selectedGrade;
   const topStudents = getTopStudents();
-  const selectedMonthDisplayName = getMonthDisplayName(selectedMonth);
+  const selectedMonthDisplayName = getMonthDisplayName(selectedMonth, currentGrade);
   const selectedPeriodLabel =
     selectedMonthDisplayName === "ឆមាសទី១"
       ? selectedMonthDisplayName
@@ -753,7 +754,7 @@ export default function AwardReportPage() {
                   className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-500"
                 >
                   {monthNames.map((month, index) => {
-                    const monthDisplayName = getMonthDisplayName(month);
+                    const monthDisplayName = getMonthDisplayName(month, currentGrade);
                     const monthOptionLabel =
                       monthDisplayName === "ឆមាសទី១"
                         ? monthDisplayName
@@ -922,7 +923,7 @@ export default function AwardReportPage() {
                   className={
                     reportType === "class" ? selectedClass?.name : undefined
                   }
-                  grade={reportType === "grade" ? selectedGrade : undefined}
+                  grade={reportType === "grade" ? selectedGrade : selectedClass?.grade}
                   academicYear={academicYear}
                   month={selectedMonth}
                   teacherName={teacherName}
@@ -937,7 +938,7 @@ export default function AwardReportPage() {
                   className={
                     reportType === "class" ? selectedClass?.name : undefined
                   }
-                  grade={reportType === "grade" ? selectedGrade : undefined}
+                  grade={reportType === "grade" ? selectedGrade : selectedClass?.grade}
                   academicYear={academicYear}
                   month={selectedMonth}
                   teacherName={teacherName}

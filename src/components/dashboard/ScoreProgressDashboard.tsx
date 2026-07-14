@@ -345,11 +345,14 @@ const FilterControls = memo(({
           onChange={(e) => onMonthChange(e.target.value)}
           className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-khmer-body font-medium text-sm bg-white"
         >
-          {KHMER_MONTHS.map((month) => (
-            <option key={month} value={month}>
-              {month}
-            </option>
-          ))}
+          {KHMER_MONTHS.map((month) => {
+            const isSpecialGrade = ["7", "8", "10", "11"].includes(selectedGrade || "");
+            return (
+              <option key={month} value={month}>
+                {month === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : month}
+              </option>
+            );
+          })}
         </select>
       </div>
 

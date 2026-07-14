@@ -514,9 +514,13 @@ export default function GradeEntryPage() {
         ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
       ];
 
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const isSpecialGrade = selectedClass && ["7", "8", "10", "11"].includes(selectedClass.grade);
+  const displayMonth = selectedMonth === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : selectedMonth;
+
   const monthOptions = MONTHS.map((m) => ({
     value: m.value,
-    label: m.label,
+    label: m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label,
   }));
 
   const yearOptions = getAcademicYearOptions();
@@ -747,7 +751,7 @@ export default function GradeEntryPage() {
                         classOptions.find((c) => c.value === selectedClassId)
                           ?.label
                       }{" "}
-                      • ខែ: {selectedMonth} • ឆ្នាំ: {selectedYear}-{selectedYear + 1}
+                      • ខែ: {displayMonth} • ឆ្នាំ: {selectedYear}-{selectedYear + 1}
                     </p>
                   )}
                 </div>

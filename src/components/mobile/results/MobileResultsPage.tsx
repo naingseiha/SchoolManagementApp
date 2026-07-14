@@ -78,6 +78,10 @@ export default function MobileResultsPage() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
 
+  const currentGrade = viewMode === "byClass" ? selectedClass?.grade : selectedGrade;
+  const isSpecialGrade = ["7", "8", "10", "11"].includes(currentGrade || "");
+  const displayMonth = selectedMonth === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : selectedMonth;
+
   // ✅ OPTIMIZATION: Cache loaded reports to avoid reloading
   const [reportCache, setReportCache] = useState<
     Map<string, MonthlyReportData>
@@ -305,7 +309,7 @@ export default function MobileResultsPage() {
                 >
                   {MONTHS.map((m) => (
                     <option key={m.value} value={m.value}>
-                      {m.label}
+                      {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
                     </option>
                   ))}
                 </select>
@@ -437,7 +441,7 @@ export default function MobileResultsPage() {
                   {gradeStudentCounts[selectedGrade] || 0} សិស្ស
                 </p>
                 <p className="font-battambang text-[10px] text-gray-400 mt-0.5">
-                  {selectedMonth} {selectedYear}-{selectedYear + 1}
+                  {displayMonth} {selectedYear}-{selectedYear + 1}
                 </p>
               </div>
             </div>
@@ -560,7 +564,7 @@ export default function MobileResultsPage() {
                     ថ្នាក់ទី{selectedGrade} • ចំណាត់ថ្នាក់រួម
                   </h1>
                   <p className="font-battambang text-xs text-gray-500">
-                    {selectedMonth} {selectedYear}-{selectedYear + 1}
+                    {displayMonth} {selectedYear}-{selectedYear + 1}
                   </p>
                 </div>
               </div>
@@ -722,7 +726,7 @@ export default function MobileResultsPage() {
                     {selectedClass.name}
                   </h1>
                   <p className="font-battambang text-xs text-gray-500">
-                    {selectedMonth} {selectedYear}-{selectedYear + 1}
+                    {displayMonth} {selectedYear}-{selectedYear + 1}
                   </p>
                 </div>
               </div>

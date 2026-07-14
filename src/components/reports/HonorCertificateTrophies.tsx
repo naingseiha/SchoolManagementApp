@@ -97,7 +97,7 @@ export default function HonorCertificateTrophies({
     if (!letterGrade || letterGrade === "undefined") return "N/A";
     return letterGrade.toUpperCase().trim();
   };
-  const displayMonth = getMonthDisplayName(month || "...");
+  const displayMonth = getMonthDisplayName(month || "...", grade);
   const reportPeriodTitle =
     displayMonth === "ឆមាសទី១" ? displayMonth : `ប្រចាំខែ ${displayMonth}`;
 

@@ -167,6 +167,9 @@ export default function TrackingBookPage() {
     }
   };
 
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const isSpecialGrade = selectedClass && ["7", "8", "10", "11"].includes(selectedClass.grade);
+
   const monthOptions = useMemo(() => {
     if (activeBookTab === "internship-book") {
       return [
@@ -182,14 +185,14 @@ export default function TrackingBookPage() {
       { value: "មេសា", label: "មេសា" },
       { value: "ឧសភា", label: "ឧសភា" },
       { value: "មិថុនា", label: "មិថុនា" },
-      { value: "កក្កដា", label: "កក្កដា" },
+      { value: "កក្កដា", label: isSpecialGrade ? "ឆមាសទី២" : "កក្កដា" },
       { value: "សីហា", label: "សីហា" },
       { value: "កញ្ញា", label: "កញ្ញា" },
       { value: "តុលា", label: "តុលា" },
       { value: "វិច្ឆិកា", label: "វិច្ឆិកា" },
       { value: "ធ្នូ", label: "ធ្នូ" },
     ];
-  }, [activeBookTab]);
+  }, [activeBookTab, isSpecialGrade]);
 
   if (authLoading) {
     return (
@@ -788,9 +791,11 @@ export default function TrackingBookPage() {
           month:
             sortedTrackingData.month?.trim() === "កុម្ភៈ"
               ? "ឆមាសទី១"
-              : (sortedTrackingData.month?.trim() === "មិថុនា" || sortedTrackingData.month?.trim() === "កក្កដា") && activeBookTab === "internship-book"
+              : (sortedTrackingData.month?.trim() === "កក្កដា" && isSpecialGrade)
                 ? "ឆមាសទី២"
-                : sortedTrackingData.month,
+                : (sortedTrackingData.month?.trim() === "មិថុនា" || sortedTrackingData.month?.trim() === "កក្កដា") && activeBookTab === "internship-book"
+                  ? "ឆមាសទី២"
+                  : sortedTrackingData.month,
           teacherName: sortedTrackingData.teacherName,
           principalName: "នាយកសាលា",
           schoolName: "វិទ្យាល័យ ហ៊ុន សែនស្វាយធំ",

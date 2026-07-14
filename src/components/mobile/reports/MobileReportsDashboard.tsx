@@ -115,6 +115,9 @@ export default function MobileReportsDashboard() {
   const [selectedClass, setSelectedClass] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+  const currentClassObj = classes.find((c) => c.id === selectedClass);
+  const isSpecialGrade = currentClassObj && ["7", "8", "10", "11"].includes(currentClassObj.grade);
+
   const [subjects, setSubjects] = useState<SubjectStatus[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<SubjectStatus | null>(
     null
@@ -577,7 +580,7 @@ export default function MobileReportsDashboard() {
               >
                 {MONTHS.map((m) => (
                   <option key={m.value} value={m.value}>
-                    {m.label}
+                    {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
                   </option>
                 ))}
               </select>

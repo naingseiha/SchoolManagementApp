@@ -42,6 +42,7 @@ import {
   monthOptions,
   getMonthDisplayName,
   getCurrentKhmerMonth,
+  getDynamicMonthOptions,
 } from "@/lib/reportHelpers";
 
 interface SemesterReportRow {
@@ -179,6 +180,10 @@ export default function ReportsPage() {
 
   const reportRef = useRef<HTMLDivElement>(null);
 
+  const chosenClass = availableClasses.find((c) => c.id === selectedClassId);
+  const currentGrade = reportType === "single" ? chosenClass?.grade : selectedGrade;
+  const isSpecialGrade = ["7", "8", "10", "11"].includes(currentGrade || "");
+
   // Get unique grades from available classes
   const grades = Array.from(
     new Set(availableClasses.map((c) => c.grade))
@@ -265,9 +270,9 @@ export default function ReportsPage() {
   // Auto-update exam session when month/year changes
   useEffect(() => {
     setExamSession(
-      `សប្តាហ៍ទី ១២៖ ខែ${getMonthDisplayName(selectedMonth)} ${selectedYear}-${selectedYear + 1}`
+      `សប្តាហ៍ទី ១២៖ ខែ${getMonthDisplayName(selectedMonth, currentGrade)} ${selectedYear}-${selectedYear + 1}`
     );
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, currentGrade]);
 
   // Reset selections when report type changes
   useEffect(() => {
@@ -285,11 +290,16 @@ export default function ReportsPage() {
 
   // Auto-adjust settings when report format changes
   useEffect(() => {
+    const isJulySpecial = selectedMonth === "កក្កដា" && isSpecialGrade;
     if (reportFormat === "detailed") {
       setShowSubjects(true);
       setTableFontSize(10);
       setFirstPageStudentCount(37);
-      setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
+      if (isJulySpecial) {
+        setReportTitle("តារាងលទ្ធផល៖ ឆមាសទី២");
+      } else {
+        setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
+      }
     } else if (reportFormat === "semester-1") {
       setSelectedMonth("កុម្ភៈ");
       setShowSubjects(false);
@@ -302,9 +312,13 @@ export default function ReportsPage() {
       setTableFontSize(10);
       setFirstPageStudentCount(28);
       setSecondPageStudentCount(36);
-      setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
+      if (isJulySpecial) {
+        setReportTitle("តារាងលទ្ធផល៖ ឆមាសទី២");
+      } else {
+        setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
+      }
     }
-  }, [reportFormat]);
+  }, [reportFormat, selectedMonth, isSpecialGrade]);
 
   // ✅ Sort subjects based on grade level - MUST be before any early returns!
   const sortedSubjects = useMemo(() => {
@@ -808,8 +822,8 @@ export default function ReportsPage() {
 
     const fileName =
       reportType === "single"
-        ? `របាយការណ៍_${reportData?.className}_${getMonthDisplayName(selectedMonth)}_${selectedYear}.csv`
-        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${getMonthDisplayName(selectedMonth)}_${selectedYear}.csv`;
+        ? `របាយការណ៍_${reportData?.className}_${getMonthDisplayName(selectedMonth, currentGrade)}_${selectedYear}.csv`
+        : `របាយការណ៍_ថ្នាក់ទី${reportData?.grade}_${getMonthDisplayName(selectedMonth, currentGrade)}_${selectedYear}.csv`;
 
     link.setAttribute("download", fileName);
     link.style.visibility = "hidden";
@@ -1048,7 +1062,7 @@ export default function ReportsPage() {
                   disabled={reportFormat === "semester-1"}
                   className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  {monthOptions.map((option) => (
+                  {getDynamicMonthOptions(currentGrade).map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -1384,7 +1398,7 @@ export default function ReportsPage() {
                       selectedYear={selectedYear}
                       isGradeWide={reportType === "grade-wide"}
                       showClassName={showClassName}
-                      selectedMonth={getMonthDisplayName(selectedMonth)}
+                      selectedMonth={getMonthDisplayName(selectedMonth, currentGrade)}
                     />
                   ) : (
                     <KhmerSemesterOneReport
@@ -1470,7 +1484,7 @@ export default function ReportsPage() {
                   selectedYear={selectedYear}
                   isGradeWide={reportType === "grade-wide"}
                   showClassName={showClassName}
-                  selectedMonth={getMonthDisplayName(selectedMonth)}
+                  selectedMonth={getMonthDisplayName(selectedMonth, currentGrade)}
                 />
               ) : (
                 <KhmerSemesterOneReport

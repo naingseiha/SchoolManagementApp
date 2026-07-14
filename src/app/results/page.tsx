@@ -71,6 +71,10 @@ export default function ResultsPage() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
 
+  const currentGrade = viewMode === "byClass" ? selectedClass?.grade : selectedGrade;
+  const isSpecialGrade = ["7", "8", "10", "11"].includes(currentGrade || "");
+  const displayMonth = selectedMonth === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : selectedMonth;
+
   // ✅ OPTIMIZATION: Client-side caching to avoid refetching
   const [reportCache, setReportCache] = useState<Map<string, MonthlyReportData>>(new Map());
   const [gradeCache, setGradeCache] = useState<Map<string, MonthlyReportData>>(new Map());
@@ -455,7 +459,7 @@ export default function ResultsPage() {
                     >
                       {MONTHS.map((m) => (
                         <option key={m.value} value={m.value}>
-                          {m.label}
+                          {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
                         </option>
                       ))}
                     </select>
@@ -1013,7 +1017,7 @@ export default function ResultsPage() {
                       {selectedClass.name}
                     </h1>
                     <p className="font-khmer-body text-gray-500 font-medium">
-                      {selectedMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
+                      {displayMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
                       {hiddenSubjects.size > 0 && (
                         <span className="ml-2 text-purple-600">
                           ({activeSubjects.length} មុខវិជ្ជា)
@@ -1105,7 +1109,7 @@ export default function ResultsPage() {
                       ថ្នាក់ទី{selectedGrade} • ចំណាត់ថ្នាក់រួម
                     </h1>
                     <p className="font-khmer-body text-gray-500 font-medium">
-                      {selectedMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
+                      {displayMonth} {selectedYear}-{selectedYear + 1} • {sortedStudents.length} សិស្ស
                       {hiddenSubjects.size > 0 && (
                         <span className="ml-2 text-purple-600">
                           ({activeSubjects.length} មុខវិជ្ជា)

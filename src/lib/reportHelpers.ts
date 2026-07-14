@@ -53,8 +53,23 @@ export const getMonthName = (monthNumber: string): string => {
   return months[index] || monthNumber;
 };
 
-export const getMonthDisplayName = (month: string): string => {
-  return month.trim() === "កុម្ភៈ" ? "ឆមាសទី១" : month;
+export const getMonthDisplayName = (month: string, grade?: string): string => {
+  const trimmedMonth = month.trim();
+  if (trimmedMonth === "កុម្ភៈ") return "ឆមាសទី១";
+  if (trimmedMonth === "កក្កដា" && grade && ["7", "8", "10", "11"].includes(grade.toString())) {
+    return "ឆមាសទី២";
+  }
+  return month;
+};
+
+export const getDynamicMonthOptions = (grade?: string) => {
+  const isSpecialGrade = grade && ["7", "8", "10", "11"].includes(grade.toString());
+  return monthOptions.map((option) => {
+    if (option.value === "កក្កដា" && isSpecialGrade) {
+      return { ...option, label: "ឆមាសទី២ (Second Semester)" };
+    }
+    return option;
+  });
 };
 
 export const getMonthNumber = (khmerMonth: string): number => {

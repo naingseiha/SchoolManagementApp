@@ -90,6 +90,10 @@ export default function MobileMonthlyReport() {
   const [selectedYear, setSelectedYear] = useState(
     yearParam ? parseInt(yearParam) : getCurrentAcademicYear()
   );
+  const currentClassObj = classes.find((c) => c.id === selectedClass);
+  const isSpecialGrade = currentClassObj && ["7", "8", "10", "11"].includes(currentClassObj.grade);
+  const selectDisplayMonth = selectedMonth === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : selectedMonth;
+
   const [reportData, setReportData] = useState<ClassReport | null>(null);
   const [reportApiData, setReportApiData] = useState<MonthlyReportData | null>(
     null
@@ -360,7 +364,7 @@ export default function MobileMonthlyReport() {
                 >
                   {MONTHS.map((m) => (
                     <option key={m.value} value={m.value}>
-                      {m.label}
+                      {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
                     </option>
                   ))}
                 </select>
@@ -423,7 +427,7 @@ export default function MobileMonthlyReport() {
                       {reportData.className}
                     </h1>
                     <p className="font-battambang text-xs text-purple-100 mt-1">
-                      {reportData.month} {reportData.year}
+                      {reportData.month === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : reportData.month} {reportData.year}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

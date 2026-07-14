@@ -6,6 +6,7 @@ export interface AttendanceGridData {
   className: string;
   month: string;
   year: number;
+  academicYear?: number;
   monthNumber: number;
   daysInMonth: number;
   days: number[];

@@ -36,6 +36,10 @@ export default function AttendanceReportPDF({
     paginatedStudents.push(gridData.students.slice(start, end));
   }
 
+  const academicStartYear =
+    gridData.academicYear ||
+    (gridData.monthNumber <= 9 ? gridData.year - 1 : gridData.year);
+
   // Helper function to get day of week
   const getDayOfWeek = (day: number): number => {
     const date = new Date(gridData.year, gridData.monthNumber - 1, day);
@@ -309,7 +313,7 @@ export default function AttendanceReportPDF({
                     <span>ខែ: {gridData.month} </span>
                     <span className="mx-1">•</span>
                     <span>
-                      ឆ្នាំសិក្សា: {gridData.year}-{gridData.year + 1}
+                      ឆ្នាំសិក្សា: {academicStartYear}-{academicStartYear + 1}
                     </span>
                   </div>
                   <div

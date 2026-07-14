@@ -100,6 +100,10 @@ export default function MobileGradeEntry({
   const [selectedYear, setSelectedYear] = useState(
     propYear || getCurrentAcademicYear(),
   );
+  const currentClassObj = classes.find((c) => c.id === selectedClass);
+  const isSpecialGrade = currentClassObj && ["7", "8", "10", "11"].includes(currentClassObj.grade);
+  const displayMonth = selectedMonth === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : selectedMonth;
+
   const [selectedSubject, setSelectedSubject] = useState("");
 
   const [gridData, setGridData] = useState<GradeGridData | null>(null);
@@ -793,7 +797,7 @@ export default function MobileGradeEntry({
           });
           const shareData = {
             title: `${gridData.className} - ${currentSubject.nameKh}`,
-            text: `ពិន្ទុ ${currentSubject.nameKh} - ${selectedMonth} ${selectedYear}`,
+            text: `ពិន្ទុ ${currentSubject.nameKh} - ${displayMonth} ${selectedYear}`,
             files: [file],
           };
 
@@ -1073,7 +1077,7 @@ export default function MobileGradeEntry({
               >
                 {MONTHS.map((m) => (
                   <option key={m.value} value={m.value}>
-                    {m.label}
+                    {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
                   </option>
                 ))}
               </select>
@@ -1762,7 +1766,7 @@ export default function MobileGradeEntry({
               subjectName={currentSubject.nameKh}
               subjectCode={currentSubject.code}
               maxScore={currentSubject.maxScore}
-              month={selectedMonth}
+              month={displayMonth}
               year={selectedYear}
               students={students.map((s) => ({
                 studentId: s.studentId,

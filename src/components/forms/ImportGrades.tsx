@@ -20,6 +20,9 @@ export default function ImportGrades() {
     ...classes.map((c) => ({ value: c.id, label: c.name })),
   ];
 
+  const selectedClass = classes.find((c) => c.id === selectedClassId);
+  const isSpecialGrade = selectedClass && ["7", "8", "10", "11"].includes(selectedClass.grade);
+
   const monthOptions = [
     { value: "1", label: "មករា - January" },
     { value: "2", label: "កុម្ភៈ - February" },
@@ -27,7 +30,7 @@ export default function ImportGrades() {
     { value: "4", label: "មេសា - April" },
     { value: "5", label: "ឧសភា - May" },
     { value: "6", label: "មិថុនា - June" },
-    { value: "7", label: "កក្កដា - July" },
+    { value: "7", label: isSpecialGrade ? "ឆមាសទី២ - Semester 2" : "កក្កដា - July" },
     { value: "8", label: "សីហា - August" },
     { value: "9", label: "កញ្ញា - September" },
     { value: "10", label: "តុលា - October" },

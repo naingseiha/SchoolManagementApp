@@ -126,7 +126,8 @@ export default function MobileAttendance({
 
   const selectedMonthData = MONTHS.find((m) => m.value === selectedMonth);
   const monthNumber = selectedMonthData?.number || 1;
-  const daysInMonth = new Date(selectedYear, monthNumber, 0).getDate();
+  const calendarYear = monthNumber <= 9 ? selectedYear + 1 : selectedYear;
+  const daysInMonth = new Date(calendarYear, monthNumber, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   // ✅ Auto-select class for INSTRUCTOR (but don't auto-load)
@@ -864,7 +865,7 @@ export default function MobileAttendance({
                       ថ្ងៃទី {currentDay}
                     </div>
                     <div className="font-battambang text-xs text-green-100 mt-1">
-                      {selectedMonth} {selectedYear}
+                      {selectedMonth} {calendarYear}
                     </div>
                   </div>
 
