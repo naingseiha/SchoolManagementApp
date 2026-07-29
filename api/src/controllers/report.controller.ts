@@ -223,11 +223,14 @@ export class ReportController {
         },
       });
 
-      const startDate = new Date(parseInt(year as string), monthNumber - 1, 1);
+      const inputYear = parseInt(year as string);
+      const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+
+      const startDate = new Date(calendarYear, monthNumber - 1, 1);
       const endDate = new Date(
-        parseInt(year as string),
+        calendarYear,
         monthNumber - 1,
-        new Date(parseInt(year as string), monthNumber, 0).getDate(),
+        new Date(calendarYear, monthNumber, 0).getDate(),
         23,
         59,
         59
@@ -473,11 +476,14 @@ export class ReportController {
         },
       });
 
-      const startDate = new Date(parseInt(year as string), monthNumber - 1, 1);
+      const inputYear = parseInt(year as string);
+      const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+
+      const startDate = new Date(calendarYear, monthNumber - 1, 1);
       const endDate = new Date(
-        parseInt(year as string),
+        calendarYear,
         monthNumber - 1,
-        new Date(parseInt(year as string), monthNumber, 0).getDate(),
+        new Date(calendarYear, monthNumber, 0).getDate(),
         23,
         59,
         59
