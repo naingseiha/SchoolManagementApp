@@ -324,6 +324,7 @@ export default function StudentPortalPage() {
               allSubjects={allSubjects}
               currentYear={currentYear}
               currentMonth={currentMonth}
+              grade={profile?.student?.class?.grade}
             />
           )}
 
@@ -332,6 +333,7 @@ export default function StudentPortalPage() {
               initialAttendanceData={attendanceData}
               currentYear={currentYear}
               currentMonth={currentMonth}
+              grade={profile?.student?.class?.grade}
             />
           )}
 

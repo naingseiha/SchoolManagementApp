@@ -833,7 +833,7 @@ const AcademicYearStats = memo(
           {monthlyStats
             .slice(0, showAllMonths ? monthlyStats.length : 5)
             .map((stat: any, index: number) => (
-              <MonthStatRow key={index} stat={stat} />
+              <MonthStatRow key={index} stat={stat} grade={profile.student?.class?.grade} />
             ))}
 
           {monthlyStats.length > 5 && (
@@ -858,7 +858,7 @@ const AcademicYearStats = memo(
 AcademicYearStats.displayName = "AcademicYearStats";
 
 // Month Stat Row Component
-const MonthStatRow = memo(({ stat }: { stat: MonthlyStats }) => {
+const MonthStatRow = memo(({ stat, grade }: { stat: MonthlyStats; grade?: string }) => {
   const hasScore = stat.hasData && stat.averageScore !== null;
   const inProgress = stat.hasData && !stat.isComplete;
   const hasAnyData = stat.hasData;
@@ -908,7 +908,11 @@ const MonthStatRow = memo(({ stat }: { stat: MonthlyStats }) => {
           )}
         </div>
         <div>
-          <p className="text-xs font-black text-gray-900">{stat.month}</p>
+          <p className="text-xs font-black text-gray-900">
+            {stat.month === "កក្កដា" && ["7", "8", "10", "11"].includes(grade || "")
+              ? "ឆមាសទី២"
+              : stat.month}
+          </p>
           <p className="text-xs text-gray-500 font-medium">
             {hasAnyData
               ? inProgress

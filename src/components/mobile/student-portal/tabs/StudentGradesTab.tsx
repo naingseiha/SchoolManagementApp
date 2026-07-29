@@ -40,6 +40,7 @@ interface StudentGradesTabProps {
   allSubjects: Subject[];
   currentYear: number;
   currentMonth: string;
+  grade?: string;
 }
 
 export default function StudentGradesTab({
@@ -47,6 +48,7 @@ export default function StudentGradesTab({
   allSubjects,
   currentYear,
   currentMonth,
+  grade,
 }: StudentGradesTabProps) {
   const [gradesData, setGradesData] = useState<GradesResponse | null>(initialGradesData);
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -119,11 +121,14 @@ export default function StudentGradesTab({
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="w-full px-3 py-2 border-2 border-gray-300 rounded-xl focus:border-indigo-600 focus:outline-none text-sm"
             >
-              {MONTHS.map((month) => (
-                <option key={month.value} value={month.value}>
-                  {month.label}
-                </option>
-              ))}
+              {MONTHS.map((month) => {
+                const isSpecialGrade = ["7", "8", "10", "11"].includes(grade || "");
+                return (
+                  <option key={month.value} value={month.value}>
+                    {month.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : month.label}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
