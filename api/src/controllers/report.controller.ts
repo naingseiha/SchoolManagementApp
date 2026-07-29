@@ -190,7 +190,10 @@ export class ReportController {
         "វិច្ឆិកា",
         "ធ្នូ",
       ];
-      const monthNumber = monthNames.indexOf(month as string) + 1;
+      let searchMonth = month as string;
+      if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+      if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+      const monthNumber = monthNames.indexOf(searchMonth) + 1;
 
       if (monthNumber === 0) {
         return res.status(400).json({
@@ -435,7 +438,10 @@ export class ReportController {
         "វិច្ឆិកា",
         "ធ្នូ",
       ];
-      const monthNumber = monthNames.indexOf(month as string) + 1;
+      let searchMonth = month as string;
+      if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+      if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+      const monthNumber = monthNames.indexOf(searchMonth) + 1;
 
       if (monthNumber === 0) {
         return res.status(400).json({
@@ -752,7 +758,10 @@ export class ReportController {
           "វិច្ឆិកា",
           "ធ្នូ",
         ];
-        const monthIndex = monthNames.indexOf(month as string);
+        let searchMonth = month as string;
+        if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+        if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+        const monthIndex = monthNames.indexOf(searchMonth);
 
         if (monthIndex >= 0) {
           const monthNumber = monthIndex + 1;
@@ -826,7 +835,10 @@ export class ReportController {
           "វិច្ឆិកា",
           "ធ្នូ",
         ];
-        const monthIndex = monthNames.indexOf(month as string);
+        let searchMonth = month as string;
+        if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+        if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+        const monthIndex = monthNames.indexOf(searchMonth);
 
         if (monthIndex >= 0) {
           const monthNumber = monthIndex + 1;
@@ -1302,7 +1314,10 @@ export class ReportController {
         "វិច្ឆិកា",
         "ធ្នូ",
       ];
-      const monthNumber = monthNames.indexOf(month as string) + 1;
+      let searchMonth = month as string;
+      if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+      if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+      const monthNumber = monthNames.indexOf(searchMonth) + 1;
 
       if (monthNumber === 0) {
         return res.status(400).json({

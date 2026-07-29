@@ -44,7 +44,11 @@ export class AttendanceController {
         "ធ្នូ",
       ];
 
-      const monthIndex = monthNames.indexOf(month as string);
+      let searchMonth = month as string;
+      if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+      if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+
+      const monthIndex = monthNames.indexOf(searchMonth);
       const monthNumber = monthIndex + 1;
 
       if (monthNumber === 0) {
@@ -476,7 +480,10 @@ export class AttendanceController {
         "ធ្នូ",
       ];
 
-      const monthNumber = monthNames.indexOf(month as string) + 1;
+      let searchMonth = month as string;
+      if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+      if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+      const monthNumber = monthNames.indexOf(searchMonth) + 1;
       const inputYear = parseInt(year as string);
       const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
 
