@@ -28,6 +28,7 @@ import {
   getCurrentAcademicYear,
   getAcademicYearOptions,
 } from "@/utils/academicYear";
+import { getDynamicMonthOptions } from "@/lib/reportHelpers";
 
 // Dynamic import for mobile component
 const MobileAttendance = dynamic(
@@ -338,10 +339,9 @@ export default function AttendancePage() {
         ...availableClasses.map((c) => ({ value: c.id, label: c.name })),
       ];
 
-  const monthOptions = MONTHS.map((m) => ({
-    value: m.value,
-    label: m.label,
-  }));
+  const selectedClassInfo = classes.find((c) => c.id === selectedClassId);
+  const selectedClassGrade = selectedClassInfo?.grade || "";
+  const monthOptions = getDynamicMonthOptions(selectedClassGrade);
 
   const yearOptions = getAcademicYearOptions();
 
@@ -720,6 +720,7 @@ export default function AttendancePage() {
                 >
                   <AttendanceReportPDF
                     gridData={gridData}
+                    grade={selectedClassGrade}
                     schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
                     province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
                     signatureLocation={signatureLocation}
@@ -738,6 +739,7 @@ export default function AttendancePage() {
           <div className="print-only">
             <AttendanceReportPDF
               gridData={gridData}
+              grade={selectedClassGrade}
               schoolName="វិទ្យាល័យ ហ៊ុន សែន យធំ"
               province="មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប"
               signatureLocation={signatureLocation}

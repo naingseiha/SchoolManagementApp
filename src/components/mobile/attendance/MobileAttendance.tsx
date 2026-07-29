@@ -25,6 +25,7 @@ import {
   getCurrentAcademicYear,
   getAcademicYearOptions,
 } from "@/utils/academicYear";
+import { getDynamicMonthOptions } from "@/lib/reportHelpers";
 
 type AttendanceValue = "" | "A" | "P"; // Empty = Present, A = Absent, P = Permission
 
@@ -118,11 +119,18 @@ export default function MobileAttendance({
     return null;
   }, [currentUser]);
 
-  // ✅ Get class name
+  // ✅ Get class name and grade
   const selectedClassName = useMemo(() => {
     const classObj = classes.find((c) => c.id === selectedClass);
     return classObj?.name || "";
   }, [classes, selectedClass]);
+
+  const selectedClassGrade = useMemo(() => {
+    const classObj = classes.find((c) => c.id === selectedClass);
+    return classObj?.grade || "";
+  }, [classes, selectedClass]);
+
+  const monthOptions = getDynamicMonthOptions(selectedClassGrade);
 
   const selectedMonthData = MONTHS.find((m) => m.value === selectedMonth);
   const monthNumber = selectedMonthData?.number || 1;
@@ -710,7 +718,7 @@ export default function MobileAttendance({
                 className="w-full h-12 px-3 font-battambang bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 style={{ fontSize: "16px" }}
               >
-                {MONTHS.map((m) => (
+                {monthOptions.map((m) => (
                   <option key={m.value} value={m.value}>
                     {m.label}
                   </option>
@@ -865,7 +873,7 @@ export default function MobileAttendance({
                       ថ្ងៃទី {currentDay}
                     </div>
                     <div className="font-battambang text-xs text-green-100 mt-1">
-                      {selectedMonth} {calendarYear}
+                      {getMonthDisplayName(selectedMonth, selectedClassGrade)} {calendarYear}
                     </div>
                   </div>
 

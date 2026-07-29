@@ -1,9 +1,11 @@
 "use client";
 
 import { AttendanceGridData } from "@/lib/api/attendance";
+import { getMonthDisplayName } from "@/lib/reportHelpers";
 
 interface AttendanceReportPDFProps {
   gridData: AttendanceGridData;
+  grade?: string;
   schoolName?: string;
   province?: string;
   signatureLocation?: string;
@@ -16,6 +18,7 @@ interface AttendanceReportPDFProps {
 
 export default function AttendanceReportPDF({
   gridData,
+  grade,
   schoolName = "វិទ្យាល័យ ហ៊ុន សែន យធំ",
   province = "មន្ទីរអប់រំយុវជន និងកីឡា ខេត្តសៀមរាប",
   signatureLocation = "សៀមរាប",
@@ -310,7 +313,7 @@ export default function AttendanceReportPDF({
                       fontFamily: "'Khmer OS Battambang', Arial, sans-serif",
                     }}
                   >
-                    <span>ខែ: {gridData.month} </span>
+                    <span>ខែ: {getMonthDisplayName(gridData.month, grade)} </span>
                     <span className="mx-1">•</span>
                     <span>
                       ឆ្នាំសិក្សា: {academicStartYear}-{academicStartYear + 1}
@@ -345,7 +348,7 @@ export default function AttendanceReportPDF({
                   className="font-bold header-title"
                   style={{ fontSize: "11px" }}
                 >
-                  {gridData.className} - តារាងវត្តមាន {gridData.month}{" "}
+                  {gridData.className} - តារាងវត្តមាន {getMonthDisplayName(gridData.month, grade)}{" "}
                   {gridData.year}
                   <span
                     style={{

@@ -21,9 +21,11 @@ import {
   EyeOff,
   Check,
   X,
+  Image as ImageIcon,
 } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import SocialMediaStudio from "@/components/results/SocialMediaStudio";
 import { classesApi, Class } from "@/lib/api/classes";
 import { reportsApi, MonthlyReportData } from "@/lib/api/reports";
 import { getCurrentAcademicYear, getAcademicYearOptions } from "@/utils/academicYear";
@@ -70,6 +72,7 @@ export default function ResultsPage() {
   // ✅ Month and Year Selectors
   const [selectedMonth, setSelectedMonth] = useState(getCurrentKhmerMonth());
   const [selectedYear, setSelectedYear] = useState(getCurrentAcademicYear());
+  const [showSocialMediaStudio, setShowSocialMediaStudio] = useState(false);
 
   const currentGrade = viewMode === "byClass" ? selectedClass?.grade : selectedGrade;
   const isSpecialGrade = ["7", "8", "10", "11"].includes(currentGrade || "");
@@ -420,6 +423,23 @@ export default function ResultsPage() {
 
   // Render Grade Selector (Level 1)
   if (!selectedGrade) {
+    if (showSocialMediaStudio) {
+      return (
+        <div className="flex h-screen bg-slate-50">
+          <div className="flex-shrink-0">
+            <Sidebar />
+          </div>
+          <div className="flex-1 flex flex-col min-h-0">
+            <SocialMediaStudio
+              onBack={() => setShowSocialMediaStudio(false)}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
         <div className="flex-shrink-0">
@@ -446,41 +466,51 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Month & Year Selector */}
-                <div className="flex gap-4">
-                  <div className="bg-white rounded-2xl p-3 border-2 border-gray-200 shadow-sm">
-                    <label className="block font-khmer-body text-xs text-gray-600 font-semibold mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      ខែ
-                    </label>
-                    <select
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="w-40 px-4 py-2 font-khmer-body font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 transition-all"
-                    >
-                      {MONTHS.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
-                        </option>
-                      ))}
-                    </select>
+                <div className="flex gap-4 items-end">
+                  <div className="flex gap-4">
+                    <div className="bg-white rounded-2xl p-3 border-2 border-gray-200 shadow-sm">
+                      <label className="block font-khmer-body text-xs text-gray-600 font-semibold mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        ខែ
+                      </label>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="w-40 px-4 py-2 font-khmer-body font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 transition-all"
+                      >
+                        {MONTHS.map((m) => (
+                          <option key={m.value} value={m.value}>
+                            {m.value === "កក្កដា" && isSpecialGrade ? "ឆមាសទី២" : m.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="bg-white rounded-2xl p-3 border-2 border-gray-200 shadow-sm">
+                      <label className="block font-khmer-body text-xs text-gray-600 font-semibold mb-2">
+                        ឆ្នាំសិក្សា
+                      </label>
+                      <select
+                        value={selectedYear.toString()}
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                        className="w-40 px-4 py-2 font-khmer-body font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 transition-all"
+                      >
+                        {getAcademicYearOptions().map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="bg-white rounded-2xl p-3 border-2 border-gray-200 shadow-sm">
-                    <label className="block font-khmer-body text-xs text-gray-600 font-semibold mb-2">
-                      ឆ្នាំសិក្សា
-                    </label>
-                    <select
-                      value={selectedYear.toString()}
-                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="w-40 px-4 py-2 font-khmer-body font-semibold bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-300 transition-all"
-                    >
-                      {getAcademicYearOptions().map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <button
+                    onClick={() => setShowSocialMediaStudio(true)}
+                    className="h-full flex items-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl hover:shadow-lg hover:shadow-indigo-500/30 hover:scale-105 transition-all font-khmer-body font-bold mb-0.5"
+                  >
+                    <ImageIcon className="w-5 h-5" />
+                    <span>ស្ទូឌីយោបណ្ដាញសង្គម</span>
+                  </button>
                 </div>
               </div>
             </div>
