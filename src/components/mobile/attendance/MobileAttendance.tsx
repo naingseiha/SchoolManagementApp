@@ -25,7 +25,7 @@ import {
   getCurrentAcademicYear,
   getAcademicYearOptions,
 } from "@/utils/academicYear";
-import { getDynamicMonthOptions } from "@/lib/reportHelpers";
+import { getDynamicMonthOptions, getMonthDisplayName } from "@/lib/reportHelpers";
 
 type AttendanceValue = "" | "A" | "P"; // Empty = Present, A = Absent, P = Permission
 
@@ -181,7 +181,7 @@ export default function MobileAttendance({
         abortControllerRef.current = new AbortController();
 
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${selectedMonth}&year=${selectedYear}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/attendance/grid/${selectedClass}?month=${encodeURIComponent(selectedMonth)}&year=${selectedYear}`,
           { 
             signal: abortControllerRef.current.signal,
             credentials: "include", // ✅ iOS 16 FIX: Required for PWA mode
@@ -199,19 +199,21 @@ export default function MobileAttendance({
           throw new Error(result.message || "Failed to load attendance");
         }
 
-        const gridData = result.data;
+        const gridData = result.data || {};
+        const rawStudents = gridData.students || [];
 
-        const studentsData: StudentAttendance[] = gridData.students.map(
+        const studentsData: StudentAttendance[] = rawStudents.map(
           (student: any) => {
             const morningAttendance: { [day: number]: AttendanceValue } = {};
             const afternoonAttendance: { [day: number]: AttendanceValue } = {};
+            const attData = student?.attendance || {};
 
             daysArray.forEach((day) => {
               const morningKey = `${day}_M`;
               const afternoonKey = `${day}_A`;
 
-              const morningData = student.attendance[morningKey];
-              const afternoonData = student.attendance[afternoonKey];
+              const morningData = attData[morningKey];
+              const afternoonData = attData[afternoonKey];
 
               // Morning session
               morningAttendance[day] = (morningData?.displayValue ||
@@ -223,10 +225,10 @@ export default function MobileAttendance({
             });
 
             return {
-              studentId: student.studentId,
-              studentName: student.studentName,
-              khmerName: student.studentName,
-              gender: student.gender,
+              studentId: student?.studentId || student?.id || `unknown-${Math.random()}`,
+              studentName: student?.studentName || student?.khmerName || "",
+              khmerName: student?.khmerName || student?.studentName || "",
+              gender: student?.gender || "M",
               morningAttendance,
               afternoonAttendance,
             };
@@ -542,9 +544,9 @@ export default function MobileAttendance({
     let totalPermission = 0;
     let totalPresent = 0;
 
-    students.forEach((student) => {
-      const morningValue = student.morningAttendance[currentDay] || "";
-      const afternoonValue = student.afternoonAttendance[currentDay] || "";
+    (students || []).forEach((student) => {
+      const morningValue = student?.morningAttendance?.[currentDay] || "";
+      const afternoonValue = student?.afternoonAttendance?.[currentDay] || "";
 
       // Count A and P for both sessions
       if (morningValue === "A") totalAbsent++;
@@ -873,7 +875,7 @@ export default function MobileAttendance({
                       ថ្ងៃទី {currentDay}
                     </div>
                     <div className="font-battambang text-xs text-green-100 mt-1">
-                      {getMonthDisplayName(selectedMonth, selectedClassGrade)} {calendarYear}
+                      {getMonthDisplayName(selectedMonth || "មករា", selectedClassGrade || "")} {calendarYear || selectedYear}
                     </div>
                   </div>
 
@@ -971,11 +973,11 @@ export default function MobileAttendance({
 
             {/* Student List - with Morning/Afternoon Sessions */}
             <div className="px-4 py-3 space-y-3">
-              {students.map((student, index) => {
+              {(students || []).map((student, index) => {
                 const morningValue =
-                  student.morningAttendance[currentDay] || "";
+                  student?.morningAttendance?.[currentDay] || "";
                 const afternoonValue =
-                  student.afternoonAttendance[currentDay] || "";
+                  student?.afternoonAttendance?.[currentDay] || "";
 
                 // Helper to get button style
                 const getButtonStyle = (value: AttendanceValue) => {
