@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { reportsApi, type StudentTrackingBookData } from "@/lib/api/reports";
 import StudentTranscript from "@/components/reports/StudentTranscript";
+import AnnualRankingTable from "@/components/reports/AnnualRankingTable";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 import { formatKhmerDate } from "@/lib/khmerDateUtils";
@@ -61,7 +62,7 @@ export default function TrackingBookPage() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"single" | "all">("single");
   const [activeBookTab, setActiveBookTab] = useState<
-    "score-bulletin" | "internship-book"
+    "score-bulletin" | "internship-book" | "annual-ranking-table"
   >("score-bulletin");
   const [placeName, setPlaceName] = useState("ស្វាយធំ");
   const [directorDate, setDirectorDate] = useState(() => {
@@ -129,7 +130,7 @@ export default function TrackingBookPage() {
 
   // ✅ Reset selected month when switching tabs
   useEffect(() => {
-    if (activeBookTab === "internship-book") {
+    if (activeBookTab === "internship-book" || activeBookTab === "annual-ranking-table") {
       setSelectedMonth((prev) => {
         if (prev === "កុម្ភៈ" || prev === "ឆមាសទី២") {
           return prev;
@@ -147,7 +148,7 @@ export default function TrackingBookPage() {
     setError(null);
     try {
       let apiMonth = selectedMonth;
-      if (activeBookTab === "internship-book") {
+      if (activeBookTab === "internship-book" || activeBookTab === "annual-ranking-table") {
         apiMonth = ""; // Omit month to fetch all records (S1, S2, and Monthly Averages)
       }
 
@@ -171,7 +172,7 @@ export default function TrackingBookPage() {
   const isSpecialGrade = selectedClass && ["7", "8", "10", "11"].includes(selectedClass.grade);
 
   const monthOptions = useMemo(() => {
-    if (activeBookTab === "internship-book") {
+    if (activeBookTab === "internship-book" || activeBookTab === "annual-ranking-table") {
       return [
         { value: "កុម្ភៈ", label: "ឆមាសទី១" },
         { value: "ឆមាសទី២", label: "ឆមាសទី២" },
@@ -811,7 +812,9 @@ export default function TrackingBookPage() {
   const selectedTabFileLabel =
     activeBookTab === "score-bulletin"
       ? "ព្រឹត្តិបត្រពិន្ទុ"
-      : "សៀវភៅសិក្ខាគារិក";
+      : activeBookTab === "internship-book"
+      ? "សៀវភៅសិក្ខាគារិក"
+      : "តារាងចំណាត់ថ្នាក់ប្រចាំឆ្នាំ";
 
   const handlePrint = () => {
     window.print();
@@ -1099,13 +1102,23 @@ export default function TrackingBookPage() {
               >
                 សៀវភៅសិក្ខាគារិក
               </button>
+              <button
+                onClick={() => setActiveBookTab("annual-ranking-table")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeBookTab === "annual-ranking-table"
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                តារាងចំណាត់ថ្នាក់ប្រចាំឆ្នាំ
+              </button>
             </div>
           </div>
 
           {/* Controls Panel */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 no-print">
             {/* Selection Row */}
-            <div className={`grid grid-cols-1 ${activeBookTab === "internship-book" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-4 mb-4`}>
+            <div className={`grid grid-cols-1 ${activeBookTab === "internship-book" || activeBookTab === "annual-ranking-table" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-4 mb-4`}>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ថ្នាក់ Class
@@ -1144,7 +1157,7 @@ export default function TrackingBookPage() {
                 </select>
               </div>
 
-              {activeBookTab !== "internship-book" && (
+              {activeBookTab !== "internship-book" && activeBookTab !== "annual-ranking-table" && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ខែ Month
@@ -1251,33 +1264,37 @@ export default function TrackingBookPage() {
               <div className="border-t pt-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <label className="text-sm font-semibold text-gray-700">
-                      របៀបមើល:
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setViewMode("single")}
-                        className={`h-10 px-4 rounded-lg font-semibold transition-all ${
-                          viewMode === "single"
-                            ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
-                            : "bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-400"
-                        }`}
-                      >
-                        <Users className="w-4 h-4 inline mr-2" />
-                        មួយៗ
-                      </button>
-                      <button
-                        onClick={() => setViewMode("all")}
-                        className={`h-10 px-4 rounded-lg font-semibold transition-all ${
-                          viewMode === "all"
-                            ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
-                            : "bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-400"
-                        }`}
-                      >
-                        <Calendar className="w-4 h-4 inline mr-2" />
-                        ទាំងអស់
-                      </button>
-                    </div>
+                    {activeBookTab !== "annual-ranking-table" && (
+                      <>
+                        <label className="text-sm font-semibold text-gray-700">
+                          របៀបមើល:
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setViewMode("single")}
+                            className={`h-10 px-4 rounded-lg font-semibold transition-all ${
+                              viewMode === "single"
+                                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
+                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-400"
+                            }`}
+                          >
+                            <Users className="w-4 h-4 inline mr-2" />
+                            មួយៗ
+                          </button>
+                          <button
+                            onClick={() => setViewMode("all")}
+                            className={`h-10 px-4 rounded-lg font-semibold transition-all ${
+                              viewMode === "all"
+                                ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
+                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-400"
+                            }`}
+                          >
+                            <Calendar className="w-4 h-4 inline mr-2" />
+                            ទាំងអស់
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex gap-3">
@@ -1316,7 +1333,7 @@ export default function TrackingBookPage() {
                 </div>
 
                 {/* Student Navigation (Single View) */}
-                {viewMode === "single" && transcriptData.length > 0 && (
+                {activeBookTab !== "annual-ranking-table" && viewMode === "single" && transcriptData.length > 0 && (
                   <div className="flex items-center justify-center gap-4 pt-4 border-t">
                     <button
                       onClick={() =>
@@ -1377,7 +1394,17 @@ export default function TrackingBookPage() {
           {/* Report Display */}
           {sortedTrackingData && (
             <div ref={reportRef} className="print-container">
-              {viewMode === "single" && currentStudent ? (
+              {activeBookTab === "annual-ranking-table" ? (
+                <AnnualRankingTable
+                  transcriptData={transcriptData}
+                  selectedClass={selectedClass}
+                  selectedYear={selectedYear}
+                  placeName={placeName}
+                  directorDate={directorDate}
+                  teacherDate={teacherDate}
+                  teacherName={sortedTrackingData.teacherName}
+                />
+              ) : viewMode === "single" && currentStudent ? (
                 <StudentTranscript
                   {...currentStudent}
                   reportTab={activeBookTab}

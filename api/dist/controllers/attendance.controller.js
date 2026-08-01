@@ -39,7 +39,12 @@ class AttendanceController {
                 "វិច្ឆិកា",
                 "ធ្នូ",
             ];
-            const monthIndex = monthNames.indexOf(month);
+            let searchMonth = month;
+            if (searchMonth === "ឆមាសទី១")
+                searchMonth = "កុម្ភៈ";
+            if (searchMonth === "ឆមាសទី២")
+                searchMonth = "កក្កដា";
+            const monthIndex = monthNames.indexOf(searchMonth);
             const monthNumber = monthIndex + 1;
             if (monthNumber === 0) {
                 return res.status(400).json({
@@ -47,10 +52,45 @@ class AttendanceController {
                     message: `Invalid month name: ${month}`,
                 });
             }
-            const daysInMonth = new Date(parseInt(year), monthNumber, 0).getDate();
+            const inputYear = parseInt(year);
+            // For months 1 to 9 (Jan to Sep), the calendar year is inputYear + 1 (e.g., 2026 when academic year is 2025)
+            // For months 10 to 12 (Oct to Dec), the calendar year is inputYear (e.g., 2025)
+            const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+            const daysInMonth = new Date(calendarYear, monthNumber, 0).getDate();
             const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-            const startDate = new Date(parseInt(year), monthNumber - 1, 1, 0, 0, 0);
-            const endDate = new Date(parseInt(year), monthNumber - 1, daysInMonth, 23, 59, 59);
+            const startDate = new Date(calendarYear, monthNumber - 1, 1, 0, 0, 0);
+            const endDate = new Date(calendarYear, monthNumber - 1, daysInMonth, 23, 59, 59);
+            // ⭐ SAFE AUTO-MIGRATION: Check if there are existing records saved in inputYear (e.g. 2025) due to old logic when monthNumber <= 9
+            if (monthNumber <= 9 && inputYear !== calendarYear) {
+                const oldStartDate = new Date(inputYear, monthNumber - 1, 1, 0, 0, 0);
+                const oldEndDate = new Date(inputYear, monthNumber - 1, daysInMonth, 23, 59, 59);
+                const oldRecords = await prisma.attendance.findMany({
+                    where: {
+                        classId,
+                        date: {
+                            gte: oldStartDate,
+                            lte: oldEndDate,
+                        },
+                    },
+                });
+                if (oldRecords.length > 0) {
+                    console.log(`⚠️ Found ${oldRecords.length} attendance records saved under ${inputYear} for month ${monthNumber}. Safely migrating to ${calendarYear}...`);
+                    for (const record of oldRecords) {
+                        const newDate = new Date(record.date);
+                        newDate.setFullYear(calendarYear);
+                        try {
+                            await prisma.attendance.update({
+                                where: { id: record.id },
+                                data: { date: newDate },
+                            });
+                        }
+                        catch (err) {
+                            console.warn(`Could not migrate record ${record.id} (possible duplicate):`, err);
+                        }
+                    }
+                    console.log(`✅ Migrated old attendance records to ${calendarYear}.`);
+                }
+            }
             // ✅ Fetch all attendance records (both sessions)
             const attendanceRecords = await prisma.attendance.findMany({
                 where: {
@@ -132,7 +172,8 @@ class AttendanceController {
                     classId: classData.id,
                     className: classData.name,
                     month: month,
-                    year: parseInt(year),
+                    year: calendarYear,
+                    academicYear: inputYear,
                     monthNumber,
                     daysInMonth,
                     days,
@@ -154,10 +195,12 @@ class AttendanceController {
     static async bulkSaveAttendance(req, res) {
         try {
             const { classId, month, year, monthNumber, attendance } = req.body;
+            const inputYear = parseInt(year);
+            const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
             console.log("\n=== BULK SAVE ATTENDANCE (OPTIMIZED) ===");
             console.log("Class:", classId);
             console.log("Month:", month, monthNumber);
-            console.log("Year:", year);
+            console.log("Input Year:", inputYear, "-> Calendar Year:", calendarYear);
             console.log("Records:", attendance.length);
             if (!Array.isArray(attendance) || attendance.length === 0) {
                 return res.status(400).json({
@@ -169,14 +212,43 @@ class AttendanceController {
             // ✅ OPTIMIZATION 1: Extract unique days and sessions upfront
             const uniqueDays = [...new Set(attendance.map((item) => item.day))];
             const studentIds = [...new Set(attendance.map((item) => item.studentId))];
+            // ⭐ SAFE AUTO-MIGRATION: Check if there are existing records in inputYear before fetching existingRecords
+            if (monthNumber <= 9 && inputYear !== calendarYear) {
+                const oldRecords = await prisma.attendance.findMany({
+                    where: {
+                        classId,
+                        studentId: { in: studentIds },
+                        date: {
+                            gte: new Date(inputYear, monthNumber - 1, Math.min(...uniqueDays), 0, 0, 0),
+                            lt: new Date(inputYear, monthNumber - 1, Math.max(...uniqueDays) + 1, 0, 0, 0),
+                        },
+                    },
+                });
+                if (oldRecords.length > 0) {
+                    console.log(`⚠️ Found ${oldRecords.length} old attendance records in ${inputYear} during bulkSave. Migrating to ${calendarYear}...`);
+                    for (const r of oldRecords) {
+                        const newDate = new Date(r.date);
+                        newDate.setFullYear(calendarYear);
+                        try {
+                            await prisma.attendance.update({
+                                where: { id: r.id },
+                                data: { date: newDate },
+                            });
+                        }
+                        catch (e) {
+                            console.warn(`Could not migrate record ${r.id}:`, e);
+                        }
+                    }
+                }
+            }
             // ✅ OPTIMIZATION 2: Fetch ALL existing records in ONE query
             const existingRecords = await prisma.attendance.findMany({
                 where: {
                     classId,
                     studentId: { in: studentIds },
                     date: {
-                        gte: new Date(year, monthNumber - 1, Math.min(...uniqueDays), 0, 0, 0),
-                        lt: new Date(year, monthNumber - 1, Math.max(...uniqueDays) + 1, 0, 0, 0),
+                        gte: new Date(calendarYear, monthNumber - 1, Math.min(...uniqueDays), 0, 0, 0),
+                        lt: new Date(calendarYear, monthNumber - 1, Math.max(...uniqueDays) + 1, 0, 0, 0),
                     },
                 },
             });
@@ -231,7 +303,7 @@ class AttendanceController {
                             id: (0, uuid_1.v4)(),
                             studentId,
                             classId,
-                            date: new Date(year, monthNumber - 1, day, 12, 0, 0),
+                            date: new Date(calendarYear, monthNumber - 1, day, 12, 0, 0),
                             session: sessionEnum,
                             status,
                             updatedAt: new Date(),
@@ -332,9 +404,44 @@ class AttendanceController {
                 "វិច្ឆិកា",
                 "ធ្នូ",
             ];
-            const monthNumber = monthNames.indexOf(month) + 1;
-            const startDate = new Date(parseInt(year), monthNumber - 1, 1);
-            const endDate = new Date(parseInt(year), monthNumber - 1, new Date(parseInt(year), monthNumber, 0).getDate(), 23, 59, 59);
+            let searchMonth = month;
+            if (searchMonth === "ឆមាសទី១")
+                searchMonth = "កុម្ភៈ";
+            if (searchMonth === "ឆមាសទី២")
+                searchMonth = "កក្កដា";
+            const monthNumber = monthNames.indexOf(searchMonth) + 1;
+            const inputYear = parseInt(year);
+            const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+            const startDate = new Date(calendarYear, monthNumber - 1, 1);
+            const endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+            // ⭐ SAFE AUTO-MIGRATION: Check if there are existing records saved under inputYear when monthNumber <= 9
+            if (monthNumber <= 9 && inputYear !== calendarYear) {
+                const oldStartDate = new Date(inputYear, monthNumber - 1, 1);
+                const oldEndDate = new Date(inputYear, monthNumber - 1, new Date(inputYear, monthNumber, 0).getDate(), 23, 59, 59);
+                const oldRecords = await prisma.attendance.findMany({
+                    where: {
+                        classId,
+                        date: {
+                            gte: oldStartDate,
+                            lte: oldEndDate,
+                        },
+                    },
+                });
+                if (oldRecords.length > 0) {
+                    console.log(`⚠️ Found ${oldRecords.length} old attendance records in ${inputYear} during getMonthlySummary. Migrating to ${calendarYear}...`);
+                    for (const record of oldRecords) {
+                        const newDate = new Date(record.date);
+                        newDate.setFullYear(calendarYear);
+                        try {
+                            await prisma.attendance.update({
+                                where: { id: record.id },
+                                data: { date: newDate },
+                            });
+                        }
+                        catch (e) { }
+                    }
+                }
+            }
             const attendanceRecords = await prisma.attendance.findMany({
                 where: {
                     classId,
