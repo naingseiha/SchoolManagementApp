@@ -39,6 +39,16 @@ export default function AnnualRankingTable({
     return num.toString().replace(/[0-9]/g, (m) => khmerNums[parseInt(m)]);
   };
 
+  const getGradeFromAverage = (average: number | null | undefined) => {
+    if (average === null || average === undefined) return "-";
+    if (average >= 45) return "A";
+    if (average >= 40) return "B";
+    if (average >= 35) return "C";
+    if (average >= 30) return "D";
+    if (average >= 25) return "E";
+    return "F";
+  };
+
   const STUDENTS_PER_FIRST_PAGE = 30;
   const STUDENTS_PER_NEXT_PAGE = 35;
 
@@ -234,7 +244,7 @@ export default function AnnualRankingTable({
                       
                       <td>{student.summary?.annualOverallAverage?.toFixed(2) || "-"}</td>
                       <td className="text-red-600 font-bold">{student.summary?.annualOverallRank || "-"}</td>
-                      <td className="font-bold">{student.summary?.gradeLevel || "-"}</td>
+                      <td className="font-bold">{getGradeFromAverage(student.summary?.annualOverallAverage)}</td>
                     </tr>
                   );
                 })}
