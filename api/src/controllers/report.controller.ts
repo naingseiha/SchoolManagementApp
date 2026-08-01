@@ -204,14 +204,14 @@ export class ReportController {
 
       const applyEnglishBonusRule = shouldApplyEnglishBonusRule(
         classData.grade,
-        month as string
+        searchMonth
       );
 
       const grades = await prisma.grade.findMany({
         where: {
           classId,
           OR: [
-            { month: month as string },
+            { month: searchMonth },
             { month: monthNumber.toString() },
             { monthNumber: monthNumber },
           ],
@@ -455,13 +455,13 @@ export class ReportController {
 
       const applyEnglishBonusRule = shouldApplyEnglishBonusRule(
         grade,
-        month as string
+        searchMonth
       );
 
       const grades = await prisma.grade.findMany({
         where: {
           OR: [
-            { month: month as string },
+            { month: searchMonth },
             { month: monthNumber.toString() },
             { monthNumber: monthNumber },
           ],
@@ -772,7 +772,7 @@ export class ReportController {
         if (monthIndex >= 0) {
           const monthNumber = monthIndex + 1;
           gradeWhereClause.OR = [
-            { month: month as string },
+            { month: searchMonth },
             { month: monthNumber.toString() },
             { monthNumber: monthNumber },
           ];
@@ -1337,7 +1337,7 @@ export class ReportController {
         where: {
           classId,
           OR: [
-            { month: month as string },
+            { month: searchMonth },
             { month: monthNumber.toString() },
             { monthNumber: monthNumber },
           ],
