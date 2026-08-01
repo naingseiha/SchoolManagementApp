@@ -66,7 +66,7 @@ export const getDynamicMonthOptions = (grade?: string) => {
   const isSpecialGrade = grade && ["7", "8", "10", "11"].includes(grade.toString());
   return monthOptions.map((option) => {
     if (option.value === "កក្កដា" && isSpecialGrade) {
-      return { ...option, label: "ឆមាសទី២ (Second Semester)" };
+      return { ...option, label: "ឆមាសទី២", value: "ឆមាសទី២" };
     }
     return option;
   });
