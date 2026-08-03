@@ -132,8 +132,14 @@ export default function MobileAttendance({
 
   const monthOptions = getDynamicMonthOptions(selectedClassGrade);
 
-  const selectedMonthData = MONTHS.find((m) => m.value === selectedMonth);
-  const monthNumber = selectedMonthData?.number || 1;
+  const getMonthNumber = (month: string) => {
+    if (month === "ឆមាសទី១") return 2; // កុម្ភៈ
+    if (month === "ឆមាសទី២") return 7; // កក្កដា
+    const data = MONTHS.find((m) => m.value === month);
+    return data?.number || 1;
+  };
+  const monthNumber = getMonthNumber(selectedMonth);
+  
   const calendarYear = monthNumber <= 9 ? selectedYear + 1 : selectedYear;
   const daysInMonth = new Date(calendarYear, monthNumber, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
