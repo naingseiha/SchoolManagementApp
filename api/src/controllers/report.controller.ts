@@ -848,15 +848,17 @@ export class ReportController {
 
         if (monthIndex >= 0) {
           const monthNumber = monthIndex + 1;
+          const inputYear = parseInt(year as string);
+          const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
           const startDate = new Date(
-            parseInt(year as string),
+            calendarYear,
             monthNumber - 1,
             1
           );
           const endDate = new Date(
-            parseInt(year as string),
+            calendarYear,
             monthNumber - 1,
-            new Date(parseInt(year as string), monthNumber, 0).getDate(),
+            new Date(calendarYear, monthNumber, 0).getDate(),
             23,
             59,
             59
@@ -872,8 +874,11 @@ export class ReportController {
           );
         }
       } else {
-        const startDate = new Date(parseInt(year as string), 0, 1);
-        const endDate = new Date(parseInt(year as string), 11, 31, 23, 59, 59);
+        const inputYear = parseInt(year as string);
+        // Academic year spans from Nov inputYear to Jul inputYear + 1.
+        // Include Jan 1 inputYear to Dec 31 inputYear + 1 to capture legacy inputYear formats as well.
+        const startDate = new Date(inputYear, 0, 1);
+        const endDate = new Date(inputYear + 1, 11, 31, 23, 59, 59);
 
         attendanceWhereClause.date = {
           gte: startDate,
@@ -893,7 +898,9 @@ export class ReportController {
 
       console.log(`\n✅ Found ${attendanceRecords.length} attendance records`);
 
-      // ✅ Calculate attendance summary
+      // ✅ Calculate attendance summary for Semester 1, Semester 2, and Annual
+      // Semester 1: Months 11, 12, 01, 02 (JS getMonth(): 10, 11, 0, 1)
+      // Semester 2: Months 03, 04, 05, 06, 07 (JS getMonth(): 2, 3, 4, 5, 6)
       const attendanceSummary: {
         [studentId: string]: {
           semester1: { totalAbsent: number; permission: number; withoutPermission: number };
@@ -919,20 +926,55 @@ export class ReportController {
           };
         }
 
-        const isSem1 = [10, 11, 0, 1].includes(record.date.getMonth());
-        const target = isSem1 ? attendanceSummary[record.studentId].semester1 : attendanceSummary[record.studentId].semester2;
-        const annual = attendanceSummary[record.studentId].annual;
+        const m = record.date.getMonth();
+        const y = record.date.getFullYear();
+        const inputYear = parseInt(year as string);
 
-        if (record.status === "ABSENT") {
-          target.withoutPermission++;
-          target.totalAbsent++;
-          annual.withoutPermission++;
-          annual.totalAbsent++;
-        } else if (record.status === "PERMISSION") {
-          target.permission++;
-          target.totalAbsent++;
-          annual.permission++;
-          annual.totalAbsent++;
+        // Semester 1: Months 11, 12, 01, 02 (JS months 10, 11, 0, 1)
+        const isSem1 =
+          ((m === 10 || m === 11) && (y === inputYear || y === inputYear - 1)) ||
+          ((m === 0 || m === 1) && (y === inputYear + 1 || y === inputYear));
+
+        // Semester 2: Months 03, 04, 05, 06, 07 (JS months 2, 3, 4, 5, 6)
+        const isSem2 =
+          [2, 3, 4, 5, 6].includes(m) && (y === inputYear + 1 || y === inputYear);
+
+        const studentAtt = attendanceSummary[record.studentId];
+
+        if (isSem1) {
+          if (record.status === "ABSENT") {
+            studentAtt.semester1.withoutPermission++;
+            studentAtt.semester1.totalAbsent++;
+            studentAtt.annual.withoutPermission++;
+            studentAtt.annual.totalAbsent++;
+          } else if (record.status === "PERMISSION") {
+            studentAtt.semester1.permission++;
+            studentAtt.semester1.totalAbsent++;
+            studentAtt.annual.permission++;
+            studentAtt.annual.totalAbsent++;
+          }
+        } else if (isSem2) {
+          if (record.status === "ABSENT") {
+            studentAtt.semester2.withoutPermission++;
+            studentAtt.semester2.totalAbsent++;
+            studentAtt.annual.withoutPermission++;
+            studentAtt.annual.totalAbsent++;
+          } else if (record.status === "PERMISSION") {
+            studentAtt.semester2.permission++;
+            studentAtt.semester2.totalAbsent++;
+            studentAtt.annual.permission++;
+            studentAtt.annual.totalAbsent++;
+          }
+        } else {
+          if (y === inputYear || y === inputYear + 1) {
+            if (record.status === "ABSENT") {
+              studentAtt.annual.withoutPermission++;
+              studentAtt.annual.totalAbsent++;
+            } else if (record.status === "PERMISSION") {
+              studentAtt.annual.permission++;
+              studentAtt.annual.totalAbsent++;
+            }
+          }
         }
       });
 
@@ -1580,6 +1622,362 @@ export class ReportController {
         success: false,
         message: error.message || "Failed to get monthly statistics",
       });
+    }
+  }
+
+
+  /**
+   * Optimized method to fetch reports for multiple months in a single API call.
+   */
+  static async getMultipleMonthlyReports(req: Request, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { months, year } = req.query; 
+
+      if (!months || typeof months !== "string") {
+        return res.status(400).json({ success: false, message: "months query parameter is required" });
+      }
+
+      const monthList = months.split(",").map((m) => m.trim());
+      const inputYear = parseInt(year as string);
+
+      console.log(`📊 Multiple reports request: classId=${classId}, months=${months}, year=${year}`);
+
+      const classData = await prisma.class.findUnique({
+        where: { id: classId },
+        include: {
+          students: true,
+          homeroomTeacher: true,
+          teacherClasses: { include: { teacher: true } },
+        },
+      });
+
+      if (!classData) return res.status(404).json({ success: false, message: "Class not found" });
+
+      const sortedStudents = [...classData.students].sort((a, b) => {
+        const nameA = a.khmerName || `${a.lastName} ${a.firstName}`;
+        const nameB = b.khmerName || `${b.lastName} ${b.firstName}`;
+        return nameA.localeCompare(nameB, "en-US");
+      });
+
+      const whereClause: any = { grade: classData.grade, isActive: true };
+      const gradeNum = parseInt(classData.grade);
+      if ((gradeNum === 11 || gradeNum === 12) && classData.track) {
+        whereClause.OR = [ { track: classData.track }, { track: null }, { track: "common" } ];
+      }
+      const subjects = await prisma.subject.findMany({ where: whereClause, orderBy: { code: "asc" } });
+
+      const monthNames = ["មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា", "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"];
+
+      const orConditions: any[] = [];
+      let minStartDate: Date | null = null;
+      let maxEndDate: Date | null = null;
+
+      const monthDetails = monthList.map((monthStr) => {
+        let searchMonth = monthStr;
+        if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+        if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+        const monthNumber = monthNames.indexOf(searchMonth) + 1;
+        
+        orConditions.push({ month: searchMonth });
+        orConditions.push({ month: monthNumber.toString() });
+        orConditions.push({ monthNumber: monthNumber });
+
+        const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+        const startDate = new Date(calendarYear, monthNumber - 1, 1);
+        const endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+
+        if (!minStartDate || startDate < minStartDate) minStartDate = startDate;
+        if (!maxEndDate || endDate > maxEndDate) maxEndDate = endDate;
+
+        return { monthStr, searchMonth, monthNumber, startDate, endDate };
+      });
+
+      const allGrades = await prisma.grade.findMany({
+        where: {
+          classId,
+          OR: orConditions,
+          year: inputYear,
+        }
+      });
+
+      const allAttendance = minStartDate && maxEndDate ? await prisma.attendance.findMany({
+        where: { classId, date: { gte: minStartDate, lte: maxEndDate } },
+      }) : [];
+
+      const results = monthDetails.map(({ monthStr, searchMonth, monthNumber, startDate, endDate }) => {
+        const applyEnglishBonusRule = shouldApplyEnglishBonusRule(classData.grade, searchMonth);
+        
+        // Filter grades for this month
+        const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber);
+        
+        // Filter attendance for this month
+        const attendanceRecords = allAttendance.filter(a => a.date >= startDate && a.date <= endDate);
+
+        const attendanceSummary: { [studentId: string]: { absent: number; permission: number } } = {};
+        attendanceRecords.forEach((record) => {
+          if (!attendanceSummary[record.studentId]) {
+            attendanceSummary[record.studentId] = { absent: 0, permission: 0 };
+          }
+          if (record.status === "ABSENT") attendanceSummary[record.studentId].absent++;
+          else if (record.status === "PERMISSION") attendanceSummary[record.studentId].permission++;
+        });
+
+        const totalCoefficientForClass = subjects.reduce(
+          (sum, s) => applyEnglishBonusRule && isEnglishSubject(s) ? sum : sum + s.coefficient, 0
+        );
+
+        const studentsData = sortedStudents.map((student) => {
+          const studentGrades: { [subjectId: string]: number | null } = {};
+          let totalScore = 0;
+          let englishBonus = 0;
+          let studentCoefficient = 0;
+
+          subjects.forEach((subject) => {
+            const grade = grades.find((g) => g.studentId === student.id && g.subjectId === subject.id);
+            if (grade && grade.score !== null) {
+              studentGrades[subject.id] = grade.score;
+              if (applyEnglishBonusRule && isEnglishSubject(subject)) {
+                englishBonus += Math.max(grade.score - ENGLISH_SCORE_BASELINE, 0);
+              } else {
+                totalScore += grade.score;
+                studentCoefficient += subject.coefficient;
+              }
+            } else {
+              studentGrades[subject.id] = null;
+            }
+          });
+
+          const adjustedTotalScore = totalScore + englishBonus;
+          const average = studentCoefficient > 0 ? adjustedTotalScore / studentCoefficient : 0;
+          let gradeLevel = "F";
+          if (average >= 45) gradeLevel = "A";
+          else if (average >= 40) gradeLevel = "B";
+          else if (average >= 35) gradeLevel = "C";
+          else if (average >= 30) gradeLevel = "D";
+          else if (average >= 25) gradeLevel = "E";
+
+          return {
+            studentId: student.studentId || student.id,
+            studentName: student.khmerName || `${student.lastName} ${student.firstName}`,
+            gender: student.gender,
+            grades: studentGrades,
+            totalScore: adjustedTotalScore.toFixed(2),
+            average: average.toFixed(2),
+            gradeLevel,
+            absent: attendanceSummary[student.id]?.absent || 0,
+            permission: attendanceSummary[student.id]?.permission || 0,
+          };
+        });
+
+        const sorted = [...studentsData].sort((a, b) => parseFloat(b.average) - parseFloat(a.average)).map((student, index) => ({ ...student, rank: index + 1 }));
+        const finalData = studentsData.map((student) => {
+          const ranked = sorted.find((s) => s.studentId === student.studentId);
+          return { ...student, rank: ranked?.rank || 0 };
+        });
+
+        return {
+          classId: classData.id,
+          className: classData.name,
+          grade: classData.grade,
+          track: classData.track || null,
+          teacherName: classData.homeroomTeacher ? `${classData.homeroomTeacher.lastName} ${classData.homeroomTeacher.firstName}` : null,
+          month: monthStr,
+          year: inputYear,
+          totalCoefficient: totalCoefficientForClass,
+          subjects: subjects.map((s) => ({ id: s.id, nameKh: s.nameKh, nameEn: s.nameEn, code: s.code, maxScore: s.maxScore, coefficient: s.coefficient })),
+          students: finalData,
+        };
+      });
+
+      return res.json({ success: true, data: results });
+    } catch (error: any) {
+      console.error("❌ Get multiple monthly reports error:", error);
+      return res.status(500).json({ success: false, message: error.message || "Failed to get multiple reports" });
+    }
+  }
+
+  /**
+   * Optimized method to fetch grade-wide reports for multiple months in a single API call.
+   */
+  static async getMultipleGradeWideReports(req: Request, res: Response) {
+    try {
+      const { grade } = req.params;
+      const { months, year } = req.query;
+
+      if (!months || typeof months !== "string") {
+        return res.status(400).json({ success: false, message: "months query parameter is required" });
+      }
+
+      const monthList = months.split(",").map((m) => m.trim());
+      const inputYear = parseInt(year as string);
+
+      console.log(`📊 Multiple grade-wide reports request: grade=${grade}, months=${months}, year=${year}`);
+
+      const classes = await prisma.class.findMany({
+        where: { grade: grade },
+        include: { students: true },
+      });
+
+      if (classes.length === 0) {
+        return res.status(404).json({ success: false, message: "No classes found for this grade" });
+      }
+
+      const allStudents = classes.flatMap((c) => 
+        c.students.map(s => ({ ...s, className: c.name, track: c.track }))
+      );
+
+      const sortedStudents = allStudents.sort((a, b) => {
+        const nameA = a.khmerName || `${a.lastName} ${a.firstName}`;
+        const nameB = b.khmerName || `${b.lastName} ${b.firstName}`;
+        return nameA.localeCompare(nameB, "en-US");
+      });
+
+      const subjectWhereClause: any = { grade: grade, isActive: true };
+      const gradeNum = parseInt(grade);
+      
+      const tracks = [...new Set(classes.map(c => c.track).filter(Boolean))];
+      if ((gradeNum === 11 || gradeNum === 12) && tracks.length > 0) {
+        subjectWhereClause.OR = [
+          { track: { in: tracks } },
+          { track: null },
+          { track: "common" }
+        ];
+      }
+      
+      const subjects = await prisma.subject.findMany({
+        where: subjectWhereClause,
+        orderBy: { code: "asc" },
+      });
+
+      const monthNames = ["មករា", "កុម្ភៈ", "មីនា", "មេសា", "ឧសភា", "មិថុនា", "កក្កដា", "សីហា", "កញ្ញា", "តុលា", "វិច្ឆិកា", "ធ្នូ"];
+      const orConditions: any[] = [];
+      let minStartDate: Date | null = null;
+      let maxEndDate: Date | null = null;
+
+      const monthDetails = monthList.map((monthStr) => {
+        let searchMonth = monthStr;
+        if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
+        if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+        const monthNumber = monthNames.indexOf(searchMonth) + 1;
+        
+        orConditions.push({ month: searchMonth });
+        orConditions.push({ month: monthNumber.toString() });
+        orConditions.push({ monthNumber: monthNumber });
+
+        const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+        const startDate = new Date(calendarYear, monthNumber - 1, 1);
+        const endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+
+        if (!minStartDate || startDate < minStartDate) minStartDate = startDate;
+        if (!maxEndDate || endDate > maxEndDate) maxEndDate = endDate;
+
+        return { monthStr, searchMonth, monthNumber, startDate, endDate };
+      });
+
+      const allGrades = await prisma.grade.findMany({
+        where: {
+          classId: { in: classes.map(c => c.id) },
+          OR: orConditions,
+          year: inputYear,
+        }
+      });
+
+      const allAttendance = minStartDate && maxEndDate ? await prisma.attendance.findMany({
+        where: { 
+          classId: { in: classes.map(c => c.id) }, 
+          date: { gte: minStartDate, lte: maxEndDate } 
+        },
+      }) : [];
+
+      const results = monthDetails.map(({ monthStr, searchMonth, monthNumber, startDate, endDate }) => {
+        const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber);
+        const attendanceRecords = allAttendance.filter(a => a.date >= startDate && a.date <= endDate);
+
+        const attendanceSummary: { [studentId: string]: { absent: number; permission: number } } = {};
+        attendanceRecords.forEach((record) => {
+          if (!attendanceSummary[record.studentId]) {
+            attendanceSummary[record.studentId] = { absent: 0, permission: 0 };
+          }
+          if (record.status === "ABSENT") attendanceSummary[record.studentId].absent++;
+          else if (record.status === "PERMISSION") attendanceSummary[record.studentId].permission++;
+        });
+
+        const studentsData = sortedStudents.map((student) => {
+          const studentGrades: { [subjectId: string]: number | null } = {};
+          let totalScore = 0;
+          let englishBonus = 0;
+          let studentCoefficient = 0;
+
+          const applyEnglishBonusRule = shouldApplyEnglishBonusRule(grade, searchMonth);
+
+          const studentSubjects = subjects.filter(s => {
+            if ((gradeNum === 11 || gradeNum === 12) && student.track) {
+              return !s.track || s.track === "common" || s.track === student.track;
+            }
+            return true;
+          });
+
+          studentSubjects.forEach((subject) => {
+            const gradeRecord = grades.find((g) => g.studentId === student.id && g.subjectId === subject.id);
+            if (gradeRecord && gradeRecord.score !== null) {
+              studentGrades[subject.id] = gradeRecord.score;
+              if (applyEnglishBonusRule && isEnglishSubject(subject)) {
+                englishBonus += Math.max(gradeRecord.score - ENGLISH_SCORE_BASELINE, 0);
+              } else {
+                totalScore += gradeRecord.score;
+                studentCoefficient += subject.coefficient;
+              }
+            } else {
+              studentGrades[subject.id] = null;
+            }
+          });
+
+          const adjustedTotalScore = totalScore + englishBonus;
+          const average = studentCoefficient > 0 ? adjustedTotalScore / studentCoefficient : 0;
+          let gradeLevel = "F";
+          if (average >= 45) gradeLevel = "A";
+          else if (average >= 40) gradeLevel = "B";
+          else if (average >= 35) gradeLevel = "C";
+          else if (average >= 30) gradeLevel = "D";
+          else if (average >= 25) gradeLevel = "E";
+
+          return {
+            studentId: student.studentId || student.id,
+            studentName: student.khmerName || `${student.lastName} ${student.firstName}`,
+            gender: student.gender,
+            className: student.className,
+            grades: studentGrades,
+            totalScore: adjustedTotalScore.toFixed(2),
+            average: average.toFixed(2),
+            gradeLevel,
+            absent: attendanceSummary[student.id]?.absent || 0,
+            permission: attendanceSummary[student.id]?.permission || 0,
+          };
+        });
+
+        const sorted = [...studentsData].sort((a, b) => parseFloat(b.average) - parseFloat(a.average)).map((student, index) => ({ ...student, rank: index + 1 }));
+        const finalData = studentsData.map((student) => {
+          const ranked = sorted.find((s) => s.studentId === student.studentId);
+          return { ...student, rank: ranked?.rank || 0 };
+        });
+
+        const totalCoefficientForGrade = subjects.reduce((sum, s) => sum + s.coefficient, 0);
+
+        return {
+          grade: grade,
+          month: monthStr,
+          year: inputYear,
+          totalCoefficient: totalCoefficientForGrade,
+          subjects: subjects.map((s) => ({ id: s.id, nameKh: s.nameKh, nameEn: s.nameEn, code: s.code, maxScore: s.maxScore, coefficient: s.coefficient })),
+          students: finalData,
+        };
+      });
+
+      return res.json({ success: true, data: results });
+    } catch (error: any) {
+      console.error("❌ Get multiple grade-wide reports error:", error);
+      return res.status(500).json({ success: false, message: error.message || "Failed to get multiple reports" });
     }
   }
 }

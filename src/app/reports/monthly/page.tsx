@@ -32,6 +32,7 @@ import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 // Import existing components
 import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
 import KhmerSemesterOneReport from "@/components/reports/KhmerSemesterOneReport";
+import KhmerSemesterTwoReport from "@/components/reports/KhmerSemesterTwoReport";
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
 import MonthlyReportSettings from "@/components/reports/MonthlyReportSettings";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
@@ -67,6 +68,7 @@ interface SemesterReportRow {
 }
 
 const SEMESTER_PREVIOUS_MONTHS = ["វិច្ឆិកា", "ធ្នូ", "មករា"] as const;
+const SEMESTER_TWO_PREVIOUS_MONTHS = ["មីនា", "ឧសភា", "មិថុនា"] as const;
 
 export default function ReportsPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
@@ -113,7 +115,7 @@ export default function ReportsPage() {
     "single"
   );
   const [reportFormat, setReportFormat] = useState<
-    "summary" | "detailed" | "semester-1"
+    "summary" | "detailed" | "semester-1" | "semester-2"
   >("summary");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
@@ -205,37 +207,36 @@ export default function ReportsPage() {
 
     try {
       if (reportType === "single") {
-        const requests: Promise<MonthlyReportData>[] = [
-          reportsApi.getMonthlyReport(selectedClassId, selectedMonth, selectedYear),
-        ];
-
+        let responses: MonthlyReportData[] = [];
+        
         if (reportFormat === "semester-1") {
-          requests.push(
-            ...SEMESTER_PREVIOUS_MONTHS.map((month) =>
-              reportsApi.getMonthlyReport(selectedClassId, month, selectedYear)
-            )
-          );
+          const monthsToFetch = [selectedMonth, ...SEMESTER_PREVIOUS_MONTHS];
+          responses = await reportsApi.getSemesterReports(selectedClassId, monthsToFetch, selectedYear);
+        } else if (reportFormat === "semester-2") {
+          const monthsToFetch = [selectedMonth, ...SEMESTER_TWO_PREVIOUS_MONTHS];
+          responses = await reportsApi.getSemesterReports(selectedClassId, monthsToFetch, selectedYear);
+        } else {
+          responses = [await reportsApi.getMonthlyReport(selectedClassId, selectedMonth, selectedYear)];
         }
 
-        const [report, ...previousReports] = await Promise.all(requests);
-
+        const [report, ...previousReports] = responses;
         setReportData(report);
         setSemesterSourceReports(previousReports);
         console.log("✅ Report loaded");
       } else {
-        const requests: Promise<MonthlyReportData>[] = [
-          reportsApi.getGradeWideReport(selectedGrade, selectedMonth, selectedYear),
-        ];
-
+        let responses: MonthlyReportData[] = [];
+        
         if (reportFormat === "semester-1") {
-          requests.push(
-            ...SEMESTER_PREVIOUS_MONTHS.map((month) =>
-              reportsApi.getGradeWideReport(selectedGrade, month, selectedYear)
-            )
-          );
+          const monthsToFetch = [selectedMonth, ...SEMESTER_PREVIOUS_MONTHS];
+          responses = await reportsApi.getGradeWideSemesterReports(selectedGrade, monthsToFetch, selectedYear);
+        } else if (reportFormat === "semester-2") {
+          const monthsToFetch = [selectedMonth, ...SEMESTER_TWO_PREVIOUS_MONTHS];
+          responses = await reportsApi.getGradeWideSemesterReports(selectedGrade, monthsToFetch, selectedYear);
+        } else {
+          responses = [await reportsApi.getGradeWideReport(selectedGrade, selectedMonth, selectedYear)];
         }
 
-        const [data, ...previousReports] = await Promise.all(requests);
+        const [data, ...previousReports] = responses;
         setReportData(data);
         setSemesterSourceReports(previousReports);
         console.log("✅ Grade-wide report loaded");
@@ -307,6 +308,13 @@ export default function ReportsPage() {
       setFirstPageStudentCount(28);
       setSecondPageStudentCount(36);
       setReportTitle("តារាងលទ្ធផលប្រចាំឆមាសទី១");
+    } else if (reportFormat === "semester-2") {
+      setSelectedMonth("កក្កដា");
+      setShowSubjects(false);
+      setTableFontSize(10);
+      setFirstPageStudentCount(28);
+      setSecondPageStudentCount(36);
+      setReportTitle("តារាងលទ្ធផលប្រចាំឆមាសទី២");
     } else {
       setShowSubjects(false);
       setTableFontSize(10);
@@ -605,7 +613,7 @@ export default function ReportsPage() {
   });
 
   const semesterReports: SemesterReportRow[] =
-    reportData && reportFormat === "semester-1"
+    reportData && (reportFormat === "semester-1" || reportFormat === "semester-2")
       ? (() => {
           const previousMonthAverageMaps = semesterSourceReports.map((monthData) => {
             const map = new Map<string, number>();
@@ -750,7 +758,7 @@ export default function ReportsPage() {
 
   const exportToExcel = () => {
     const data =
-      reportFormat === "semester-1"
+      (reportFormat === "semester-1" || reportFormat === "semester-2")
         ? semesterReports.map((report, index) => {
             const row: any = {
               "ល. រ": index + 1,
@@ -979,6 +987,17 @@ export default function ReportsPage() {
                   <BarChart3 className="w-4 h-4" />
                   ឆមាសទី១
                 </button>
+                <button
+                  onClick={() => setReportFormat("semester-2")}
+                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    reportFormat === "semester-2"
+                      ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  ឆមាសទី២
+                </button>
               </div>
             </div>
 
@@ -1059,7 +1078,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  disabled={reportFormat === "semester-1"}
+                  disabled={reportFormat === "semester-1" || reportFormat === "semester-2"}
                   className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   {getDynamicMonthOptions(currentGrade).map((option) => (
@@ -1187,7 +1206,8 @@ export default function ReportsPage() {
                   {/* ✅ NEW: Subject Filter Section */}
                   {sortedSubjects.length > 0 &&
                     showSettings &&
-                    reportFormat !== "semester-1" && (
+                    reportFormat !== "semester-1" &&
+                    reportFormat !== "semester-2" && (
                     <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-khmer-body text-sm font-bold text-purple-800 flex items-center gap-2">
@@ -1400,8 +1420,24 @@ export default function ReportsPage() {
                       showClassName={showClassName}
                       selectedMonth={getMonthDisplayName(selectedMonth, currentGrade)}
                     />
-                  ) : (
+                  ) : reportFormat === "semester-1" ? (
                     <KhmerSemesterOneReport
+                      paginatedReports={semesterPaginatedReports}
+                      selectedClass={selectedClass}
+                      province={province}
+                      examCenter={examCenter}
+                      reportTitle={reportTitle}
+                      reportDate={reportDate}
+                      teacherName={reportData?.teacherName || teacherName}
+                      principalName={principalName}
+                      selectedYear={selectedYear}
+                      isGradeWide={reportType === "grade-wide"}
+                      showClassName={showClassName}
+                      firstPageStudentCount={firstPageStudentCount}
+                      studentsPerPage={studentsPerPage}
+                    />
+                  ) : (
+                    <KhmerSemesterTwoReport
                       paginatedReports={semesterPaginatedReports}
                       selectedClass={selectedClass}
                       province={province}
@@ -1486,8 +1522,24 @@ export default function ReportsPage() {
                   showClassName={showClassName}
                   selectedMonth={getMonthDisplayName(selectedMonth, currentGrade)}
                 />
-              ) : (
+              ) : reportFormat === "semester-1" ? (
                 <KhmerSemesterOneReport
+                  paginatedReports={semesterPaginatedReports}
+                  selectedClass={selectedClass}
+                  province={province}
+                  examCenter={examCenter}
+                  reportTitle={reportTitle}
+                  reportDate={reportDate}
+                  teacherName={reportData?.teacherName || teacherName}
+                  principalName={principalName}
+                  selectedYear={selectedYear}
+                  isGradeWide={reportType === "grade-wide"}
+                  showClassName={showClassName}
+                  firstPageStudentCount={firstPageStudentCount}
+                  studentsPerPage={studentsPerPage}
+                />
+              ) : (
+                <KhmerSemesterTwoReport
                   paginatedReports={semesterPaginatedReports}
                   selectedClass={selectedClass}
                   province={province}

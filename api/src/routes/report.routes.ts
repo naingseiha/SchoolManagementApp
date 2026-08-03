@@ -30,4 +30,16 @@ router.get(
   ReportController.getMonthlyStatistics
 );
 
+/**
+ * @route   GET /api/reports/monthly-multiple/:classId
+ * @desc    Get multiple monthly reports in one call for a specific class
+ */
+router.get("/monthly-multiple/:classId", ReportController.getMultipleMonthlyReports);
+
+/**
+ * @route   GET /api/reports/grade-wide-multiple/:grade
+ * @desc    Get multiple monthly reports in one call for a grade
+ */
+router.get("/grade-wide-multiple/:grade", ReportController.getMultipleGradeWideReports);
+
 export default router;

@@ -290,6 +290,70 @@ export const reportsApi = {
   },
 
   /**
+   * Get multiple monthly reports at once for a semester
+   */
+  async getSemesterReports(
+    classId: string,
+    months: string[],
+    year: number
+  ): Promise<MonthlyReportData[]> {
+    const cleanMonths = months.map(m => m.trim()).join(",");
+    const cacheKey = `report:monthly-multiple:${classId}:${cleanMonths}:${year}`;
+
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        const url = `${API_BASE_URL}/reports/monthly-multiple/${classId}?months=${encodeURIComponent(
+          cleanMonths
+        )}&year=${year}`;
+
+        console.log("📡 Fetching multiple monthly reports:", {
+          classId,
+          months: cleanMonths,
+          year,
+          url,
+        });
+
+        const response = await fetch(url, { credentials: "include" });
+        return await handleApiResponse<MonthlyReportData[]>(response);
+      },
+      3 * 60 * 1000 // 3 minutes cache
+    );
+  },
+
+  /**
+   * Get multiple grade-wide reports at once for a semester
+   */
+  async getGradeWideSemesterReports(
+    grade: string,
+    months: string[],
+    year: number
+  ): Promise<MonthlyReportData[]> {
+    const cleanMonths = months.map(m => m.trim()).join(",");
+    const cacheKey = `report:grade-wide-multiple:${grade}:${cleanMonths}:${year}`;
+
+    return apiCache.getOrFetch(
+      cacheKey,
+      async () => {
+        const url = `${API_BASE_URL}/reports/grade-wide-multiple/${grade}?months=${encodeURIComponent(
+          cleanMonths
+        )}&year=${year}`;
+
+        console.log("📡 Fetching multiple grade-wide reports:", {
+          grade,
+          months: cleanMonths,
+          year,
+          url,
+        });
+
+        const response = await fetch(url, { credentials: "include" });
+        return await handleApiResponse<MonthlyReportData[]>(response);
+      },
+      3 * 60 * 1000 // 3 minutes cache
+    );
+  },
+
+  /**
    * Get student tracking book (all months combined)
    * @param classId - Class ID
    * @param year - Academic year
