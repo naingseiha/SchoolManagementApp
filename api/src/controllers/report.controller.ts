@@ -226,23 +226,70 @@ export class ReportController {
       const inputYear = parseInt(year as string);
       const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
 
-      const startDate = new Date(calendarYear, monthNumber - 1, 1);
-      const endDate = new Date(
-        calendarYear,
-        monthNumber - 1,
-        new Date(calendarYear, monthNumber, 0).getDate(),
-        23,
-        59,
-        59
-      );
+      let startDate: Date;
+      let endDate: Date;
+
+      if (month === "ឆមាសទី១") {
+        startDate = new Date(inputYear, 10, 1);
+        endDate = new Date(
+          inputYear + 1,
+          1,
+          new Date(inputYear + 1, 2, 0).getDate(),
+          23,
+          59,
+          59
+        );
+      } else if (month === "ឆមាសទី២") {
+        startDate = new Date(inputYear + 1, 2, 1);
+        endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
+      } else {
+        startDate = new Date(calendarYear, monthNumber - 1, 1);
+        endDate = new Date(
+          calendarYear,
+          monthNumber - 1,
+          new Date(calendarYear, monthNumber, 0).getDate(),
+          23,
+          59,
+          59
+        );
+      }
+
+      const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
+
+      if (month === "ឆមាសទី១") {
+        attendanceWhereOr.push({
+          date: {
+            gte: new Date(inputYear, 0, 1),
+            lte: new Date(inputYear, 1, 29, 23, 59, 59),
+          },
+        });
+      } else if (month === "ឆមាសទី២") {
+        attendanceWhereOr.push({
+          date: {
+            gte: new Date(inputYear, 2, 1),
+            lte: new Date(inputYear, 6, 31, 23, 59, 59),
+          },
+        });
+      } else if (monthNumber <= 9 && inputYear !== calendarYear) {
+        attendanceWhereOr.push({
+          date: {
+            gte: new Date(inputYear, monthNumber - 1, 1),
+            lte: new Date(
+              inputYear,
+              monthNumber - 1,
+              new Date(inputYear, monthNumber, 0).getDate(),
+              23,
+              59,
+              59
+            ),
+          },
+        });
+      }
 
       const attendanceRecords = await prisma.attendance.findMany({
         where: {
           classId,
-          date: {
-            gte: startDate,
-            lte: endDate,
-          },
+          OR: attendanceWhereOr,
         },
       });
 
@@ -479,19 +526,69 @@ export class ReportController {
       const inputYear = parseInt(year as string);
       const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
 
-      const startDate = new Date(calendarYear, monthNumber - 1, 1);
-      const endDate = new Date(
-        calendarYear,
-        monthNumber - 1,
-        new Date(calendarYear, monthNumber, 0).getDate(),
-        23,
-        59,
-        59
-      );
+      let startDate: Date;
+      let endDate: Date;
+
+      if (month === "ឆមាសទី១") {
+        startDate = new Date(inputYear, 10, 1);
+        endDate = new Date(
+          inputYear + 1,
+          1,
+          new Date(inputYear + 1, 2, 0).getDate(),
+          23,
+          59,
+          59
+        );
+      } else if (month === "ឆមាសទី២") {
+        startDate = new Date(inputYear + 1, 2, 1);
+        endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
+      } else {
+        startDate = new Date(calendarYear, monthNumber - 1, 1);
+        endDate = new Date(
+          calendarYear,
+          monthNumber - 1,
+          new Date(calendarYear, monthNumber, 0).getDate(),
+          23,
+          59,
+          59
+        );
+      }
+
+      const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
+
+      if (month === "ឆមាសទី១") {
+        attendanceWhereOr.push({
+          date: {
+            gte: new Date(inputYear, 0, 1),
+            lte: new Date(inputYear, 1, 29, 23, 59, 59),
+          },
+        });
+      } else if (month === "ឆមាសទី២") {
+        attendanceWhereOr.push({
+          date: {
+            gte: new Date(inputYear, 2, 1),
+            lte: new Date(inputYear, 6, 31, 23, 59, 59),
+          },
+        });
+      } else if (monthNumber <= 9 && inputYear !== calendarYear) {
+        attendanceWhereOr.push({
+          date: {
+            gte: new Date(inputYear, monthNumber - 1, 1),
+            lte: new Date(
+              inputYear,
+              monthNumber - 1,
+              new Date(inputYear, monthNumber, 0).getDate(),
+              23,
+              59,
+              59
+            ),
+          },
+        });
+      }
 
       const attendanceRecords = await prisma.attendance.findMany({
         where: {
-          date: { gte: startDate, lte: endDate },
+          OR: attendanceWhereOr,
           studentId: {
             in: sortedStudents.map((s) => s.id),
           },
@@ -1682,10 +1779,22 @@ export class ReportController {
         orConditions.push({ month: searchMonth });
         orConditions.push({ month: monthNumber.toString() });
         orConditions.push({ monthNumber: monthNumber });
+        if (monthStr === "ឆមាសទី១") orConditions.push({ month: "ឆមាសទី១" });
+        if (monthStr === "ឆមាសទី២") orConditions.push({ month: "ឆមាសទី២" });
 
-        const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
-        const startDate = new Date(calendarYear, monthNumber - 1, 1);
-        const endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+        let startDate: Date;
+        let endDate: Date;
+        if (monthStr === "ឆមាសទី១") {
+          startDate = new Date(inputYear, 10, 1);
+          endDate = new Date(inputYear + 1, 1, new Date(inputYear + 1, 2, 0).getDate(), 23, 59, 59);
+        } else if (monthStr === "ឆមាសទី២") {
+          startDate = new Date(inputYear + 1, 2, 1);
+          endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
+        } else {
+          const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+          startDate = new Date(calendarYear, monthNumber - 1, 1);
+          endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+        }
 
         if (!minStartDate || startDate < minStartDate) minStartDate = startDate;
         if (!maxEndDate || endDate > maxEndDate) maxEndDate = endDate;
@@ -1702,17 +1811,39 @@ export class ReportController {
       });
 
       const allAttendance = minStartDate && maxEndDate ? await prisma.attendance.findMany({
-        where: { classId, date: { gte: minStartDate, lte: maxEndDate } },
+        where: {
+          classId,
+          OR: [
+            { date: { gte: minStartDate, lte: maxEndDate } },
+            { date: { gte: new Date(inputYear, 0, 1), lte: new Date(inputYear + 1, 11, 31, 23, 59, 59) } },
+          ],
+        },
       }) : [];
 
       const results = monthDetails.map(({ monthStr, searchMonth, monthNumber, startDate, endDate }) => {
         const applyEnglishBonusRule = shouldApplyEnglishBonusRule(classData.grade, searchMonth);
         
         // Filter grades for this month
-        const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber);
+        const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber || g.month === monthStr);
         
-        // Filter attendance for this month
-        const attendanceRecords = allAttendance.filter(a => a.date >= startDate && a.date <= endDate);
+        // Filter attendance for this month or semester
+        const attendanceRecords = allAttendance.filter((a) => {
+          const d = new Date(a.date);
+          if (monthStr === "ឆមាសទី១") {
+            const m = d.getMonth();
+            const y = d.getFullYear();
+            return (
+              ((m === 10 || m === 11) && (y === inputYear || y === inputYear - 1)) ||
+              ((m === 0 || m === 1) && (y === inputYear + 1 || y === inputYear))
+            );
+          } else if (monthStr === "ឆមាសទី២") {
+            const m = d.getMonth();
+            const y = d.getFullYear();
+            return [2, 3, 4, 5, 6].includes(m) && (y === inputYear + 1 || y === inputYear);
+          } else {
+            return d >= startDate && d <= endDate;
+          }
+        });
 
         const attendanceSummary: { [studentId: string]: { absent: number; permission: number } } = {};
         attendanceRecords.forEach((record) => {
@@ -1864,10 +1995,22 @@ export class ReportController {
         orConditions.push({ month: searchMonth });
         orConditions.push({ month: monthNumber.toString() });
         orConditions.push({ monthNumber: monthNumber });
+        if (monthStr === "ឆមាសទី១") orConditions.push({ month: "ឆមាសទី១" });
+        if (monthStr === "ឆមាសទី២") orConditions.push({ month: "ឆមាសទី២" });
 
-        const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
-        const startDate = new Date(calendarYear, monthNumber - 1, 1);
-        const endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+        let startDate: Date;
+        let endDate: Date;
+        if (monthStr === "ឆមាសទី១") {
+          startDate = new Date(inputYear, 10, 1);
+          endDate = new Date(inputYear + 1, 1, new Date(inputYear + 1, 2, 0).getDate(), 23, 59, 59);
+        } else if (monthStr === "ឆមាសទី២") {
+          startDate = new Date(inputYear + 1, 2, 1);
+          endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
+        } else {
+          const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+          startDate = new Date(calendarYear, monthNumber - 1, 1);
+          endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+        }
 
         if (!minStartDate || startDate < minStartDate) minStartDate = startDate;
         if (!maxEndDate || endDate > maxEndDate) maxEndDate = endDate;
@@ -1886,13 +2029,34 @@ export class ReportController {
       const allAttendance = minStartDate && maxEndDate ? await prisma.attendance.findMany({
         where: { 
           classId: { in: classes.map(c => c.id) }, 
-          date: { gte: minStartDate, lte: maxEndDate } 
+          OR: [
+            { date: { gte: minStartDate, lte: maxEndDate } },
+            { date: { gte: new Date(inputYear, 0, 1), lte: new Date(inputYear + 1, 11, 31, 23, 59, 59) } },
+          ],
         },
       }) : [];
 
       const results = monthDetails.map(({ monthStr, searchMonth, monthNumber, startDate, endDate }) => {
-        const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber);
-        const attendanceRecords = allAttendance.filter(a => a.date >= startDate && a.date <= endDate);
+        const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber || g.month === monthStr);
+        
+        // Filter attendance for this month or semester
+        const attendanceRecords = allAttendance.filter((a) => {
+          const d = new Date(a.date);
+          if (monthStr === "ឆមាសទី១") {
+            const m = d.getMonth();
+            const y = d.getFullYear();
+            return (
+              ((m === 10 || m === 11) && (y === inputYear || y === inputYear - 1)) ||
+              ((m === 0 || m === 1) && (y === inputYear + 1 || y === inputYear))
+            );
+          } else if (monthStr === "ឆមាសទី២") {
+            const m = d.getMonth();
+            const y = d.getFullYear();
+            return [2, 3, 4, 5, 6].includes(m) && (y === inputYear + 1 || y === inputYear);
+          } else {
+            return d >= startDate && d <= endDate;
+          }
+        });
 
         const attendanceSummary: { [studentId: string]: { absent: number; permission: number } } = {};
         attendanceRecords.forEach((record) => {

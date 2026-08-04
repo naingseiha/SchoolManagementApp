@@ -412,10 +412,22 @@ class AttendanceController {
             const monthNumber = monthNames.indexOf(searchMonth) + 1;
             const inputYear = parseInt(year);
             const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
-            const startDate = new Date(calendarYear, monthNumber - 1, 1);
-            const endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+            let startDate;
+            let endDate;
+            if (month === "ឆមាសទី១") {
+                startDate = new Date(inputYear, 10, 1);
+                endDate = new Date(inputYear + 1, 1, new Date(inputYear + 1, 2, 0).getDate(), 23, 59, 59);
+            }
+            else if (month === "ឆមាសទី២") {
+                startDate = new Date(inputYear + 1, 2, 1);
+                endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
+            }
+            else {
+                startDate = new Date(calendarYear, monthNumber - 1, 1);
+                endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
+            }
             // ⭐ SAFE AUTO-MIGRATION: Check if there are existing records saved under inputYear when monthNumber <= 9
-            if (monthNumber <= 9 && inputYear !== calendarYear) {
+            if (monthNumber <= 9 && inputYear !== calendarYear && month !== "ឆមាសទី១" && month !== "ឆមាសទី២") {
                 const oldStartDate = new Date(inputYear, monthNumber - 1, 1);
                 const oldEndDate = new Date(inputYear, monthNumber - 1, new Date(inputYear, monthNumber, 0).getDate(), 23, 59, 59);
                 const oldRecords = await prisma.attendance.findMany({
@@ -442,13 +454,27 @@ class AttendanceController {
                     }
                 }
             }
+            const attendanceWhereOr = [{ date: { gte: startDate, lte: endDate } }];
+            if (month === "ឆមាសទី១") {
+                attendanceWhereOr.push({
+                    date: {
+                        gte: new Date(inputYear, 0, 1),
+                        lte: new Date(inputYear, 1, 29, 23, 59, 59),
+                    },
+                });
+            }
+            else if (month === "ឆមាសទី២") {
+                attendanceWhereOr.push({
+                    date: {
+                        gte: new Date(inputYear, 2, 1),
+                        lte: new Date(inputYear, 6, 31, 23, 59, 59),
+                    },
+                });
+            }
             const attendanceRecords = await prisma.attendance.findMany({
                 where: {
                     classId,
-                    date: {
-                        gte: startDate,
-                        lte: endDate,
-                    },
+                    OR: attendanceWhereOr,
                 },
             });
             console.log(`✅ Found ${attendanceRecords.length} attendance records`);
