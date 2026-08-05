@@ -624,8 +624,6 @@ export default function ReportsPage() {
             return map;
           });
 
-          const allSemesterSourceReports = [reportData, ...semesterSourceReports];
-
           const rows = reportData.students.map((student) => {
             const preMonthAverages = previousMonthAverageMaps
               .map((monthMap) => monthMap.get(student.studentId))
@@ -650,16 +648,6 @@ export default function ReportsPage() {
             const examTotal = Number.isFinite(examTotalRaw) ? examTotalRaw : 0;
             const finalAverage = (preSemesterAverage + examAverage) / 2;
 
-            const studentPermissionSum = allSemesterSourceReports.reduce((sum, monthData) => {
-              const match = monthData.students.find((s) => s.studentId === student.studentId);
-              return sum + (match?.permission || 0);
-            }, 0);
-
-            const studentAbsentSum = allSemesterSourceReports.reduce((sum, monthData) => {
-              const match = monthData.students.find((s) => s.studentId === student.studentId);
-              return sum + (match?.absent || 0);
-            }, 0);
-
             return {
               student: {
                 id: student.studentId,
@@ -668,9 +656,9 @@ export default function ReportsPage() {
                 gender: student.gender.toLowerCase() as "male" | "female",
                 className: student.className || "",
               },
-              permission: studentPermissionSum,
-              absent: studentAbsentSum,
-              totalAbsent: studentPermissionSum + studentAbsentSum,
+              permission: student.permission || 0,
+              absent: student.absent || 0,
+              totalAbsent: (student.permission || 0) + (student.absent || 0),
               preSemesterAverage,
               preSemesterRank: 0,
               examTotal,
