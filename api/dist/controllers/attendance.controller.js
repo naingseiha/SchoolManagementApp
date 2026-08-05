@@ -405,20 +405,22 @@ class AttendanceController {
                 "ធ្នូ",
             ];
             let searchMonth = month;
-            if (searchMonth === "ឆមាសទី១")
+            const isSem1 = searchMonth === "ឆមាសទី១" || searchMonth === "កុម្ភៈ";
+            const isSem2 = searchMonth === "ឆមាសទី២" || searchMonth === "កក្កដា";
+            if (isSem1)
                 searchMonth = "កុម្ភៈ";
-            if (searchMonth === "ឆមាសទី២")
+            if (isSem2)
                 searchMonth = "កក្កដា";
             const monthNumber = monthNames.indexOf(searchMonth) + 1;
             const inputYear = parseInt(year);
             const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
             let startDate;
             let endDate;
-            if (month === "ឆមាសទី១") {
+            if (isSem1) {
                 startDate = new Date(inputYear, 10, 1);
                 endDate = new Date(inputYear + 1, 1, new Date(inputYear + 1, 2, 0).getDate(), 23, 59, 59);
             }
-            else if (month === "ឆមាសទី២") {
+            else if (isSem2) {
                 startDate = new Date(inputYear + 1, 2, 1);
                 endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
             }
@@ -427,7 +429,7 @@ class AttendanceController {
                 endDate = new Date(calendarYear, monthNumber - 1, new Date(calendarYear, monthNumber, 0).getDate(), 23, 59, 59);
             }
             // ⭐ SAFE AUTO-MIGRATION: Check if there are existing records saved under inputYear when monthNumber <= 9
-            if (monthNumber <= 9 && inputYear !== calendarYear && month !== "ឆមាសទី១" && month !== "ឆមាសទី២") {
+            if (monthNumber <= 9 && inputYear !== calendarYear && !isSem1 && !isSem2) {
                 const oldStartDate = new Date(inputYear, monthNumber - 1, 1);
                 const oldEndDate = new Date(inputYear, monthNumber - 1, new Date(inputYear, monthNumber, 0).getDate(), 23, 59, 59);
                 const oldRecords = await prisma.attendance.findMany({
@@ -455,7 +457,7 @@ class AttendanceController {
                 }
             }
             const attendanceWhereOr = [{ date: { gte: startDate, lte: endDate } }];
-            if (month === "ឆមាសទី១") {
+            if (isSem1) {
                 attendanceWhereOr.push({
                     date: {
                         gte: new Date(inputYear, 0, 1),
@@ -463,7 +465,7 @@ class AttendanceController {
                     },
                 });
             }
-            else if (month === "ឆមាសទី២") {
+            else if (isSem2) {
                 attendanceWhereOr.push({
                     date: {
                         gte: new Date(inputYear, 2, 1),

@@ -70,6 +70,13 @@ interface SemesterReportRow {
 const SEMESTER_PREVIOUS_MONTHS = ["វិច្ឆិកា", "ធ្នូ", "មករា"] as const;
 const SEMESTER_TWO_PREVIOUS_MONTHS = ["មីនា", "មេសា", "ឧសភា", "មិថុនា"] as const;
 
+// Helper to determine if grade is National Exam class
+const isNationalExamGrade = (grade: string | undefined | null) => {
+  if (!grade) return false;
+  const num = parseInt(grade.replace(/[០-៩]/g, (d) => "0123456789"["០១២៣៤៥៦៧៨៩".indexOf(d)] || d), 10);
+  return num === 9 || num === 12;
+};
+
 export default function ReportsPage() {
   const { isAuthenticated, isLoading: authLoading, currentUser } = useAuth();
   const { classes, isLoadingClasses, refreshClasses } = useData();
@@ -206,14 +213,18 @@ export default function ReportsPage() {
     setSemesterSourceReports([]);
 
     try {
+      const isNationalExam = isNationalExamGrade(reportType === "single" ? chosenClass?.grade : selectedGrade);
+
       if (reportType === "single") {
         let responses: MonthlyReportData[] = [];
         
         if (reportFormat === "semester-1") {
-          const monthsToFetch = [selectedMonth, ...SEMESTER_PREVIOUS_MONTHS];
+          const monthsToFetch = ["កុម្ភៈ", ...SEMESTER_PREVIOUS_MONTHS]; // exam month first
           responses = await reportsApi.getSemesterReports(selectedClassId, monthsToFetch, selectedYear);
         } else if (reportFormat === "semester-2") {
-          const monthsToFetch = [selectedMonth, ...SEMESTER_TWO_PREVIOUS_MONTHS];
+          const monthsToFetch = isNationalExam 
+            ? ["មិថុនា", "មីនា", "មេសា", "ឧសភា"] 
+            : ["កក្កដា", ...SEMESTER_TWO_PREVIOUS_MONTHS];
           responses = await reportsApi.getSemesterReports(selectedClassId, monthsToFetch, selectedYear);
         } else {
           responses = [await reportsApi.getMonthlyReport(selectedClassId, selectedMonth, selectedYear)];
@@ -227,10 +238,12 @@ export default function ReportsPage() {
         let responses: MonthlyReportData[] = [];
         
         if (reportFormat === "semester-1") {
-          const monthsToFetch = [selectedMonth, ...SEMESTER_PREVIOUS_MONTHS];
+          const monthsToFetch = ["កុម្ភៈ", ...SEMESTER_PREVIOUS_MONTHS];
           responses = await reportsApi.getGradeWideSemesterReports(selectedGrade, monthsToFetch, selectedYear);
         } else if (reportFormat === "semester-2") {
-          const monthsToFetch = [selectedMonth, ...SEMESTER_TWO_PREVIOUS_MONTHS];
+          const monthsToFetch = isNationalExam 
+            ? ["មិថុនា", "មីនា", "មេសា", "ឧសភា"] 
+            : ["កក្កដា", ...SEMESTER_TWO_PREVIOUS_MONTHS];
           responses = await reportsApi.getGradeWideSemesterReports(selectedGrade, monthsToFetch, selectedYear);
         } else {
           responses = [await reportsApi.getGradeWideReport(selectedGrade, selectedMonth, selectedYear)];
@@ -291,7 +304,10 @@ export default function ReportsPage() {
 
   // Auto-adjust settings when report format changes
   useEffect(() => {
+    const isNationalExam = isNationalExamGrade(currentGrade);
+    const expectedSemester2Month = isNationalExam ? "មិថុនា" : "កក្កដា";
     const isJulySpecial = selectedMonth === "កក្កដា" && isSpecialGrade;
+
     if (reportFormat === "detailed") {
       setShowSubjects(true);
       setTableFontSize(10);
@@ -309,7 +325,7 @@ export default function ReportsPage() {
       setSecondPageStudentCount(36);
       setReportTitle("តារាងលទ្ធផលប្រចាំឆមាសទី១");
     } else if (reportFormat === "semester-2") {
-      setSelectedMonth("កក្កដា");
+      setSelectedMonth(expectedSemester2Month);
       setShowSubjects(false);
       setTableFontSize(10);
       setFirstPageStudentCount(28);
@@ -326,7 +342,7 @@ export default function ReportsPage() {
         setReportTitle("តារាងលទ្ធផលប្រចាំខែ");
       }
     }
-  }, [reportFormat, selectedMonth, isSpecialGrade]);
+  }, [reportFormat, selectedMonth, isSpecialGrade, currentGrade]);
 
   // ✅ Sort subjects based on grade level - MUST be before any early returns!
   const sortedSubjects = useMemo(() => {
@@ -615,24 +631,47 @@ export default function ReportsPage() {
   const semesterReports: SemesterReportRow[] =
     reportData && (reportFormat === "semester-1" || reportFormat === "semester-2")
       ? (() => {
-          const previousMonthAverageMaps = semesterSourceReports.map((monthData) => {
-            const map = new Map<string, number>();
+          const isNationalExam = isNationalExamGrade(currentGrade);
+          const monthNames = reportFormat === "semester-1"
+            ? SEMESTER_PREVIOUS_MONTHS
+            : (isNationalExam ? ["មីនា", "មេសា", "ឧសភា"] : SEMESTER_TWO_PREVIOUS_MONTHS);
+
+          const previousMonthDataArray = semesterSourceReports.map((monthData, index) => {
+            const map = new Map<string, { avg: number; absent: number; permission: number }>();
             monthData.students.forEach((student) => {
               const avg = parseFloat(student.average);
-              map.set(student.studentId, Number.isFinite(avg) ? avg : 0);
+              map.set(student.studentId, {
+                avg: Number.isFinite(avg) ? avg : 0,
+                absent: student.absent || 0,
+                permission: student.permission || 0
+              });
             });
-            return map;
+            return { monthName: monthNames[index], map };
           });
 
           const rows = reportData.students.map((student) => {
-            const preMonthAverages = previousMonthAverageMaps
-              .map((monthMap) => monthMap.get(student.studentId))
-              .filter((avg): avg is number => avg !== undefined);
+            let totalAbsent = (student.absent || 0) + (student.permission || 0);
+            let totalPermission = student.permission || 0;
+            let totalUnexcused = student.absent || 0;
+            const validPreMonthAverages: number[] = [];
+
+            previousMonthDataArray.forEach(({ monthName, map }) => {
+              const data = map.get(student.studentId);
+              if (data) {
+                totalAbsent += (data.absent + data.permission);
+                totalPermission += data.permission;
+                totalUnexcused += data.absent;
+
+                if (monthName !== "មេសា" && data.avg > 0) {
+                  validPreMonthAverages.push(data.avg);
+                }
+              }
+            });
 
             const preSemesterAverage =
-              preMonthAverages.length > 0
-                ? preMonthAverages.reduce((sum, value) => sum + value, 0) /
-                  preMonthAverages.length
+              validPreMonthAverages.length > 0
+                ? validPreMonthAverages.reduce((sum, value) => sum + value, 0) /
+                  validPreMonthAverages.length
                 : 0;
 
             const calculatedSummary = shouldUseSemesterOneEnglishRule
@@ -646,7 +685,15 @@ export default function ReportsPage() {
               : parseFloat(student.totalScore);
             const examAverage = Number.isFinite(examAverageRaw) ? examAverageRaw : 0;
             const examTotal = Number.isFinite(examTotalRaw) ? examTotalRaw : 0;
-            const finalAverage = (preSemesterAverage + examAverage) / 2;
+            
+            const allValidAverages = [...validPreMonthAverages];
+            if (examAverage > 0) {
+              allValidAverages.push(examAverage);
+            }
+
+            const finalAverage = allValidAverages.length > 0
+              ? allValidAverages.reduce((sum, val) => sum + val, 0) / allValidAverages.length
+              : 0;
 
             return {
               student: {
@@ -656,9 +703,9 @@ export default function ReportsPage() {
                 gender: student.gender.toLowerCase() as "male" | "female",
                 className: student.className || "",
               },
-              permission: student.permission || 0,
-              absent: student.absent || 0,
-              totalAbsent: (student.permission || 0) + (student.absent || 0),
+              permission: totalPermission,
+              absent: totalUnexcused,
+              totalAbsent: totalAbsent,
               preSemesterAverage,
               preSemesterRank: 0,
               examTotal,

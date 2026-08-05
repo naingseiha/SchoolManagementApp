@@ -581,16 +581,8 @@ export default function TrackingBookPage() {
           const semester2ExamAverage = sem2CoefSum > 0 ? sem2ExamTotal / sem2CoefSum : null;
           const annualExamAverage = annualCoefSum > 0 ? annualExamTotal / annualCoefSum : null;
 
-          const semester1MonthlyAverage = (student as any).sem1MonthlyAvg ?? null;
-          const semester2MonthlyAverage = (student as any).sem2MonthlyAvg ?? null;
-
-          const semester1OverallAverage = (semester1ExamAverage !== null && semester1MonthlyAverage !== null)
-            ? (semester1ExamAverage + semester1MonthlyAverage) / 2
-            : (semester1ExamAverage !== null ? semester1ExamAverage : (semester1MonthlyAverage !== null ? semester1MonthlyAverage : null));
-
-          const semester2OverallAverage = (semester2ExamAverage !== null && semester2MonthlyAverage !== null)
-            ? (semester2ExamAverage + semester2MonthlyAverage) / 2
-            : (semester2ExamAverage !== null ? semester2ExamAverage : (semester2MonthlyAverage !== null ? semester2MonthlyAverage : null));
+          const semester1OverallAverage = (student as any).sem1MonthlyAvg ?? semester1ExamAverage;
+          const semester2OverallAverage = (student as any).sem2MonthlyAvg ?? semester2ExamAverage;
 
           const annualOverallAverage = (semester1OverallAverage !== null && semester2OverallAverage !== null)
             ? (semester1OverallAverage + semester2OverallAverage) / 2
@@ -603,8 +595,8 @@ export default function TrackingBookPage() {
             semester1ExamAverage,
             semester2ExamAverage,
             annualExamAverage,
-            semester1MonthlyAverage,
-            semester2MonthlyAverage,
+            semester1MonthlyAverage: semester1OverallAverage,
+            semester2MonthlyAverage: semester2OverallAverage,
             semester1OverallAverage,
             semester2OverallAverage,
             annualOverallAverage,

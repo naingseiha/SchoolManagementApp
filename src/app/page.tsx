@@ -9,7 +9,7 @@ import { useDeviceType } from "@/lib/utils/deviceDetection";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import MobileLayout from "@/components/layout/MobileLayout";
-import { dashboardApi, DashboardStats } from "@/lib/api/dashboard";
+import { dashboardApi, DashboardStats, ComprehensiveStats } from "@/lib/api/dashboard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   SkeletonDashboard,
@@ -31,6 +31,11 @@ const GroupedBarChart = dynamic(
 const SimplePieChart = dynamic(
   () => import("@/components/ui/SimpleBarChart").then((mod) => ({ default: mod.SimplePieChart })),
   { ssr: false, loading: () => <SkeletonChart /> }
+);
+
+const DetailedStudentStatsSection = dynamic(
+  () => import("@/components/dashboard/DetailedStudentStatsSection"),
+  { ssr: false, loading: () => <SkeletonDashboard /> }
 );
 import {
   Users,
@@ -94,6 +99,7 @@ export default function DashboardPage() {
 
   // ✅ FIX: Add missing state management for dashboard stats (desktop only)
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
+  const [comprehensiveStats, setComprehensiveStats] = useState<ComprehensiveStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
 
@@ -125,18 +131,22 @@ export default function DashboardPage() {
           setTimeout(() => reject(new Error("Request timeout - please refresh the page")), 30000); // 30 second timeout
         });
 
-        const dataPromise = dashboardApi.getStats();
-
-        // Race between data fetch and timeout
-        const data = await Promise.race([dataPromise, timeoutPromise]) as DashboardStats;
+        const [statsData, compData] = await Promise.all([
+          Promise.race([dashboardApi.getStats(), timeoutPromise]) as Promise<DashboardStats>,
+          dashboardApi.getComprehensiveStats().catch((err) => {
+            console.warn("⚠️ Comprehensive stats load warning:", err);
+            return null;
+          }),
+        ]);
 
         console.log("📊 Dashboard data received:", {
-          hasStudentsByGrade: !!data.studentsByGrade,
-          studentsByGradeLength: data.studentsByGrade?.length,
-          studentsByGrade: data.studentsByGrade,
+          hasStudentsByGrade: !!statsData?.studentsByGrade,
+          studentsByGradeLength: statsData?.studentsByGrade?.length,
+          hasComprehensiveStats: !!compData,
         });
 
-        setDashboardStats(data);
+        setDashboardStats(statsData);
+        setComprehensiveStats(compData);
         console.log("✅ Desktop dashboard stats loaded successfully");
       } catch (error: any) {
         console.error("❌ Failed to load dashboard stats:", error);
@@ -609,6 +619,12 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
+
+            {/* Detailed Student Stats Section (By Grade & Class) */}
+            <DetailedStudentStatsSection
+              comprehensiveStats={comprehensiveStats}
+              isLoading={isLoadingStats}
+            />
 
 
 

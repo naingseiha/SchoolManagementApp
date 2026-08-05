@@ -1045,8 +1045,10 @@ export class ReportController {
           ((m === 0 || m === 1) && (y === inputYear + 1 || y === inputYear));
 
         // Semester 2: Months 03, 04, 05, 06, 07 (JS months 2, 3, 4, 5, 6)
+        const gradeNum = parseInt(classInfo.grade);
+        const validSem2Months = (gradeNum === 9 || gradeNum === 12) ? [2, 3, 4, 5] : [2, 3, 4, 5, 6];
         const isSem2 =
-          [2, 3, 4, 5, 6].includes(m) && (y === inputYear + 1 || y === inputYear);
+          validSem2Months.includes(m) && (y === inputYear + 1 || y === inputYear);
 
         const studentAtt = attendanceSummary[record.studentId];
 
@@ -1259,50 +1261,77 @@ export class ReportController {
           "ធ្នូ",
         ];
 
-        // Filter summaries for this student
-        const studentSummaries = monthlySummaries.filter(
-          (s) => s.studentId === student.id
-        );
+        // Calculate monthly averages dynamically from grades
+        const studentAllGrades = grades.filter((g) => g.studentId === student.id);
+        const monthlyAverages = new Map<number, number>(); // monthNumber -> average
 
-        // Map summaries to resolve correct monthNumber from name if it's 0 or invalid in the database
-        const studentSummariesWithCorrectMonths = studentSummaries.map((s) => {
-          let resolvedMonthNumber = s.monthNumber;
-          if (!resolvedMonthNumber || resolvedMonthNumber <= 0) {
-            const idx = monthNames.indexOf(s.month?.trim() || "");
+        // Group by monthNumber
+        const gradesByMonth: { [month: number]: any[] } = {};
+        studentAllGrades.forEach((g) => {
+          let mNum = g.monthNumber;
+          if (!mNum || mNum <= 0) {
+            const idx = monthNames.indexOf(g.month?.trim() || "");
             if (idx >= 0) {
-              resolvedMonthNumber = idx + 1;
+              mNum = idx + 1;
             }
           }
-          return {
-            ...s,
-            resolvedMonthNumber,
-          };
+          if (mNum) {
+            if (!gradesByMonth[mNum]) gradesByMonth[mNum] = [];
+            gradesByMonth[mNum].push(g);
+          }
         });
 
-        // Semester 1 months: November (11), December (12), January (1), February (2)
+        // Compute average for each month
+        for (const [mNumStr, mGrades] of Object.entries(gradesByMonth)) {
+          const mNum = parseInt(mNumStr);
+          let mTotal = 0;
+          let mEngBonus = 0;
+          let mCoef = 0;
+          const monthName = monthNames[mNum - 1];
+          const applyBonus = shouldApplyEnglishBonusRule(classInfo.grade, monthName);
+
+          mGrades.forEach((g) => {
+             const subject = subjects.find((s) => s.id === g.subjectId);
+             if (subject && g.score !== null) {
+                if (applyBonus && isEnglishSubject(subject)) {
+                   mEngBonus += Math.max(g.score - ENGLISH_SCORE_BASELINE, 0);
+                } else {
+                   mTotal += g.score;
+                   mCoef += subject.coefficient;
+                }
+             }
+          });
+
+          if (mCoef > 0) {
+             monthlyAverages.set(mNum, (mTotal + mEngBonus) / mCoef);
+          }
+        }
+
         const sem1Months = [11, 12, 1, 2];
-        const sem1SummaryList = studentSummariesWithCorrectMonths.filter((s) =>
-          sem1Months.includes(s.resolvedMonthNumber)
-        );
-        // Semester 2 months:
-        // Grade 9 & 12: 3, 5, 6
-        // Others: 3, 5, 6, 7
         const gradeNum = parseInt(classInfo.grade);
         const sem2Months = (gradeNum === 9 || gradeNum === 12) ? [3, 5, 6] : [3, 5, 6, 7];
-        const sem2SummaryList = studentSummariesWithCorrectMonths.filter((s) =>
-          sem2Months.includes(s.resolvedMonthNumber)
-        );
 
-        let sem1MonthlyAvgRaw = sem1SummaryList.length > 0
-          ? sem1SummaryList.reduce((sum, s) => sum + s.average, 0) / sem1SummaryList.length
-          : null;
-        let sem2MonthlyAvgRaw = sem2SummaryList.length > 0
-          ? sem2SummaryList.reduce((sum, s) => sum + s.average, 0) / sem2SummaryList.length
-          : null;
+        const sem1ValidAverages: number[] = [];
+        sem1Months.forEach((m) => {
+           if (monthlyAverages.has(m) && (monthlyAverages.get(m) || 0) > 0) {
+              sem1ValidAverages.push(monthlyAverages.get(m)!);
+           }
+        });
 
-        // The monthly average is already appropriately scaled in the database (e.g. out of 50)
-        let sem1MonthlyAvg: number | null = sem1MonthlyAvgRaw !== null ? parseFloat(sem1MonthlyAvgRaw.toFixed(2)) : null;
-        let sem2MonthlyAvg: number | null = sem2MonthlyAvgRaw !== null ? parseFloat(sem2MonthlyAvgRaw.toFixed(2)) : null;
+        const sem2ValidAverages: number[] = [];
+        sem2Months.forEach((m) => {
+           if (monthlyAverages.has(m) && (monthlyAverages.get(m) || 0) > 0) {
+              sem2ValidAverages.push(monthlyAverages.get(m)!);
+           }
+        });
+
+        let sem1MonthlyAvg: number | null = sem1ValidAverages.length > 0 
+           ? parseFloat((sem1ValidAverages.reduce((a, b) => a + b, 0) / sem1ValidAverages.length).toFixed(2)) 
+           : null;
+        
+        let sem2MonthlyAvg: number | null = sem2ValidAverages.length > 0 
+           ? parseFloat((sem2ValidAverages.reduce((a, b) => a + b, 0) / sem2ValidAverages.length).toFixed(2)) 
+           : null;
 
         return {
           studentId: student.studentId || student.id, // ✅ Use studentId field, fallback to id
