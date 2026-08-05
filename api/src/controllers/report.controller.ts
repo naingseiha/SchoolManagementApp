@@ -3,6 +3,18 @@ import { prisma } from "../utils/db";
 
 const SEMESTER_ONE_MONTH = "កុម្ភៈ";
 const ENGLISH_SCORE_BASELINE = 25;
+
+function isSemesterOneMonth(month?: string | null): boolean {
+  if (!month) return false;
+  const m = month.trim();
+  return m === "ឆមាសទី១" || m === "កុម្ភៈ";
+}
+
+function isSemesterTwoMonth(month?: string | null): boolean {
+  if (!month) return false;
+  const m = month.trim();
+  return m === "ឆមាសទី២" || m === "កក្កដា";
+}
 const KHMER_DIGIT_MAP: Record<string, string> = {
   "០": "0",
   "១": "1",
@@ -229,7 +241,7 @@ export class ReportController {
       let startDate: Date;
       let endDate: Date;
 
-      if (month === "ឆមាសទី១") {
+      if (isSemesterOneMonth(month as string)) {
         startDate = new Date(inputYear, 10, 1);
         endDate = new Date(
           inputYear + 1,
@@ -239,7 +251,7 @@ export class ReportController {
           59,
           59
         );
-      } else if (month === "ឆមាសទី២") {
+      } else if (isSemesterTwoMonth(month as string)) {
         startDate = new Date(inputYear + 1, 2, 1);
         endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
       } else {
@@ -256,14 +268,14 @@ export class ReportController {
 
       const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
 
-      if (month === "ឆមាសទី១") {
+      if (isSemesterOneMonth(month as string)) {
         attendanceWhereOr.push({
           date: {
             gte: new Date(inputYear, 0, 1),
             lte: new Date(inputYear, 1, 29, 23, 59, 59),
           },
         });
-      } else if (month === "ឆមាសទី២") {
+      } else if (isSemesterTwoMonth(month as string)) {
         attendanceWhereOr.push({
           date: {
             gte: new Date(inputYear, 2, 1),
@@ -529,7 +541,7 @@ export class ReportController {
       let startDate: Date;
       let endDate: Date;
 
-      if (month === "ឆមាសទី១") {
+      if (isSemesterOneMonth(month as string)) {
         startDate = new Date(inputYear, 10, 1);
         endDate = new Date(
           inputYear + 1,
@@ -539,7 +551,7 @@ export class ReportController {
           59,
           59
         );
-      } else if (month === "ឆមាសទី២") {
+      } else if (isSemesterTwoMonth(month as string)) {
         startDate = new Date(inputYear + 1, 2, 1);
         endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
       } else {
@@ -556,14 +568,14 @@ export class ReportController {
 
       const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
 
-      if (month === "ឆមាសទី១") {
+      if (isSemesterOneMonth(month as string)) {
         attendanceWhereOr.push({
           date: {
             gte: new Date(inputYear, 0, 1),
             lte: new Date(inputYear, 1, 29, 23, 59, 59),
           },
         });
-      } else if (month === "ឆមាសទី២") {
+      } else if (isSemesterTwoMonth(month as string)) {
         attendanceWhereOr.push({
           date: {
             gte: new Date(inputYear, 2, 1),
@@ -1772,22 +1784,22 @@ export class ReportController {
 
       const monthDetails = monthList.map((monthStr) => {
         let searchMonth = monthStr;
-        if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
-        if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+        if (isSemesterOneMonth(monthStr)) searchMonth = "កុម្ភៈ";
+        if (isSemesterTwoMonth(monthStr)) searchMonth = "កក្កដា";
         const monthNumber = monthNames.indexOf(searchMonth) + 1;
         
         orConditions.push({ month: searchMonth });
         orConditions.push({ month: monthNumber.toString() });
         orConditions.push({ monthNumber: monthNumber });
-        if (monthStr === "ឆមាសទី១") orConditions.push({ month: "ឆមាសទី១" });
-        if (monthStr === "ឆមាសទី២") orConditions.push({ month: "ឆមាសទី២" });
+        if (isSemesterOneMonth(monthStr)) orConditions.push({ month: "ឆមាសទី១" });
+        if (isSemesterTwoMonth(monthStr)) orConditions.push({ month: "ឆមាសទី២" });
 
         let startDate: Date;
         let endDate: Date;
-        if (monthStr === "ឆមាសទី១") {
+        if (isSemesterOneMonth(monthStr)) {
           startDate = new Date(inputYear, 10, 1);
           endDate = new Date(inputYear + 1, 1, new Date(inputYear + 1, 2, 0).getDate(), 23, 59, 59);
-        } else if (monthStr === "ឆមាសទី២") {
+        } else if (isSemesterTwoMonth(monthStr)) {
           startDate = new Date(inputYear + 1, 2, 1);
           endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
         } else {
@@ -1826,22 +1838,29 @@ export class ReportController {
         // Filter grades for this month
         const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber || g.month === monthStr);
         
+        const isSem1 = isSemesterOneMonth(monthStr);
+        const isSem2 = isSemesterTwoMonth(monthStr);
+
         // Filter attendance for this month or semester
         const attendanceRecords = allAttendance.filter((a) => {
           const d = new Date(a.date);
-          if (monthStr === "ឆមាសទី១") {
+          if (isSem1) {
             const m = d.getMonth();
             const y = d.getFullYear();
             return (
               ((m === 10 || m === 11) && (y === inputYear || y === inputYear - 1)) ||
               ((m === 0 || m === 1) && (y === inputYear + 1 || y === inputYear))
             );
-          } else if (monthStr === "ឆមាសទី២") {
+          } else if (isSem2) {
             const m = d.getMonth();
             const y = d.getFullYear();
             return [2, 3, 4, 5, 6].includes(m) && (y === inputYear + 1 || y === inputYear);
           } else {
-            return d >= startDate && d <= endDate;
+            const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+            const m = d.getMonth() + 1;
+            const y = d.getFullYear();
+            if (m !== monthNumber) return false;
+            return y === calendarYear || y === inputYear;
           }
         });
 
@@ -1988,22 +2007,22 @@ export class ReportController {
 
       const monthDetails = monthList.map((monthStr) => {
         let searchMonth = monthStr;
-        if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
-        if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+        if (isSemesterOneMonth(monthStr)) searchMonth = "កុម្ភៈ";
+        if (isSemesterTwoMonth(monthStr)) searchMonth = "កក្កដា";
         const monthNumber = monthNames.indexOf(searchMonth) + 1;
         
         orConditions.push({ month: searchMonth });
         orConditions.push({ month: monthNumber.toString() });
         orConditions.push({ monthNumber: monthNumber });
-        if (monthStr === "ឆមាសទី១") orConditions.push({ month: "ឆមាសទី១" });
-        if (monthStr === "ឆមាសទី២") orConditions.push({ month: "ឆមាសទី២" });
+        if (isSemesterOneMonth(monthStr)) orConditions.push({ month: "ឆមាសទី១" });
+        if (isSemesterTwoMonth(monthStr)) orConditions.push({ month: "ឆមាសទី២" });
 
         let startDate: Date;
         let endDate: Date;
-        if (monthStr === "ឆមាសទី១") {
+        if (isSemesterOneMonth(monthStr)) {
           startDate = new Date(inputYear, 10, 1);
           endDate = new Date(inputYear + 1, 1, new Date(inputYear + 1, 2, 0).getDate(), 23, 59, 59);
-        } else if (monthStr === "ឆមាសទី២") {
+        } else if (isSemesterTwoMonth(monthStr)) {
           startDate = new Date(inputYear + 1, 2, 1);
           endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
         } else {
@@ -2039,22 +2058,29 @@ export class ReportController {
       const results = monthDetails.map(({ monthStr, searchMonth, monthNumber, startDate, endDate }) => {
         const grades = allGrades.filter(g => g.month === searchMonth || g.month === monthNumber.toString() || g.monthNumber === monthNumber || g.month === monthStr);
         
+        const isSem1 = isSemesterOneMonth(monthStr);
+        const isSem2 = isSemesterTwoMonth(monthStr);
+
         // Filter attendance for this month or semester
         const attendanceRecords = allAttendance.filter((a) => {
           const d = new Date(a.date);
-          if (monthStr === "ឆមាសទី១") {
+          if (isSem1) {
             const m = d.getMonth();
             const y = d.getFullYear();
             return (
               ((m === 10 || m === 11) && (y === inputYear || y === inputYear - 1)) ||
               ((m === 0 || m === 1) && (y === inputYear + 1 || y === inputYear))
             );
-          } else if (monthStr === "ឆមាសទី២") {
+          } else if (isSem2) {
             const m = d.getMonth();
             const y = d.getFullYear();
             return [2, 3, 4, 5, 6].includes(m) && (y === inputYear + 1 || y === inputYear);
           } else {
-            return d >= startDate && d <= endDate;
+            const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
+            const m = d.getMonth() + 1;
+            const y = d.getFullYear();
+            if (m !== monthNumber) return false;
+            return y === calendarYear || y === inputYear;
           }
         });
 

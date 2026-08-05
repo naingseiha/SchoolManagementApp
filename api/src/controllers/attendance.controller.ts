@@ -481,8 +481,11 @@ export class AttendanceController {
       ];
 
       let searchMonth = month as string;
-      if (searchMonth === "ឆមាសទី១") searchMonth = "កុម្ភៈ";
-      if (searchMonth === "ឆមាសទី២") searchMonth = "កក្កដា";
+      const isSem1 = searchMonth === "ឆមាសទី១" || searchMonth === "កុម្ភៈ";
+      const isSem2 = searchMonth === "ឆមាសទី២" || searchMonth === "កក្កដា";
+
+      if (isSem1) searchMonth = "កុម្ភៈ";
+      if (isSem2) searchMonth = "កក្កដា";
       const monthNumber = monthNames.indexOf(searchMonth) + 1;
       const inputYear = parseInt(year as string);
       const calendarYear = monthNumber <= 9 ? inputYear + 1 : inputYear;
@@ -490,7 +493,7 @@ export class AttendanceController {
       let startDate: Date;
       let endDate: Date;
 
-      if (month === "ឆមាសទី១") {
+      if (isSem1) {
         startDate = new Date(inputYear, 10, 1);
         endDate = new Date(
           inputYear + 1,
@@ -500,7 +503,7 @@ export class AttendanceController {
           59,
           59
         );
-      } else if (month === "ឆមាសទី២") {
+      } else if (isSem2) {
         startDate = new Date(inputYear + 1, 2, 1);
         endDate = new Date(inputYear + 1, 6, 31, 23, 59, 59);
       } else {
@@ -516,7 +519,7 @@ export class AttendanceController {
       }
 
       // ⭐ SAFE AUTO-MIGRATION: Check if there are existing records saved under inputYear when monthNumber <= 9
-      if (monthNumber <= 9 && inputYear !== calendarYear && month !== "ឆមាសទី១" && month !== "ឆមាសទី២") {
+      if (monthNumber <= 9 && inputYear !== calendarYear && !isSem1 && !isSem2) {
         const oldStartDate = new Date(inputYear, monthNumber - 1, 1);
         const oldEndDate = new Date(
           inputYear,
@@ -554,14 +557,14 @@ export class AttendanceController {
 
       const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
 
-      if (month === "ឆមាសទី១") {
+      if (isSem1) {
         attendanceWhereOr.push({
           date: {
             gte: new Date(inputYear, 0, 1),
             lte: new Date(inputYear, 1, 29, 23, 59, 59),
           },
         });
-      } else if (month === "ឆមាសទី២") {
+      } else if (isSem2) {
         attendanceWhereOr.push({
           date: {
             gte: new Date(inputYear, 2, 1),
