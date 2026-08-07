@@ -525,7 +525,7 @@ export default function KhmerSemesterOneReport({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-10 mt-3">
+              <div className="grid grid-cols-2 gap-10 mt-3 pb-8">
                 <div className="text-center">
                   <p
                     className="text-xs mb-0.5"

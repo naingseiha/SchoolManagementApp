@@ -807,7 +807,7 @@ export default function SubjectDetailsReport({
               </div>
 
               {/* Signatures */}
-              <div className="grid grid-cols-2 gap-10 mt-3">
+              <div className="grid grid-cols-2 gap-10 mt-3 pb-8">
                 {/* Principal */}
                 <div className="text-center">
                   <p

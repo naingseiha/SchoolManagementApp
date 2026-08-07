@@ -254,7 +254,7 @@ export default function AnnualRankingTable({
 
           {/* Footer Signatures - Only on last page */}
           {pageIndex === pages.length - 1 && (
-            <div className="grid grid-cols-2 gap-10 mt-8 khmer-muol pb-4">
+            <div className="grid grid-cols-2 gap-10 mt-8 khmer-muol pb-12">
               <div className="text-center">
                 <p className="text-sm mb-1 text-transparent select-none">Date</p>
                 <p className="text-sm font-bold mb-10">បានឃើញ និងឯកភាព<br/>នាយក</p>
