@@ -192,7 +192,7 @@ export default function AnnualRankingTable({
           )}
 
           {/* Table */}
-          <div className="flex-grow">
+          <div className="mb-4">
             <table className="mb-2 w-full">
               <thead>
                 <tr>
@@ -254,18 +254,19 @@ export default function AnnualRankingTable({
 
           {/* Footer Signatures - Only on last page */}
           {pageIndex === pages.length - 1 && (
-            <div className="grid grid-cols-2 gap-10 mt-2 khmer-muol pb-12">
+            <div className="grid grid-cols-2 gap-10 mt-4 pb-4">
               <div className="text-center">
-                <p className="text-sm mb-1 text-transparent select-none">Date</p>
-                <p className="text-sm font-bold">បានឃើញ និងឯកភាព<br/>នាយក</p>
-                <div className="h-20 print:h-24"></div>
-                <p className="text-sm font-bold khmer-muol">{principalName}</p>
+                <p className="text-sm mb-1 text-transparent select-none khmer-siemreap">Date</p>
+                <p className="text-sm font-bold mb-0.5 khmer-siemreap">បានឃើញ និងឯកភាព</p>
+                <p className="text-sm font-bold khmer-siemreap">នាយក</p>
+                <div className="h-10 print:h-14"></div>
+                <p className="text-sm font-bold khmer-muol text-blue-600">{principalName}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm mb-1">ធ្វើនៅ {placeName}, {directorDate || "ថ្ងៃទី.......ខែ.......ឆ្នាំ២០២..."}</p>
-                <p className="text-sm font-bold">គ្រូបន្ទុកថ្នាក់</p>
-                <div className="h-20 print:h-24"></div>
-                <p className="text-sm font-bold khmer-muol">{teacherName}</p>
+                <p className="text-sm mb-1 khmer-siemreap">ធ្វើនៅ {placeName}, {directorDate || "ថ្ងៃទី.......ខែ.......ឆ្នាំ២០២..."}</p>
+                <p className="text-sm font-bold mb-0.5 khmer-siemreap">គ្រូបន្ទុកថ្នាក់</p>
+                <div className="h-10 print:h-14"></div>
+                <p className="text-sm font-bold khmer-muol text-blue-600">{teacherName}</p>
               </div>
             </div>
           )}
