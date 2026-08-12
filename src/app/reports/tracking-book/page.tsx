@@ -581,8 +581,26 @@ export default function TrackingBookPage() {
           const semester2ExamAverage = sem2CoefSum > 0 ? sem2ExamTotal / sem2CoefSum : null;
           const annualExamAverage = annualCoefSum > 0 ? annualExamTotal / annualCoefSum : null;
 
-          const semester1OverallAverage = (student as any).sem1MonthlyAvg ?? semester1ExamAverage;
-          const semester2OverallAverage = (student as any).sem2MonthlyAvg ?? semester2ExamAverage;
+          const semester1MonthlyAverage = (student as any).sem1MonthlyAvg ?? null;
+          const semester2MonthlyAverage = (student as any).sem2MonthlyAvg ?? null;
+
+          let semester1OverallAverage: number | null = null;
+          if (semester1ExamAverage !== null && semester1MonthlyAverage !== null && semester1MonthlyAverage > 0) {
+            semester1OverallAverage = (semester1ExamAverage + semester1MonthlyAverage) / 2;
+          } else if (semester1ExamAverage !== null) {
+            semester1OverallAverage = semester1ExamAverage;
+          } else if (semester1MonthlyAverage !== null && semester1MonthlyAverage > 0) {
+            semester1OverallAverage = semester1MonthlyAverage;
+          }
+
+          let semester2OverallAverage: number | null = null;
+          if (semester2ExamAverage !== null && semester2MonthlyAverage !== null && semester2MonthlyAverage > 0) {
+            semester2OverallAverage = (semester2ExamAverage + semester2MonthlyAverage) / 2;
+          } else if (semester2ExamAverage !== null) {
+            semester2OverallAverage = semester2ExamAverage;
+          } else if (semester2MonthlyAverage !== null && semester2MonthlyAverage > 0) {
+            semester2OverallAverage = semester2MonthlyAverage;
+          }
 
           const annualOverallAverage = (semester1OverallAverage !== null && semester2OverallAverage !== null)
             ? (semester1OverallAverage + semester2OverallAverage) / 2
@@ -595,8 +613,8 @@ export default function TrackingBookPage() {
             semester1ExamAverage,
             semester2ExamAverage,
             annualExamAverage,
-            semester1MonthlyAverage: semester1OverallAverage,
-            semester2MonthlyAverage: semester2OverallAverage,
+            semester1MonthlyAverage,
+            semester2MonthlyAverage,
             semester1OverallAverage,
             semester2OverallAverage,
             annualOverallAverage,
