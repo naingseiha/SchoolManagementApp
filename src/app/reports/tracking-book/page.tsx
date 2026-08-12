@@ -585,21 +585,13 @@ export default function TrackingBookPage() {
           const semester2MonthlyAverage = (student as any).sem2MonthlyAvg ?? null;
 
           let semester1OverallAverage: number | null = null;
-          if (semester1ExamAverage !== null && semester1MonthlyAverage !== null && semester1MonthlyAverage > 0) {
-            semester1OverallAverage = (semester1ExamAverage + semester1MonthlyAverage) / 2;
-          } else if (semester1ExamAverage !== null) {
-            semester1OverallAverage = semester1ExamAverage;
-          } else if (semester1MonthlyAverage !== null && semester1MonthlyAverage > 0) {
-            semester1OverallAverage = semester1MonthlyAverage;
+          if (semester1ExamAverage !== null || semester1MonthlyAverage !== null) {
+            semester1OverallAverage = ((semester1ExamAverage || 0) + (semester1MonthlyAverage || 0)) / 2;
           }
 
           let semester2OverallAverage: number | null = null;
-          if (semester2ExamAverage !== null && semester2MonthlyAverage !== null && semester2MonthlyAverage > 0) {
-            semester2OverallAverage = (semester2ExamAverage + semester2MonthlyAverage) / 2;
-          } else if (semester2ExamAverage !== null) {
-            semester2OverallAverage = semester2ExamAverage;
-          } else if (semester2MonthlyAverage !== null && semester2MonthlyAverage > 0) {
-            semester2OverallAverage = semester2MonthlyAverage;
+          if (semester2ExamAverage !== null || semester2MonthlyAverage !== null) {
+            semester2OverallAverage = ((semester2ExamAverage || 0) + (semester2MonthlyAverage || 0)) / 2;
           }
 
           const annualOverallAverage = (semester1OverallAverage !== null && semester2OverallAverage !== null)

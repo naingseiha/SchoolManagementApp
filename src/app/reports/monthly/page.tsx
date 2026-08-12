@@ -691,14 +691,7 @@ export default function ReportsPage() {
             const examAverage = Number.isFinite(examAverageRaw) ? examAverageRaw : 0;
             const examTotal = Number.isFinite(examTotalRaw) ? examTotalRaw : 0;
             
-            const allValidAverages = [...validPreMonthAverages];
-            if (examAverage > 0) {
-              allValidAverages.push(examAverage);
-            }
-
-            const finalAverage = allValidAverages.length > 0
-              ? allValidAverages.reduce((sum, val) => sum + val, 0) / allValidAverages.length
-              : 0;
+            const finalAverage = (preSemesterAverage + examAverage) / 2;
 
             return {
               student: {

@@ -268,35 +268,8 @@ export class ReportController {
 
       const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
 
-      if (isSemesterOneMonth(month as string)) {
-        attendanceWhereOr.push({
-          date: {
-            gte: new Date(inputYear, 0, 1),
-            lte: new Date(inputYear, 1, 29, 23, 59, 59),
-          },
-        });
-      } else if (isSemesterTwoMonth(month as string)) {
-        attendanceWhereOr.push({
-          date: {
-            gte: new Date(inputYear, 2, 1),
-            lte: new Date(inputYear, 6, 31, 23, 59, 59),
-          },
-        });
-      } else if (monthNumber <= 9 && inputYear !== calendarYear) {
-        attendanceWhereOr.push({
-          date: {
-            gte: new Date(inputYear, monthNumber - 1, 1),
-            lte: new Date(
-              inputYear,
-              monthNumber - 1,
-              new Date(inputYear, monthNumber, 0).getDate(),
-              23,
-              59,
-              59
-            ),
-          },
-        });
-      }
+      // The initial attendanceWhereOr with startDate and endDate perfectly covers the semester.
+      // Removed redundant/incorrect pushing of previous year's dates.
 
       const attendanceRecords = await prisma.attendance.findMany({
         where: {
@@ -568,35 +541,8 @@ export class ReportController {
 
       const attendanceWhereOr: any[] = [{ date: { gte: startDate, lte: endDate } }];
 
-      if (isSemesterOneMonth(month as string)) {
-        attendanceWhereOr.push({
-          date: {
-            gte: new Date(inputYear, 0, 1),
-            lte: new Date(inputYear, 1, 29, 23, 59, 59),
-          },
-        });
-      } else if (isSemesterTwoMonth(month as string)) {
-        attendanceWhereOr.push({
-          date: {
-            gte: new Date(inputYear, 2, 1),
-            lte: new Date(inputYear, 6, 31, 23, 59, 59),
-          },
-        });
-      } else if (monthNumber <= 9 && inputYear !== calendarYear) {
-        attendanceWhereOr.push({
-          date: {
-            gte: new Date(inputYear, monthNumber - 1, 1),
-            lte: new Date(
-              inputYear,
-              monthNumber - 1,
-              new Date(inputYear, monthNumber, 0).getDate(),
-              23,
-              59,
-              59
-            ),
-          },
-        });
-      }
+      // The initial attendanceWhereOr with startDate and endDate perfectly covers the semester.
+      // Removed redundant/incorrect pushing of previous year's dates.
 
       const attendanceRecords = await prisma.attendance.findMany({
         where: {
@@ -1307,9 +1253,9 @@ export class ReportController {
           }
         }
 
-        const sem1Months = [11, 12, 1, 2];
+        const sem1Months = [11, 12, 1];
         const gradeNum = parseInt(classInfo.grade);
-        const sem2Months = (gradeNum === 9 || gradeNum === 12) ? [3, 5, 6] : [3, 5, 6, 7];
+        const sem2Months = (gradeNum === 9 || gradeNum === 12) ? [3, 5] : [3, 5, 6];
 
         const sem1ValidAverages: number[] = [];
         sem1Months.forEach((m) => {
