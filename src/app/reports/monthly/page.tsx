@@ -655,12 +655,17 @@ export default function ReportsPage() {
             let totalUnexcused = student.absent || 0;
             const validPreMonthAverages: number[] = [];
 
+            const examMonthName = reportData.month?.trim() || "";
+            const isBackendCumulative = examMonthName === "កុម្ភៈ" || examMonthName === "កក្កដា";
+
             previousMonthDataArray.forEach(({ monthName, map }) => {
               const data = map.get(student.studentId);
               if (data) {
-                totalAbsent += (data.absent + data.permission);
-                totalPermission += data.permission;
-                totalUnexcused += data.absent;
+                if (!isBackendCumulative) {
+                  totalAbsent += (data.absent + data.permission);
+                  totalPermission += data.permission;
+                  totalUnexcused += data.absent;
+                }
 
                 if (monthName !== "មេសា" && data.avg > 0) {
                   validPreMonthAverages.push(data.avg);
