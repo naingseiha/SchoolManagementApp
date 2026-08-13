@@ -22,6 +22,7 @@ import AnnualRankingTable from "@/components/reports/AnnualRankingTable";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 import { formatKhmerDate } from "@/lib/khmerDateUtils";
+import { exportAnnualRankingToExcel } from "@/lib/exportExcelAnnualRanking";
 
 const getCurrentKhmerMonth = (): string => {
   const monthNames = [
@@ -822,8 +823,21 @@ export default function TrackingBookPage() {
     window.print();
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!sortedTrackingData) return;
+
+    if (activeBookTab === "annual-ranking-table") {
+      await exportAnnualRankingToExcel({
+        transcriptData,
+        selectedClass,
+        selectedYear,
+        placeName,
+        directorDate,
+        teacherDate,
+        teacherName: sortedTrackingData.teacherName,
+      });
+      return;
+    }
 
     const headers = [
       "ល. រ",
