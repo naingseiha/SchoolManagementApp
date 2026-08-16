@@ -19,10 +19,12 @@ import {
 import { reportsApi, type StudentTrackingBookData } from "@/lib/api/reports";
 import StudentTranscript from "@/components/reports/StudentTranscript";
 import AnnualRankingTable from "@/components/reports/AnnualRankingTable";
+import SubjectScoreDistributionReport from "@/components/reports/SubjectScoreDistributionReport";
 import { sortSubjectsByOrder } from "@/lib/subjectOrder";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
 import { formatKhmerDate } from "@/lib/khmerDateUtils";
 import { exportAnnualRankingToExcel } from "@/lib/exportExcelAnnualRanking";
+import { exportSubjectScoreDistributionToExcel } from "@/lib/exportExcelSubjectScoreDistribution";
 
 const getCurrentKhmerMonth = (): string => {
   const monthNames = [
@@ -63,7 +65,7 @@ export default function TrackingBookPage() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"single" | "all">("single");
   const [activeBookTab, setActiveBookTab] = useState<
-    "score-bulletin" | "internship-book" | "annual-ranking-table"
+    "score-bulletin" | "internship-book" | "annual-ranking-table" | "subject-distribution"
   >("score-bulletin");
   const [placeName, setPlaceName] = useState("ស្វាយធំ");
   const [directorDate, setDirectorDate] = useState(() => {
@@ -72,6 +74,21 @@ export default function TrackingBookPage() {
   const [teacherDate, setTeacherDate] = useState(() => {
     return formatKhmerDate(new Date());
   });
+
+  // Metadata for Subject Score Distribution Report
+  const [schoolCode, setSchoolCode] = useState("01020710711");
+  const [province, setProvince] = useState("ខេត្តសៀមរាប");
+  const [district, setDistrict] = useState("ស្រុកប្រាសាទបាគង");
+  const [commune, setCommune] = useState("កណ្ដែក");
+  const [schoolName, setSchoolName] = useState("វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ");
+  const [phoneNumber, setPhoneNumber] = useState("069 216251");
+  const [fillDate, setFillDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  });
+  const [fillerName, setFillerName] = useState("");
+  const [isScienceTrack, setIsScienceTrack] = useState<boolean | undefined>(undefined);
+  const [isSocialTrack, setIsSocialTrack] = useState<boolean | undefined>(undefined);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -223,7 +240,7 @@ export default function TrackingBookPage() {
     ? allSubjects.filter((s) => {
         const selectedClass = classes.find((c) => c.id === selectedClassId);
         if (!selectedClass) return false;
-        return s.grade === selectedClass.grade;
+        return (s as any).grade === selectedClass.grade;
       })
     : [];
 
@@ -231,7 +248,7 @@ export default function TrackingBookPage() {
     { value: "", label: "មុខវិជ្ជាទាំងអស់" },
     ...classSubjects.map((s) => ({
       value: s.id,
-      label: s.nameKh || s.name,
+      label: (s as any).nameKh || s.name,
     })),
   ];
 
@@ -761,7 +778,7 @@ export default function TrackingBookPage() {
             averageScore,
             gradeLevel: summaryGradeLevel,
             gradeLevelKhmer: summaryGradeLevelKhmer,
-            rank: studentSummaryMetrics?.annualOverallRank ?? student.rank,
+            rank: (studentSummaryMetrics as any)?.annualOverallRank ?? student.rank,
             
             // Exam totals
             semester1ExamTotal: studentSummaryMetrics?.semester1ExamTotal ?? null,
@@ -786,11 +803,13 @@ export default function TrackingBookPage() {
             semester2OverallRank: summaryRankLookup?.semester2OverallRanks[student.studentId] ?? null,
             annualOverallRank: summaryRankLookup?.annualOverallRanks[student.studentId] ?? null,
           },
-          attendance: student.attendance || {
-            semester1: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
-            semester2: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
-            annual: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
-          },
+          attendance: (student.attendance as any)?.semester1
+            ? (student.attendance as any)
+            : {
+                semester1: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+                semester2: { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+                annual: student.attendance || { totalAbsent: 0, permission: 0, withoutPermission: 0 },
+              },
           year: sortedTrackingData.year,
           month:
             sortedTrackingData.month?.trim() === "កុម្ភៈ"
@@ -817,6 +836,8 @@ export default function TrackingBookPage() {
       ? "ព្រឹត្តិបត្រពិន្ទុ"
       : activeBookTab === "internship-book"
       ? "សៀវភៅសិក្ខាគារិក"
+      : activeBookTab === "subject-distribution"
+      ? "តារាងស្រង់ពិន្ទុតាមមុខវិជ្ជា"
       : "តារាងចំណាត់ថ្នាក់ប្រចាំឆ្នាំ";
 
   const handlePrint = () => {
@@ -825,6 +846,26 @@ export default function TrackingBookPage() {
 
   const handleExport = async () => {
     if (!sortedTrackingData) return;
+
+    if (activeBookTab === "subject-distribution") {
+      await exportSubjectScoreDistributionToExcel({
+        students: sortedTrackingData.students,
+        subjects: sortedTrackingData.subjects,
+        selectedClass,
+        selectedYear,
+        schoolCode,
+        province,
+        district,
+        commune,
+        schoolName,
+        phoneNumber,
+        fillDate,
+        fillerName: fillerName || sortedTrackingData.teacherName || "ស៊ីម ប៊ុយគាន",
+        isScienceTrack,
+        isSocialTrack,
+      });
+      return;
+    }
 
     if (activeBookTab === "annual-ranking-table") {
       await exportAnnualRankingToExcel({
@@ -869,7 +910,7 @@ export default function TrackingBookPage() {
           summaryForExport?.gradeLevel ||
           student.gradeLevel,
         student.rank.toString(),
-        student.attendance?.annual?.totalAbsent?.toString() || "0",
+        (student.attendance?.totalAbsent ?? (student.attendance as any)?.annual?.totalAbsent ?? 0).toString(),
       ];
       return row;
     });
@@ -905,10 +946,14 @@ export default function TrackingBookPage() {
       const html2canvas = (await import("html2canvas")).default;
       const jsPDF = (await import("jspdf")).default;
 
-      // Get all student transcript containers (not wrappers)
-      const containers = reportRef.current.querySelectorAll(
-        ".student-transcript-container"
-      );
+      // Check if exporting subject distribution or annual ranking table
+      const distContainer = reportRef.current.querySelector(".distribution-report-page") as HTMLElement;
+      const annualContainer = reportRef.current.querySelector(".annual-container") as HTMLElement;
+      const containers = distContainer
+        ? [distContainer]
+        : annualContainer
+        ? [annualContainer]
+        : Array.from(reportRef.current.querySelectorAll(".student-transcript-container")) as HTMLElement[];
 
       if (containers.length === 0) {
         alert("រកមិនឃើញទំព័រដើម្បីនាំចេញ");
@@ -925,7 +970,7 @@ export default function TrackingBookPage() {
       });
 
       // A4 landscape dimensions in mm (with margins)
-      const margin = 10; // 10mm margin on all sides
+      const margin = 5; // 5mm margin on all sides
       const pdfWidth = 297;
       const pdfHeight = 210;
       const contentWidth = pdfWidth - 2 * margin;
@@ -933,24 +978,22 @@ export default function TrackingBookPage() {
 
       // Process each page
       for (let i = 0; i < containers.length; i++) {
-        const container = containers[i] as HTMLElement;
+        const container = containers[i];
 
         // Capture the container as canvas with high quality
         const canvas = await html2canvas(container, {
-          scale: 2.5, // Good balance between quality and file size
+          scale: 2.5,
           useCORS: true,
           logging: false,
           backgroundColor: "#ffffff",
           allowTaint: false,
           removeContainer: false,
           imageTimeout: 0,
-          // These settings help with border rendering
           onclone: (clonedDoc) => {
             const clonedContainer = clonedDoc.querySelector(
-              ".student-transcript-container"
+              ".distribution-report-page, .annual-container, .student-transcript-container"
             ) as HTMLElement;
             if (clonedContainer) {
-              // Ensure borders are rendered properly
               clonedContainer.style.boxShadow = "none";
               clonedContainer.style.transform = "none";
               clonedContainer.style.position = "relative";
@@ -961,36 +1004,30 @@ export default function TrackingBookPage() {
         // Convert canvas to image with maximum quality
         const imgData = canvas.toDataURL("image/png", 1.0);
 
-        // Calculate dimensions to fit within content area while maintaining aspect ratio
         const canvasRatio = canvas.width / canvas.height;
         const contentRatio = contentWidth / contentHeight;
 
         let imgWidth, imgHeight, xOffset, yOffset;
 
         if (canvasRatio > contentRatio) {
-          // Image is wider - fit to width
           imgWidth = contentWidth;
           imgHeight = contentWidth / canvasRatio;
           xOffset = margin;
           yOffset = margin + (contentHeight - imgHeight) / 2;
         } else {
-          // Image is taller - fit to height
           imgHeight = contentHeight;
           imgWidth = contentHeight * canvasRatio;
           xOffset = margin + (contentWidth - imgWidth) / 2;
           yOffset = margin;
         }
 
-        // Add new page if not the first one
         if (i > 0) {
           pdf.addPage();
         }
 
-        // Add image to PDF with proper margins and centering
         pdf.addImage(imgData, "PNG", xOffset, yOffset, imgWidth, imgHeight);
       }
 
-      // Save the PDF
       pdf.save(
         `${selectedTabFileLabel}_${sortedTrackingData.className}_${selectedYear}.pdf`
       );
@@ -1065,7 +1102,8 @@ export default function TrackingBookPage() {
             overflow: visible !important;
           }
           .student-transcript-container,
-          .transcript-page-wrapper {
+          .transcript-page-wrapper,
+          .distribution-report-page {
             background: white !important;
             overflow: visible !important;
           }
@@ -1097,7 +1135,7 @@ export default function TrackingBookPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-4 inline-flex gap-2 rounded-xl bg-white p-1 border border-gray-200 shadow-sm">
+            <div className="mt-4 inline-flex flex-wrap gap-2 rounded-xl bg-white p-1 border border-gray-200 shadow-sm">
               <button
                 onClick={() => setActiveBookTab("score-bulletin")}
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -1128,13 +1166,23 @@ export default function TrackingBookPage() {
               >
                 តារាងចំណាត់ថ្នាក់ប្រចាំឆ្នាំ
               </button>
+              <button
+                onClick={() => setActiveBookTab("subject-distribution")}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeBookTab === "subject-distribution"
+                    ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-sm"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                តារាងស្រង់ពិន្ទុតាមមុខវិជ្ជា
+              </button>
             </div>
           </div>
 
           {/* Controls Panel */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6 no-print">
             {/* Selection Row */}
-            <div className={`grid grid-cols-1 ${activeBookTab === "internship-book" || activeBookTab === "annual-ranking-table" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-4 mb-4`}>
+            <div className={`grid grid-cols-1 ${activeBookTab === "internship-book" || activeBookTab === "annual-ranking-table" || activeBookTab === "subject-distribution" ? "md:grid-cols-4" : "md:grid-cols-5"} gap-4 mb-4`}>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   ថ្នាក់ Class
@@ -1173,7 +1221,7 @@ export default function TrackingBookPage() {
                 </select>
               </div>
 
-              {activeBookTab !== "internship-book" && activeBookTab !== "annual-ranking-table" && (
+              {activeBookTab !== "internship-book" && activeBookTab !== "annual-ranking-table" && activeBookTab !== "subject-distribution" && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ខែ Month
@@ -1192,22 +1240,24 @@ export default function TrackingBookPage() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  មុខវិជ្ជា Subject
-                </label>
-                <select
-                  value={selectedSubjectId}
-                  onChange={(e) => setSelectedSubjectId(e.target.value)}
-                  className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  {subjectOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {activeBookTab !== "subject-distribution" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    មុខវិជ្ជា Subject
+                  </label>
+                  <select
+                    value={selectedSubjectId}
+                    onChange={(e) => setSelectedSubjectId(e.target.value)}
+                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    {subjectOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1233,54 +1283,177 @@ export default function TrackingBookPage() {
               </div>
             </div>
 
-            {/* Date Input Row */}
-            <div className="border-t pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    ទីកន្លែង Place Name
-                  </label>
-                  <input
-                    type="text"
-                    value={placeName}
-                    onChange={(e) => setPlaceName(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="ស្វាយធំ"
-                  />
+            {/* Subject Distribution Metadata Settings Row */}
+            {activeBookTab === "subject-distribution" ? (
+              <div className="border-t pt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      លេខកូដសាលា School Code
+                    </label>
+                    <input
+                      type="text"
+                      value={schoolCode}
+                      onChange={(e) => setSchoolCode(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="01020710711"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      ឈ្មោះឃុំ-សង្កាត់ Commune
+                    </label>
+                    <input
+                      type="text"
+                      value={commune}
+                      onChange={(e) => setCommune(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="កណ្ដែក"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      ឈ្មោះក្រុង-ស្រុក-ខណ្ឌ District
+                    </label>
+                    <input
+                      type="text"
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="ស្រុកប្រាសាទបាគង"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      ទូរស័ព្ទអ្នកបំពេញ Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="069 216251"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    កាលបរិច្ឆេទនាយក Director Date
-                  </label>
-                  <input
-                    type="text"
-                    value={directorDate}
-                    onChange={(e) => setDirectorDate(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    កាលបរិច្ឆេទគ្រូ Teacher Date
-                  </label>
-                  <input
-                    type="text"
-                    value={teacherDate}
-                    onChange={(e) => setTeacherDate(e.target.value)}
-                    className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      កាលបរិច្ឆេទបំពេញ Fill Date
+                    </label>
+                    <input
+                      type="text"
+                      value={fillDate}
+                      onChange={(e) => setFillDate(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="14/08/2026"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      អ្នកបំពេញ Filler Name
+                    </label>
+                    <input
+                      type="text"
+                      value={fillerName}
+                      onChange={(e) => setFillerName(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder={sortedTrackingData?.teacherName || "ស៊ីម ប៊ុយគាន"}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      ឈ្មោះសាលា School Name
+                    </label>
+                    <input
+                      type="text"
+                      value={schoolName}
+                      onChange={(e) => setSchoolName(e.target.value)}
+                      className="w-full h-10 px-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ"
+                    />
+                  </div>
+                  <div className="flex gap-4 pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={
+                          isScienceTrack !== undefined
+                            ? isScienceTrack
+                            : (selectedClass as any)?.track === "science" || (selectedClass as any)?.track === "វិទ្យាសាស្ត្រ"
+                        }
+                        onChange={(e) => setIsScienceTrack(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      វិទ្យាសាស្ត្រ
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={
+                          isSocialTrack !== undefined
+                            ? isSocialTrack
+                            : (selectedClass as any)?.track === "social" || (selectedClass as any)?.track === "វិទ្យាសាស្ត្រសង្គម" || (selectedClass as any)?.track === "សង្គម"
+                        }
+                        onChange={(e) => setIsSocialTrack(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      វិទ្យា.សង្គម
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Date Input Row for other tabs */
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      ទីកន្លែង Place Name
+                    </label>
+                    <input
+                      type="text"
+                      value={placeName}
+                      onChange={(e) => setPlaceName(e.target.value)}
+                      className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="ស្វាយធំ"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      កាលបរិច្ឆេទនាយក Director Date
+                    </label>
+                    <input
+                      type="text"
+                      value={directorDate}
+                      onChange={(e) => setDirectorDate(e.target.value)}
+                      className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      កាលបរិច្ឆេទគ្រូ Teacher Date
+                    </label>
+                    <input
+                      type="text"
+                      value={teacherDate}
+                      onChange={(e) => setTeacherDate(e.target.value)}
+                      className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="ថ្ងៃទី០៣ ខែមករា ឆ្នាំ២០២៦"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* View Mode & Actions */}
             {sortedTrackingData && (
               <div className="border-t pt-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    {activeBookTab !== "annual-ranking-table" && (
+                    {activeBookTab !== "annual-ranking-table" && activeBookTab !== "subject-distribution" && (
                       <>
                         <label className="text-sm font-semibold text-gray-700">
                           របៀបមើល:
@@ -1349,7 +1522,7 @@ export default function TrackingBookPage() {
                 </div>
 
                 {/* Student Navigation (Single View) */}
-                {activeBookTab !== "annual-ranking-table" && viewMode === "single" && transcriptData.length > 0 && (
+                {activeBookTab !== "annual-ranking-table" && activeBookTab !== "subject-distribution" && viewMode === "single" && transcriptData.length > 0 && (
                   <div className="flex items-center justify-center gap-4 pt-4 border-t">
                     <button
                       onClick={() =>
@@ -1410,7 +1583,24 @@ export default function TrackingBookPage() {
           {/* Report Display */}
           {sortedTrackingData && (
             <div ref={reportRef} className="print-container">
-              {activeBookTab === "annual-ranking-table" ? (
+              {activeBookTab === "subject-distribution" ? (
+                <SubjectScoreDistributionReport
+                  students={sortedTrackingData.students}
+                  subjects={sortedTrackingData.subjects}
+                  selectedClass={selectedClass}
+                  selectedYear={selectedYear}
+                  schoolCode={schoolCode}
+                  province={province}
+                  district={district}
+                  commune={commune}
+                  schoolName={schoolName}
+                  phoneNumber={phoneNumber}
+                  fillDate={fillDate}
+                  fillerName={fillerName || sortedTrackingData.teacherName || "ស៊ីម ប៊ុយគាន"}
+                  isScienceTrack={isScienceTrack}
+                  isSocialTrack={isSocialTrack}
+                />
+              ) : activeBookTab === "annual-ranking-table" ? (
                 <AnnualRankingTable
                   transcriptData={transcriptData}
                   selectedClass={selectedClass}
@@ -1423,7 +1613,7 @@ export default function TrackingBookPage() {
               ) : viewMode === "single" && currentStudent ? (
                 <StudentTranscript
                   {...currentStudent}
-                  reportTab={activeBookTab}
+                  reportTab={activeBookTab as "score-bulletin" | "internship-book"}
                 />
               ) : viewMode === "all" ? (
                 <div className="space-y-8 all-students-container">
@@ -1431,7 +1621,7 @@ export default function TrackingBookPage() {
                     <StudentTranscript
                       key={index}
                       {...student}
-                      reportTab={activeBookTab}
+                      reportTab={activeBookTab as "score-bulletin" | "internship-book"}
                     />
                   ))}
                 </div>

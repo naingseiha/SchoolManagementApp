@@ -34,8 +34,11 @@ import KhmerMonthlyReport from "@/components/reports/KhmerMonthlyReport";
 import KhmerSemesterOneReport from "@/components/reports/KhmerSemesterOneReport";
 import KhmerSemesterTwoReport from "@/components/reports/KhmerSemesterTwoReport";
 import SubjectDetailsReport from "@/components/reports/SubjectDetailsReport";
+import SubjectScoreDistributionReport from "@/components/reports/SubjectScoreDistributionReport";
 import MonthlyReportSettings from "@/components/reports/MonthlyReportSettings";
 import { getAcademicYearOptionsCustom } from "@/utils/academicYear";
+import { exportSubjectScoreDistributionToExcel } from "@/lib/exportExcelSubjectScoreDistribution";
+import { type StudentTrackingBookData } from "@/lib/api/reports";
 
 // Helper functions
 import {
@@ -122,7 +125,7 @@ export default function ReportsPage() {
     "single"
   );
   const [reportFormat, setReportFormat] = useState<
-    "summary" | "detailed" | "semester-1" | "semester-2"
+    "summary" | "detailed" | "semester-1" | "semester-2" | "subject-distribution"
   >("summary");
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("");
@@ -134,11 +137,23 @@ export default function ReportsPage() {
     return month >= 10 ? year : year - 1;
   });
   const [reportData, setReportData] = useState<MonthlyReportData | null>(null);
+  const [distributionData, setDistributionData] = useState<StudentTrackingBookData | null>(null);
   const [semesterSourceReports, setSemesterSourceReports] = useState<
     MonthlyReportData[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Metadata for Subject Score Distribution
+  const [schoolCode, setSchoolCode] = useState("01020710711");
+  const [district, setDistrict] = useState("ស្រុកប្រាសាទបាគង");
+  const [commune, setCommune] = useState("កណ្ដែក");
+  const [phoneNumber, setPhoneNumber] = useState("069 216251");
+  const [fillDate, setFillDate] = useState(() => {
+    const d = new Date();
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  });
+  const [fillerName, setFillerName] = useState("");
 
   const [showDetailedReport, setShowDetailedReport] = useState(true);
 
@@ -210,12 +225,78 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     setReportData(null);
+    setDistributionData(null);
     setSemesterSourceReports([]);
 
     try {
       const isNationalExam = isNationalExamGrade(reportType === "single" ? chosenClass?.grade : selectedGrade);
 
-      if (reportType === "single") {
+      if (reportFormat === "subject-distribution") {
+        if (reportType === "single") {
+          const tracking = await reportsApi.getStudentTrackingBook(selectedClassId, selectedYear);
+          setDistributionData(tracking);
+          setReportData({
+            classId: selectedClassId,
+            className: chosenClass?.name || "",
+            grade: chosenClass?.grade || "",
+            month: "ប្រចាំឆ្នាំ",
+            year: selectedYear,
+            totalCoefficient: 0,
+            subjects: tracking.subjects,
+            students: tracking.students.map((s) => ({
+              studentId: s.studentId,
+              studentName: s.studentName,
+              gender: s.gender,
+              grades: {},
+              totalScore: s.totalScore,
+              average: s.averageScore,
+              gradeLevel: s.gradeLevel,
+              rank: s.rank,
+              absent: s.attendance?.totalAbsent || 0,
+              permission: s.attendance?.permission || 0,
+            })),
+          });
+        } else {
+          const gradeClasses = availableClasses.filter((c) => c.grade === selectedGrade);
+          if (gradeClasses.length === 0) throw new Error("រកមិនឃើញថ្នាក់នៅក្នុងកម្រិតនេះទេ");
+          const results = await Promise.all(
+            gradeClasses.map((c) => reportsApi.getStudentTrackingBook(c.id, selectedYear))
+          );
+          const combinedStudents = results.flatMap((r) => r.students);
+          const combinedSubjects = results[0]?.subjects || [];
+          const combinedTracking: StudentTrackingBookData = {
+            classId: "grade-wide",
+            className: `ថ្នាក់ទី${selectedGrade}`,
+            grade: selectedGrade,
+            year: selectedYear,
+            teacherName: "គ្រូទាំងអស់",
+            subjects: combinedSubjects,
+            students: combinedStudents,
+            months: [],
+            month: null,
+          };
+          setDistributionData(combinedTracking);
+          setReportData({
+            grade: selectedGrade,
+            month: "ប្រចាំឆ្នាំ",
+            year: selectedYear,
+            totalCoefficient: 0,
+            subjects: combinedSubjects,
+            students: combinedStudents.map((s) => ({
+              studentId: s.studentId,
+              studentName: s.studentName,
+              gender: s.gender,
+              grades: {},
+              totalScore: s.totalScore,
+              average: s.averageScore,
+              gradeLevel: s.gradeLevel,
+              rank: s.rank,
+              absent: s.attendance?.totalAbsent || 0,
+              permission: s.attendance?.permission || 0,
+            })),
+          });
+        }
+      } else if (reportType === "single") {
         let responses: MonthlyReportData[] = [];
         
         if (reportFormat === "semester-1") {
@@ -801,7 +882,25 @@ export default function ReportsPage() {
     return pages;
   })();
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
+    if (reportFormat === "subject-distribution" && distributionData) {
+      await exportSubjectScoreDistributionToExcel({
+        students: distributionData.students,
+        subjects: distributionData.subjects,
+        selectedClass: selectedClass || { name: distributionData.className, grade: distributionData.grade },
+        selectedYear,
+        schoolCode,
+        province,
+        district,
+        commune,
+        schoolName: examCenter || schoolName || "វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ",
+        phoneNumber,
+        fillDate,
+        fillerName: fillerName || distributionData.teacherName || teacherName || "ស៊ីម ប៊ុយគាន",
+      });
+      return;
+    }
+
     const data =
       (reportFormat === "semester-1" || reportFormat === "semester-2")
         ? semesterReports.map((report, index) => {
@@ -998,10 +1097,10 @@ export default function ReportsPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 ទម្រង់របាយការណ៍ Report Format
               </label>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   onClick={() => setReportFormat("summary")}
-                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 min-w-[140px] h-11 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     reportFormat === "summary"
                       ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1012,7 +1111,7 @@ export default function ReportsPage() {
                 </button>
                 <button
                   onClick={() => setReportFormat("detailed")}
-                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 min-w-[140px] h-11 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     reportFormat === "detailed"
                       ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1023,7 +1122,7 @@ export default function ReportsPage() {
                 </button>
                 <button
                   onClick={() => setReportFormat("semester-1")}
-                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 min-w-[120px] h-11 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     reportFormat === "semester-1"
                       ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1034,7 +1133,7 @@ export default function ReportsPage() {
                 </button>
                 <button
                   onClick={() => setReportFormat("semester-2")}
-                  className={`flex-1 h-11 px-6 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                  className={`flex-1 min-w-[120px] h-11 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                     reportFormat === "semester-2"
                       ? "bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -1042,6 +1141,17 @@ export default function ReportsPage() {
                 >
                   <BarChart3 className="w-4 h-4" />
                   ឆមាសទី២
+                </button>
+                <button
+                  onClick={() => setReportFormat("subject-distribution")}
+                  className={`flex-1 min-w-[160px] h-11 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    reportFormat === "subject-distribution"
+                      ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  ស្រង់ពិន្ទុតាមមុខវិជ្ជា
                 </button>
               </div>
             </div>
@@ -1123,7 +1233,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  disabled={reportFormat === "semester-1" || reportFormat === "semester-2"}
+                  disabled={reportFormat === "semester-1" || reportFormat === "semester-2" || reportFormat === "subject-distribution"}
                   className="w-full h-11 px-4 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:border-indigo-400 focus:outline-none focus:ring-2 focus: ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   {getDynamicMonthOptions(currentGrade).map((option) => (
@@ -1481,6 +1591,21 @@ export default function ReportsPage() {
                       firstPageStudentCount={firstPageStudentCount}
                       studentsPerPage={studentsPerPage}
                     />
+                  ) : reportFormat === "subject-distribution" && distributionData ? (
+                    <SubjectScoreDistributionReport
+                      students={distributionData.students}
+                      subjects={distributionData.subjects}
+                      selectedClass={selectedClass || { name: distributionData.className, grade: distributionData.grade }}
+                      selectedYear={selectedYear}
+                      schoolCode={schoolCode}
+                      province={province}
+                      district={district}
+                      commune={commune}
+                      schoolName={examCenter || schoolName || "វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ"}
+                      phoneNumber={phoneNumber}
+                      fillDate={fillDate}
+                      fillerName={fillerName || distributionData.teacherName || teacherName || "ស៊ីម ប៊ុយគាន"}
+                    />
                   ) : (
                     <KhmerSemesterTwoReport
                       paginatedReports={semesterPaginatedReports}
@@ -1582,6 +1707,21 @@ export default function ReportsPage() {
                   showClassName={showClassName}
                   firstPageStudentCount={firstPageStudentCount}
                   studentsPerPage={studentsPerPage}
+                />
+              ) : reportFormat === "subject-distribution" && distributionData ? (
+                <SubjectScoreDistributionReport
+                  students={distributionData.students}
+                  subjects={distributionData.subjects}
+                  selectedClass={selectedClass || { name: distributionData.className, grade: distributionData.grade }}
+                  selectedYear={selectedYear}
+                  schoolCode={schoolCode}
+                  province={province}
+                  district={district}
+                  commune={commune}
+                  schoolName={examCenter || schoolName || "វិទ្យាល័យ ហ៊ុនសែន ស្វាយធំ"}
+                  phoneNumber={phoneNumber}
+                  fillDate={fillDate}
+                  fillerName={fillerName || distributionData.teacherName || teacherName || "ស៊ីម ប៊ុយគាន"}
                 />
               ) : (
                 <KhmerSemesterTwoReport
