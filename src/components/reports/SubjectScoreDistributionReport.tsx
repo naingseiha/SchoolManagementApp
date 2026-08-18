@@ -153,41 +153,114 @@ export const STANDARD_DISTRIBUTION_SUBJECTS = [
   },
 ];
 
-export const EXCLUDED_SUBJECT_KEYS = [
-  "កសិកម្ម",
-  "គេហវិជ្ជា",
-  "គេហ",
-  "AGRI",
-  "AGRICULTURE",
-  "HE",
-  "HOMEMAKING",
-  "HOME_ECONOMICS",
-  "កីឡា",
-  "អប់រំកាយ",
-  "SPORTS",
-  "PE",
-  "PHYSICAL_EDUCATION",
-  "កុំព្យូទ័រ",
-  "ពត៌មានវិទ្យា",
-  "ព័ត៌មានវិទ្យា",
-  "ICT",
-  "COMPUTER",
-  "IT",
-  "សុខភាព",
-  "អប់រំសុខភាព",
-  "HLTH",
-  "HEALTH",
-];
-
 export const isExcludedSubject = (subject: any): boolean => {
   if (!subject) return false;
   const name = (subject.nameKh || subject.name || "").toString().trim().toLowerCase();
   const code = (subject.code || "").toString().trim().toUpperCase();
 
-  return EXCLUDED_SUBJECT_KEYS.some((key) => {
-    const k = key.toLowerCase();
-    return name.includes(k) || code.includes(k.toUpperCase()) || code === key.toUpperCase();
-  });
+  // 1. NEVER exclude any of our 10 standard core subjects
+  if (
+    name.includes("ខ្មែរ") ||
+    name.includes("តែង") ||
+    name.includes("សរសេរ") ||
+    name.includes("អាន") ||
+    name.includes("គណិត") ||
+    name.includes("រូប") ||
+    name.includes("គីមី") ||
+    name.includes("ជីវ") ||
+    name.includes("ផែនដី") ||
+    name.includes("សីលធម៌") ||
+    name.includes("ពលរដ្ឋ") ||
+    name.includes("ប្រវត្តិ") ||
+    name.includes("ភូមិ") ||
+    name.includes("អង់គ្លេស") ||
+    name.includes("បារាំង") ||
+    name.includes("បរទេស") ||
+    code === "KHM" ||
+    code === "KHMER" ||
+    code === "WRITER" ||
+    code === "WRITING" ||
+    code === "DICTATION" ||
+    code === "MATH" ||
+    code === "PHY" ||
+    code === "PHYSICS" ||
+    code === "CHEM" ||
+    code === "CHEMISTRY" ||
+    code === "BIO" ||
+    code === "BIOLOGY" ||
+    code === "EARTH" ||
+    code === "MORAL" ||
+    code === "HIST" ||
+    code === "HISTORY" ||
+    code === "GEO" ||
+    code === "ENG" ||
+    code === "FR" ||
+    code.startsWith("KHM") ||
+    code.startsWith("WRI") ||
+    code.startsWith("MAT") ||
+    code.startsWith("PHY") ||
+    code.startsWith("CHE") ||
+    code.startsWith("BIO") ||
+    code.startsWith("EAR") ||
+    code.startsWith("MOR") ||
+    code.startsWith("CIV") ||
+    code.startsWith("HIS") ||
+    code.startsWith("GEO") ||
+    code.startsWith("ENG") ||
+    code.startsWith("FR")
+  ) {
+    return false;
+  }
+
+  // 2. Exact excluded codes (Do NOT use substring matching on short codes)
+  const exactExcludedCodes = [
+    "AGRI",
+    "AGRICULTURE",
+    "HE",
+    "HOMEMAKING",
+    "HOME_ECONOMICS",
+    "SPORTS",
+    "SPORT",
+    "PE",
+    "PHYSICAL_EDUCATION",
+    "ICT",
+    "COMPUTER",
+    "IT",
+    "HLTH",
+    "HEALTH",
+    "HEALTH_EDUCATION",
+  ];
+  if (exactExcludedCodes.includes(code)) return true;
+
+  // 3. Excluded code prefixes
+  if (
+    code.startsWith("AGR") ||
+    code.startsWith("SPO") ||
+    code.startsWith("ICT") ||
+    code.startsWith("COMP") ||
+    code.startsWith("HLT")
+  ) {
+    return true;
+  }
+
+  // 4. Excluded Khmer name keywords
+  const excludedNameKeywords = [
+    "កសិកម្ម",
+    "គេហវិជ្ជា",
+    "គេហវិទ្យា",
+    "គេហ",
+    "កីឡា",
+    "អប់រំកាយ",
+    "អប់រំកីឡា",
+    "កុំព្យូទ័រ",
+    "ពត៌មានវិទ្យា",
+    "ព័ត៌មានវិទ្យា",
+    "បច្ចេកវិទ្យាព័ត៌មាន",
+    "សុខភាព",
+    "អប់រំសុខភាព",
+    "កម្មវិធីជីវភាព",
+  ];
+  return excludedNameKeywords.some((keyword) => name.includes(keyword.toLowerCase()));
 };
 
 export const isGrade789 = (selectedClass: any, subjects?: any[]): boolean => {
@@ -225,17 +298,19 @@ export const getStandardSubjectIndex = (
   const code = (subject.code || "").toString().trim().toUpperCase();
 
   // 1. Khmer (Slot 0 -> ភាសាខ្មែរ)
-  // For Grades 7, 8, 9: តែងសេចក្តី and សរសេរតាមអាន (and ភាសាខ្មែរ) all map to ភាសាខ្មែរ
+  // For Grades 7, 8, 9: តែងសេចក្តី and សរសេរតាមអាន (and ភាសាខ្មែរ / អក្សរសាស្ត្រខ្មែរ) all map to ភាសាខ្មែរ
   if (
     name.includes("ខ្មែរ") ||
-    code === "KHM" ||
-    code === "KHMER" ||
-    code.startsWith("KHM-") ||
     name.includes("តែង") ||
     name.includes("សរសេរ") ||
+    name.includes("អាន") ||
+    code === "KHM" ||
+    code === "KHMER" ||
     code === "WRITING" ||
     code === "WRITER" ||
-    code === "DICTATION"
+    code === "DICTATION" ||
+    code.startsWith("KHM") ||
+    code.startsWith("WRI")
   ) {
     return 0; // 1. ភាសាខ្មែរ
   }
@@ -248,8 +323,8 @@ export const getStandardSubjectIndex = (
     code === "ETHICS" ||
     code === "CIVIC" ||
     code === "CIVICS" ||
-    code.startsWith("MOR-") ||
-    code.startsWith("CIV-")
+    code.startsWith("MOR") ||
+    code.startsWith("CIV")
   ) {
     return 1; // 2. សីលធម៌-ពលរដ្ឋ
   }
@@ -259,7 +334,7 @@ export const getStandardSubjectIndex = (
     name.includes("ប្រវត្តិ") ||
     code === "HIST" ||
     code === "HISTORY" ||
-    code.startsWith("HIS-")
+    code.startsWith("HIS")
   ) {
     return 2; // 3. ប្រវត្តិវិទ្យា
   }
@@ -269,7 +344,7 @@ export const getStandardSubjectIndex = (
     name.includes("ភូមិ") ||
     code === "GEO" ||
     code === "GEOGRAPHY" ||
-    code.startsWith("GEO-")
+    code.startsWith("GEO")
   ) {
     return 3; // 4. ភូមិវិទ្យា
   }
@@ -279,7 +354,7 @@ export const getStandardSubjectIndex = (
     name.includes("គណិត") ||
     code === "MATH" ||
     code === "MATHEMATICS" ||
-    code.startsWith("MAT-")
+    code.startsWith("MAT")
   ) {
     return 4; // 5. គណិតវិទ្យា
   }
@@ -289,7 +364,7 @@ export const getStandardSubjectIndex = (
     name.includes("រូប") ||
     code === "PHY" ||
     code === "PHYSICS" ||
-    code.startsWith("PHY-")
+    code.startsWith("PHY")
   ) {
     return 5; // 6. រូបវិទ្យា
   }
@@ -299,7 +374,8 @@ export const getStandardSubjectIndex = (
     name.includes("គីមី") ||
     code === "CHEM" ||
     code === "CHEMISTRY" ||
-    code.startsWith("CHE-")
+    code === "CHM" ||
+    code.startsWith("CHE")
   ) {
     return 6; // 7. គីមីវិទ្យា
   }
@@ -308,9 +384,10 @@ export const getStandardSubjectIndex = (
   if (
     name.includes("ជីវៈ") ||
     name.includes("ជីវវិទ្យា") ||
+    name.includes("ជីវ") ||
     code === "BIO" ||
     code === "BIOLOGY" ||
-    code.startsWith("BIO-")
+    code.startsWith("BIO")
   ) {
     return 7; // 8. ជីវវិទ្យា
   }
@@ -320,7 +397,7 @@ export const getStandardSubjectIndex = (
     name.includes("ផែនដី") ||
     code === "EARTH" ||
     code === "EARTH_SCIENCE" ||
-    code.startsWith("EAR-")
+    code.startsWith("EAR")
   ) {
     return 8; // 9. ផែនដីវិទ្យា
   }
@@ -337,13 +414,112 @@ export const getStandardSubjectIndex = (
     code === "FRENCH" ||
     code === "FOREIGN" ||
     code === "FOREIGN_LANG" ||
-    code.startsWith("ENG-") ||
-    code.startsWith("FR-")
+    code.startsWith("ENG") ||
+    code.startsWith("FR")
   ) {
     return 9; // 10. ភាសាបរទេស
   }
 
   return -1;
+};
+
+export const getStudentSubjectAnnualScore = (
+  student: any,
+  subjectId: string,
+  rawSub?: any
+): number | null => {
+  if (!student) return null;
+
+  // 1. If from studentTrackingData / transcriptData (student.subjectScores)
+  if (student.subjectScores) {
+    let s = student.subjectScores[subjectId];
+
+    // Fallback: check by rawSub._id, code, nameKh, etc. if not found directly
+    if (!s && rawSub) {
+      const candidates = [
+        rawSub._id,
+        rawSub.id,
+        rawSub.code,
+        rawSub.nameKh,
+        rawSub.nameEn,
+        rawSub.name,
+      ].filter(Boolean);
+
+      for (const key of candidates) {
+        if (student.subjectScores[key]) {
+          s = student.subjectScores[key];
+          break;
+        }
+      }
+
+      // If still not found, search through Object.entries of student.subjectScores
+      if (!s) {
+        const subCode = (rawSub.code || "").toUpperCase();
+        const subNameKh = (rawSub.nameKh || rawSub.name || "").toLowerCase();
+
+        for (const [key, val] of Object.entries(student.subjectScores)) {
+          const valObj = val as any;
+          if (
+            key === subjectId ||
+            key === rawSub.id ||
+            key === rawSub._id ||
+            (subCode && key.toUpperCase() === subCode) ||
+            (subNameKh && key.toLowerCase().includes(subNameKh)) ||
+            (valObj && valObj.subjectId === subjectId) ||
+            (valObj && valObj.subjectId === rawSub.id) ||
+            (valObj && valObj.code && valObj.code.toUpperCase() === subCode)
+          ) {
+            s = valObj;
+            break;
+          }
+        }
+      }
+    }
+
+    if (s) {
+      if (s.annualScore !== undefined && s.annualScore !== null && !isNaN(Number(s.annualScore))) {
+        return Number(s.annualScore);
+      }
+      const sem1 =
+        s.semester1Score !== null && s.semester1Score !== undefined && !isNaN(Number(s.semester1Score))
+          ? Number(s.semester1Score)
+          : null;
+      const sem2 =
+        s.semester2Score !== null && s.semester2Score !== undefined && !isNaN(Number(s.semester2Score))
+          ? Number(s.semester2Score)
+          : null;
+
+      if (sem1 !== null && sem2 !== null) return (sem1 + sem2) / 2;
+      if (sem1 !== null) return sem1;
+      if (sem2 !== null) return sem2;
+      if (s.score !== null && s.score !== undefined && !isNaN(Number(s.score))) {
+        return Number(s.score);
+      }
+    }
+  }
+
+  // 2. If from monthly report grades array (student.grades)
+  if (student.grades) {
+    if (Array.isArray(student.grades)) {
+      const g = student.grades.find(
+        (item: any) =>
+          item.subjectId === subjectId ||
+          (rawSub && item.subjectId === rawSub.id) ||
+          (rawSub && item.subjectId === rawSub._id) ||
+          (rawSub && item.subjectCode === rawSub.code)
+      );
+      if (g && g.score !== null && g.score !== undefined && !isNaN(Number(g.score))) {
+        return Number(g.score);
+      }
+    } else if (typeof student.grades === "object") {
+      const g = student.grades[subjectId] ?? (rawSub ? student.grades[rawSub.id] : null);
+      if (g !== null && g !== undefined && !isNaN(Number(g))) {
+        return Number(g);
+      }
+    }
+  }
+
+  return null;
 };
 
 export const getStudentScoreForStandardSlot = (
@@ -361,7 +537,7 @@ export const getStudentScoreForStandardSlot = (
   for (const rawSub of rawSubjectsForSlot) {
     const rawMax = Number(rawSub.maxScore) || 50;
     totalMaxScore += rawMax;
-    const s = getStudentSubjectAnnualScore(student, rawSub.id);
+    const s = getStudentSubjectAnnualScore(student, rawSub.id, rawSub);
     if (s !== null && s !== undefined && !isNaN(Number(s))) {
       totalScore += Number(s);
       hasAnyScore = true;
@@ -384,51 +560,6 @@ export const isFemaleStudent = (gender: string | undefined | null): boolean => {
   if (!gender) return false;
   const g = gender.toString().toLowerCase().trim();
   return g === "female" || g === "ស្រី" || g === "f";
-};
-
-export const getStudentSubjectAnnualScore = (
-  student: any,
-  subjectId: string
-): number | null => {
-  // If from studentTrackingData / transcriptData
-  if (student.subjectScores && student.subjectScores[subjectId]) {
-    const s = student.subjectScores[subjectId];
-    if (s.annualScore !== undefined && s.annualScore !== null && !isNaN(Number(s.annualScore))) {
-      return Number(s.annualScore);
-    }
-    const sem1 =
-      s.semester1Score !== null && s.semester1Score !== undefined && !isNaN(Number(s.semester1Score))
-        ? Number(s.semester1Score)
-        : null;
-    const sem2 =
-      s.semester2Score !== null && s.semester2Score !== undefined && !isNaN(Number(s.semester2Score))
-        ? Number(s.semester2Score)
-        : null;
-
-    if (sem1 !== null && sem2 !== null) return (sem1 + sem2) / 2;
-    if (sem1 !== null) return sem1;
-    if (sem2 !== null) return sem2;
-    if (s.score !== null && s.score !== undefined && !isNaN(Number(s.score))) {
-      return Number(s.score);
-    }
-  }
-
-  // If from monthly report grades array
-  if (student.grades) {
-    if (Array.isArray(student.grades)) {
-      const g = student.grades.find((item: any) => item.subjectId === subjectId);
-      if (g && g.score !== null && g.score !== undefined && !isNaN(Number(g.score))) {
-        return Number(g.score);
-      }
-    } else if (typeof student.grades === "object") {
-      const g = student.grades[subjectId];
-      if (g !== null && g !== undefined && !isNaN(Number(g))) {
-        return Number(g);
-      }
-    }
-  }
-
-  return null;
 };
 
 export const getIntervalIndex = (score: number | null | undefined): number | null => {
