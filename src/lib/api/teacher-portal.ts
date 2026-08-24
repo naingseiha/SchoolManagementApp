@@ -86,9 +86,12 @@ export interface TeacherActivity {
   metadata?: {
     className?: string;
     studentCount?: number;
+    classCount?: number;
     subject?: string;
+    subjectCount?: number;
     achievement?: string;
     averageScore?: number;
+    [key: string]: any;
   };
 }
 

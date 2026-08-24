@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { TeacherProfile, UpdateTeacherProfileData } from "@/lib/api/teacher-portal";
 import TeacherProfileEditForm from "../TeacherProfileEditForm";
+import { useVividTheme } from "@/lib/theme";
+import VividThemeSelector from "@/components/theme/VividThemeSelector";
 
 const ROLE_LABELS = {
   TEACHER: "គ្រូបង្រៀន",
@@ -48,6 +50,8 @@ export default function TeacherProfileTab({
   onChangePassword,
   onUnsavedChanges,
 }: TeacherProfileTabProps) {
+  const { currentTheme } = useVividTheme();
+
   if (isEditingProfile) {
     return (
       <TeacherProfileEditForm
@@ -62,17 +66,17 @@ export default function TeacherProfileTab({
 
   return (
     <div className="space-y-4 hide-scrollbar">
-      {/* Instagram-Style Profile Header */}
+      {/* Instagram-Style Profile Header with Vivid Theme */}
       <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
         {/* Cover/Banner */}
-        <div className="relative h-24 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">
+        <div className={`relative h-24 bg-gradient-to-br ${currentTheme.heroGradient} transition-all duration-500`}>
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-16 translate-x-16"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full translate-y-12 -translate-x-12"></div>
           </div>
           {/* Role Badge */}
           <div className="absolute top-3 right-3">
-            <div className="px-3 py-1 rounded-full flex items-center gap-1.5 bg-white/90 backdrop-blur-sm">
+            <div className="px-3 py-1 rounded-full flex items-center gap-1.5 bg-white/90 backdrop-blur-sm shadow-sm">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
               <span className="text-gray-800 text-xs font-bold">
                 {ROLE_LABELS[profile.role] || profile.role}
@@ -86,12 +90,12 @@ export default function TeacherProfileTab({
           {/* Avatar - Overlapping cover - Center Aligned */}
           <div className="flex flex-col items-center -mt-16 mb-4">
             <div className="relative mb-4">
-              <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full p-1">
+              <div className={`w-32 h-32 bg-gradient-to-br ${currentTheme.avatarRing} rounded-full p-1 shadow-lg transition-all duration-500`}>
                 <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                  <User className="w-16 h-16 text-indigo-600" />
+                  <User className={`w-16 h-16 ${currentTheme.textColor}`} />
                 </div>
               </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-400 rounded-full border-4 border-white flex items-center justify-center">
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-400 rounded-full border-4 border-white flex items-center justify-center shadow-md">
                 <CheckCircle className="w-5 h-5 text-white" />
               </div>
             </div>
@@ -123,9 +127,9 @@ export default function TeacherProfileTab({
               </div>
 
               {/* Role Badge */}
-              <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-3 py-1.5 rounded-full">
-                <School className="w-3.5 h-3.5 text-blue-600" />
-                <span className="text-xs font-bold text-blue-700">
+              <div className={`inline-flex items-center gap-1.5 bg-gradient-to-r ${currentTheme.accentBg} border ${currentTheme.accentBorder} px-3 py-1.5 rounded-full shadow-sm`}>
+                <School className={`w-3.5 h-3.5 ${currentTheme.textColor}`} />
+                <span className={`text-xs font-bold ${currentTheme.badgeText}`}>
                   {ROLE_LABELS[profile.role] || profile.role}
                 </span>
               </div>
@@ -193,7 +197,7 @@ export default function TeacherProfileTab({
             <button
               onClick={onEdit}
               aria-label="កែប្រែព័ត៌មាន / Edit profile"
-              className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl active:scale-95 transition-all min-h-[44px]"
+              className={`flex items-center justify-center gap-2 px-4 py-3.5 bg-gradient-to-r ${currentTheme.buttonGradient} text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl active:scale-95 transition-all min-h-[44px]`}
             >
               <Edit className="w-5 h-5" />
               <span>កែប្រែ</span>
@@ -209,6 +213,9 @@ export default function TeacherProfileTab({
           </div>
         </div>
       </div>
+
+      {/* Vivid Theme Selector */}
+      <VividThemeSelector />
 
       {/* Personal Information */}
       <div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-sm">

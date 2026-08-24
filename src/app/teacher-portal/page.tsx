@@ -50,6 +50,8 @@ import {
   formatBytes,
   isImageSizeAcceptable,
 } from "@/lib/utils/imageCompression";
+import { useVividTheme } from "@/lib/theme";
+import VividThemeSelector from "@/components/theme/VividThemeSelector";
 
 // Lazy load heavy components
 const TeacherProfileEditModal = dynamic(
@@ -581,6 +583,9 @@ export default function TeacherPortalPage() {
             onPassword={() => setShowPasswordModal(true)}
           />
 
+          {/* Vivid Theme Customization */}
+          <VividThemeSelector />
+
           {/* Achievement Badges - Real Data */}
           <AchievementBadges profile={profile} />
 
@@ -683,81 +688,84 @@ const HeroSection = memo(
     classCount,
     studentCount,
     subjectCount,
-  }: any) => (
-    <div className="relative overflow-hidden will-change-transform">
-      {/* Enhanced Background with larger height */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-50"></div>
-      </div>
+  }: any) => {
+    const { currentTheme } = useVividTheme();
 
-      {/* Settings Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <button
-          onClick={onSettingsClick}
-          aria-label="កែប្រែព័ត៌មានគណនី / Edit profile settings"
-          className="p-3 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/30 shadow-lg hover:bg-white/30 transition-all active:scale-95"
-        >
-          <Settings className="w-5 h-5 text-white" />
-        </button>
-      </div>
-
-      {/* Profile Content - Enhanced */}
-      <div className="relative z-10 pt-16 pb-6 px-4">
-        <div className="flex flex-col items-center mb-4">
-          {/* Avatar - Enhanced with glow */}
-          <div className="relative mb-4">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-pink-400 rounded-full blur-xl opacity-75"></div>
-            <div className="relative w-32 h-32 bg-gradient-to-br from-white to-gray-100 rounded-full p-1 shadow-2xl">
-              {profilePhoto ? (
-                <img
-                  src={profilePhoto}
-                  alt="រូបភាពគ្រូបង្រៀន / Teacher profile photo"
-                  className="w-full h-full rounded-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <User className="w-16 h-16 text-white" />
-                </div>
-              )}
-            </div>
-            <button
-              onClick={onCameraClick}
-              aria-label="ផ្លាស់ប្តូររូបភាព / Change profile photo"
-              className="absolute bottom-0 right-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full border-4 border-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95"
-            >
-              <Camera className="w-5 h-5 text-white" />
-            </button>
-          </div>
-
-          {/* Name & Title - Enhanced */}
-          <div className="text-center mb-3">
-            <h1 className="text-2xl font-black text-white mb-1 drop-shadow-lg">
-              {profile.khmerName || `${profile.firstName} ${profile.lastName}`}
-            </h1>
-            <p className="text-white/90 text-sm mb-2 drop-shadow">
-              {profile.englishName ||
-                `${profile.firstName} ${profile.lastName}`}
-            </p>
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 px-4 py-2 rounded-full shadow-lg">
-              <Award className="w-4 h-4 text-yellow-300" />
-              <span className="text-sm font-koulen text-white">
-                {ROLE_LABELS[profile.role] || profile.role}
-              </span>
-            </div>
-          </div>
-
-          {profile.position && (
-            <div className="flex items-center gap-2 text-white/90 text-sm">
-              <Briefcase className="w-4 h-4" />
-              <span>{profile.position}</span>
-            </div>
-          )}
+    return (
+      <div className="relative overflow-hidden will-change-transform">
+        {/* Enhanced Background with dynamic Vivid Theme */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${currentTheme.heroGradient} transition-all duration-500`}>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-50"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl opacity-50"></div>
         </div>
 
-        {/* Stats Grid - Enhanced */}
-        <div className="grid grid-cols-3 gap-3 px-2">
+        {/* Settings Button */}
+        <div className="absolute top-4 right-4 z-10">
+          <button
+            onClick={onSettingsClick}
+            aria-label="កែប្រែព័ត៌មានគណនី / Edit profile settings"
+            className="p-3 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/30 shadow-lg hover:bg-white/30 transition-all active:scale-95"
+          >
+            <Settings className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* Profile Content - Enhanced */}
+        <div className="relative z-10 pt-16 pb-6 px-4">
+          <div className="flex flex-col items-center mb-4">
+            {/* Avatar - Enhanced with glow */}
+            <div className="relative mb-4">
+              <div className={`absolute inset-0 bg-gradient-to-br ${currentTheme.glowColor} rounded-full blur-xl opacity-75 transition-all duration-500`}></div>
+              <div className={`relative w-32 h-32 bg-gradient-to-br ${currentTheme.avatarRing} rounded-full p-1 shadow-2xl transition-all duration-500`}>
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt="រូបភាពគ្រូបង្រៀន / Teacher profile photo"
+                    className="w-full h-full rounded-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+                    <User className={`w-16 h-16 ${currentTheme.textColor}`} />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={onCameraClick}
+                aria-label="ផ្លាស់ប្តូររូបភាព / Change profile photo"
+                className={`absolute bottom-0 right-0 w-10 h-10 bg-gradient-to-br ${currentTheme.buttonGradient} rounded-full border-4 border-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform active:scale-95 text-white`}
+              >
+                <Camera className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Name & Title - Enhanced */}
+            <div className="text-center mb-3">
+              <h1 className="text-2xl font-black text-white mb-1 drop-shadow-lg">
+                {profile.khmerName || `${profile.firstName} ${profile.lastName}`}
+              </h1>
+              <p className="text-white/90 text-sm mb-2 drop-shadow">
+                {profile.englishName ||
+                  `${profile.firstName} ${profile.lastName}`}
+              </p>
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md border border-white/30 px-4 py-2 rounded-full shadow-lg">
+                <Award className="w-4 h-4 text-yellow-300" />
+                <span className="text-sm font-koulen text-white">
+                  {(ROLE_LABELS as any)[profile.role] || profile.role}
+                </span>
+              </div>
+            </div>
+
+            {profile.position && (
+              <div className="flex items-center gap-2 text-white/90 text-sm">
+                <Briefcase className="w-4 h-4" />
+                <span>{profile.position}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Stats Grid - Enhanced */}
+          <div className="grid grid-cols-3 gap-3 px-2">
           <StatCard
             icon={Home}
             value={classCount}
@@ -783,7 +791,8 @@ const HeroSection = memo(
         </div>
       </div>
     </div>
-  ),
+  );
+  },
   // Custom comparison function to prevent unnecessary re-renders
   (prevProps, nextProps) => {
     return (
@@ -884,24 +893,28 @@ const SocialActionButtons = memo(
 SocialActionButtons.displayName = "SocialActionButtons";
 
 // Action Buttons Component
-const ActionButtons = memo(({ onEdit, onPassword }: any) => (
-  <div className="grid grid-cols-2 gap-3">
-    <button
-      onClick={onEdit}
-      className="flex items-center justify-center gap-2 bg-white rounded-2xl px-6 py-4 border border-gray-200 hover:border-indigo-400 hover:bg-gray-50 transition-all active:scale-95 group"
-    >
-      <Edit3 className="w-5 h-5 text-indigo-600 group-hover:scale-110 transition-transform" />
-      <span className="font-bold font-koulen text-gray-900">កែប្រែ</span>
-    </button>
-    <button
-      onClick={onPassword}
-      className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl px-6 py-4 hover:from-indigo-700 hover:to-purple-700 transition-all active:scale-95 group"
-    >
-      <Lock className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-      <span className="font-bold font-koulen text-white">ពាក្យសម្ងាត់</span>
-    </button>
-  </div>
-));
+const ActionButtons = memo(({ onEdit, onPassword }: any) => {
+  const { currentTheme } = useVividTheme();
+
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <button
+        onClick={onEdit}
+        className="flex items-center justify-center gap-2 bg-white rounded-2xl px-6 py-4 border border-gray-200 hover:border-indigo-400 hover:bg-gray-50 transition-all active:scale-95 group shadow-sm"
+      >
+        <Edit3 className={`w-5 h-5 ${currentTheme.textColor} group-hover:scale-110 transition-transform`} />
+        <span className="font-bold font-koulen text-gray-900">កែប្រែ</span>
+      </button>
+      <button
+        onClick={onPassword}
+        className={`flex items-center justify-center gap-2 bg-gradient-to-r ${currentTheme.buttonGradient} rounded-2xl px-6 py-4 transition-all active:scale-95 group shadow-md text-white`}
+      >
+        <Lock className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+        <span className="font-bold font-koulen text-white">ពាក្យសម្ងាត់</span>
+      </button>
+    </div>
+  );
+});
 
 ActionButtons.displayName = "ActionButtons";
 
@@ -1506,7 +1519,7 @@ const InfoRow = memo(({ icon, label, value, color = "gray" }: any) => {
 
   return (
     <div
-      className={`flex items-start gap-3 p-3.5 bg-gradient-to-r ${colorClasses[color]} border-2 rounded-2xl`}
+      className={`flex items-start gap-3 p-3.5 bg-gradient-to-r ${(colorClasses as any)[color] || colorClasses.blue} border-2 rounded-2xl`}
     >
       <div className="mt-0.5">{icon}</div>
       <div className="flex-1 min-w-0">

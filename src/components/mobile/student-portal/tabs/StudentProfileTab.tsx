@@ -46,6 +46,8 @@ import {
 } from "@/lib/api/student-portal";
 import StudentProfileEditForm from "../StudentProfileEditForm";
 import { getCurrentAcademicYear } from "@/utils/academicYear";
+import { useVividTheme } from "@/lib/theme";
+import VividThemeSelector from "@/components/theme/VividThemeSelector";
 
 const ROLE_LABELS = {
   GENERAL: "សិស្សទូទៅ",
@@ -407,7 +409,11 @@ export default function StudentProfileTab({
         showAllMonths={showAllMonths}
         onToggleShowAll={() => setShowAllMonths(!showAllMonths)}
         currentAcademicYear={currentAcademicYear}
+        grade={profile?.student?.class?.grade}
       />
+
+      {/* Vivid Theme Customization */}
+      <VividThemeSelector />
 
       {/* Activity Feed - Real Data */}
       <ActivityFeed activities={activities} loading={loadingActivities} />
@@ -485,121 +491,125 @@ const HeroSection = memo(
     gradesData,
     attendanceData,
     onCameraClick,
-  }: any) => (
-    <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-lg">
-      {/* Cover Banner */}
-      <div className="relative h-32 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-20 translate-x-20"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-16 -translate-x-16"></div>
-        </div>
-        {/* Account Status Badge */}
-        <div className="absolute top-4 right-4">
-          <div
-            className={`px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg ${
-              profile.student.isAccountActive
-                ? "bg-green-400/90 backdrop-blur-sm"
-                : "bg-red-400/90 backdrop-blur-sm"
-            }`}
-          >
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <span className="text-white text-xs font-bold">
-              {profile.student.isAccountActive ? "Active" : "Inactive"}
-            </span>
-          </div>
-        </div>
-      </div>
+  }: any) => {
+    const { currentTheme } = useVividTheme();
 
-      {/* Profile Info */}
-      <div className="px-5 pb-5">
-        {/* Avatar - Center Aligned with Photo Upload */}
-        <div className="flex flex-col items-center -mt-20 mb-4">
-          <div className="relative mb-4">
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-pink-400 rounded-full blur-xl opacity-60"></div>
-            <div className="relative w-40 h-40 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full p-1.5 shadow-2xl">
-              {profilePhoto ? (
-                <img
-                  src={profilePhoto}
-                  alt="Profile"
-                  className="w-full h-full rounded-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                  <User className="w-20 h-20 text-indigo-600" />
-                </div>
-              )}
-            </div>
-            <button
-              onClick={onCameraClick}
-              className="absolute bottom-1 right-1 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full border-4 border-white flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95"
+    return (
+      <div className="bg-white rounded-3xl overflow-hidden border border-gray-200 shadow-lg">
+        {/* Cover Banner with Active Vivid Theme */}
+        <div className={`relative h-32 bg-gradient-to-br ${currentTheme.heroGradient} transition-all duration-500`}>
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-20 translate-x-20"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-16 -translate-x-16"></div>
+          </div>
+          {/* Account Status Badge */}
+          <div className="absolute top-4 right-4">
+            <div
+              className={`px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg ${
+                profile.student.isAccountActive
+                  ? "bg-green-400/90 backdrop-blur-sm"
+                  : "bg-red-400/90 backdrop-blur-sm"
+              }`}
             >
-              <Camera className="w-6 h-6 text-white" />
-            </button>
-            <div className="absolute top-0 right-0 w-10 h-10 bg-green-400 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
-              <CheckCircle className="w-6 h-6 text-white" />
-            </div>
-          </div>
-
-          {/* Name & Bio */}
-          <div className="text-center mb-4">
-            <h1 className="text-2xl font-black text-gray-900 mb-1">
-              {profile.student.khmerName}
-            </h1>
-            <p className="text-sm text-gray-600 mb-3">
-              {profile.student.englishName ||
-                `${profile.firstName} ${profile.lastName}`}
-            </p>
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <CreditCard className="w-4 h-4" />
-                <span className="font-bold">{profile.student.studentId}</span>
-              </div>
-              <span className="text-gray-300">•</span>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <GraduationCap className="w-4 h-4" />
-                <span className="font-bold">
-                  {profile.student?.class?.name || "N/A"}
-                </span>
-              </div>
-            </div>
-
-            {/* Role Badge */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 px-4 py-2 rounded-full shadow-sm">
-              <Award className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-black text-indigo-700">
-                {ROLE_LABELS[
-                  profile.student?.studentRole as keyof typeof ROLE_LABELS
-                ] || "N/A"}
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <span className="text-white text-xs font-bold">
+                {profile.student.isAccountActive ? "Active" : "Inactive"}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 py-4 border-t border-gray-100">
-          <StatCard
-            icon={Award}
-            value={gradesData?.statistics?.averageScore?.toFixed(1) || "0.0"}
-            label="មធ្យមភាគ"
-            color="from-indigo-500 to-purple-600"
-          />
-          <StatCard
-            icon={CheckCircle}
-            value={`${attendanceData?.statistics?.attendanceRate?.toFixed(0) || "0"}%`}
-            label="វត្តមាន"
-            color="from-green-500 to-emerald-600"
-          />
-          <StatCard
-            icon={BookOpen}
-            value={gradesData?.grades?.length || "0"}
-            label="មុខវិជ្ជា"
-            color="from-blue-500 to-cyan-600"
-          />
+        {/* Profile Info */}
+        <div className="px-5 pb-5">
+          {/* Avatar - Center Aligned with Photo Upload */}
+          <div className="flex flex-col items-center -mt-20 mb-4">
+            <div className="relative mb-4">
+              <div className={`absolute inset-0 bg-gradient-to-br ${currentTheme.glowColor} rounded-full blur-xl opacity-60 transition-all duration-500`}></div>
+              <div className={`relative w-40 h-40 bg-gradient-to-br ${currentTheme.avatarRing} rounded-full p-1.5 shadow-2xl transition-all duration-500`}>
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+                    <User className={`w-20 h-20 ${currentTheme.textColor}`} />
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={onCameraClick}
+                className={`absolute bottom-1 right-1 w-12 h-12 bg-gradient-to-br ${currentTheme.buttonGradient} rounded-full border-4 border-white flex items-center justify-center shadow-xl hover:scale-110 transition-transform active:scale-95 text-white`}
+              >
+                <Camera className="w-6 h-6" />
+              </button>
+              <div className="absolute top-0 right-0 w-10 h-10 bg-green-400 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+            </div>
+
+            {/* Name & Bio */}
+            <div className="text-center mb-4">
+              <h1 className="text-2xl font-black text-gray-900 mb-1">
+                {profile.student.khmerName}
+              </h1>
+              <p className="text-sm text-gray-600 mb-3">
+                {profile.student.englishName ||
+                  `${profile.firstName} ${profile.lastName}`}
+              </p>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <CreditCard className="w-4 h-4" />
+                  <span className="font-bold">{profile.student.studentId}</span>
+                </div>
+                <span className="text-gray-300">•</span>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="font-bold">
+                    {profile.student?.class?.name || "N/A"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Role Badge */}
+              <div className={`inline-flex items-center gap-2 bg-gradient-to-r ${currentTheme.accentBg} border-2 ${currentTheme.accentBorder} px-4 py-2 rounded-full shadow-sm`}>
+                <Award className={`w-4 h-4 ${currentTheme.textColor}`} />
+                <span className={`text-sm font-black ${currentTheme.badgeText}`}>
+                  {ROLE_LABELS[
+                    profile.student?.studentRole as keyof typeof ROLE_LABELS
+                  ] || "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-3 py-4 border-t border-gray-100">
+            <StatCard
+              icon={Award}
+              value={gradesData?.statistics?.averageScore?.toFixed(1) || "0.0"}
+              label="មធ្យមភាគ"
+              color={currentTheme.statCardBg}
+            />
+            <StatCard
+              icon={CheckCircle}
+              value={`${attendanceData?.statistics?.attendanceRate?.toFixed(0) || "0"}%`}
+              label="វត្តមាន"
+              color="from-green-500 to-emerald-600"
+            />
+            <StatCard
+              icon={BookOpen}
+              value={gradesData?.grades?.length || "0"}
+              label="មុខវិជ្ជា"
+              color="from-blue-500 to-cyan-600"
+            />
+          </div>
         </div>
       </div>
-    </div>
-  ),
+    );
+  },
 );
 
 HeroSection.displayName = "HeroSection";
@@ -801,6 +811,7 @@ const AcademicYearStats = memo(
     showAllMonths,
     onToggleShowAll,
     currentAcademicYear,
+    grade,
   }: any) => (
     <div className="bg-white rounded-3xl p-5 shadow-lg border border-gray-100">
       <div className="flex items-center justify-between mb-4">
@@ -833,7 +844,7 @@ const AcademicYearStats = memo(
           {monthlyStats
             .slice(0, showAllMonths ? monthlyStats.length : 5)
             .map((stat: any, index: number) => (
-              <MonthStatRow key={index} stat={stat} grade={profile.student?.class?.grade} />
+              <MonthStatRow key={index} stat={stat} grade={grade} />
             ))}
 
           {monthlyStats.length > 5 && (
@@ -1112,17 +1123,21 @@ const QuickInfoCard = memo(({ icon: Icon, label, value, color }: any) => (
 QuickInfoCard.displayName = "QuickInfoCard";
 
 // Edit Profile Button
-const EditProfileButton = memo(({ onEdit }: any) => (
-  <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
-    <button
-      onClick={onEdit}
-      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-4 transition-all flex items-center justify-center gap-2 active:scale-98 shadow-lg"
-    >
-      <Edit className="w-5 h-5" />
-      <span>កែប្រែព័ត៌មាន • Edit Profile</span>
-    </button>
-  </div>
-));
+const EditProfileButton = memo(({ onEdit }: any) => {
+  const { currentTheme } = useVividTheme();
+
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+      <button
+        onClick={onEdit}
+        className={`w-full bg-gradient-to-r ${currentTheme.buttonGradient} text-white font-bold py-4 px-4 transition-all flex items-center justify-center gap-2 active:scale-98 shadow-lg`}
+      >
+        <Edit className="w-5 h-5" />
+        <span>កែប្រែព័ត៌មាន • Edit Profile</span>
+      </button>
+    </div>
+  );
+});
 
 EditProfileButton.displayName = "EditProfileButton";
 
@@ -1554,7 +1569,7 @@ const InfoRow = memo(({ icon, label, value, color = "gray" }: any) => {
 
   return (
     <div
-      className={`flex items-start gap-3 p-4 bg-gradient-to-br ${colorClasses[color]} rounded-2xl border-2`}
+      className={`flex items-start gap-3 p-4 bg-gradient-to-br ${(colorClasses as any)[color] || colorClasses.indigo} rounded-2xl border-2`}
     >
       <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
         {icon}
